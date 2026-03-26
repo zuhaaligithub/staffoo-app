@@ -1,0 +1,1291 @@
+
+import React, { useState, useRef } from 'react';
+import {
+  View,
+  Text,
+  ScrollView,
+  TouchableOpacity,
+  StyleSheet,
+  SafeAreaView,
+  TextInput,
+  Image,
+  Alert,
+  Dimensions,
+  KeyboardAvoidingView,
+  Platform,
+} from 'react-native';
+import {
+  ChevronLeft,
+  ChevronDown,
+  Calendar,
+  AlertCircle,
+  FileText,
+  Users,
+  Car,
+  Siren,
+  Eye,
+  UploadCloud,
+  PenTool,
+  X,
+  Plus,
+  Minus,
+} from 'lucide-react-native';
+import { ActivityIndicator } from 'react-native';
+import { launchCamera, launchImageLibrary } from 'react-native-image-picker';
+import SignatureScreen from 'react-native-signature-canvas';
+import { getAuthToken } from '../services/authApi';
+import RNFS from 'react-native-fs';
+import ImageResizer from 'react-native-image-resizer';
+import axios from "axios";
+import { OPENAI_API_KEY } from './config/aiConfig';
+
+const { width } = Dimensions.get('window');
+
+interface InjuryType {
+  id: number;
+  name: string;
+  color: string;
+  background: string;
+}
+
+interface EmergencyType {
+  id: number;
+  name: string;
+  color: string;
+  background: string;
+}
+
+interface PersonDetail {
+  name: string;
+  email: string;
+  phone: string;
+  bodyType: string;
+  gender: string;
+  hair: string;
+  height: string;
+  weight: string;
+  marks: string;
+}
+
+interface VehicleDetail {
+  make: string;
+  model: string;
+  rego: string;
+  vehicleType: string;
+}
+
+interface WitnessDetail {
+  name: string;
+  email: string;
+  address: string;
+  phone: string;
+  detail: string;
+  moreInfo: string;
+}
+
+interface PhotoItem {
+  uri: string;
+  timestamp: string;
+}
+
+export default function CreateIncidentReport({ navigation, route }: { navigation: any; route: any }) {
+  const { shiftId, guardId, rosterId, siteId, siteName } = route.params ?? {};
+
+  // Early return if critical params missing
+  if (!siteId) {
+    return (
+      <SafeAreaView style={{ flex: 1, backgroundColor: '#f8fafc' }}>
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 }}>
+          <Text style={{ fontSize: 18, color: '#ef4444', textAlign: 'center' }}>
+            Missing required parameters (siteId is required)
+          </Text>
+          <TouchableOpacity
+            onPress={() => navigation.goBack()}
+            style={{ marginTop: 24, paddingVertical: 14, paddingHorizontal: 28, backgroundColor: '#3b82f6', borderRadius: 12 }}
+          >
+            <Text style={{ color: 'white', fontWeight: '600', fontSize: 16 }}>Go Back</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  const [photos, setPhotos] = useState<Array<{ base64: string; timestamp: string }>>([]);
+  const [openSection, setOpenSection] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const toggleSection = (section: string) => {
+    setOpenSection(openSection === section ? null : section);
+  };
+
+  // Incident Date/Time (dynamic)
+  const [incidentDateTime] = useState(
+    new Date().toLocaleString('en-AU', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    })
+  );
+
+  const [day, monthStr, year] = incidentDateTime.split(', ')[0].split(' ');
+  const monthMap: { [key: string]: string } = {
+    Jan: '01', Feb: '02', Mar: '03', Apr: '04', May: '05', Jun: '06',
+    Jul: '07', Aug: '08', Sep: '09', Oct: '10', Nov: '11', Dec: '12',
+  };
+  const month = monthMap[monthStr] || '01';
+  const formattedDate = `${day.padStart(2, '0')}/${month}/${year}`;
+  const formattedTime = incidentDateTime.split(', ')[1]?.trim() ?? '';
+
+  // Form States
+  const [selectedIncidentTypeId, setSelectedIncidentTypeId] = useState<number | null>(null);
+  const [otherIncidentType, setOtherIncidentType] = useState('');
+  const [incidentDetails, setIncidentDetails] = useState('');
+
+  const [peopleCount, setPeopleCount] = useState(0);
+  const [peopleDetails, setPeopleDetails] = useState<PersonDetail[]>([]);
+
+  const [vehiclesCount, setVehiclesCount] = useState(0);
+  const [vehicleDetails, setVehicleDetails] = useState<VehicleDetail[]>([]);
+
+  const [selectedEmergencyId, setSelectedEmergencyId] = useState<number | null>(null);
+  const [emergencyDetail, setEmergencyDetail] = useState('');
+  const [supervisorName, setSupervisorName] = useState('');
+  const [supervisorPosition, setSupervisorPosition] = useState('');
+  const [supervisorAddress, setSupervisorAddress] = useState('');
+  const [supervisorEmail, setSupervisorEmail] = useState('');
+  const [supervisorPhone, setSupervisorPhone] = useState('');
+
+  const [witnessesCount, setWitnessesCount] = useState(0);
+  const [witnessDetails, setWitnessDetails] = useState<WitnessDetail[]>([]);
+
+  const signatureRef = useRef<any>(null);
+  const [signatureData, setSignatureData] = useState<string | null>(null);
+
+  const injuryTypes: InjuryType[] = [
+    { id: 5, name: 'Forced Entry', color: '#B4850F', background: '#FFFCCA' },
+    { id: 1, name: 'Injury', color: '#E80000', background: '#FFDADA' },
+    { id: 2, name: 'Trespassing', color: '#672195', background: '#EDD2FF' },
+    { id: 3, name: 'Refused Entry', color: '#215F8C', background: '#DAEFFF' },
+    { id: 4, name: 'Robbery', color: '#000000', background: '#DEDEDE' },
+    { id: 6, name: 'Others', color: '#000000', background: '#FFFFFF' },
+  ];
+
+  const emergencyTypes: EmergencyType[] = [
+    { id: 1, name: 'Police', background: '#DAEFFF', color: '#0D2F86' },
+    { id: 2, name: 'Ambulance', background: '#FFDADA', color: '#E80000' },
+    { id: 3, name: 'Fire Brigade', background: '#FFFCCA', color: '#B4850F' },
+  ];
+
+  const selectedIncidentName = injuryTypes.find(t => t.id === selectedIncidentTypeId)?.name || 'Others';
+
+ const correctText = async (text: string, instruction: string) => {
+  if (!text?.trim()) {
+    Alert.alert("No text", "Please enter some incident details first.");
+    return;
+  }
+
+  try {
+    const payload = {
+      model: "gpt-4o-mini",                     
+      messages: [
+        {
+          role: "system",
+          content: "You are a professional security report editor. " +
+                   "Be concise, factual, formal. Never invent new information."
+        },
+        {
+          role: "user",
+          content: `${instruction}:\n\n${text}` 
+        }
+      ],
+      temperature: 0.4,                      
+      max_tokens: 300,                          
+      top_p: 1,
+      frequency_penalty: 0,
+      presence_penalty: 0
+    };
+
+    console.log("Sending OpenAI payload:", JSON.stringify(payload, null, 2));
+
+    const response = await axios.post(
+      "https://api.openai.com/v1/chat/completions",
+      payload,                                
+      {
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${OPENAI_API_KEY}`
+        },
+        timeout: 20000                             
+      }
+    );
+
+    const correctedText = response.data.choices?.[0]?.message?.content?.trim();
+
+    if (!correctedText) {
+      throw new Error("No correction received from OpenAI");
+    }
+
+    setIncidentDetails(correctedText);
+    console.log("AI corrected text:", correctedText);
+
+  } catch (error: any) {
+    console.error("OpenAI request failed:", error);
+
+    let errorMessage = "AI text correction failed. Please try again.";
+
+    if (error.response) {
+      const status = error.response.status;
+      const errData = error.response.data?.error;
+
+      if (status === 401) {
+        errorMessage = "Invalid or expired OpenAI API key. Please check your API key.";
+      } else if (status === 429) {
+        errorMessage = "Rate limit exceeded. Please wait a moment and try again.";
+      } else if (status === 400 && errData?.code === "invalid_api_key") {
+        errorMessage = "Incorrect API key. Generate a new one from OpenAI dashboard.";
+      } else if (errData?.message) {
+        errorMessage = errData.message;
+      }
+    }
+
+    Alert.alert("AI Error", errorMessage);
+  }
+};
+
+  const resizeAndConvertToBase64 = async (
+    originalUri: string,
+    maxWidth: number = 1024,
+    maxHeight: number = 1024,
+    quality: number = 68,
+  ): Promise<string> => {
+    try {
+      const resized = await ImageResizer.createResizedImage(
+        originalUri,
+        maxWidth,
+        maxHeight,
+        'JPEG',
+        quality,
+        0,
+        undefined,
+        false,
+        { mode: 'cover' }
+      );
+
+      const base64Content = await RNFS.readFile(resized.uri, 'base64');
+      return `data:image/jpeg;base64,${base64Content}`;
+    } catch (error: any) {
+      console.error('Image processing failed:', error);
+      throw new Error('Failed to process image');
+    }
+  };
+
+  const isValidEmail = (email: string) => !email || /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(email);
+
+  const updateArrayItem = <T extends object>(arr: T[], index: number, updates: Partial<T>): T[] =>
+    arr.map((item, i) => (i === index ? { ...item, ...updates } : item));
+
+  const changeCount = (field: 'people' | 'vehicles' | 'witnesses', delta: number) => {
+    const max = 10;
+    let count = 0;
+    let setCount: any;
+    let details: any[] = [];
+    let setDetails: any;
+
+    if (field === 'people') { count = peopleCount; setCount = setPeopleCount; details = peopleDetails; setDetails = setPeopleDetails; }
+    else if (field === 'vehicles') { count = vehiclesCount; setCount = setVehiclesCount; details = vehicleDetails; setDetails = setVehicleDetails; }
+    else { count = witnessesCount; setCount = setWitnessesCount; details = witnessDetails; setDetails = setWitnessDetails; }
+
+    const next = Math.max(0, Math.min(max, count + delta));
+    setCount(next);
+
+    if (next > count) {
+      let empty: any;
+      if (field === 'people') empty = { name: '', email: '', phone: '', bodyType: '', gender: '', hair: '', height: '', weight: '', marks: '' };
+      else if (field === 'vehicles') empty = { make: '', model: '', rego: '', vehicleType: '' };
+      else empty = { name: '', email: '', address: '', phone: '', detail: '', moreInfo: '' };
+      setDetails([...details, empty]);
+    } else if (next < count) {
+      setDetails(details.slice(0, -1));
+    }
+  };
+
+  const pickImage = () => {
+    if (photos.length >= 6) {
+      return Alert.alert('Limit reached', 'Maximum 6 photos allowed.');
+    }
+
+    Alert.alert('Add Photo', '', [
+      { text: 'Camera', onPress: () => launchCamera({ mediaType: 'photo', quality: 0.8 }, handleImage) },
+      { text: 'Gallery', onPress: () => launchImageLibrary({ mediaType: 'photo', quality: 0.8 }, handleImage) },
+      { text: 'Cancel', style: 'cancel' },
+    ]);
+  };
+
+  const handleImage = async (response: any) => {
+    if (response.didCancel) return;
+    if (response.errorCode) {
+      Alert.alert('Error', response.errorMessage || 'Failed to pick image');
+      return;
+    }
+
+    const asset = response.assets?.[0];
+    if (!asset?.uri) return;
+
+    try {
+      const base64DataUri = await resizeAndConvertToBase64(asset.uri, 1000, 1000, 65);
+
+      const timestamp = new Date().toLocaleString('en-AU', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false,
+      });
+
+      setPhotos(prev => [...prev, { base64: base64DataUri, timestamp }]);
+    } catch (err: any) {
+      Alert.alert('Error', err.message || 'Failed to process image');
+    }
+  };
+
+  const removePhoto = (index: number) => setPhotos(photos.filter((_, i) => i !== index));
+
+  const handleSaveSignature = () => {
+    signatureRef.current?.readSignature();
+  };
+
+  const handleClearSignature = () => {
+    signatureRef.current?.clearSignature();
+    setSignatureData(null);
+  };
+
+  const submitReport = async () => {
+    if (!selectedIncidentTypeId) return Alert.alert('Required', 'Incident Type is required');
+    if (!incidentDetails.trim()) return Alert.alert('Required', 'Incident Details are required');
+    if (!signatureData) return Alert.alert('Required', 'Staff signature is required');
+
+    setIsSubmitting(true);
+
+    const payload = {
+      guard_id: guardId,
+      roster_id: rosterId,
+      date: formattedDate,
+      time: formattedTime,
+      site_name: siteName || 'Unknown Site',
+
+      injury_type: selectedIncidentName,
+      incident_detail: incidentDetails.trim(),
+
+      people_involved: peopleDetails.map(p => ({
+        peopleCount: peopleCount,
+        name: p.name || '',
+        phone: p.phone || '',
+        bodyType: p.bodyType || '',
+        gender: p.gender || '',
+        hair: p.hair || '',
+        height: p.height || '',
+        weight: p.weight || '',
+        marks: p.marks || '',
+        email: p.email || ''
+      })),
+
+      vehicle: vehicleDetails.map(v => ({
+        vehicleCount: vehiclesCount,
+        make: v.make || '',
+        model: v.model || '',
+        vehicle_type: v.vehicleType || '',
+        vehicle_rander: v.rego || ''
+      })),
+
+      emergency_services: {
+        emergency_type: selectedEmergencyId
+          ? emergencyTypes.find(e => e.id === selectedEmergencyId)?.name || ''
+          : '',
+        emergency_detail: emergencyDetail || '',
+        supervisor_name: supervisorName || '',
+        position: supervisorPosition || '',
+        address: supervisorAddress || '',
+        email: supervisorEmail || '',
+        phone: supervisorPhone || ''
+      },
+
+      wittness: witnessDetails.map(w => ({
+        wittness: witnessesCount,
+        wittness_detail: w.detail || '',
+        wittness_name: w.name || '',
+        wittness_address: w.address || '',
+        wittness_email: w.email || '',
+        wittness_phone: w.phone || '',
+        witness_more_info: w.moreInfo || ''
+      })),
+
+      photo: photos.map(p => ({
+        imgPath: p.base64,
+        timestamp: p.timestamp
+      })),
+
+      signature: signatureData
+    };
+
+    try {
+      const token = await getAuthToken();
+      if (!token) throw new Error('No authentication token found');
+
+      const response = await fetch(
+        `https://apis.staffoo.com.au/api/report-incident/${siteId}`,
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+            Accept: 'application/json'
+          },
+          body: JSON.stringify(payload)
+        }
+      );
+
+      const responseData = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        throw new Error(responseData.message || `HTTP error ${response.status}`);
+      }
+
+      Alert.alert('Success', 'Incident report submitted successfully!');
+      navigation.goBack();
+
+    } catch (error: any) {
+      console.error('Submit error:', error);
+      Alert.alert(
+        'Submission Failed',
+        error.message || 'Failed to submit report. Please try again.'
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <SafeAreaView style={styles.container}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={{ flex: 1 }}
+      >
+        {/* Header */}
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => navigation.goBack()}>
+            <ChevronLeft size={28} color="#0f172a" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Create Incident Report</Text>
+          <View style={{ width: 28 }} />
+        </View>
+
+        <ScrollView contentContainerStyle={styles.scrollContent}>
+          {isSubmitting && (
+            <View style={styles.submittingOverlay}>
+              <ActivityIndicator size="large" color="#3b82f6" />
+              <Text style={styles.submittingText}>Submitting...</Text>
+            </View>
+          )}
+
+          {/* 1. Incident Date/Time */}
+          <TouchableOpacity style={styles.sectionHeader} onPress={() => toggleSection('date')}>
+            <View style={styles.cardHeader}>
+              <Calendar size={22} color="#3b82f6" />
+              <Text style={styles.cardTitle}>Incident Date/Time</Text>
+              <ChevronDown
+                size={20}
+                color="#64748b"
+                style={{ transform: [{ rotate: openSection === 'date' ? '180deg' : '0deg' }] }}
+              />
+            </View>
+          </TouchableOpacity>
+          {openSection === 'date' && (
+            <View style={styles.cardContent}>
+              <TextInput
+                style={[styles.input, styles.readonly]}
+                value={incidentDateTime}
+                editable={false}
+              />
+            </View>
+          )}
+
+          {/* 2. Incident Type */}
+          <TouchableOpacity style={styles.sectionHeader} onPress={() => toggleSection('type')}>
+            <View style={styles.cardHeader}>
+              <AlertCircle size={22} color="#3b82f6" />
+              <Text style={styles.cardTitle}>
+                Incident Type <Text style={styles.required}>*</Text>
+              </Text>
+              <ChevronDown
+                size={20}
+                color="#64748b"
+                style={{ transform: [{ rotate: openSection === 'type' ? '180deg' : '0deg' }] }}
+              />
+            </View>
+          </TouchableOpacity>
+          {openSection === 'type' && (
+            <View style={styles.cardContent}>
+              <View style={styles.chipContainer}>
+                {injuryTypes.map(item => (
+                  <TouchableOpacity
+                    key={item.id}
+                    style={[
+                      styles.chip,
+                      selectedIncidentTypeId === item.id && styles.chipActive,
+                      { backgroundColor: item.background },
+                    ]}
+                    onPress={() => setSelectedIncidentTypeId(item.id)}
+                  >
+                    <Text style={[styles.chipText, { color: item.color }]}>{item.name}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+              {selectedIncidentName === 'Others' && (
+                <TextInput
+                  style={styles.input}
+                  placeholder="Specify other type..."
+                  placeholderTextColor="#9CA3AF"
+                  value={otherIncidentType}
+                  onChangeText={setOtherIncidentType}
+                />
+              )}
+            </View>
+          )}
+
+          {/* 3. Incident Details */}
+          <TouchableOpacity style={styles.sectionHeader} onPress={() => toggleSection('details')}>
+            <View style={styles.cardHeader}>
+              <FileText size={22} color="#3b82f6" />
+              <Text style={styles.cardTitle}>
+                Incident Details <Text style={styles.required}>*</Text>
+              </Text>
+              <ChevronDown
+                size={20}
+                color="#64748b"
+                style={{ transform: [{ rotate: openSection === 'details' ? '180deg' : '0deg' }] }}
+              />
+            </View>
+          </TouchableOpacity>
+          {openSection === 'details' && (
+            <View style={styles.cardContent}>
+              <TextInput
+                style={styles.textArea}
+                multiline
+                placeholder="Enter details here..."
+                placeholderTextColor="#9CA3AF"
+                value={incidentDetails}
+                onChangeText={setIncidentDetails}
+              />
+              <View style={styles.aiButtons}>
+                <TouchableOpacity
+                  style={styles.spellBtn}
+                  onPress={() =>
+                    correctText(
+                      incidentDetails,
+                      "Correct this"
+                    )
+                  }
+                >
+                  <Text style={styles.btnText}>Spell check only</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.aiBtn}
+                  onPress={() =>
+                    correctText(
+                      incidentDetails,
+                      "Change this text to more professional and detailed text with correct grammar and spellings:"
+                    )
+                  }
+                >
+                  <Text style={styles.btnText}>Change with AI</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          )}
+
+          {/* 4. People Involved */}
+          <TouchableOpacity style={styles.sectionHeader} onPress={() => toggleSection('people')}>
+            <View style={styles.cardHeader}>
+              <Users size={22} color="#3b82f6" />
+              <Text style={styles.cardTitle}>People Involved</Text>
+              <ChevronDown
+                size={20}
+                color="#64748b"
+                style={{ transform: [{ rotate: openSection === 'people' ? '180deg' : '0deg' }] }}
+              />
+            </View>
+          </TouchableOpacity>
+          {openSection === 'people' && (
+            <View style={styles.cardContent}>
+              <View style={styles.counterRow}>
+                <TouchableOpacity onPress={() => changeCount('people', -1)}>
+                  <Minus size={24} color="#64748b" />
+                </TouchableOpacity>
+                <Text style={styles.countText}>{peopleCount}</Text>
+                <TouchableOpacity onPress={() => changeCount('people', 1)}>
+                  <Plus size={24} color="#3b82f6" />
+                </TouchableOpacity>
+              </View>
+
+              {peopleDetails.map((p, i) => (
+                <View key={i} style={styles.detailGroup}>
+                  <Text style={styles.subTitle}>Detail {i + 1}</Text>
+
+                  <Text style={styles.label}>Full Name</Text>
+                  {/* <TextInput
+                    style={styles.input}
+                    value={p.name}
+                    placeholderTextColor="#9CA3AF"
+                    onChangeText={v => setPeopleDetails(updateArrayItem(peopleDetails, i, { name: v }))}
+                  /> */}
+                  <TextInput
+  style={styles.input}
+  value={p.name}
+  placeholder={`Person Name`}
+  placeholderTextColor="#9CA3AF"
+  onChangeText={v => setPeopleDetails(updateArrayItem(peopleDetails, i, { name: v }))}
+/>
+
+                  <Text style={styles.label}>Email</Text>
+                  <TextInput
+                    style={styles.input}
+                    value={p.email}
+                    placeholder={`Person Email`}
+                    onChangeText={v => setPeopleDetails(updateArrayItem(peopleDetails, i, { email: v }))}
+                    keyboardType="email-address"
+                    placeholderTextColor="#9CA3AF"
+                  />
+                  {p.email && !isValidEmail(p.email) && <Text style={styles.error}>Invalid email format</Text>}
+
+                  <Text style={styles.label}>Phone</Text>
+                  <TextInput
+                    style={styles.input}
+                    value={p.phone}
+                    placeholder={`Person Phone`}
+  placeholderTextColor="#9CA3AF"
+                    onChangeText={v => setPeopleDetails(updateArrayItem(peopleDetails, i, { phone: v }))}
+                    keyboardType="phone-pad"
+                  />
+
+                  <View style={styles.row}>
+                    <View style={{ flex: 1, marginRight: 8 }}>
+                      <Text style={styles.label}>Body Type</Text>
+                      <TextInput
+                        style={styles.input}
+                        value={p.bodyType}
+                        placeholder={`Person Body Type`}
+  placeholderTextColor="#9CA3AF"
+                        onChangeText={v => setPeopleDetails(updateArrayItem(peopleDetails, i, { bodyType: v }))}
+                      />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.label}>Gender</Text>
+                      <TextInput
+                        style={styles.input}
+                        placeholder={`Person Gender`}
+  placeholderTextColor="#9CA3AF"
+                        value={p.gender}
+                        onChangeText={v => setPeopleDetails(updateArrayItem(peopleDetails, i, { gender: v }))}
+                      />
+                    </View>
+                  </View>
+
+                  <View style={styles.row}>
+                    <View style={{ flex: 1, marginRight: 8 }}>
+                      <Text style={styles.label}>Hair Color</Text>
+                      <TextInput
+                        style={styles.input}
+                        placeholder={`Person Hair`}
+  placeholderTextColor="#9CA3AF"
+                        value={p.hair}
+                        onChangeText={v => setPeopleDetails(updateArrayItem(peopleDetails, i, { hair: v }))}
+                      />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.label}>Height</Text>
+                      <TextInput
+                        style={styles.input}
+                        placeholder={`Person Height`}
+  placeholderTextColor="#9CA3AF"
+                        value={p.height}
+                        onChangeText={v => setPeopleDetails(updateArrayItem(peopleDetails, i, { height: v }))}
+                      />
+                    </View>
+                  </View>
+
+                  <View style={styles.row}>
+                    <View style={{ flex: 1, marginRight: 8 }}>
+                      <Text style={styles.label}>Weight</Text>
+                      <TextInput
+                        style={styles.input}
+                        placeholder={`Person Weight`}
+  placeholderTextColor="#9CA3AF"
+                        value={p.weight}
+                        onChangeText={v => setPeopleDetails(updateArrayItem(peopleDetails, i, { weight: v }))}
+                      />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.label}>Marks</Text>
+                      <TextInput
+                        style={styles.input}
+                        placeholder={`Person Marks`}
+  placeholderTextColor="#9CA3AF"
+                        value={p.marks}
+                        onChangeText={v => setPeopleDetails(updateArrayItem(peopleDetails, i, { marks: v }))}
+                      />
+                    </View>
+                  </View>
+                </View>
+              ))}
+            </View>
+          )}
+
+          {/* 5. Vehicles Involved */}
+          <TouchableOpacity style={styles.sectionHeader} onPress={() => toggleSection('vehicles')}>
+            <View style={styles.cardHeader}>
+              <Car size={22} color="#3b82f6" />
+              <Text style={styles.cardTitle}>No of Vehicles Involved</Text>
+              <ChevronDown
+                size={20}
+                color="#64748b"
+                style={{ transform: [{ rotate: openSection === 'vehicles' ? '180deg' : '0deg' }] }}
+              />
+            </View>
+          </TouchableOpacity>
+          {openSection === 'vehicles' && (
+            <View style={styles.cardContent}>
+              <View style={styles.counterRow}>
+                <TouchableOpacity onPress={() => changeCount('vehicles', -1)}>
+                  <Minus size={24} color="#64748b" />
+                </TouchableOpacity>
+                <Text style={styles.countText}>{vehiclesCount}</Text>
+                <TouchableOpacity onPress={() => changeCount('vehicles', 1)}>
+                  <Plus size={24} color="#3b82f6" />
+                </TouchableOpacity>
+              </View>
+
+              {vehicleDetails.map((v, i) => (
+                <View key={i} style={styles.detailGroup}>
+                  <Text style={styles.subTitle}>Detail {i + 1}</Text>
+
+                  <Text style={styles.label}>Make</Text>
+                  <TextInput
+                    style={styles.input}
+                    placeholder={`Enter text here...`}
+  placeholderTextColor="#9CA3AF"
+                    value={v.make}
+                    onChangeText={txt => setVehicleDetails(updateArrayItem(vehicleDetails, i, { make: txt }))}
+                  />
+
+                  <Text style={styles.label}>Model</Text>
+                  <TextInput
+                    style={styles.input}
+                    value={v.model}
+                    placeholder={`Enter text here...`}
+  placeholderTextColor="#9CA3AF"
+                    onChangeText={txt => setVehicleDetails(updateArrayItem(vehicleDetails, i, { model: txt }))}
+                  />
+
+                  <Text style={styles.label}>Rego Number</Text>
+                  <TextInput
+                    style={styles.input}
+                    value={v.rego}
+                    placeholder={`Enter text here...`}
+  placeholderTextColor="#9CA3AF"
+                    onChangeText={txt => setVehicleDetails(updateArrayItem(vehicleDetails, i, { rego: txt }))}
+                  />
+
+                  <Text style={styles.label}>Vehicle Type</Text>
+                  <TextInput
+                    style={styles.input}
+                    value={v.vehicleType}
+                    placeholder={`Enter text here...`}
+  placeholderTextColor="#9CA3AF"
+                    onChangeText={txt => setVehicleDetails(updateArrayItem(vehicleDetails, i, { vehicleType: txt }))}
+                  />
+                </View>
+              ))}
+            </View>
+          )}
+
+          {/* 6. Emergency service Involved */}
+          <TouchableOpacity style={styles.sectionHeader} onPress={() => toggleSection('emergency')}>
+            <View style={styles.cardHeader}>
+              <Siren size={22} color="#3b82f6" />
+              <Text style={styles.cardTitle}>Emergency service Involved</Text>
+              <ChevronDown
+                size={20}
+                color="#64748b"
+                style={{ transform: [{ rotate: openSection === 'emergency' ? '180deg' : '0deg' }] }}
+              />
+            </View>
+          </TouchableOpacity>
+          {openSection === 'emergency' && (
+            <View style={styles.cardContent}>
+              <View style={styles.chipContainer}>
+                {emergencyTypes.map(item => (
+                  <TouchableOpacity
+                    key={item.id}
+                    style={[
+                      styles.chip,
+                      selectedEmergencyId === item.id && styles.chipActive,
+                      { backgroundColor: item.background },
+                    ]}
+                    onPress={() => setSelectedEmergencyId(item.id)}
+                  >
+                    <Text style={[styles.chipText, { color: item.color }]}>{item.name}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+
+              <Text style={styles.label}>Emergency details</Text>
+              <TextInput
+                style={styles.input}
+                value={emergencyDetail}
+                onChangeText={setEmergencyDetail}
+              />
+
+              <Text style={styles.label}>Supervisor</Text>
+              <TextInput
+                style={styles.input}
+                value={supervisorName}
+                onChangeText={setSupervisorName}
+              />
+
+              <Text style={styles.label}>Position</Text>
+              <TextInput
+                style={styles.input}
+                value={supervisorPosition}
+                onChangeText={setSupervisorPosition}
+              />
+
+              <Text style={styles.label}>Address</Text>
+              <TextInput
+                style={styles.input}
+                value={supervisorAddress}
+                onChangeText={setSupervisorAddress}
+              />
+
+              <Text style={styles.label}>Email</Text>
+              <TextInput
+                style={styles.input}
+                value={supervisorEmail}
+                onChangeText={setSupervisorEmail}
+                keyboardType="email-address"
+              />
+              {supervisorEmail && !isValidEmail(supervisorEmail) && (
+                <Text style={styles.error}>Invalid email format</Text>
+              )}
+
+              <Text style={styles.label}>Phone</Text>
+              <TextInput
+                style={styles.input}
+                value={supervisorPhone}
+                onChangeText={setSupervisorPhone}
+                keyboardType="phone-pad"
+              />
+            </View>
+          )}
+
+          {/* 7. Witness Involved */}
+          <TouchableOpacity style={styles.sectionHeader} onPress={() => toggleSection('witness')}>
+            <View style={styles.cardHeader}>
+              <Eye size={22} color="#3b82f6" />
+              <Text style={styles.cardTitle}>Witness Involved</Text>
+              <ChevronDown
+                size={20}
+                color="#64748b"
+                style={{ transform: [{ rotate: openSection === 'witness' ? '180deg' : '0deg' }] }}
+              />
+            </View>
+          </TouchableOpacity>
+          {openSection === 'witness' && (
+            <View style={styles.cardContent}>
+              <View style={styles.counterRow}>
+                <TouchableOpacity onPress={() => changeCount('witnesses', -1)}>
+                  <Minus size={24} color="#64748b" />
+                </TouchableOpacity>
+                <Text style={styles.countText}>{witnessesCount}</Text>
+                <TouchableOpacity onPress={() => changeCount('witnesses', 1)}>
+                  <Plus size={24} color="#3b82f6" />
+                </TouchableOpacity>
+              </View>
+
+              {witnessDetails.map((w, i) => (
+                <View key={i} style={styles.detailGroup}>
+                  <Text style={styles.subTitle}>Detail {i + 1}</Text>
+
+                  <Text style={styles.label}>Full Name</Text>
+                  <TextInput
+                    style={styles.input}
+                    value={w.name}
+                    onChangeText={txt => setWitnessDetails(updateArrayItem(witnessDetails, i, { name: txt }))}
+                  />
+
+                  <Text style={styles.label}>Email</Text>
+                  <TextInput
+                    style={styles.input}
+                    value={w.email}
+                    onChangeText={txt => setWitnessDetails(updateArrayItem(witnessDetails, i, { email: txt }))}
+                    keyboardType="email-address"
+                  />
+                  {w.email && !isValidEmail(w.email) && <Text style={styles.error}>Invalid email format</Text>}
+
+                  <Text style={styles.label}>Address</Text>
+                  <TextInput
+                    style={styles.input}
+                    value={w.address}
+                    onChangeText={txt => setWitnessDetails(updateArrayItem(witnessDetails, i, { address: txt }))}
+                  />
+
+                  <Text style={styles.label}>Phone</Text>
+                  <TextInput
+                    style={styles.input}
+                    value={w.phone}
+                    onChangeText={txt => setWitnessDetails(updateArrayItem(witnessDetails, i, { phone: txt }))}
+                    keyboardType="phone-pad"
+                  />
+
+                  <Text style={styles.label}>Witness Detail</Text>
+                  <TextInput
+                    style={styles.input}
+                    value={w.detail}
+                    onChangeText={txt => setWitnessDetails(updateArrayItem(witnessDetails, i, { detail: txt }))}
+                  />
+
+                  <Text style={styles.label}>More Info</Text>
+                  <TextInput
+                    style={styles.input}
+                    value={w.moreInfo}
+                    onChangeText={txt => setWitnessDetails(updateArrayItem(witnessDetails, i, { moreInfo: txt }))}
+                  />
+                </View>
+              ))}
+            </View>
+          )}
+
+          {/* 8. Photos of Incident */}
+          <TouchableOpacity style={styles.sectionHeader} onPress={() => toggleSection('photos')}>
+            <View style={styles.cardHeader}>
+              <UploadCloud size={22} color="#3b82f6" />
+              <Text style={styles.cardTitle}>Photos of Incident</Text>
+              <ChevronDown
+                size={20}
+                color="#64748b"
+                style={{ transform: [{ rotate: openSection === 'photos' ? '180deg' : '0deg' }] }}
+              />
+            </View>
+          </TouchableOpacity>
+
+          {openSection === 'photos' && (
+            <View style={styles.cardContent}>
+              <View style={styles.photoGrid}>
+                {photos.map((photo, i) => (
+                  <View key={i} style={styles.photoItem}>
+                    <TouchableOpacity
+                      style={styles.removePhoto}
+                      onPress={() => removePhoto(i)}
+                    >
+                      <X size={18} color="#ef4444" />
+                    </TouchableOpacity>
+
+                    <Image
+                      source={{ uri: photo.base64 }}
+                      style={styles.photo}
+                      resizeMode="cover"
+                    />
+
+                    <Text style={styles.timestamp}>{photo.timestamp}</Text>
+                  </View>
+                ))}
+              </View>
+
+              <TouchableOpacity style={styles.uploadArea} onPress={pickImage}>
+                <UploadCloud size={40} color="#64748b" />
+                <Text style={{ marginTop: 8 }}>Click here to upload {photos.length}/6</Text>
+              </TouchableOpacity>
+
+              {photos.length >= 6 && (
+                <Text style={{ color: '#ef4444', fontSize: 13, textAlign: 'center', marginTop: 8 }}>
+                  Maximum 6 photos reached
+                </Text>
+              )}
+            </View>
+          )}
+
+          {/* 9. Add Staff Signature */}
+          <TouchableOpacity style={styles.sectionHeader} onPress={() => toggleSection('signature')}>
+            <View style={styles.cardHeader}>
+              <PenTool size={22} color="#3b82f6" />
+              <Text style={styles.cardTitle}>Add Staff Signature <Text style={styles.required}>*</Text></Text>
+              <ChevronDown
+                size={20}
+                color="#64748b"
+                style={{ transform: [{ rotate: openSection === 'signature' ? '180deg' : '0deg' }] }}
+              />
+            </View>
+          </TouchableOpacity>
+          {openSection === 'signature' && (
+            <View style={styles.cardContent}>
+              <View style={{ height: 300 }}>
+                <SignatureScreen
+                  ref={signatureRef}
+                  onOK={(signature) => {
+                    setSignatureData(signature);
+                    console.log('Signature saved – length:', signature?.length ?? 0);
+                  }}
+                  autoClear={false}
+                  androidLayerType="software"
+                  nestedScrollEnabled={true}
+                  webStyle={`
+                    .m-signature-pad--footer { display: none; }
+                    body,html { height:100%; }
+                  `}
+                />
+              </View>
+              <View style={styles.signatureButtons}>
+                <TouchableOpacity style={styles.clearBtn} onPress={handleClearSignature}>
+                  <Text style={styles.btnTextWhite}>Clear</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.saveBtn} onPress={handleSaveSignature}>
+                  <Text style={styles.btnTextWhite}>Save</Text>
+                </TouchableOpacity>
+              </View>
+
+              {signatureData && (
+                <Image source={{ uri: signatureData }} style={styles.signaturePreview} resizeMode="contain" />
+              )}
+            </View>
+          )}
+        </ScrollView>
+
+        {/* Bottom Action Buttons */}
+        <View style={styles.bottomButtons}>
+          <TouchableOpacity style={styles.submitButton} onPress={submitReport} disabled={isSubmitting}>
+            <Text style={styles.submitText}>Submit Incident</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.cancelButton} onPress={() => navigation.goBack()}>
+            <Text style={styles.cancelText}>Cancel</Text>
+          </TouchableOpacity>
+        </View>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: '#f8fafc', paddingTop: 20 },
+  btnTextWhite: { color: 'white', fontWeight: '600', fontSize: 15 },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 20,
+  },
+  headerTitle: { fontSize: 20, fontWeight: '700', color: '#0f172a' },
+
+  clearBtn: { flex: 1, backgroundColor: '#ef4444', paddingVertical: 14, borderRadius: 10, alignItems: 'center' },
+  saveBtn: { flex: 1, backgroundColor: '#10b981', paddingVertical: 14, borderRadius: 10, alignItems: 'center' },
+  scrollContent: { padding: 16, paddingBottom: 160 },
+
+  sectionHeader: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+  },
+  cardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+  },
+  cardTitle: { flex: 1, fontSize: 16, fontWeight: '700', marginLeft: 12, color: '#0f172a' },
+  cardContent: {
+    backgroundColor: '#fff',
+    padding: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#f1f5f9',
+    borderBottomLeftRadius: 16,
+    borderBottomRightRadius: 16,
+  },
+
+  input: {
+    backgroundColor: '#f8fafc',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    fontSize: 15,
+    marginBottom: 12,
+  },
+  readonly: { backgroundColor: '#f1f5f9', color: '#475569' },
+  textArea: {
+    minHeight: 100,
+    textAlignVertical: 'top',
+    backgroundColor: '#f8fafc',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    padding: 14,
+    fontSize: 15,
+    marginBottom: 12,
+  },
+
+  required: { color: '#ef4444', fontWeight: 'bold' },
+
+  chipContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+    marginBottom: 16,
+  },
+  chip: {
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    alignItems: 'center',
+    minWidth: 90,
+  },
+  chipActive: { borderColor: '#3b82f6', borderWidth: 2.5 },
+  chipText: { fontSize: 13, fontWeight: '600' },
+
+  counterRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 40,
+    marginVertical: 12,
+  },
+  countText: { fontSize: 28, fontWeight: '700', color: '#0f172a' },
+
+  detailGroup: {
+    marginTop: 16,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#e2e8f0',
+  },
+  subTitle: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#334155',
+    marginBottom: 10,
+  },
+  label: {
+    fontSize: 14,
+    color: '#475569',
+    marginBottom: 6,
+    fontWeight: '500',
+  },
+  row: { flexDirection: 'row', marginBottom: 12 },
+  error: { color: '#ef4444', fontSize: 13, marginTop: -6, marginBottom: 10 },
+
+  aiButtons: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 8,
+  },
+  spellBtn: {
+    flex: 1,
+    backgroundColor: '#fee2e2',
+    paddingVertical: 12,
+    borderRadius: 10,
+    alignItems: 'center',
+  },
+  aiBtn: {
+    flex: 1,
+    backgroundColor: '#eff6ff',
+    paddingVertical: 12,
+    borderRadius: 10,
+    alignItems: 'center',
+  },
+  btnText: { fontSize: 13, fontWeight: '600', color: '#1e40af' },
+
+  photoGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+    marginBottom: 16,
+  },
+  photoItem: {
+    width: (width - 64) / 3,
+    position: 'relative',
+  },
+  photo: {
+    width: '100%',
+    height: 100,
+    borderRadius: 10,
+  },
+  removePhoto: {
+    position: 'absolute',
+    top: -8,
+    right: -8,
+    backgroundColor: 'white',
+    borderRadius: 12,
+    padding: 2,
+    zIndex: 10,
+  },
+  timestamp: {
+    fontSize: 11,
+    color: '#64748b',
+    textAlign: 'center',
+    marginTop: 4,
+  },
+  uploadArea: {
+    alignItems: 'center',
+    paddingVertical: 32,
+    borderWidth: 2,
+    borderColor: '#cbd5e1',
+    borderStyle: 'dashed',
+    borderRadius: 12,
+  },
+
+  submittingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 9999,
+  },
+  submittingText: {
+    marginTop: 12,
+    color: '#fff',
+    fontWeight: '600',
+    fontSize: 16,
+  },
+
+  bottomButtons: {
+    position: 'absolute',
+    bottom: 24,
+    left: 16,
+    right: 16,
+    flexDirection: 'row',
+    gap: 12,
+  },
+  submitButton: {
+    flex: 1,
+    backgroundColor: '#000000',
+    paddingVertical: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  submitText: { color: '#ffffff', fontSize: 16, fontWeight: '700' },
+  cancelButton: {
+    flex: 1,
+    borderWidth: 1.5,
+    borderColor: '#6b7280',
+    paddingVertical: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  cancelText: { color: '#6b7280', fontSize: 16, fontWeight: '700' },
+
+  signatureButtons: { flexDirection: 'row', gap: 12, marginTop: 12 },
+  signaturePreview: { width: '100%', height: 120, marginTop: 12, borderRadius: 8 },
+});
