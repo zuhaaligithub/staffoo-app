@@ -1,7 +1,3 @@
-
-
-
-
 import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
@@ -21,13 +17,6 @@ import {
   Alert,
 } from 'react-native';
 import {
-  ChevronLeft,
-  X,
-  Camera,
-  AlertCircle,
-  Footprints,
-  Plus,
-  Clock,
   Mail,
   Eye,
   EyeOff,
@@ -45,6 +34,7 @@ const BASE_URL = 'https://apis.staffoo.com.au/api';
 const LOGO = require('../assets/staffo.png');
 import NetInfo from '@react-native-community/netinfo';
 
+
 type Props = { navigation: any };
 
 export const sendNotificationTokenToServer = async (
@@ -61,16 +51,13 @@ export const sendNotificationTokenToServer = async (
       console.warn('   No auth token → skipping');
       return;
     }
-
     const payload: any = {
       notification_token: playerId,
     };
     if (userId) {
-      payload.id = userId; // or user_id, depending on your backend
+      payload.id = userId;
     }
-
     console.log('   Sending payload:', payload);
-
     const response = await fetch(`${BASE_URL}/store-notification-token`, {
       method: 'POST',
       headers: {
@@ -80,9 +67,7 @@ export const sendNotificationTokenToServer = async (
       },
       body: JSON.stringify(payload),
     });
-
     console.log('   Response status:', response.status);
-
     if (!response.ok) {
       let errorText = await response.text().catch(() => 'No response body');
       console.error('   Server error:', errorText);
@@ -101,7 +86,6 @@ export default function LoginScreen({ navigation }: Props) {
   const { width } = useWindowDimensions();
   const isTablet = width >= 768;
   const scale = (size: number) => (width / 375) * size;
-
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -134,52 +118,45 @@ export default function LoginScreen({ navigation }: Props) {
     console.log('✅ GoogleSignin configured');
   }, []);
 
-const requestLocationPermission = async () => {
-  if (Platform.OS === 'android') {
-    const granted = await PermissionsAndroid.request(
-      PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
-      {
-        title: 'Location Permission',
-        message: 'This app needs your location for security and shift tracking.',
-        buttonNeutral: 'Ask Me Later',
-        buttonNegative: 'Cancel',
-        buttonPositive: 'OK',
-      }
-    );
-    return granted === PermissionsAndroid.RESULTS.GRANTED;
-  }
-  // iOS: use react-native-permissions
-  const result = await request(PERMISSIONS.IOS.LOCATION_WHEN_IN_USE);
-  return result === RESULTS.GRANTED;
-};
+  const requestLocationPermission = async () => {
+    if (Platform.OS === 'android') {
+      const granted = await PermissionsAndroid.request(
+        PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+        {
+          title: 'Location Permission',
+          message: 'This app needs your location for security and shift tracking.',
+          buttonNeutral: 'Ask Me Later',
+          buttonNegative: 'Cancel',
+          buttonPositive: 'OK',
+        }
+      );
+      return granted === PermissionsAndroid.RESULTS.GRANTED;
+    }
+    const result = await request(PERMISSIONS.IOS.LOCATION_WHEN_IN_USE);
+    return result === RESULTS.GRANTED;
+  };
 
-const hasRequestedLocation = useRef(false);
+  const hasRequestedLocation = useRef(false);
 
-const handleInputFocus = async () => {
-  if (hasRequestedLocation.current) return; // only ask once
-  hasRequestedLocation.current = true;
-  await requestLocationPermission();
-};
+  const handleInputFocus = async () => {
+    if (hasRequestedLocation.current) return; 
+    hasRequestedLocation.current = true;
+    await requestLocationPermission();
+  };
 
   const handleGoogleLogin = async () => {
     try {
       setLoading(true);
       console.log('🚀 [GOOGLE] Starting Google Sign-In...');
-
       await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
-
       await GoogleSignin.signOut().catch(() => { });
       const userInfo = await GoogleSignin.signIn();
-
       if (userInfo.type !== 'success' || !userInfo.data) {
         throw new Error('Google sign-in failed');
       }
-
       const tokens = await GoogleSignin.getTokens();
       const { accessToken } = tokens;
-
       if (!accessToken) throw new Error('No access token');
-
       const response = await fetch(`${BASE_URL}/auth/google/callback`, {
         method: 'POST',
         headers: {
@@ -194,27 +171,18 @@ const handleInputFocus = async () => {
       if (!response.ok) {
         throw new Error(`Server error ${response.status}`);
       }
-
       const data = await response.json();
-
       console.log('✅ Callback success:', data);
-
       const user = data.user;
       const token = data.token;
-
       if (!user?.id || !token) {
         throw new Error('Invalid response');
       }
-
-      // ✅ CORRECT STORAGE
       await AsyncStorage.setItem('@auth_token', token);
       await AsyncStorage.setItem('user', JSON.stringify(user));
       await AsyncStorage.setItem('@user_id', String(user.id));
-
       console.log('🧪 Saved user:', user);
       console.log('🧪 Saved userId:', user.id);
-
-      // 🔔 OneSignal
       try {
         const playerId = await OneSignal.User.pushSubscription.getIdAsync();
 
@@ -225,13 +193,11 @@ const handleInputFocus = async () => {
       } catch (e) {
         console.log('OneSignal error:', e);
       }
-
       Toast.show({
         type: 'success',
         text1: 'Login Successful',
         position: 'bottom',
       });
-
       setTimeout(() => {
         navigation.reset({
           index: 0,
@@ -241,7 +207,6 @@ const handleInputFocus = async () => {
 
     } catch (error: any) {
       console.error('❌ Google Login Error:', error);
-
       Toast.show({
         type: 'error',
         text1: 'Login Failed',
@@ -252,10 +217,6 @@ const handleInputFocus = async () => {
       setLoading(false);
     }
   };
-
-
-
-
 
   const handleSignIn = async () => {
     if (!email.trim()) {
@@ -271,7 +232,6 @@ const handleInputFocus = async () => {
     setLoading(true);
 
     try {
-      // ✅ Check network first
       const netState = await NetInfo.fetch();
       if (!netState.isConnected) {
         throw new Error('No internet connection. Please try again.');
@@ -281,18 +241,19 @@ const handleInputFocus = async () => {
         email: email.trim(),
         password: password.trim(),
       });
-
-      // Direct mapping
-      const user = response;
+      const user = response;         
       const token = response.token;
-
       await AsyncStorage.setItem('@auth_token', token);
-      await AsyncStorage.setItem('user', JSON.stringify(user));
       await AsyncStorage.setItem('@user_id', String(user.id));
-
-      console.log('🧪 Saved user:', user);
-
-      // 🔔 OneSignal
+      const userTypeValue = user.user_type || 'staff';
+      await AsyncStorage.setItem('@user_type', userTypeValue);
+      await AsyncStorage.setItem('user', JSON.stringify(user));
+      const allKeys = await AsyncStorage.getAllKeys();
+      console.log('AsyncStorage keys after login:', allKeys);
+      console.log('✅ Login Success - Saved:');
+      console.log('   • User ID   :', user.id);
+      console.log('   • User Type :', userTypeValue);
+      console.log('   • Token     :', token ? 'Saved' : 'Missing');
       try {
         await new Promise(r => setTimeout(r, 1200));
         const playerId = await OneSignal.User.pushSubscription.getIdAsync();
@@ -329,7 +290,6 @@ const handleInputFocus = async () => {
     }
   };
 
-
   return (
     <SafeAreaView style={styles.container}>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
@@ -338,22 +298,18 @@ const handleInputFocus = async () => {
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          {/* HEADER */}
-          <View style={styles.header}>
-            <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-              <ArrowLeft size={22} color="#000" />
-            </TouchableOpacity>
+          {/* <View style={styles.header}>
+         
             <Text style={styles.headerTitle}>Sign In</Text>
-          </View>
+          </View> */}
 
-          {/* LOGO */}
           <View style={styles.logoContainer}>
-            <Image source={LOGO} resizeMode="contain" style={{ width: width * 0.4, height: width * 0.15 }} />
+            <Image source={LOGO} resizeMode="contain" style={{ width: width * 0.6, height: width * 0.17 }} />
+              <Text style={[styles.subtitle, { fontSize: scale(14) }]}>Enter your credentials to sign in</Text>
           </View>
 
-          <Text style={[styles.subtitle, { fontSize: scale(14) }]}>Enter your credentials to sign in</Text>
+        
 
-          {/* EMAIL */}
           <Text style={[styles.label, { fontSize: scale(14) }]}>Email</Text>
           <View style={styles.inputBox}>
             <Mail size={20} color="#666" />
@@ -362,7 +318,7 @@ const handleInputFocus = async () => {
               placeholder="Type your email"
               placeholderTextColor="#aaa"
               value={email}
-                onFocus={handleInputFocus} 
+              onFocus={handleInputFocus}
               onChangeText={setEmail}
               keyboardType="email-address"
               autoCapitalize="none"
@@ -371,7 +327,6 @@ const handleInputFocus = async () => {
             />
           </View>
 
-          {/* PASSWORD */}
           <Text style={[styles.label, { fontSize: scale(14) }]}>Password</Text>
           <View style={styles.inputBox}>
             <Lock size={20} color="#666" />
@@ -389,7 +344,6 @@ const handleInputFocus = async () => {
             </TouchableOpacity>
           </View>
 
-          {/* REMEMBER ME + FORGOT PASSWORD */}
           <View style={styles.rowBetween}>
             <View style={styles.checkboxRow}>
               <CheckBox
@@ -399,12 +353,9 @@ const handleInputFocus = async () => {
               />
               <Text style={{ fontSize: scale(13) }}>Remember Me</Text>
             </View>
-            {/* <TouchableOpacity onPress={() => navigation.navigate('ForgotPassword')}>
-              <Text style={[styles.forgotText, { fontSize: scale(13) }]}>Forgot Password?</Text>
-            </TouchableOpacity> */}
+          
           </View>
 
-          {/* SIGN IN BUTTON */}
           <TouchableOpacity
             style={[styles.signInButton, loading && { opacity: 0.7 }]}
             onPress={handleSignIn}
@@ -454,7 +405,7 @@ const handleInputFocus = async () => {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#fff', paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0 },
   header: { flexDirection: 'row', marginTop: 20, alignItems: 'center' },
-  headerTitle: { fontSize: 20, fontWeight: '600', color: '#000', marginLeft: '26%' },
+  headerTitle: { fontSize: 25, fontWeight: '600', color: '#000', marginLeft: 50 },
   backButton: {
     width: 40,
     height: 40,
@@ -465,8 +416,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginRight: 12,
   },
-  logoContainer: { marginVertical: 20 },
-  subtitle: { color: '#666', marginBottom: 25 },
+  logoContainer: { marginVertical: 10, justifyContent: 'center', alignItems: 'center' },
+  subtitle: { color: '#666', fontSize: 18, justifyContent: 'center', alignItems: 'center' ,marginTop: 20},
   label: { fontWeight: '600', color: '#000', marginBottom: 6 },
   inputBox: {
     flexDirection: 'row',

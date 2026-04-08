@@ -78,8 +78,8 @@ export default function CreateJobScreen() {
     documents: [],
     guardsCount: '1',
     location: '',
-    lat: 31.5204,
-    lng: 74.3587,
+    lat: 0,
+    lng: 0,
     description: '',
     startDate: new Date(),
     startTime: new Date(),
@@ -305,37 +305,37 @@ export default function CreateJobScreen() {
 
 
 
-const shiftDurationHours = useMemo(() => {
-  const start = new Date(form.startDate);
-  start.setHours(form.startTime.getHours(), form.startTime.getMinutes(), 0, 0);
+  const shiftDurationHours = useMemo(() => {
+    const start = new Date(form.startDate);
+    start.setHours(form.startTime.getHours(), form.startTime.getMinutes(), 0, 0);
 
-  const end = new Date(form.endDate);
-  end.setHours(form.endTime.getHours(), form.endTime.getMinutes(), 0, 0);
+    const end = new Date(form.endDate);
+    end.setHours(form.endTime.getHours(), form.endTime.getMinutes(), 0, 0);
 
-  if (end <= start) return 0;
+    if (end <= start) return 0;
 
-  return (end.getTime() - start.getTime()) / (1000 * 60 * 60);
-}, [form.startDate, form.startTime, form.endDate, form.endTime]);
+    return (end.getTime() - start.getTime()) / (1000 * 60 * 60);
+  }, [form.startDate, form.startTime, form.endDate, form.endTime]);
 
-const shiftDurationText = shiftDurationHours.toFixed(2);
+  const shiftDurationText = shiftDurationHours.toFixed(2);
 
-// 2. Then use them in effects / render
-useEffect(() => {
-  let scheduleError: string | undefined;
+  // 2. Then use them in effects / render
+  useEffect(() => {
+    let scheduleError: string | undefined;
 
-  if (shiftDurationHours > 0) {
-    if (shiftDurationHours < 4) {
-      scheduleError = 'Minimum shift duration is 4 hours';
-    } else if (shiftDurationHours > 12) {
-      scheduleError = 'Maximum shift duration is 12 hours';
+    if (shiftDurationHours > 0) {
+      if (shiftDurationHours < 4) {
+        scheduleError = 'Minimum shift duration is 4 hours';
+      } else if (shiftDurationHours > 12) {
+        scheduleError = 'Maximum shift duration is 12 hours';
+      }
     }
-  }
 
-  setErrors((prev) => ({
-    ...prev,
-    schedule: scheduleError,
-  }));
-}, [shiftDurationHours]);
+    setErrors((prev) => ({
+      ...prev,
+      schedule: scheduleError,
+    }));
+  }, [shiftDurationHours]);
 
 
 
@@ -416,16 +416,18 @@ useEffect(() => {
                 showsUserLocation
                 showsMyLocationButton
               >
-                <Marker
-                  coordinate={{ latitude: form.lat, longitude: form.lng }}
-                  title={form.location || 'Current / Selected Location'}
-                  pinColor="#2563EB"
-                  draggable
-                  onDragEnd={(e) => {
-                    const { latitude, longitude } = e.nativeEvent.coordinate;
-                    setForm((prev) => ({ ...prev, lat: latitude, lng: longitude }));
-                  }}
-                />
+                {form.lat !== 0 && form.lng !== 0 && (
+                  <Marker
+                    coordinate={{ latitude: form.lat, longitude: form.lng }}
+                    title={form.location || 'Selected Location'}
+                    pinColor="#2563EB"
+                    draggable
+                    onDragEnd={(e) => {
+                      const { latitude, longitude } = e.nativeEvent.coordinate;
+                      setForm((prev) => ({ ...prev, lat: latitude, lng: longitude }));
+                    }}
+                  />
+                )}
               </MapView>
             ) : (
               <View style={styles.mapPlaceholder}>

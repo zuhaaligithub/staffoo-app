@@ -9,9 +9,10 @@ import LoginScreen from '../screens/LoginScreen';
 import SignUpScreen from '../screens/SignUpScreen';
 import ForgotPasswordScreen from '../screens/ForgotPasswordScreen';
 import SplashScreen from '../screens/SplashScreen';
-import MainDrawer from '../screens/MainDrawer';
+// import MainDrawer from '../screens/MainDrawer';
 import FilterScreen from '../screens/FilterScreen';
 import ProfileSetupScreen from '../screens/ProfileSetupScreen';
+
 import NotificationScreen from '../screens/NotificationScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import JobDetailScreen from '../screens/JobDetailScreen';
@@ -36,6 +37,8 @@ import CreateFootPatrol from '../screens/CreateFootPatrol';
 import AsapJobDetails from '../screens/AsapJobDetails';
 import PaymentHistoryScreen from '../screens/PaymentHistoryScreen';
 import PaymentMethodsScreen from '../screens/PaymentMethodsScreen';
+import LeaveManagementScreen from '../screens/LeaveManagementScreen';
+import HomeScreen from '../screens/HomeScreen';
 
 
 // ─── Define route params ────────────────────────────────────────────────
@@ -47,6 +50,7 @@ export type RootStackParamList = {
 
   Filter: undefined;
   ProfileSetup: undefined;
+  LeaveManagement: undefined;
   Notifications: undefined;
 
   JobDetails: { jobId?: string };
@@ -62,6 +66,7 @@ export type RootStackParamList = {
   ChargeRates: undefined;
   PayRates: undefined;
   CreateJob: undefined;
+  Home: undefined;
   ReviewConfirm: {
     jobData: {
       category: string;
@@ -138,7 +143,7 @@ export default function AppNavigator() {
 
   return (
     <Stack.Navigator
-      initialRouteName={'Profile'}
+     initialRouteName={initialRoute!}
       screenOptions={{ headerShown: false, animation: 'slide_from_right' }}
     >
       <Stack.Screen name="Onboarding" component={OnboardingScreen} />
@@ -149,6 +154,7 @@ export default function AppNavigator() {
       <Stack.Screen name="Filter" component={FilterScreen} />
 
       <Stack.Screen name="ProfileSetup" component={ProfileSetupScreen} />
+       <Stack.Screen name="LeaveManagement" component={LeaveManagementScreen} />
       <Stack.Screen name="Notifications" component={NotificationScreen} />
 
       <Stack.Screen name="JobDetails" component={JobDetailScreen} />
@@ -156,6 +162,7 @@ export default function AppNavigator() {
       <Stack.Screen name="Applications" component={ApplicationsScreen} />
       <Stack.Screen name="ViewApplications" component={ViewApplicationScreen} />
       <Stack.Screen name="Messages" component={MessageScreen} />
+      <Stack.Screen name="Home" component={HomeScreen} />
       <Stack.Screen name="MessageDetail" component={MessageDetailScreen} />
       <Stack.Screen name="Profile" component={ProfileScreen} />
       <Stack.Screen name="ApplyJob" component={ApplyJobScreen} />
@@ -175,11 +182,11 @@ export default function AppNavigator() {
 <Stack.Screen name="PaymentMethod" component={PaymentMethodsScreen} />
       {/* <Stack.Screen name="Success" component={SuccessScreen} /> */}
 
-      <Stack.Screen
+      {/* <Stack.Screen
         name="Main"
         component={MainDrawer}
         options={{ gestureEnabled: false }}
-      />
+      /> */}
     </Stack.Navigator>
   );
 }

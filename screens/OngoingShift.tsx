@@ -110,7 +110,7 @@ export default function OngoingShift({ navigation, route }: { navigation: any; r
     const rosterId = currentShift?.job_roster_activities?.job_roster_id;
     const BASE_URL = 'https://apis.staffoo.com.au/api';
     const [taskLoading, setTaskLoading] = useState<number | null>(null);
-
+    const [shiftStartTime, setShiftStartTime] = useState<Date | null>(null);
     const POLL_INTERVAL_MS = 30000; // 30 seconds
     const VIBRATION_PATTERN = [600, 400, 600];
     const [jobCoordinates, setJobCoordinates] = useState<{ lat: number; lng: number } | null>(null);
@@ -129,37 +129,67 @@ export default function OngoingShift({ navigation, route }: { navigation: any; r
     const hasAlarmedRef = useRef(false);
     const checkIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
-    // ... (other states remain the same)
-
     useEffect(() => {
-        // Parse coordinates from shift (your existing code - good)
         const shiftFromParams = route.params?.currentShift;
         if (shiftFromParams) {
+            console.log('[TIMER] Full Shift Data Received:', JSON.stringify(shiftFromParams, null, 2));
             setCurrentShift(shiftFromParams);
 
-            if (shiftFromParams.site?.coordinates) {
-                try {
-                    const [latStr, lngStr] = shiftFromParams.site.coordinates.split(',');
-                    const lat = parseFloat(latStr.trim());
-                    const lng = parseFloat(lngStr.trim());
+            // === FIXED: Parse signin_time or use fallback to ensure timer starts from exact sign-in time ===
+            let startDate: Date | null = null;
 
-                    if (!isNaN(lat) && !isNaN(lng)) {
-                        setJobCoordinates({ lat, lng });
-                        console.log('[PROXIMITY] Real site coordinates loaded:', { lat, lng });
+            // Check all possible keys for sign-in time
+            const rawSigninTime = shiftFromParams.signin_time || shiftFromParams.signinTime || shiftFromParams.signed_in_at;
+
+            if (rawSigninTime) {
+                console.log('[TIMER] Found raw signin_time:', rawSigninTime);
+                const parts = String(rawSigninTime).split(/[\s-:]/);
+                if (parts.length >= 5) {
+                    const [p1, p2, p3, hour, minute] = parts.map(Number);
+
+                    // Try both DD-MM-YYYY and MM-DD-YYYY
+                    const date1 = new Date(p3, p2 - 1, p1, hour, minute, 0); // DD-MM
+                    const date2 = new Date(p3, p1 - 1, p2, hour, minute, 0); // MM-DD
+
+                    const now = new Date();
+
+                    // If date1 is in the future but date2 is in the past, date2 is likely correct
+                    if (date1 > now && date2 <= now) {
+                        startDate = date2;
                     } else {
-                        throw new Error('Invalid coordinates');
+                        startDate = date1;
                     }
-                } catch (err) {
-                    console.error('[PROXIMITY] Coordinate parse failed:', err);
-                    Alert.alert('Warning', 'Invalid site coordinates – proximity alerts disabled.');
+
+                    if (startDate && !isNaN(startDate.getTime())) {
+                        console.log('[TIMER] Successfully Constructed Date:', startDate.toLocaleString());
+                    }
                 }
-            } else {
-                console.warn('[PROXIMITY] No coordinates in site data');
-                Alert.alert('Missing Location', 'Site coordinates not available. Alerts disabled.');
             }
 
-            // sign-in time parsing...
-            // ...
+            if (!startDate || isNaN(startDate.getTime())) {
+                startDate = new Date();
+                console.warn('[TIMER] Could not parse signin_time, starting from 0 (Now)');
+            }
+
+            setShiftStartTime(startDate);
+
+            // Update elapsedSeconds immediately
+            const now = new Date();
+            const diffMs = now.getTime() - startDate.getTime();
+            const initialSeconds = Math.max(0, Math.floor(diffMs / 1000));
+            setElapsedSeconds(initialSeconds);
+
+            // Load coordinates for proximity check
+            const lat = shiftFromParams.site?.lat || shiftFromParams.lat || shiftFromParams.latitude;
+            const lng = shiftFromParams.site?.lng || shiftFromParams.site?.longitude || shiftFromParams.lng || shiftFromParams.longitude;
+
+            if (lat && lng) {
+                setJobCoordinates({
+                    lat: Number(lat),
+                    lng: Number(lng)
+                });
+            }
+
             setIsLoading(false);
         } else {
             Alert.alert('Error', 'No shift data received.');
@@ -167,24 +197,24 @@ export default function OngoingShift({ navigation, route }: { navigation: any; r
     }, [route.params]);
 
     const stopRepeatingAlarm = () => {
-  if (alarmInterval) {
-    clearInterval(alarmInterval);
-    setAlarmInterval(null);
-  }
-  hasAlarmedRef.current = false;
+        if (alarmInterval) {
+            clearInterval(alarmInterval);
+            setAlarmInterval(null);
+        }
+        hasAlarmedRef.current = false;
 
-  // Force stop vibration immediately
-  Vibration.cancel();
+        // Force stop vibration immediately
+        Vibration.cancel();
 
-  // Force stop sound
-  try {
-    SoundPlayer.stop();
-    // SoundPlayer.unmount();  // only if you used addEventListener before – otherwise optional
-    console.log('[ALARM] Sound & Vibration forcefully stopped');
-  } catch (err) {
-    console.log('[ALARM] Stop failed:', err);
-  }
-};
+        // Force stop sound
+        try {
+            SoundPlayer.stop();
+            // SoundPlayer.unmount();  // only if you used addEventListener before – otherwise optional
+            console.log('[ALARM] Sound & Vibration forcefully stopped');
+        } catch (err) {
+            console.log('[ALARM] Stop failed:', err);
+        }
+    };
 
     useEffect(() => {
         console.log('[PROXIMITY DEBUG] Shift loaded:', !!currentShift);
@@ -208,7 +238,7 @@ export default function OngoingShift({ navigation, route }: { navigation: any; r
             return true;
         };
 
-       
+
 
         const startRepeatingAlarm = () => {
             if (alarmInterval) return; // already running
@@ -314,13 +344,22 @@ export default function OngoingShift({ navigation, route }: { navigation: any; r
         getUserFromStorage();
     }, []);
 
-    // ─── Timer ───
     useEffect(() => {
-        const interval = setInterval(() => {
-            setElapsedSeconds((prev) => prev + 1);
-        }, 1000);
+        if (!shiftStartTime) return;
+
+        const updateElapsed = () => {
+            const now = new Date();
+            const diffMs = now.getTime() - shiftStartTime.getTime();
+            const seconds = Math.floor(diffMs / 1000);
+            setElapsedSeconds(Math.max(0, seconds)); // prevent negative
+        };
+
+        updateElapsed(); // immediate update
+
+        const interval = setInterval(updateElapsed, 1000);
+
         return () => clearInterval(interval);
-    }, []);
+    }, [shiftStartTime]);
 
 
 
@@ -353,39 +392,39 @@ export default function OngoingShift({ navigation, route }: { navigation: any; r
         }
     };
 
-useEffect(() => {
-  return () => {
-    console.log('[OngoingShift] Component unmounting → cleaning up alarm');
-    stopRepeatingAlarm();
-    if (checkIntervalRef.current) {
-      clearInterval(checkIntervalRef.current);
-      checkIntervalRef.current = null;
-    }
-    Vibration.cancel(); // extra safety
-  };
-}, []); // empty deps → runs only on unmount
+    useEffect(() => {
+        return () => {
+            console.log('[OngoingShift] Component unmounting → cleaning up alarm');
+            stopRepeatingAlarm();
+            if (checkIntervalRef.current) {
+                clearInterval(checkIntervalRef.current);
+                checkIntervalRef.current = null;
+            }
+            Vibration.cancel(); // extra safety
+        };
+    }, []); // empty deps → runs only on unmount
 
 
-const triggerAlarm = () => {
-  if (!jobCoordinates) return;
-  console.log('[ALARM] Triggered – user is OUTSIDE radius');
+    const triggerAlarm = () => {
+        if (!jobCoordinates) return;
+        console.log('[ALARM] Triggered – user is OUTSIDE radius');
 
-  // Vibration – limit duration on Android
-  if (Platform.OS === 'android') {
-    Vibration.vibrate(VIBRATION_PATTERN, true); // loop = true
-    // But we already limit overall in stop
-  } else {
-    Vibration.vibrate();
-  }
+        // Vibration – limit duration on Android
+        if (Platform.OS === 'android') {
+            Vibration.vibrate(VIBRATION_PATTERN, true); // loop = true
+            // But we already limit overall in stop
+        } else {
+            Vibration.vibrate();
+        }
 
-  // Sound – play once per trigger (your repeating interval calls this)
-  try {
-    const alarmAsset = require('../assets/tune/alarm.mp3');
-    SoundPlayer.playAsset(alarmAsset);
-  } catch (error) {
-    console.log('[ALARM] Sound failed:', error);
-  }
-};
+        // Sound – play once per trigger (your repeating interval calls this)
+        try {
+            const alarmAsset = require('../assets/tune/alarm.mp3');
+            SoundPlayer.playAsset(alarmAsset);
+        } catch (error) {
+            console.log('[ALARM] Sound failed:', error);
+        }
+    };
 
     useEffect(() => {
         const requestLocationPermission = async () => {
@@ -614,20 +653,20 @@ const triggerAlarm = () => {
 
                             console.log('SIGN-OUT RESPONSE SUCCESS:', response.data);
 
-                           Alert.alert('Success', response.data?.message || 'Shift ended successfully!', [
-  {
-    text: 'OK',
-    onPress: () => {
-      stopRepeatingAlarm();           // ← Add this
-      if (checkIntervalRef.current) {
-        clearInterval(checkIntervalRef.current);
-        checkIntervalRef.current = null;
-      }
-      navigation.goBack();            // or wherever you navigate after sign-out
-      // Optionally: navigation.navigate('SomeHomeScreen');
-    },
-  },
-]);
+                            Alert.alert('Success', response.data?.message || 'Shift ended successfully!', [
+                                {
+                                    text: 'OK',
+                                    onPress: () => {
+                                        stopRepeatingAlarm();           // ← Add this
+                                        if (checkIntervalRef.current) {
+                                            clearInterval(checkIntervalRef.current);
+                                            checkIntervalRef.current = null;
+                                        }
+                                        navigation.goBack();            // or wherever you navigate after sign-out
+                                        // Optionally: navigation.navigate('SomeHomeScreen');
+                                    },
+                                },
+                            ]);
 
                         } catch (error: any) {
                             console.error('SIGN-OUT FAILED:', error);
@@ -844,7 +883,6 @@ const triggerAlarm = () => {
                 {/* Timer */}
                 <View style={styles.timerCard}>
                     <Text style={styles.timerText}>{formatTime(elapsedSeconds)}</Text>
-                    <Text style={styles.durationText}>Elapsed Time</Text>
                 </View>
 
                 {/* Site Info */}
@@ -864,8 +902,10 @@ const triggerAlarm = () => {
                                 <Clock size={14} color="#22c55e" />
                             </View>
                             <View>
-                                <Text style={styles.cardTitle}>Shift Status</Text>
-                                <Text style={styles.cardSubValue}>Ongoing</Text>
+                                <Text style={styles.cardTitle}>Sign In Time</Text>
+                                <Text style={styles.cardSubValue}>
+                                    {currentShift.signin_time || 'N/A'}
+                                </Text>
                             </View>
                         </View>
 
@@ -1141,16 +1181,17 @@ const styles = StyleSheet.create({
     scrollContent: { padding: 16, paddingBottom: 150 },
 
     timerCard: {
+        
         backgroundColor: '#ffffff',
         borderRadius: 20,
-        paddingVertical: 15,
+        paddingVertical: 20,
         paddingHorizontal: 20,
         alignItems: 'center',
         marginBottom: 15,
         borderWidth: 1,
         borderColor: '#e2e8f0',
     },
-    timerText: { fontSize: 28, fontWeight: '700', color: '#0f172a' },
+    timerText: { fontSize: 30, fontWeight: '700', color: '#0f172a' },
     durationText: { fontSize: 14, color: '#16a34a', marginTop: 3 },
 
     infoCard: {

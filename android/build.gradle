@@ -1,11 +1,11 @@
 buildscript {
     ext {
-      buildToolsVersion = "35.0.0" 
+      buildToolsVersion = "35.0.0"
       minSdkVersion = 24
       compileSdkVersion = 36
       targetSdkVersion = 36
       ndkVersion = "27.1.12297006"
-      kotlinVersion = "1.9.24"
+      kotlinVersion = "2.0.21"          // ✅ REQUIRED by Stripe
       googlePlayServicesVersion = "21.3.0"
       playServicesLocationVersion = "21.3.0"
     }
@@ -14,9 +14,10 @@ buildscript {
         mavenCentral()
     }
     dependencies {
-        classpath("com.android.tools.build:gradle:8.1.1") // ✅ FIXED
+        classpath("com.android.tools.build:gradle:8.1.1")
         classpath("com.facebook.react:react-native-gradle-plugin")
-        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:1.9.0") // ✅ FIXED
+        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:2.0.21")       // ✅
+        classpath("org.jetbrains.kotlin:compose-compiler-gradle-plugin:2.0.21") // ✅
         classpath("com.google.gms:google-services:4.4.4")
     }
 }

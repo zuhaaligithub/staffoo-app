@@ -101,6 +101,45 @@ export default function CreateFootPatrol({ navigation, route }: { navigation: an
     setExpanded(expanded === section ? null : section);
   };
 
+
+  const resizeForPreview = async (uri: string): Promise<string> => {
+    try {
+      const resized = await ImageResizer.createResizedImage(
+        uri,
+        800,
+        800,
+        'JPEG',
+        60,
+        0,
+        undefined,
+        false,
+        { mode: 'cover' }
+      );
+      return resized.uri;
+    } catch (e) {
+      console.error('[Preview Resize] Failed:', e);
+      return uri;
+    }
+  };
+
+  const convertToBase64ForSubmit = async (uri: string): Promise<string> => {
+    try {
+      const resized = await ImageResizer.createResizedImage(
+        uri,
+        1000,   // Good balance for foot patrol
+        1000,
+        'JPEG',
+        70,
+        0
+      );
+      const base64Content = await RNFS.readFile(resized.uri, 'base64');
+      return `data:image/jpeg;base64,${base64Content}`;
+    } catch (error) {
+      console.error('[Base64 Conversion] Failed:', error);
+      throw new Error('Failed to convert photo to base64');
+    }
+  };
+
   const pickImage = () => {
     if (photos.length >= 6) {
       Alert.alert('Limit reached', 'You can upload up to 6 photos.');
@@ -241,12 +280,7 @@ export default function CreateFootPatrol({ navigation, route }: { navigation: an
     console.log('[handleImage] Selected image uri:', asset.uri);
 
     try {
-      const base64DataUri = await resizeAndConvertToBase64(
-        asset.uri,
-        600,   
-        600,
-        50      
-      );
+      const previewUri = await resizeForPreview(asset.uri);
 
       const timestamp = new Date().toLocaleString('en-AU', {
         day: '2-digit',
@@ -256,75 +290,53 @@ export default function CreateFootPatrol({ navigation, route }: { navigation: an
         minute: '2-digit',
         hour12: false,
       });
-      setPhotos((prev: PhotoItem[]) => {
-        const newPhotos = [...prev, { uri: asset.uri!, timestamp }];
+
+      setPhotos((prev) => {
+        const newPhotos = [...prev, { uri: previewUri, timestamp }];
         console.log(`[handleImage] Added photo. Total now: ${newPhotos.length}`);
         return newPhotos;
       });
     } catch (err: any) {
-      console.error('[handleImage] Processing failed:', err.message || err);
-      Alert.alert('Error', 'Failed to process image.\nTry a smaller photo.');
+      console.error('[handleImage] Processing failed:', err);
+      Alert.alert('Error', 'Failed to process image. Please try again.');
     }
   };
 
   const removePhoto = (index: number) => {
     setPhotos(photos.filter((_, i) => i !== index));
   };
-  const submitReport = async () => {
+
+ const submitReport = async () => {
     if (!patrollingDetails.trim()) {
       return Alert.alert('Required', 'Please enter patrolling details.');
     }
     if (!signatureData) {
       return Alert.alert('Required', 'Please provide staff signature.');
     }
-    if (photos.length > 2) {
-      Alert.alert('Too many photos', 'Server limit is low — please use max 2 photos for now.');
-      return;
-    }
+
+    setIsSubmitting(true);   // ← Add this state if not already present
+
     try {
       console.log('═══════ FOOT PATROL SUBMISSION START ═══════');
-      console.log(`Photos count: ${photos.length}`);
-      console.log(`Signature present: ${!!signatureData ? 'Yes' : 'No'}`);
+
+      // Convert photos to base64 only at submit time
       const photoPayload = await Promise.all(
         photos.map(async (photo, index) => {
           try {
-            console.log(`\n[PHOTO ${index + 1}/${photos.length}]`);
-            console.log('   • Original URI:', photo.uri);
-            const resized = await ImageResizer.createResizedImage(
-              photo.uri,
-              480,
-              480,
-              'JPEG',
-              45,
-              0
-            );
-            const base64 = await RNFS.readFile(resized.uri, 'base64');
-            const fullBase64Uri = `data:image/jpeg;base64,${base64}`;
-            const sizeKB = Math.round(fullBase64Uri.length * 3 / 4 / 1024);
-            console.log('   → SUCCESS (compressed)');
-            console.log(`      • Size after resize: ${sizeKB} KB`);
-            console.log(`      • Starts with: ${fullBase64Uri.substring(0, 80)}...`);
+            console.log(`[Photo ${index + 1}] Converting to base64...`);
+            const base64Uri = await convertToBase64ForSubmit(photo.uri);
 
             return {
-              imgPath: fullBase64Uri,
+              imgPath: base64Uri,
               timestamp: photo.timestamp,
             };
-          } catch (err: any) {
-            console.error(`   → FAILED:`, err.message || err);
-            return null;
+          } catch (err) {
+            console.error(`Failed to process photo ${index + 1}`, err);
+            throw err;
           }
         })
       );
 
-      const validPhotos = photoPayload.filter(p => p !== null);
-      const estimatedPhotoSize = validPhotos.reduce((sum, p) => sum + (p.imgPath.length * 3 / 4 / 1024), 0);
-      const signatureSize = signatureData ? signatureData.length * 3 / 4 / 1024 : 0;
-      const totalApproxKB = estimatedPhotoSize + signatureSize + 100; 
-      if (totalApproxKB > 800) { 
-        Alert.alert('Payload too large', `Total estimated size ~${Math.round(totalApproxKB)} KB — server rejects it.\nRemove some photos or try lower quality.`);
-        return;
-      }
-      console.log(`\nTotal estimated payload size: ~${Math.round(totalApproxKB)} KB (should pass)`);
       const payload = {
         guard_id: guardId,
         roster_id: rosterId,
@@ -332,20 +344,15 @@ export default function CreateFootPatrol({ navigation, route }: { navigation: an
         time: formattedTime,
         site_name: siteName,
         patrolling_detail: patrollingDetails.trim(),
-        photo: JSON.stringify(validPhotos), 
+        photo: JSON.stringify(photoPayload),   // Keep as stringified JSON (as per your backend)
         signature: signatureData,
       };
-      const debugPayload = {
-        ...payload,
-        photo: validPhotos.length ? `${validPhotos.length} photos (stringified, base64 hidden)` : '[]',
-        signature: signatureData ? `[BASE64 - ~${Math.round(signatureSize)} KB]` : 'MISSING',
-      };
-      console.log('\n========== PAYLOAD PREVIEW ==========');
-      console.log('Note: photo sent as JSON string (fixes json_decode error)');
-      console.log(JSON.stringify(debugPayload, null, 2));
-      console.log('=====================================');
+
+      console.log(`Submitting with ${photoPayload.length} photos`);
+
       const token = await getAuthToken();
       if (!token) throw new Error('No authentication token found');
+
       const response = await fetch(
         `https://apis.staffoo.com.au/api/add-foot-patrol-report/${siteId}`,
         {
@@ -353,37 +360,26 @@ export default function CreateFootPatrol({ navigation, route }: { navigation: an
           headers: {
             Authorization: `Bearer ${token}`,
             'Content-Type': 'application/json',
-            Accept: 'application/json'
+            Accept: 'application/json',
           },
           body: JSON.stringify(payload),
         }
       );
 
-      let result;
-      try {
-        result = await response.json();
-      } catch {
-        result = { message: 'No JSON response' };
-      }
-
-      console.log('\n========== API RESPONSE ==========');
-      console.log('Status:', response.status);
-      console.log(JSON.stringify(result, null, 2));
-      console.log('==================================');
+      const result = await response.json().catch(() => ({}));
 
       if (response.ok) {
         Alert.alert('Success', 'Foot Patrolling Report submitted successfully!');
         navigation.goBack();
       } else {
-        let msg = result.message || `Server error (${response.status})`;
-        if (response.status === 413) {
-          msg = '413 Payload Too Large — even after compression. Try 0–1 photo or ask backend to increase limit.';
-        }
-        Alert.alert('Error', msg);
+        const msg = result.message || `Server error (${response.status})`;
+        Alert.alert('Submission Failed', msg);
       }
     } catch (error: any) {
       console.error('Submit failed:', error);
-      Alert.alert('Failed', error.message || 'Check connection / permissions');
+      Alert.alert('Failed', error.message || 'Something went wrong. Please try again.');
+    } finally {
+      setIsSubmitting(false);
     }
   };
   const handleSaveSignature = () => {
@@ -394,7 +390,7 @@ export default function CreateFootPatrol({ navigation, route }: { navigation: an
     signatureRef.current?.clearSignature();
     setSignatureData(null);
   };
-
+const [isSubmitting, setIsSubmitting] = useState(false);
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#fff" />
@@ -493,7 +489,7 @@ export default function CreateFootPatrol({ navigation, route }: { navigation: an
                   <TouchableOpacity style={styles.removePhotoBtn} onPress={() => removePhoto(i)}>
                     <X size={18} color="#ef4444" />
                   </TouchableOpacity>
-                  <Image source={{ uri: photo.uri }} style={styles.photo} />
+                  <Image source={{ uri: photo.uri }} style={styles.photo} resizeMode="cover" />
                   <Text style={styles.timestamp}>{photo.timestamp}</Text>
                 </View>
               ))}
@@ -644,7 +640,7 @@ const styles = StyleSheet.create({
 
   photoGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginBottom: 16 },
   photoItem: { width: '30%', position: 'relative' },
-  photo: { width: '100%', height: 100, borderRadius: 12 },
+  photo: { width: '100%', height: 85, borderRadius: 12 },
   removePhotoBtn: {
     position: 'absolute',
     top: -10,
@@ -654,7 +650,14 @@ const styles = StyleSheet.create({
     padding: 4,
     zIndex: 1,
   },
-  timestamp: { fontSize: 11, color: '#64748b', textAlign: 'center', marginTop: 4 },
+   timestamp: {
+    fontSize: 7,
+    color: '#b24e45',
+    textAlign: 'center',
+    marginTop: -14,
+    fontWeight: '900',
+
+  },
   uploadArea: {
     alignItems: 'center',
     paddingVertical: 32,

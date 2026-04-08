@@ -3,8 +3,7 @@ import axios from 'axios';
 import { Platform } from 'react-native';
 import { ChargeRate, ChargeRateFormData } from '../navigation/types';
 
-// const BASE_URL = 'https://apis.staffoo.com.au/api';
-const BASE_URL = 'https://apis.staffoo.com.au/api';
+export const BASE_URL = 'https://apis.staffoo.com.au/api';
 
 export interface UserData {
   id: number | string;
@@ -26,10 +25,10 @@ export interface ProfileUpdatePayload {
   gmail?: string;           // ← if you use this field for something else
   gender?: string;
   staff_document_type?: string;
-
-  // Added for email change + OTP verification
   email?: string;
   email_otp?: string;
+
+  
 
 }
 
@@ -164,9 +163,78 @@ export const getUserProfile = async (userId: string | number) => {
   }
 };
 
+// export const updateUserProfile = async (
+//   userId: string | number,
+//   payload: ProfileUpdatePayload
+// ) => {
+//   const token = await getAuthToken();
+//   if (!token) {
+//     throw new Error('No authentication token found');
+//   }
+
+//   const endpoint = `${BASE_URL}/user-update/${userId}`;
+
+//   console.log('[UPDATE PROFILE] →', endpoint);
+//   console.log('[UPDATE PROFILE] Payload:', JSON.stringify(payload, null, 2));
+
+//   try {
+//     const response = await axios.post(endpoint, payload, {
+//       headers: {
+//         Authorization: `Bearer ${token}`,
+//         // 'Content-Type': 'application/json',
+//         Accept: 'application/json',
+//       },
+//       timeout: 15000, // optional: prevent hanging forever
+//     });
+
+//     console.log('[UPDATE PROFILE] ← success', response.data);
+
+//     // Update local storage with changed fields
+//     const current = await AsyncStorage.getItem('user');
+//     if (current) {
+//       const user = JSON.parse(current);
+
+//       const updatedUser = {
+//         ...user,
+//         name: payload.name ?? user.name,
+//         phone: payload.phone ?? user.phone,
+//         email: payload.email ?? user.email,           // ← now also update email
+//         // gmail: payload.gmail ?? user.gmail,        // if you use gmail field
+//       };
+
+//       await AsyncStorage.setItem('user', JSON.stringify(updatedUser));
+//     }
+
+//     return response.data;
+//   } catch (error: any) {
+//     const errorMessage =
+//       error?.response?.data?.message ||
+//       error?.response?.data?.error ||
+//       error.message ||
+//       'Failed to update profile';
+
+//     console.error('[UPDATE PROFILE ERROR]', {
+//       message: errorMessage,
+//       status: error?.response?.status,
+//       data: error?.response?.data,
+//     });
+
+//     // Optional: show more user-friendly messages for common cases
+//     if (error?.response?.status === 400 && error?.response?.data?.message?.includes('OTP')) {
+//       throw new Error('Invalid or expired OTP. Please try again.');
+//     }
+
+//     if (error?.response?.status === 422) {
+//       throw new Error('Validation failed. Please check the entered details.');
+//     }
+
+//     throw new Error(errorMessage);
+//   }
+// };
+
 export const updateUserProfile = async (
   userId: string | number,
-  payload: ProfileUpdatePayload
+  payload: ProfileUpdatePayload & { profile_image?: any }
 ) => {
   const token = await getAuthToken();
   if (!token) {
@@ -175,36 +243,32 @@ export const updateUserProfile = async (
 
   const endpoint = `${BASE_URL}/user-update/${userId}`;
 
-  console.log('[UPDATE PROFILE] →', endpoint);
-  console.log('[UPDATE PROFILE] Payload:', JSON.stringify(payload, null, 2));
+  const formData = new FormData();
+
+  // 🔹 Append normal fields
+  if (payload.name) formData.append('name', payload.name);
+  if (payload.phone) formData.append('phone', payload.phone);
+  if (payload.email) formData.append('email', payload.email);
+  if (payload.email_otp) formData.append('email_otp', payload.email_otp);
+
+  // 🔥 Append image (IMPORTANT)
+  if (payload.profile_image) {
+    formData.append('profile_image', payload.profile_image);
+  }
+
+  console.log('[UPDATE PROFILE] FORM DATA:', formData);
 
   try {
-    const response = await axios.post(endpoint, payload, {
+    const response = await axios.post(endpoint, formData, {
       headers: {
         Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
+        'Content-Type': 'multipart/form-data', // 🔥 MUST
         Accept: 'application/json',
       },
-      timeout: 15000, // optional: prevent hanging forever
+      timeout: 15000,
     });
 
     console.log('[UPDATE PROFILE] ← success', response.data);
-
-    // Update local storage with changed fields
-    const current = await AsyncStorage.getItem('user');
-    if (current) {
-      const user = JSON.parse(current);
-
-      const updatedUser = {
-        ...user,
-        name: payload.name ?? user.name,
-        phone: payload.phone ?? user.phone,
-        email: payload.email ?? user.email,           // ← now also update email
-        // gmail: payload.gmail ?? user.gmail,        // if you use gmail field
-      };
-
-      await AsyncStorage.setItem('user', JSON.stringify(updatedUser));
-    }
 
     return response.data;
   } catch (error: any) {
@@ -214,24 +278,13 @@ export const updateUserProfile = async (
       error.message ||
       'Failed to update profile';
 
-    console.error('[UPDATE PROFILE ERROR]', {
-      message: errorMessage,
-      status: error?.response?.status,
-      data: error?.response?.data,
-    });
-
-    // Optional: show more user-friendly messages for common cases
-    if (error?.response?.status === 400 && error?.response?.data?.message?.includes('OTP')) {
-      throw new Error('Invalid or expired OTP. Please try again.');
-    }
-
-    if (error?.response?.status === 422) {
-      throw new Error('Validation failed. Please check the entered details.');
-    }
+    console.error('[UPDATE PROFILE ERROR]', errorMessage);
 
     throw new Error(errorMessage);
   }
 };
+
+
 export const uploadFile = async (file: any) => {
   try {
     const token = await AsyncStorage.getItem('@auth_token');
@@ -581,6 +634,7 @@ export interface JobPostPayload {
   document_list: string[];
   document_types: string[];
   job_instruction?: string;
+  payment_intent_id?: string | null;
 
 }
 
@@ -624,6 +678,53 @@ export const postJob = async (payload: JobPostPayload): Promise<JobPostResponse>
     });
     const errMessage = error?.response?.data?.message || error.message || 'Failed to create job';
     throw new Error(errMessage);
+  }
+};
+
+// Create a Payment Method via your backend which in turn calls Stripe (server-side)
+export const createPaymentMethod = async (cardPayload: any): Promise<{ id: string }> => {
+  const token = await getAuthToken();
+  if (!token) throw new Error('No authentication token found');
+
+  try {
+    const res = await axios.post(`${BASE_URL}/payment_methods`, cardPayload, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+      },
+      timeout: 20000,
+    });
+
+    // Expect backend to return { id: 'pm_...' } or similar
+    if (!res.data || !res.data.id) throw new Error('Invalid response from create-payment-method');
+
+    return { id: res.data.id };
+  } catch (error: any) {
+    console.error('[CREATE PAYMENT METHOD ERROR]', error.response?.data || error.message);
+    throw new Error(error.response?.data?.message || error.message || 'Failed to create payment method');
+  }
+};
+
+// Call the Staffoo payment hold endpoint
+export const holdPayment = async (holdPayload: Record<string, any>) => {
+  const token = await getAuthToken();
+  if (!token) throw new Error('No authentication token found');
+
+  try {
+    const res = await axios.post(`${BASE_URL}/payment/hold`, holdPayload, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+      },
+      timeout: 20000,
+    });
+
+    return res.data;
+  } catch (error: any) {
+    console.error('[HOLD PAYMENT ERROR]', error.response?.data || error.message);
+    throw new Error(error.response?.data?.message || error.message || 'Failed to hold payment');
   }
 };
 // get-all-jobs
@@ -797,7 +898,87 @@ export const signInShift = async (
   }
 };
 
-// get-chargerates
+export const getContractor = async (params?: Record<string, any>) => {
+  const token = await getAuthToken();
+  if (!token) throw new Error("No authentication token found.");
+
+  try {
+    const response = await axios.get(`${BASE_URL}/admin/get-contractors`, {
+      params: params || {},
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: 'application/json',
+      },
+    });
+
+    return response.data;
+  } catch (error: any) {
+    console.error('❌ getContractor (admin) error:', error.response?.data || error.message);
+    if (error.response?.status === 401) throw new Error('Session expired. Please login again.');
+    if (error.response?.data?.message) throw new Error(error.response?.data?.message);
+    throw new Error(error.message || 'Failed to fetch contractors');
+  }
+};
+
+export const postWithAuth = async (url: string, payload: any) => {
+  const token = await AsyncStorage.getItem('@auth_token'); // your token key
+  if (!token) throw new Error("No authentication token found.");
+
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+      'Authorization': `Bearer ${token}`,
+    },
+    body: JSON.stringify(payload),
+  });
+
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data.message || data.error || 'Request failed');
+  }
+  return data;
+};
+
+export const getLeaveDetails = async (userId: string | number) => {
+  try {
+    console.log('🔹 getUserProfile called with ID:', userId);
+
+    const token = await getAuthToken();
+    if (!token) {
+      throw new Error('No authentication token found');
+    }
+
+
+    const endpoint = `${BASE_URL}/getLeaveDetails/${userId}`;
+
+    console.log('🔹 Calling endpoint:', endpoint);
+
+    const response = await axios.get(endpoint, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: 'application/json',
+      },
+    });
+
+    console.log('✅ Profile API Response:', response.data);
+
+    return response.data;
+  } catch (error: any) {
+    console.log('❌ getUserProfile error:', error.response?.data || error.message);
+
+    if (error.response?.status === 401) {
+      throw new Error('Session expired. Please login again.');
+    }
+
+    if (error.response?.data?.message) {
+      throw new Error(error.response.data.message);
+    }
+
+    throw new Error(error.message || 'Failed to fetch profile');
+  }
+};
 
 
 export const getChargeRate = async (): Promise<ChargeRateResponse> => {
@@ -809,4 +990,263 @@ export const getChargeRate = async (): Promise<ChargeRateResponse> => {
   });
 
   return res.data;
+};
+
+
+
+
+
+export const getCustomers = async (params?: Record<string, any>) => {
+  const token = await getAuthToken();
+  if (!token) {
+    throw new Error('No authentication token found');
+  }
+
+  const endpoint = `${BASE_URL}/admin/get-customers`;
+
+  try {
+    const response = await axios.get(endpoint, {
+      params: params || {},
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: 'application/json',
+      },
+    });
+
+    return response.data;
+  } catch (error: any) {
+    console.error('❌ getCustomers error:', error.response?.data || error.message);
+
+    if (error.response?.status === 401) {
+      throw new Error('Session expired. Please login again.');
+    }
+
+    if (error.response?.data?.message) {
+      throw new Error(error.response.data.message);
+    }
+
+    throw new Error(error.message || 'Failed to fetch customers');
+  }
+};
+
+
+// In your authApi.ts file
+
+export const getContractors = async (userId: string | number) => {
+  const token = await getAuthToken();
+  if (!token) {
+    throw new Error('No authentication token found. Please login again.');
+  }
+
+  const endpoint = `${BASE_URL}/get-contractor-staff/${userId}`;
+
+  try {
+    const response = await axios.get(endpoint, {
+      headers: {
+        Authorization: `Bearer ${token}`,     // ← Token in Authorization header (correct)
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+      },
+    });
+
+    console.log('✅ getContractors success:', response.data);
+    return response.data;
+
+  } catch (error: any) {
+    console.error('❌ getContractors error:', error.response?.data || error.message);
+
+    if (error.response?.status === 401) {
+      throw new Error('Session expired. Please login again.');
+    }
+
+    const errorMsg = 
+      error.response?.data?.message || 
+      error.response?.data?.error || 
+      error.message || 
+      'Failed to fetch contractors';
+
+    throw new Error(errorMsg);
+  }
+};
+
+export const getStaff = async (params?: Record<string, any>) => {
+  const token = await getAuthToken();
+  if (!token) {
+    throw new Error('No authentication token found');
+  }
+
+  const endpoint = `${BASE_URL}/admin/get-staff`;
+
+  try {
+    const response = await axios.get(endpoint, {
+      params: params || {},
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: 'application/json',
+      },
+    });
+
+    return response.data;
+  } catch (error: any) {
+    console.error('❌ getStaff error:', error.response?.data || error.message);
+
+    if (error.response?.status === 401) {
+      throw new Error('Session expired. Please login again.');
+    }
+
+    if (error.response?.data?.message) {
+      throw new Error(error.response.data.message);
+    }
+
+    throw new Error(error.message || 'Failed to fetch staff');
+  }
+};
+
+export const readAllMessages = async (id: number | string) => {
+  const token = await getAuthToken();
+  if (!token) throw new Error('No authentication token found');
+
+  const endpoint = `${BASE_URL}/messages/read-all/${id}`;
+
+  try {
+    const response = await axios.post(endpoint, {}, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: 'application/json',
+      },
+    });
+
+    return response.data;
+  } catch (error: any) {
+    console.error('❌ readAllMessages error:', error.response?.data || error.message);
+    if (error.response?.status === 401) throw new Error('Session expired. Please login again.');
+    throw new Error(error.response?.data?.message || error.message || 'Failed to mark messages as read');
+  }
+};
+
+export const getConversation = async (id: number | string) => {
+  const token = await getAuthToken();
+  if (!token) throw new Error('No authentication token found');
+
+  const endpoint = `${BASE_URL}/messages/conversation/${id}`;
+
+  try {
+    const response = await axios.get(endpoint, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: 'application/json',
+      },
+    });
+
+    return response.data;
+  } catch (error: any) {
+    console.error('❌ getConversation error:', error.response?.data || error.message);
+    if (error.response?.status === 401) throw new Error('Session expired. Please login again.');
+    throw new Error(error.response?.data?.message || error.message || 'Failed to fetch conversation');
+  }
+};
+
+export const getConversations = async () => {
+  const token = await getAuthToken();
+  if (!token) throw new Error('No authentication token found');
+
+  const endpoint = `${BASE_URL}/messages/conversations`;
+
+  try {
+    const response = await axios.get(endpoint, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: 'application/json',
+      },
+    });
+
+    return response.data;
+  } catch (error: any) {
+    console.error('❌ getConversations error:', error.response?.data || error.message);
+    if (error.response?.status === 401) throw new Error('Session expired. Please login again.');
+    throw new Error(error.response?.data?.message || error.message || 'Failed to fetch conversations');
+  }
+};
+
+export const sendMessage = async (payload: { receiver_id: number | string; message: string }) => {
+  const token = await getAuthToken();
+  if (!token) throw new Error('No authentication token found');
+
+  const endpoint = `${BASE_URL}/messages/send`;
+
+  try {
+    const response = await axios.post(endpoint, payload, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+      },
+    });
+
+    return response.data;
+  } catch (error: any) {
+    console.error('❌ sendMessage error:', error.response?.data || error.message);
+    if (error.response?.status === 401) throw new Error('Session expired. Please login again.');
+    throw new Error(error.response?.data?.message || error.message || 'Failed to send message');
+  }
+};
+
+export const deleteMessage = async (id: number | string) => {
+  const token = await getAuthToken();
+  if (!token) throw new Error('No authentication token found');
+
+  const endpoint = `${BASE_URL}/messages/${id}`;
+
+  try {
+    const response = await axios.delete(endpoint, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: 'application/json',
+      },
+    });
+
+    return response.data;
+  } catch (error: any) {
+    console.error('❌ deleteMessage error:', error.response?.data || error.message);
+    if (error.response?.status === 401) throw new Error('Session expired. Please login again.');
+    throw new Error(error.response?.data?.message || error.message || 'Failed to delete message');
+  }
+
+
+  
+
+};
+
+export const logoutUser = async () => {
+  try {
+    const token = await AsyncStorage.getItem('@auth_token');
+    const userId = await AsyncStorage.getItem('@user_id');
+
+    if (!token || !userId) {
+      throw new Error('Missing token or userId');
+    }
+
+    const response = await axios.post(
+      `${BASE_URL}/logout/${userId}`,
+      {},
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Accept: 'application/json',
+          'user_id': userId,          // ✅ ADD THIS
+          // or 'user_id': userId  ← depends on backend
+        },
+      }
+    );
+
+    console.log('[LOGOUT SUCCESS]', response.data);
+
+    return response.data;
+  } catch (error: any) {
+    console.error('[LOGOUT ERROR]', error.response?.data || error.message);
+
+    throw new Error(
+      error?.response?.data?.message || 'Logout failed'
+    );
+  }
 };

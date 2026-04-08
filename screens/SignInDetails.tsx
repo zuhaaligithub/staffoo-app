@@ -28,6 +28,7 @@ import Geolocation from 'react-native-geolocation-service';
 
 // Import your API function (adjust path if needed)
 import { signInShift } from '../services/authApi';
+import ImageResizer from 'react-native-image-resizer';
 
 interface SignInDetailsProps {
   navigation: any;
@@ -167,39 +168,113 @@ const [shiftStarted, setShiftStarted] = useState(false);
     }
   };
 
-  const openCamera = async () => {
-    const hasPermission = await requestCameraPermission();
-    if (!hasPermission) {
-      Alert.alert('Permission Denied', 'Camera access is required.');
+  // const openCamera = async () => {
+  //   const hasPermission = await requestCameraPermission();
+  //   if (!hasPermission) {
+  //     Alert.alert('Permission Denied', 'Camera access is required.');
+  //     return;
+  //   }
+
+  //   try {
+  //     const result = await launchCamera({
+  //       mediaType: 'photo',
+  //       cameraType: 'front',
+  //       quality: 0.7,
+  //       includeBase64: true,
+  //     });
+
+  //     if (result.didCancel) return;
+  //     if (result.errorCode) {
+  //       Alert.alert('Camera Error', result.errorMessage || 'Failed to open camera.');
+  //       return;
+  //     }
+
+  //     const asset = result.assets?.[0];
+  //     if (asset?.uri) {
+  //       setSelfieUri(asset.uri);
+  //       if (asset.base64) {
+  //         setSelfieBase64(`data:image/jpeg;base64,${asset.base64}`);
+  //       }
+  //     }
+  //   } catch (err) {
+  //     console.error('Camera launch failed:', err);
+  //     Alert.alert('Error', 'Failed to launch camera.');
+  //   }
+  // };
+
+
+
+const openCamera = async () => {
+  const hasPermission = await requestCameraPermission();
+
+  if (!hasPermission) {
+    Alert.alert('Permission Denied', 'Camera access is required.');
+    return;
+  }
+
+  try {
+    const result = await launchCamera({
+      mediaType: 'photo',
+      cameraType: 'front',
+      quality: 0.8,
+      includeBase64: false, // ❌ don't use base64 here
+    });
+
+    if (result.didCancel) return;
+
+    if (result.errorCode) {
+      Alert.alert('Camera Error', result.errorMessage || 'Failed to open camera.');
       return;
     }
 
-    try {
-      const result = await launchCamera({
-        mediaType: 'photo',
-        cameraType: 'front',
-        quality: 0.7,
-        includeBase64: true,
-      });
+    const asset = result.assets?.[0];
 
-      if (result.didCancel) return;
-      if (result.errorCode) {
-        Alert.alert('Camera Error', result.errorMessage || 'Failed to open camera.');
-        return;
-      }
+    if (asset?.uri) {
+      try {
+        // 🔥 STEP 1: COMPRESS IMAGE
+        const compressed = await ImageResizer.createResizedImage(
+          asset.uri,
+          600,
+          600,
+          'JPEG',
+          60,
+          0,
+          undefined,
+          false,
+          { mode: 'contain', onlyScaleDown: true }
+        );
 
-      const asset = result.assets?.[0];
-      if (asset?.uri) {
-        setSelfieUri(asset.uri);
-        if (asset.base64) {
-          setSelfieBase64(`data:image/jpeg;base64,${asset.base64}`);
+        // 🔥 STEP 2: SHOW PREVIEW
+        setSelfieUri(compressed.uri);
+
+        // 🔥 STEP 3: READ BASE64 SAFELY
+        const base64 = await ImageResizer.createResizedImage(
+          asset.uri,
+          600,
+          600,
+          'JPEG',
+          60,
+          0,
+          undefined,
+          true // ✅ THIS RETURNS BASE64
+        );
+
+        if (base64?.uri) {
+          // ⚠️ react-native-image-resizer returns base64 in uri sometimes
+          setSelfieBase64(`data:image/jpeg;base64,${base64.uri}`);
         }
+
+      } catch (err) {
+        console.error('❌ Compression failed:', err);
+        Alert.alert('Error', 'Image compression failed.');
       }
-    } catch (err) {
-      console.error('Camera launch failed:', err);
-      Alert.alert('Error', 'Failed to launch camera.');
     }
-  };
+
+  } catch (err) {
+    console.error('❌ Camera launch failed:', err);
+    Alert.alert('Error', 'Failed to launch camera.');
+  }
+};
 
 const handleStartShift = async () => {
   try {

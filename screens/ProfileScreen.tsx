@@ -28,7 +28,7 @@ import {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { launchImageLibrary } from 'react-native-image-picker';
 import Toast from 'react-native-toast-message';
-import { getUserProfile } from '../services/authApi';
+import { getUserProfile, logoutUser } from '../services/authApi';
 import BottomTab from './BottomTab';
 import { LogLevel, OneSignal } from 'react-native-onesignal';
 import { sendNotificationTokenToServer } from '../screens/LoginScreen';
@@ -62,67 +62,94 @@ export default function ProfileScreen({ navigation }: Props) {
   const foregroundHandlerRef = useRef<((event: any) => void) | null>(null);
   const clickHandlerRef = useRef<((event: any) => void) | null>(null);
   const subscriptionChangeHandlerRef = useRef<((event: any) => Promise<void>) | null>(null);
+  const [imageFile, setImageFile] = useState<any>(null);
 
 
+  const getInitials = (name: string): string => {
+    if (!name) return 'U';
+    const nameParts = name.trim().split(' ').filter(Boolean);
+    if (nameParts.length === 1) {
+      return nameParts[0].charAt(0).toUpperCase();
+    }
+    return (
+      nameParts[0].charAt(0).toUpperCase() +
+      nameParts[nameParts.length - 1].charAt(0).toUpperCase()
+    );
+  };
+  useFocusEffect(
+    useCallback(() => {
+      const loadProfile = async () => {
+        setLoading(true);
 
-useFocusEffect(
-  useCallback(() => {
-    const loadProfile = async () => {
-      setLoading(true);
+        try {
+          const userId = await AsyncStorage.getItem('@user_id');
+          const token = await AsyncStorage.getItem('@auth_token');
+          const cachedImage = await AsyncStorage.getItem('profileImage');
 
-      try {
-        // ✅ GET ID DIRECTLY
-        const userId = await AsyncStorage.getItem('@user_id');
-        const token = await AsyncStorage.getItem('@auth_token');
-
-        console.log('🧪 Stored userId:', userId);
-
-        if (!userId || !token) {
-          console.log('❌ No userId or token → logout');
-
-          navigation.reset({
-            index: 0,
-            routes: [{ name: 'Login' }],
-          });
-          return;
-        }
-
-        setUserId(userId);
-
-        // ✅ ALWAYS CALL API WITH LOGIN ID
-        console.log('📡 Calling getUserProfile with ID:', userId);
-
-        const profileResponse = await getUserProfile(userId);
-        console.log('📡 API response:', profileResponse);
-
-        if (profileResponse?.success && profileResponse?.data) {
-          const freshData = profileResponse.data;
-
-          setUser(freshData);
-          setCompletionPercentage(freshData.profile_completion_percentage || 0);
-          setIsActive(freshData.is_active || false);
-
-          // optional cache
-          await AsyncStorage.setItem('user', JSON.stringify(freshData));
-        } else {
-          console.log('⚠️ API failed, trying cached user');
-
-          const cached = await AsyncStorage.getItem('user');
-          if (cached) {
-            setUser(JSON.parse(cached));
+          if (cachedImage) {
+            setProfileImage(cachedImage);
           }
+
+          if (!userId || !token) {
+            navigation.reset({
+              index: 0,
+              routes: [{ name: 'Login' }],
+            });
+            return;
+          }
+
+          setUserId(userId);
+          const profileResponse = await getUserProfile(userId);
+
+          if (profileResponse?.success && profileResponse?.data) {
+            const freshData = profileResponse.data;
+            setUser(freshData);
+            setCompletionPercentage(freshData.profile_completion_percentage || 0);
+            setIsActive(freshData.is_active || false);
+
+            const BASE_IMAGE_URL = 'https://apis.staffoo.com.au/storage/';
+
+            let imageUri = null;
+
+            // Contractor / Staff
+            if (freshData.user_type === 'contractor' || freshData.user_type === 'staff') {
+              imageUri = freshData.contractor?.profile_image || freshData.staff?.profile_image;
+            }
+
+            // Customer
+            if (freshData.user_type === 'customer') {
+              imageUri = freshData.customer?.profile_image || freshData.profile_image;
+            }
+
+            // Set profile image if exists
+            if (imageUri) {
+              // If already full URL, skip base URL
+              const fullUri = imageUri.startsWith('http') ? imageUri : `${BASE_IMAGE_URL}${imageUri}`;
+              setProfileImage(fullUri);
+              await AsyncStorage.setItem('profileImage', fullUri);
+            }
+            await AsyncStorage.setItem('user', JSON.stringify(freshData));
+          } else {
+            const cached = await AsyncStorage.getItem('user');
+            if (cached) {
+              const parsed = JSON.parse(cached);
+              setUser(parsed);
+              if (!cachedImage && parsed?.staff?.profile_image) {
+                const BASE_IMAGE_URL = 'https://apis.staffoo.com.au/storage/';
+                setProfileImage(`${BASE_IMAGE_URL}${parsed.staff.profile_image}`);
+              }
+            }
+          }
+        } catch (err) {
+          console.error('❌ Profile fetch error:', err);
+        } finally {
+          setLoading(false);
         }
+      };
 
-      } catch (err) {
-        console.error('❌ Profile fetch error:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadProfile();
-  }, [])
-);
+      loadProfile();
+    }, [])
+  );
 
 
   useEffect(() => {
@@ -222,6 +249,9 @@ useFocusEffect(
       const imageUri = result.assets[0].uri;
       if (imageUri) {
         setProfileImage(imageUri);
+        setImageFile(result.assets[0]); // store for API upload
+
+        // Persist in AsyncStorage
         await AsyncStorage.setItem('profileImage', imageUri);
       }
     }
@@ -229,118 +259,198 @@ useFocusEffect(
 
 
 
+  const getProfileSections = (userType: string | undefined, isActive: boolean) => {
+    const type = userType?.toLowerCase();
 
- const getProfileSections = (userType: string | undefined) => {
-  const sections = [
-    { title: 'Personal Information', icon: <User size={22} color="#fff" />, bgColor: '#6366F1', route: 'ProfileSetup' },
-    { title: 'Documents', icon: <FileText size={22} color="#fff" />, bgColor: '#6366F1', route: 'Documents' },
-    { title: 'Bank Details', icon: <CreditCard size={22} color="#fff" />, bgColor: '#8B5CF6', route: 'PaymentMethod' },
-    { title: 'Log out', icon: <LogOut size={22} color="#fff" />, bgColor: '#EF4444', route: 'Logout', isDanger: true },
-    { title: 'Delete Profile', icon: <Trash2 size={22} color="#fff" />, bgColor: '#EF4444', route: 'DeleteProfile', isDanger: true },
-  ];
+    const sections = [
+      { title: 'Personal Information', icon: <User size={22} color="#2146a3" />, bgColor: '#a9d8f1', route: 'ProfileSetup' },
+      { title: 'Documents', icon: <FileText size={22} color="#2146a3" />, bgColor: '#a9d8f1', route: 'Documents' },
+      // { title: 'Leave Management', icon: <FileText size={22} color="#2146a3" />, bgColor: '#a9d8f1', route: 'LeaveManagement' },
+      { title: 'Bank Details', icon: <CreditCard size={22} color="#fff" />, bgColor: '#8B5CF6', route: 'PaymentMethod' },
+      { title: 'Log out', icon: <LogOut size={22} color="#f7f1f1" />, bgColor: '#f85858', route: 'Logout', isDanger: true },
+      { title: 'Delete Profile', icon: <Trash2 size={22} color="#f7f1f1" />, bgColor: '#f85858', route: 'DeleteProfile', isDanger: true },
+    ];
 
-  if (userType === 'staff') {
-    return sections.filter(s => ['Personal Information', 'Documents', 'Log out', 'Delete Profile'].includes(s.title));
-  }
+    // ✅ STAFF / CONTRACTOR
+    if (type === 'staff' || type === 'contractor') {
+      return sections.filter(s => {
+        // ❌ Hide Leave Management if inactive
+        // if (!isActive && s.title === 'Leave Management') return false;
 
-  if (userType === 'contractor') {
-    return sections.filter(s => ['Personal Information', 'Documents', 'Log out', 'Delete Profile'].includes(s.title));
-  }
+        return [
+          'Personal Information',
+          'Documents',
+          // 'Leave Management',
+          'Log out',
+          'Delete Profile',
+        ].includes(s.title);
+      });
+    }
 
-  if (userType === 'customer') {
-    return sections.filter(s => ['Personal Information', 'Bank Details', 'Log out', 'Delete Profile'].includes(s.title));
-  }
+    // ✅ CUSTOMER
+    if (type === 'customer') {
+      return sections.filter(s =>
+        [
+          'Personal Information',
+          'Bank Details',
+          'Log out',
+          'Delete Profile',
+        ].includes(s.title)
+      );
+    }
 
-  return sections;
-};
-
+    return sections;
+  };
   const isProfileComplete = completionPercentage === 100;
 
-const handleSectionPress = (route: string) => {
-  // Special case: Logout
-  if (route === 'Logout') {
-    navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
-    return;
-  }
+  const handleSectionPress = (route: string) => {
+    // Special case: Logout
+    if (route === 'Logout') {
+      Alert.alert(
+        'Logout',
+        'Are you sure you want to logout?',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Logout',
+            style: 'destructive',
+            onPress: async () => {
+              try {
+                const token = await AsyncStorage.getItem('@auth_token');
 
-  // Special case: Delete Profile → show confirmation + call API
-  if (route === 'DeleteProfile') {
-    Alert.alert(
-      'Delete Profile',
-      'Are you sure you want to delete your profile? This action cannot be undone.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              if (!userId) {
-                Toast.show({ type: 'error', text1: 'User ID missing' });
-                return;
+                // 🔥 Call API only if token exists
+                if (token) {
+                  await logoutUser();
+                }
+
+                // 🧹 Clear local storage
+                await AsyncStorage.multiRemove([
+                  '@user_id',
+                  '@auth_token',
+                  'user',
+                  'profileImage',
+                ]);
+
+                Toast.show({
+                  type: 'success',
+                  text1: 'Logged out successfully',
+                });
+
+                // 🚀 Redirect to Login
+                navigation.reset({
+                  index: 0,
+                  routes: [{ name: 'Login' }],
+                });
+
+              } catch (error: any) {
+                console.log('Logout error:', error);
+
+                // Even if API fails → force logout locally
+                await AsyncStorage.multiRemove([
+                  '@user_id',
+                  '@auth_token',
+                  'user',
+                  'profileImage',
+                ]);
+
+                navigation.reset({
+                  index: 0,
+                  routes: [{ name: 'Login' }],
+                });
               }
+            },
+          },
+        ]
+      );
 
-              const token = await AsyncStorage.getItem('@auth_token');
-              if (!token) {
-                Toast.show({ type: 'error', text1: 'No auth token' });
-                return;
-              }
+      return;
+    }
 
-              // ── ACTUAL API CALL ──
-              const response = await fetch(`https://apis.staffoo.com.au/api/user-delete/${userId}`, {
-                method: 'GET',
-                headers: {
-                  'Content-Type': 'application/json',
-                  Authorization: `Bearer ${token}`,
-                },
-              });
+    // Special case: Delete Profile → show confirmation + call API
+    if (route === 'DeleteProfile') {
+      Alert.alert(
+        'Delete Profile',
+        'Are you sure you want to delete your profile? This action cannot be undone.',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Delete',
+            style: 'destructive',
+            onPress: async () => {
+              try {
+                if (!userId) {
+                  Toast.show({ type: 'error', text1: 'User ID missing' });
+                  return;
+                }
 
-              const data = await response.json();
+                const token = await AsyncStorage.getItem('@auth_token');
+                if (!token) {
+                  Toast.show({ type: 'error', text1: 'No auth token' });
+                  return;
+                }
 
-              if (!response.ok || !data.success) {
+                // ── ACTUAL API CALL ──
+                const response = await fetch(`https://apis.staffoo.com.au/api/user-delete/${userId}`, {
+                  method: 'GET',
+                  headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${token}`,
+                  },
+                });
+
+                const data = await response.json();
+
+                if (!response.ok || !data.success) {
+                  Toast.show({
+                    type: 'error',
+                    text1: 'Delete failed',
+                    text2: data.message || 'Something went wrong',
+                  });
+                  return;
+                }
+
+                // Success → clean up & logout
+                await AsyncStorage.multiRemove([
+                  '@user_id',
+                  '@auth_token',
+                  'user',
+                  'profileImage',
+                ]);
+
+                Toast.show({ type: 'success', text1: 'Profile deleted successfully' });
+
+                navigation.reset({
+                  index: 0,
+                  routes: [{ name: 'Login' }],
+                });
+
+              } catch (err) {
+                console.error('Delete profile error:', err);
                 Toast.show({
                   type: 'error',
-                  text1: 'Delete failed',
-                  text2: data.message || 'Something went wrong',
+                  text1: 'Error deleting profile',
+                  text2: err instanceof Error ? err.message : 'Unknown error',
                 });
-                return;
               }
-
-              // Success → clean up & logout
-              await AsyncStorage.multiRemove([
-                '@user_id',
-                '@auth_token',
-                'user',
-                'profileImage',
-              ]);
-
-              Toast.show({ type: 'success', text1: 'Profile deleted successfully' });
-
-              navigation.reset({
-                index: 0,
-                routes: [{ name: 'Login' }],
-              });
-
-            } catch (err) {
-              console.error('Delete profile error:', err);
-              Toast.show({
-                type: 'error',
-                text1: 'Error deleting profile',
-                text2: err instanceof Error ? err.message : 'Unknown error',
-              });
-            }
+            },
           },
-        },
-      ]
+        ]
+      );
+      return; // ← IMPORTANT: stop here – do NOT navigate
+    }
+
+    // Normal navigation for all other items
+    navigation.navigate(route);
+  };
+
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#2146a3" />
+        <Text style={styles.loadingText}>Loading profile...</Text>
+      </View>
     );
-    return; // ← IMPORTANT: stop here – do NOT navigate
   }
-
-  // Normal navigation for all other items
-  navigation.navigate(route);
-};
-
-
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#fff" />
@@ -354,18 +464,35 @@ const handleSectionPress = (route: string) => {
 
       <ScrollView showsVerticalScrollIndicator={false}>
         <View style={styles.profileCard}>
+
+
           <View style={styles.avatarContainer}>
-            <Image
-              source={profileImage ? { uri: profileImage } : require('../assets/avt-1.jpg')}
-              style={styles.avatar}
-            />
-            <TouchableOpacity style={styles.cameraButton} onPress={pickImage}>
-              <Text style={styles.cameraText}>Edit</Text>
-            </TouchableOpacity>
+            {profileImage ? (
+              <Image
+                source={{ uri: profileImage }}
+                style={styles.avatar}
+              />
+            ) : (
+              <View style={[styles.avatar, styles.initialsAvatar]}>
+                <Text style={styles.initialsText}>
+                  {getInitials(user?.name || 'User')}
+                </Text>
+              </View>
+            )}
+
           </View>
 
           <Text style={styles.nameText}>{user?.name || 'User Name'}</Text>
           <Text style={styles.emailText}>{user?.email || 'user@email.com'}</Text>
+          {user?.user_type && (
+
+            <View style={[styles.badgee]}>
+              <Text style={styles.badgeTextt}>
+                {user.user_type.charAt(0).toUpperCase() + user.user_type.slice(1)} Profile
+              </Text>
+            </View>
+
+          )}
 
           <View style={styles.badgesRow}>
             <View style={[styles.badge, { backgroundColor: isActive ? '#DCFCE7' : '#FEE2E2' }]}>
@@ -395,7 +522,7 @@ const handleSectionPress = (route: string) => {
         </View>
 
         <View style={styles.sectionsContainer}>
-          {getProfileSections(user?.user_type).map((section, index) => (
+          {getProfileSections(user?.user_type, isActive).map((section, index) => (
             <TouchableOpacity
               key={index}
               style={[styles.sectionItem, section.isDanger && styles.sectionDanger]}
@@ -428,7 +555,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#fff',
-    paddingTop: 20,
+    paddingTop: 25,
   },
   header: {
     flexDirection: 'row',
@@ -452,17 +579,48 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  profileCard: {
+  userTypeText: {
+    fontSize: 14,
+    color: '#3B82F6',
+    fontWeight: '600',
+    width: 120,
+    height: 44,
+    borderRadius: 12,
     backgroundColor: '#fff',
-    margin: 16,
-    padding: 14,
-    borderRadius: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    elevation: 8,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+    justifyContent: 'center',
     alignItems: 'center',
+  },
+  profileCard: {
+    // backgroundColor: '#fff',
+    // margin: 16,
+    paddingTop: 0,
+    paddingBottom: 5,
+    padding: 32,
+    // borderRadius: 20,
+    // shadowColor: '#000',
+    // shadowOffset: { width: 0, height: 4 },
+    // shadowOpacity: 0.1,
+    // shadowRadius: 12,
+    // elevation: 8,
+    alignItems: 'center',
+  },
+  initialsAvatar: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    // backgroundColor: '#708d8b', 
+    backgroundColor: '#2eb1e2',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#fff',
+  },
+  initialsText: {
+    color: '#fff',
+    fontSize: 25,
+    fontWeight: '700',
   },
   avatarContainer: {
     position: 'relative',
@@ -513,10 +671,31 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     gap: 6,
   },
+  badgee: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 0,
+
+    // paddingVertical: 6,
+    // paddingHorizontal: 14,
+    // borderRadius: 20,
+    // gap: 6,
+    marginBottom: 10,
+  },
   badgeText: {
     fontSize: 13,
     fontWeight: '600',
+    color: '#10B981',
+
   },
+  badgeTextt: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#2eb1e2',
+
+  },
+
+
   incompleteMessage: {
     marginTop: 0,
     alignItems: 'center',
@@ -539,7 +718,7 @@ const styles = StyleSheet.create({
   },
   sectionsContainer: {
     backgroundColor: '#fff',
-    margin: 16,
+    margin: 8,
     borderRadius: 20,
     overflow: 'hidden',
     shadowColor: '#000',
@@ -547,17 +726,19 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 12,
     elevation: 8,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
   },
   sectionItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 18,
+    paddingVertical: 10,
     paddingHorizontal: 18,
     borderBottomWidth: 1,
     borderBottomColor: '#F3F4F6',
   },
   sectionDanger: {
-    borderBottomWidth: 0,
+    borderBottomWidth: 1,
   },
   sectionIcon: {
     width: 48,

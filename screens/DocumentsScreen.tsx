@@ -226,7 +226,10 @@ export default function DocumentsScreen({ navigation }: Props) {
         }
     };
 
-
+    const getFileName = (path?: string | null) => {
+        if (!path) return '';
+        return path.split('/').pop()?.substring(0, 25) + '...';
+    };
     const openInBrowser = async (fileName: string) => {
         if (!fileName) {
             console.log('❌ No filename provided');
@@ -423,7 +426,7 @@ export default function DocumentsScreen({ navigation }: Props) {
                     <View style={styles.cardRow}>
                         <Text style={styles.cardLabel}>File:</Text>
                         <Text style={styles.cardValue} numberOfLines={1}>
-                            {item.file.split('/').pop() || item.file}
+                            {getFileName(item.file || '')}
                         </Text>
                     </View>
                 )}
@@ -442,9 +445,9 @@ export default function DocumentsScreen({ navigation }: Props) {
 
                 <Text style={styles.headerTitle}>Documents</Text>
 
-                <TouchableOpacity style={styles.addButton} onPress={() => handleOpenModal()}>
+                {/* <TouchableOpacity style={styles.addButton} onPress={() => handleOpenModal()}>
                     <Text style={styles.addButtonText}>Add documents</Text>
-                </TouchableOpacity>
+                </TouchableOpacity> */}
             </View>
 
             {loadingDocs ? (
@@ -495,7 +498,7 @@ export default function DocumentsScreen({ navigation }: Props) {
                                 {!documentType && <Text style={styles.errorText}>Document Type is required*</Text>}
                             </View>
 
-                            <View style={styles.inputGroup}>
+                            {/* <View style={styles.inputGroup}>
                                 <Text style={styles.label}>Description (Optional)</Text>
                                 <TextInput
                                     style={styles.textArea}
@@ -506,13 +509,17 @@ export default function DocumentsScreen({ navigation }: Props) {
                                     value={description}
                                     onChangeText={setDescription}
                                 />
-                            </View>
+                            </View> */}
 
                             <View style={styles.imageUploadArea}>
                                 <View style={styles.imagePlaceholder}>
                                     {selectedFile ? (
                                         selectedFile.type?.startsWith('image/') ? (
-                                            <Image source={{ uri: selectedFile.uri }} style={styles.previewImage} resizeMode="contain" />
+                                            <Image
+                                                source={{ uri: selectedFile.uri }}
+                                                style={styles.previewImage}
+                                                resizeMode="contain"
+                                            />
                                         ) : (
                                             <View style={styles.fileIconContainer}>
                                                 <FileText size={80} color="#6B7280" />
@@ -522,13 +529,31 @@ export default function DocumentsScreen({ navigation }: Props) {
                                             </View>
                                         )
                                     ) : uploadedFilePath ? (
-                                        <Text style={styles.fileNameText}>Uploaded: {uploadedFilePath.split('/').pop()}</Text>
+                                        uploadedFilePath.match(/\.(jpg|jpeg|png|webp)$/i) ? (
+                                            <Image
+                                                source={{
+                                                    uri: uploadedFilePath.startsWith('http')
+                                                        ? uploadedFilePath
+                                                        : `https://apis.staffoo.com.au/staff_documents/${uploadedFilePath}`,
+                                                }}
+                                                style={styles.previewImage}
+                                                resizeMode="contain"
+                                            />
+                                        ) : (
+                                            <View style={styles.fileIconContainer}>
+                                                <FileText size={80} color="#6B7280" />
+                                                <Text style={styles.fileNameText} numberOfLines={1}>
+                                                    {getFileName(uploadedFilePath)}
+                                                </Text>
+                                            </View>
+                                        )
                                     ) : (
                                         <Text style={styles.noImageText}>NO FILE SELECTED</Text>
                                     )}
                                 </View>
 
                                 <View style={styles.imageActions}>
+                                    {/* Upload */}
                                     <TouchableOpacity
                                         style={[styles.actionBtn, { backgroundColor: '#EF4444' }]}
                                         onPress={handleUpload}
@@ -541,11 +566,28 @@ export default function DocumentsScreen({ navigation }: Props) {
                                         )}
                                     </TouchableOpacity>
 
-                                    <TouchableOpacity style={[styles.actionBtn, { backgroundColor: '#10B981' }]}>
+                                    {/* Preview */}
+                                    <TouchableOpacity
+                                        style={[styles.actionBtn, { backgroundColor: '#10B981' }]}
+                                        onPress={() => {
+                                            if (selectedFile?.uri) {
+                                                Linking.openURL(selectedFile.uri);
+                                            } else if (uploadedFilePath) {
+                                                openInBrowser(uploadedFilePath);
+                                            }
+                                        }}
+                                    >
                                         <Eye size={24} color="#fff" />
                                     </TouchableOpacity>
 
-                                    <TouchableOpacity style={[styles.actionBtn, { backgroundColor: '#3B82F6' }]} onPress={() => setSelectedFile(null)}>
+                                    {/* Delete */}
+                                    <TouchableOpacity
+                                        style={[styles.actionBtn, { backgroundColor: '#3B82F6' }]}
+                                        onPress={() => {
+                                            setSelectedFile(null);
+                                            setUploadedFilePath(null);
+                                        }}
+                                    >
                                         <Trash2 size={24} color="#fff" />
                                     </TouchableOpacity>
                                 </View>
@@ -654,7 +696,7 @@ const styles = StyleSheet.create({
     header: {
         flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'space-between',
+        // justifyContent: 'space-between',
         paddingHorizontal: 20,
         // paddingVertical: 28,
 
@@ -676,7 +718,7 @@ const styles = StyleSheet.create({
         shadowRadius: 4,
         elevation: 2,
     },
-    headerTitle: { fontSize: 22, fontWeight: '700', color: '#111827' },
+    headerTitle: { fontSize: 22, fontWeight: '700', color: '#111827', marginLeft: 50 },
     addButton: {
         backgroundColor: '#2563EB',
         paddingVertical: 10,

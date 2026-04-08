@@ -42,6 +42,7 @@ export type RootStackParamList = {
     chatId?: string;
     name?: string;
     avatar?: string;
+    conversation?: any;
   };
   Profile: undefined;
   ApplyJob: undefined;

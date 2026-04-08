@@ -48,9 +48,33 @@ export default function StaffShifts({ navigation, route }: any) {
   const [userId, setUserId] = useState<number>(0);
 
   const [userName, setUserName] = useState('');
+  const [user, setUser] = useState<any>(null);
 
+  const [profileImage, setProfileImage] = useState<string | null>(null);
 
+  useEffect(() => {
+    const loadUser = async () => {
+      try {
+        const userStr = await AsyncStorage.getItem('user');
+        const cachedImage = await AsyncStorage.getItem('profileImage');
 
+        if (userStr) {
+          const parsedUser = JSON.parse(userStr);
+          setUser(parsedUser);
+          
+          if (cachedImage) {
+            setProfileImage(cachedImage);
+          } else if (parsedUser?.staff?.profile_image) {
+            const BASE_IMAGE_URL = 'https://apis.staffoo.com.au/storage/';
+            setProfileImage(`${BASE_IMAGE_URL}${parsedUser.staff.profile_image}`);
+          }
+        }
+      } catch (e) {
+        console.log('User load error', e);
+      }
+    };
+    loadUser();
+  }, []);
   useEffect(() => {
     const getUser = async () => {
       try {
@@ -251,6 +275,21 @@ export default function StaffShifts({ navigation, route }: any) {
     }, [userType])
   );
 
+  const getInitials = (name: string): string => {
+    if (!name) return 'U';
+
+    const parts = name.trim().split(' ').filter(Boolean);
+
+    if (parts.length === 1) {
+      return parts[0][0].toUpperCase();
+    }
+
+    return (
+      parts[0][0].toUpperCase() +
+      parts[parts.length - 1][0].toUpperCase()
+    );
+  };
+
   const handleSheetClose = () => {
     setNotificationJob(null);
     setSelectedStaff(null);
@@ -265,7 +304,7 @@ export default function StaffShifts({ navigation, route }: any) {
     navigation.navigate('AsapJobDetails', {
       job: notificationJob,
       staff_id: userType === 'contractor' ? selectedStaff : undefined,
-      
+
     });
 
     bottomSheetRef.current?.close();
@@ -305,37 +344,46 @@ export default function StaffShifts({ navigation, route }: any) {
     }, [])
   );
 
-  const renderShiftCard = (shift: any, index: number) => {
+  const renderShiftCard = (shift: any, index: number, isToday = false) => {
     const isConfirmed = shift.job_status?.toLowerCase() === 'confirmed';
     const signinStatus = Number(shift.signin_status ?? 0);
-
-    let buttonText = 'View';
-    let buttonStyle = styles.viewButton;
-    let textColor = '#4b5563';
-
     let onPress = () => {
       Toast.show({ type: 'info', text1: 'Action not available' });
     };
 
-    if (isConfirmed && signinStatus === 0) {
+    let showButton = false;
+    let buttonText = '';
+    let buttonStyle: any = {};
+    let textColor = '';
+    let disabled = false;
+
+    if (isToday && isConfirmed && signinStatus === 0) {
+      showButton = true;
       buttonText = 'Sign In';
       buttonStyle = styles.signInButton;
       textColor = '#92400e';
       onPress = () => navigation.navigate('SignIn', { shift });
     }
 
-    if (isConfirmed && signinStatus === 1) {
+    else if (isToday && isConfirmed && signinStatus === 1) {
+      showButton = true;
       buttonText = 'Ongoing';
       buttonStyle = styles.ongoingButton;
       textColor = '#166534';
       onPress = () => navigation.navigate('Ongoing', { currentShift: shift });
     }
 
-    if (shift.job_status?.toLowerCase() === 'pending') {
-      buttonText = 'Pending';
-      buttonStyle = styles.pendingButton;
-      textColor = '#7c2c03';
+    else if (!isToday) {
+      // 👉 WEEK SHIFT
+      showButton = true;
+      buttonText = 'Upcoming';
+      buttonStyle = styles.viewButton;
+      textColor = '#6b7280';
+      disabled = true;
     }
+
+
+
 
     return (
       <View key={index} style={styles.shiftCard}>
@@ -359,9 +407,6 @@ export default function StaffShifts({ navigation, route }: any) {
             </Text>
           </View>
 
-          {/* <TouchableOpacity style={styles.directionSquare}>
-            <Text style={styles.directionText}>Direction</Text>
-          </TouchableOpacity> */}
         </View>
 
         <View style={styles.rowItem}>
@@ -394,15 +439,22 @@ export default function StaffShifts({ navigation, route }: any) {
             </Text>
           </View>
 
-          <TouchableOpacity
-            activeOpacity={0.8}
-            onPress={onPress}
-            style={[styles.actionButton, buttonStyle]}
-          >
-            <Text style={[styles.actionButtonText, { color: textColor }]}>
-              {buttonText}
-            </Text>
-          </TouchableOpacity>
+          {showButton && (
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={onPress}
+              disabled={disabled}
+              style={[
+                styles.actionButton,
+                buttonStyle,
+                disabled && { opacity: 0.5 }
+              ]}
+            >
+              <Text style={[styles.actionButtonText, { color: textColor }]}>
+                {buttonText}
+              </Text>
+            </TouchableOpacity>
+          )}
         </View>
       </View>
     );
@@ -430,22 +482,29 @@ export default function StaffShifts({ navigation, route }: any) {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.header}>
-          <View style={styles.headerLeft}>
-            <Image
-              source={{ uri: 'https://i.pravatar.cc/150?u=kathleen' }}
-              style={styles.avatar}
-            />
+          <TouchableOpacity
+            style={styles.headerLeft}
+            onPress={() => navigation.navigate('Profile')}
+          >
+            {/* ✅ Avatar */}
+            {profileImage ? (
+              <Image source={{ uri: profileImage }} style={styles.avatar} />
+            ) : (
+              <View style={styles.initialsAvatar}>
+                <Text style={styles.initialsText}>
+                  {getInitials(user?.name || 'User')}
+                </Text>
+              </View>
+            )}
+
             <View>
-              <Text style={styles.greeting}>
-                Hi {userType ? userType.charAt(0).toUpperCase() + userType.slice(1) : 'User'} 👋
-              </Text>
+              <View style={styles.nameRow}>
+                <Text style={styles.greeting}>
+                  {user?.name || 'User Name'} 👋
+                </Text>
+              </View>
               <Text style={styles.staffName}>Welcome to Staffo</Text>
             </View>
-
-
-          </View>
-          <TouchableOpacity style={styles.notificationIcon}>
-            <Text style={styles.notificationText}>🔔</Text>
           </TouchableOpacity>
         </View>
 
@@ -485,19 +544,6 @@ export default function StaffShifts({ navigation, route }: any) {
           })}
         </View>
 
-        {/* <View style={styles.weekSelector}>
-          <TouchableOpacity>
-            <ChevronLeft size={24} color="#10B981" />
-          </TouchableOpacity>
-
-          <View style={styles.weekButton}>
-            <Text style={styles.weekText}>23 – 26 Feb 2026</Text>
-          </View>
-
-          <TouchableOpacity>
-            <ChevronRight size={24} color="#10B981" />
-          </TouchableOpacity>
-        </View> */}
 
         {loadingToday || loadingWeek ? (
           <View style={styles.loadingContainer}>
@@ -510,14 +556,14 @@ export default function StaffShifts({ navigation, route }: any) {
             {todayShifts.length === 0 ? (
               <Text style={styles.emptyText}>No shifts today</Text>
             ) : (
-              todayShifts.map((shift, index) => renderShiftCard(shift, index))
+              todayShifts.map((shift, index) => renderShiftCard(shift, index, true))
             )}
 
             <Text style={styles.sectionHeader}>This Week's Shifts</Text>
             {weekShifts.length === 0 ? (
               <Text style={styles.emptyText}>No shifts this week</Text>
             ) : (
-              weekShifts.map((shift, index) => renderShiftCard(shift, index))
+              weekShifts.map((shift, index) => renderShiftCard(shift, index, false))
             )}
           </>
         )}
@@ -660,7 +706,7 @@ const styles = StyleSheet.create({
     height: 52,
     borderRadius: 26,
   },
-
+  nameRow: { flexDirection: 'row', alignItems: 'center' },
   welcome: {
     fontSize: 13.5,
     color: '#666',
@@ -672,7 +718,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingVertical: 18,
   },
-
+  name: { fontSize: 18, fontWeight: '700', color: '#000' },
   tabItem: {
     flex: 1,
     marginHorizontal: 4,
@@ -696,6 +742,21 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 30,
     marginBottom: 10,
+  },
+  initialsAvatar: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: '#bee1ee', // same as profile screen or customize
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 0,
+  },
+
+  initialsText: {
+    color: '#2c7f71',
+    fontSize: 18,
+    fontWeight: '700',
   },
   weekButton: {
     backgroundColor: '#10B981',

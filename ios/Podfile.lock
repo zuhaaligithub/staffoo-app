@@ -1,4 +1,14 @@
 PODS:
+  - AppAuth (2.0.0):
+    - AppAuth/Core (= 2.0.0)
+    - AppAuth/ExternalUserAgent (= 2.0.0)
+  - AppAuth/Core (2.0.0)
+  - AppAuth/ExternalUserAgent (2.0.0):
+    - AppAuth/Core
+  - AppCheckCore (11.2.0):
+    - GoogleUtilities/Environment (~> 8.0)
+    - GoogleUtilities/UserDefaults (~> 8.0)
+    - PromisesObjC (~> 2.4)
   - BEMCheckBox (1.4.1)
   - boost (1.84.0)
   - BVLinearGradient (2.8.3):
@@ -8,12 +18,30 @@ PODS:
   - FBLazyVector (0.83.1)
   - fmt (11.0.2)
   - glog (0.3.5)
+  - GoogleSignIn (9.1.0):
+    - AppAuth (~> 2.0)
+    - AppCheckCore (~> 11.0)
+    - GTMAppAuth (~> 5.0)
+    - GTMSessionFetcher/Core (~> 3.3)
+  - GoogleUtilities/Environment (8.1.0):
+    - GoogleUtilities/Privacy
+  - GoogleUtilities/Logger (8.1.0):
+    - GoogleUtilities/Environment
+    - GoogleUtilities/Privacy
+  - GoogleUtilities/Privacy (8.1.0)
+  - GoogleUtilities/UserDefaults (8.1.0):
+    - GoogleUtilities/Logger
+    - GoogleUtilities/Privacy
+  - GTMAppAuth (5.0.0):
+    - AppAuth/Core (~> 2.0)
+    - GTMSessionFetcher/Core (< 4.0, >= 3.3)
+  - GTMSessionFetcher/Core (3.5.0)
   - hermes-engine (0.14.0):
     - hermes-engine/Pre-built (= 0.14.0)
   - hermes-engine/Pre-built (0.14.0)
-  - OneSignalXCFramework (5.2.0):
-    - OneSignalXCFramework/OneSignalComplete (= 5.2.0)
-  - OneSignalXCFramework/OneSignal (5.2.0):
+  - OneSignalXCFramework (5.5.0):
+    - OneSignalXCFramework/OneSignalComplete (= 5.5.0)
+  - OneSignalXCFramework/OneSignal (5.5.0):
     - OneSignalXCFramework/OneSignalCore
     - OneSignalXCFramework/OneSignalExtension
     - OneSignalXCFramework/OneSignalLiveActivities
@@ -21,42 +49,43 @@ PODS:
     - OneSignalXCFramework/OneSignalOSCore
     - OneSignalXCFramework/OneSignalOutcomes
     - OneSignalXCFramework/OneSignalUser
-  - OneSignalXCFramework/OneSignalComplete (5.2.0):
+  - OneSignalXCFramework/OneSignalComplete (5.5.0):
     - OneSignalXCFramework/OneSignal
     - OneSignalXCFramework/OneSignalInAppMessages
     - OneSignalXCFramework/OneSignalLocation
-  - OneSignalXCFramework/OneSignalCore (5.2.0)
-  - OneSignalXCFramework/OneSignalExtension (5.2.0):
+  - OneSignalXCFramework/OneSignalCore (5.5.0)
+  - OneSignalXCFramework/OneSignalExtension (5.5.0):
     - OneSignalXCFramework/OneSignalCore
     - OneSignalXCFramework/OneSignalOutcomes
-  - OneSignalXCFramework/OneSignalInAppMessages (5.2.0):
+  - OneSignalXCFramework/OneSignalInAppMessages (5.5.0):
     - OneSignalXCFramework/OneSignalCore
     - OneSignalXCFramework/OneSignalNotifications
     - OneSignalXCFramework/OneSignalOSCore
     - OneSignalXCFramework/OneSignalOutcomes
     - OneSignalXCFramework/OneSignalUser
-  - OneSignalXCFramework/OneSignalLiveActivities (5.2.0):
+  - OneSignalXCFramework/OneSignalLiveActivities (5.5.0):
     - OneSignalXCFramework/OneSignalCore
     - OneSignalXCFramework/OneSignalOSCore
     - OneSignalXCFramework/OneSignalUser
-  - OneSignalXCFramework/OneSignalLocation (5.2.0):
+  - OneSignalXCFramework/OneSignalLocation (5.5.0):
     - OneSignalXCFramework/OneSignalCore
     - OneSignalXCFramework/OneSignalNotifications
     - OneSignalXCFramework/OneSignalOSCore
     - OneSignalXCFramework/OneSignalUser
-  - OneSignalXCFramework/OneSignalNotifications (5.2.0):
+  - OneSignalXCFramework/OneSignalNotifications (5.5.0):
     - OneSignalXCFramework/OneSignalCore
     - OneSignalXCFramework/OneSignalExtension
     - OneSignalXCFramework/OneSignalOutcomes
-  - OneSignalXCFramework/OneSignalOSCore (5.2.0):
+  - OneSignalXCFramework/OneSignalOSCore (5.5.0):
     - OneSignalXCFramework/OneSignalCore
-  - OneSignalXCFramework/OneSignalOutcomes (5.2.0):
+  - OneSignalXCFramework/OneSignalOutcomes (5.5.0):
     - OneSignalXCFramework/OneSignalCore
-  - OneSignalXCFramework/OneSignalUser (5.2.0):
+  - OneSignalXCFramework/OneSignalUser (5.5.0):
     - OneSignalXCFramework/OneSignalCore
     - OneSignalXCFramework/OneSignalNotifications
     - OneSignalXCFramework/OneSignalOSCore
     - OneSignalXCFramework/OneSignalOutcomes
+  - PromisesObjC (2.4.0)
   - RCT-Folly (2024.11.18.00):
     - boost
     - DoubleConversion
@@ -2001,9 +2030,9 @@ PODS:
     - Yoga
   - react-native-image-resizer (1.4.5):
     - React-Core
-  - react-native-maps (1.27.1):
-    - react-native-maps/Maps (= 1.27.1)
-  - react-native-maps/Generated (1.27.1):
+  - react-native-maps (1.27.2):
+    - react-native-maps/Maps (= 1.27.2)
+  - react-native-maps/Generated (1.27.2):
     - boost
     - DoubleConversion
     - fast_float
@@ -2031,7 +2060,7 @@ PODS:
     - ReactCommon/turbomodule/core
     - SocketRocket
     - Yoga
-  - react-native-maps/Maps (1.27.1):
+  - react-native-maps/Maps (1.27.2):
     - boost
     - DoubleConversion
     - fast_float
@@ -2060,8 +2089,36 @@ PODS:
     - ReactCommon/turbomodule/core
     - SocketRocket
     - Yoga
-  - react-native-onesignal (5.2.0):
-    - OneSignalXCFramework (= 5.2.0)
+  - react-native-netinfo (12.0.1):
+    - boost
+    - DoubleConversion
+    - fast_float
+    - fmt
+    - glog
+    - hermes-engine
+    - RCT-Folly
+    - RCT-Folly/Fabric
+    - RCTRequired
+    - RCTTypeSafety
+    - React-Core
+    - React-debug
+    - React-Fabric
+    - React-featureflags
+    - React-graphics
+    - React-ImageManager
+    - React-jsi
+    - React-NativeModulesApple
+    - React-RCTFabric
+    - React-renderercss
+    - React-rendererdebug
+    - React-utils
+    - ReactCodegen
+    - ReactCommon/turbomodule/bridging
+    - ReactCommon/turbomodule/core
+    - SocketRocket
+    - Yoga
+  - react-native-onesignal (5.3.6):
+    - OneSignalXCFramework (= 5.5.0)
     - React (< 1.0.0, >= 0.13.0)
   - react-native-safe-area-context (5.7.0):
     - boost
@@ -2207,7 +2264,7 @@ PODS:
     - ReactCommon/turbomodule/core
     - SocketRocket
     - Yoga
-  - react-native-webview (13.16.0):
+  - react-native-webview (13.16.1):
     - boost
     - DoubleConversion
     - fast_float
@@ -2909,6 +2966,63 @@ PODS:
     - ReactCommon/turbomodule/core
     - SocketRocket
     - Yoga
+  - RNGoogleSignin (16.1.2):
+    - boost
+    - DoubleConversion
+    - fast_float
+    - fmt
+    - glog
+    - GoogleSignIn (~> 9.0)
+    - hermes-engine
+    - RCT-Folly
+    - RCT-Folly/Fabric
+    - RCTRequired
+    - RCTTypeSafety
+    - React-Core
+    - React-debug
+    - React-Fabric
+    - React-featureflags
+    - React-graphics
+    - React-ImageManager
+    - React-jsi
+    - React-NativeModulesApple
+    - React-RCTFabric
+    - React-renderercss
+    - React-rendererdebug
+    - React-utils
+    - ReactCodegen
+    - ReactCommon/turbomodule/bridging
+    - ReactCommon/turbomodule/core
+    - SocketRocket
+    - Yoga
+  - RNPermissions (5.5.1):
+    - boost
+    - DoubleConversion
+    - fast_float
+    - fmt
+    - glog
+    - hermes-engine
+    - RCT-Folly
+    - RCT-Folly/Fabric
+    - RCTRequired
+    - RCTTypeSafety
+    - React-Core
+    - React-debug
+    - React-Fabric
+    - React-featureflags
+    - React-graphics
+    - React-ImageManager
+    - React-jsi
+    - React-NativeModulesApple
+    - React-RCTFabric
+    - React-renderercss
+    - React-rendererdebug
+    - React-utils
+    - ReactCodegen
+    - ReactCommon/turbomodule/bridging
+    - ReactCommon/turbomodule/core
+    - SocketRocket
+    - Yoga
   - RNReanimated (4.2.1):
     - boost
     - DoubleConversion
@@ -3060,7 +3174,9 @@ PODS:
     - ReactCommon/turbomodule/core
     - SocketRocket
     - Yoga
-  - RNSVG (15.15.3):
+  - RNSoundPlayer (0.14.5):
+    - React-Core
+  - RNSVG (15.15.4):
     - boost
     - DoubleConversion
     - fast_float
@@ -3086,10 +3202,10 @@ PODS:
     - ReactCodegen
     - ReactCommon/turbomodule/bridging
     - ReactCommon/turbomodule/core
-    - RNSVG/common (= 15.15.3)
+    - RNSVG/common (= 15.15.4)
     - SocketRocket
     - Yoga
-  - RNSVG/common (15.15.3):
+  - RNSVG/common (15.15.4):
     - boost
     - DoubleConversion
     - fast_float
@@ -3246,6 +3362,7 @@ DEPENDENCIES:
   - fmt (from `../node_modules/react-native/third-party-podspecs/fmt.podspec`)
   - glog (from `../node_modules/react-native/third-party-podspecs/glog.podspec`)
   - hermes-engine (from `../node_modules/react-native/sdks/hermes-engine/hermes-engine.podspec`)
+  - OneSignalXCFramework (< 6.0, >= 5.0.0)
   - RCT-Folly (from `../node_modules/react-native/third-party-podspecs/RCT-Folly.podspec`)
   - RCTDeprecation (from `../node_modules/react-native/ReactApple/Libraries/RCTFoundation/RCTDeprecation`)
   - RCTRequired (from `../node_modules/react-native/Libraries/Required`)
@@ -3288,6 +3405,7 @@ DEPENDENCIES:
   - react-native-image-picker (from `../node_modules/react-native-image-picker`)
   - react-native-image-resizer (from `../node_modules/react-native-image-resizer`)
   - react-native-maps (from `../node_modules/react-native-maps`)
+  - "react-native-netinfo (from `../node_modules/@react-native-community/netinfo`)"
   - react-native-onesignal (from `../node_modules/react-native-onesignal`)
   - react-native-safe-area-context (from `../node_modules/react-native-safe-area-context`)
   - "react-native-slider (from `../node_modules/@react-native-community/slider`)"
@@ -3331,8 +3449,11 @@ DEPENDENCIES:
   - "RNDateTimePicker (from `../node_modules/@react-native-community/datetimepicker`)"
   - RNFS (from `../node_modules/react-native-fs`)
   - RNGestureHandler (from `../node_modules/react-native-gesture-handler`)
+  - "RNGoogleSignin (from `../node_modules/@react-native-google-signin/google-signin`)"
+  - RNPermissions (from `../node_modules/react-native-permissions`)
   - RNReanimated (from `../node_modules/react-native-reanimated`)
   - RNScreens (from `../node_modules/react-native-screens`)
+  - RNSoundPlayer (from `../node_modules/react-native-sound-player`)
   - RNSVG (from `../node_modules/react-native-svg`)
   - RNVectorIcons (from `../node_modules/react-native-vector-icons`)
   - RNWorklets (from `../node_modules/react-native-worklets`)
@@ -3341,8 +3462,15 @@ DEPENDENCIES:
 
 SPEC REPOS:
   trunk:
+    - AppAuth
+    - AppCheckCore
     - BEMCheckBox
+    - GoogleSignIn
+    - GoogleUtilities
+    - GTMAppAuth
+    - GTMSessionFetcher
     - OneSignalXCFramework
+    - PromisesObjC
     - SocketRocket
 
 EXTERNAL SOURCES:
@@ -3445,6 +3573,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/react-native-image-resizer"
   react-native-maps:
     :path: "../node_modules/react-native-maps"
+  react-native-netinfo:
+    :path: "../node_modules/@react-native-community/netinfo"
   react-native-onesignal:
     :path: "../node_modules/react-native-onesignal"
   react-native-safe-area-context:
@@ -3531,10 +3661,16 @@ EXTERNAL SOURCES:
     :path: "../node_modules/react-native-fs"
   RNGestureHandler:
     :path: "../node_modules/react-native-gesture-handler"
+  RNGoogleSignin:
+    :path: "../node_modules/@react-native-google-signin/google-signin"
+  RNPermissions:
+    :path: "../node_modules/react-native-permissions"
   RNReanimated:
     :path: "../node_modules/react-native-reanimated"
   RNScreens:
     :path: "../node_modules/react-native-screens"
+  RNSoundPlayer:
+    :path: "../node_modules/react-native-sound-player"
   RNSVG:
     :path: "../node_modules/react-native-svg"
   RNVectorIcons:
@@ -3545,6 +3681,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/react-native/ReactCommon/yoga"
 
 SPEC CHECKSUMS:
+  AppAuth: 1c1a8afa7e12f2ec3a294d9882dfa5ab7d3cb063
+  AppCheckCore: cc8fd0a3a230ddd401f326489c99990b013f0c4f
   BEMCheckBox: 5ba6e37ade3d3657b36caecc35c8b75c6c2b1a4e
   boost: 7e761d76ca2ce687f7cc98e698152abd03a18f90
   BVLinearGradient: cb006ba232a1f3e4f341bb62c42d1098c284da70
@@ -3553,8 +3691,13 @@ SPEC CHECKSUMS:
   FBLazyVector: 309703e71d3f2f1ed7dc7889d58309c9d77a95a4
   fmt: a40bb5bd0294ea969aaaba240a927bd33d878cdd
   glog: 5683914934d5b6e4240e497e0f4a3b42d1854183
+  GoogleSignIn: fcee2257188d5eda57a5e2b6a715550ffff9206d
+  GoogleUtilities: 00c88b9a86066ef77f0da2fab05f65d7768ed8e1
+  GTMAppAuth: 217a876b249c3c585a54fd6f73e6b58c4f5c4238
+  GTMSessionFetcher: 5aea5ba6bd522a239e236100971f10cb71b96ab6
   hermes-engine: b8eb97f46951e6b4a64b65d41357cdf6782cc06a
-  OneSignalXCFramework: bdf74fdc06888f9466dc21e826fe1549ed143095
+  OneSignalXCFramework: 943852e7d70d719f73e9669d48620aeec1b93022
+  PromisesObjC: f5707f49cb48b9636751c5b2e7d227e43fba9f47
   RCT-Folly: 846fda9475e61ec7bcbf8a3fe81edfcaeb090669
   RCTDeprecation: a41bbdd9af30bf2e5715796b313e44ec43eefff1
   RCTRequired: 7be34aabb0b77c3cefe644528df0fa0afad4e4d0
@@ -3595,11 +3738,12 @@ SPEC CHECKSUMS:
   react-native-geolocation-service: 32b2c2a3b91e70ce2a8d0c684801aaeb0a07e0ec
   react-native-image-picker: 0314366753615115fa55c3cc937ac44cb7e75702
   react-native-image-resizer: 17b2d73c030975b6543395c7e7368bc8774c5efa
-  react-native-maps: 293c3ea10eaa6bfc96e3d4d0dbbcf1f2501b1760
-  react-native-onesignal: 8211393e9f200a055fdefbeaaa3322880ed48059
+  react-native-maps: b5af575a371e57847c6d8490e726c08036f7c80f
+  react-native-netinfo: a0be8c77f8420a60ddf07eb87be1a36f02a1bd65
+  react-native-onesignal: 43e278433205c5cf4c3c0dc64ec3e8390a2a7b6f
   react-native-safe-area-context: befb5404eb8a16fdc07fa2bebab3568ecabcbb8a
   react-native-slider: 34064ca1a6864d7b263e44dd76a2d794e8d26744
-  react-native-webview: 654f794a7686b47491cf43aa67f7f428bea00eed
+  react-native-webview: 8407aaaf6b539b1e38b72fabb55d6885de03beaf
   React-NativeModulesApple: a2c3d2cbec893956a5b3e4060322db2984fff75b
   React-networking: 3f98bd96893a294376e7e03730947a08d474c380
   React-oscompat: 80166b66da22e7af7fad94474e9997bd52d4c8c6
@@ -3639,14 +3783,17 @@ SPEC CHECKSUMS:
   RNDateTimePicker: 97a86d7c8b51f2d51f694a9dddfe5996dfd9a407
   RNFS: 89de7d7f4c0f6bafa05343c578f61118c8282ed8
   RNGestureHandler: cd4be101cfa17ea6bbd438710caa02e286a84381
+  RNGoogleSignin: 15341729e1f79f1b82740393924cae5e429ad176
+  RNPermissions: bc70f57382f28fe53a94621a4c0833a5791186e5
   RNReanimated: 292cd58688552a22b3fc1cefcfbc49b336dfed68
   RNScreens: 7f643ee0fd1407dc5085c7795460bd93da113b8f
-  RNSVG: 595abfa0f9ac26d56afcaaedf4e37a00f54cab71
+  RNSoundPlayer: 7961678d02c7339d9e9cfb78b9f3e8fde17f9df2
+  RNSVG: 3405336c4507ee0bafb02b08058d57216daa2c50
   RNVectorIcons: 791f13226ec4a3fd13062eda9e892159f0981fae
   RNWorklets: a3184955a41f2be46898a937e2821469c8c8da42
   SocketRocket: d4aabe649be1e368d1318fdf28a022d714d65748
   Yoga: 5456bb010373068fc92221140921b09d126b116e
 
-PODFILE CHECKSUM: 2bbbaec1d85e0f8d0bfc2d99b57e05727c48e89d
+PODFILE CHECKSUM: bc65d5a0da1b7313930a25c9b50ed9ff133a6890
 
 COCOAPODS: 1.16.2

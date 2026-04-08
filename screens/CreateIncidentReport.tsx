@@ -91,7 +91,6 @@ interface PhotoItem {
 export default function CreateIncidentReport({ navigation, route }: { navigation: any; route: any }) {
   const { shiftId, guardId, rosterId, siteId, siteName } = route.params ?? {};
 
-  // Early return if critical params missing
   if (!siteId) {
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: '#f8fafc' }}>
@@ -110,7 +109,12 @@ export default function CreateIncidentReport({ navigation, route }: { navigation
     );
   }
 
-  const [photos, setPhotos] = useState<Array<{ base64: string; timestamp: string }>>([]);
+  // const [photos, setPhotos] = useState<Array<{ base64: string; timestamp: string }>>([]);
+  const [photos, setPhotos] = useState<Array<{
+    uri: string;           // original or resized file URI
+    timestamp: string;
+    base64?: string;       // only add this when submitting (optional)
+  }>>([]);
   const [openSection, setOpenSection] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -180,79 +184,118 @@ export default function CreateIncidentReport({ navigation, route }: { navigation
 
   const selectedIncidentName = injuryTypes.find(t => t.id === selectedIncidentTypeId)?.name || 'Others';
 
- const correctText = async (text: string, instruction: string) => {
-  if (!text?.trim()) {
-    Alert.alert("No text", "Please enter some incident details first.");
-    return;
-  }
+  const correctText = async (text: string, instruction: string) => {
+    if (!text?.trim()) {
+      Alert.alert("No text", "Please enter some incident details first.");
+      return;
+    }
 
-  try {
-    const payload = {
-      model: "gpt-4o-mini",                     
-      messages: [
+    try {
+      const payload = {
+        model: "gpt-4o-mini",
+        messages: [
+          {
+            role: "system",
+            content: "You are a professional security report editor. " +
+              "Be concise, factual, formal. Never invent new information."
+          },
+          {
+            role: "user",
+            content: `${instruction}:\n\n${text}`
+          }
+        ],
+        temperature: 0.4,
+        max_tokens: 300,
+        top_p: 1,
+        frequency_penalty: 0,
+        presence_penalty: 0
+      };
+
+      console.log("Sending OpenAI payload:", JSON.stringify(payload, null, 2));
+
+      const response = await axios.post(
+        "https://api.openai.com/v1/chat/completions",
+        payload,
         {
-          role: "system",
-          content: "You are a professional security report editor. " +
-                   "Be concise, factual, formal. Never invent new information."
-        },
-        {
-          role: "user",
-          content: `${instruction}:\n\n${text}` 
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${OPENAI_API_KEY}`
+          },
+          timeout: 20000
         }
-      ],
-      temperature: 0.4,                      
-      max_tokens: 300,                          
-      top_p: 1,
-      frequency_penalty: 0,
-      presence_penalty: 0
-    };
+      );
 
-    console.log("Sending OpenAI payload:", JSON.stringify(payload, null, 2));
+      const correctedText = response.data.choices?.[0]?.message?.content?.trim();
 
-    const response = await axios.post(
-      "https://api.openai.com/v1/chat/completions",
-      payload,                                
-      {
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${OPENAI_API_KEY}`
-        },
-        timeout: 20000                             
+      if (!correctedText) {
+        throw new Error("No correction received from OpenAI");
       }
-    );
 
-    const correctedText = response.data.choices?.[0]?.message?.content?.trim();
+      setIncidentDetails(correctedText);
+      console.log("AI corrected text:", correctedText);
 
-    if (!correctedText) {
-      throw new Error("No correction received from OpenAI");
-    }
+    } catch (error: any) {
+      console.error("OpenAI request failed:", error);
 
-    setIncidentDetails(correctedText);
-    console.log("AI corrected text:", correctedText);
+      let errorMessage = "AI text correction failed. Please try again.";
 
-  } catch (error: any) {
-    console.error("OpenAI request failed:", error);
+      if (error.response) {
+        const status = error.response.status;
+        const errData = error.response.data?.error;
 
-    let errorMessage = "AI text correction failed. Please try again.";
-
-    if (error.response) {
-      const status = error.response.status;
-      const errData = error.response.data?.error;
-
-      if (status === 401) {
-        errorMessage = "Invalid or expired OpenAI API key. Please check your API key.";
-      } else if (status === 429) {
-        errorMessage = "Rate limit exceeded. Please wait a moment and try again.";
-      } else if (status === 400 && errData?.code === "invalid_api_key") {
-        errorMessage = "Incorrect API key. Generate a new one from OpenAI dashboard.";
-      } else if (errData?.message) {
-        errorMessage = errData.message;
+        if (status === 401) {
+          errorMessage = "Invalid or expired OpenAI API key. Please check your API key.";
+        } else if (status === 429) {
+          errorMessage = "Rate limit exceeded. Please wait a moment and try again.";
+        } else if (status === 400 && errData?.code === "invalid_api_key") {
+          errorMessage = "Incorrect API key. Generate a new one from OpenAI dashboard.";
+        } else if (errData?.message) {
+          errorMessage = errData.message;
+        }
       }
-    }
 
-    Alert.alert("AI Error", errorMessage);
-  }
-};
+      Alert.alert("AI Error", errorMessage);
+    }
+  };
+
+  // For preview (keep small size, low quality)
+  const resizeForPreview = async (uri: string): Promise<string> => {
+    try {
+      const resized = await ImageResizer.createResizedImage(
+        uri,
+        800,   // smaller width
+        800,
+        'JPEG',
+        60,    // lower quality for preview
+        0,
+        undefined,
+        false,
+        { mode: 'cover' }
+      );
+      return resized.uri;
+    } catch (e) {
+      console.error('Preview resize failed', e);
+      return uri; // fallback
+    }
+  };
+
+  // For final submission (higher quality)
+  const convertToBase64ForSubmit = async (uri: string): Promise<string> => {
+    try {
+      const resized = await ImageResizer.createResizedImage(
+        uri,
+        1200,
+        1200,
+        'JPEG',
+        75,
+        0
+      );
+      const base64 = await RNFS.readFile(resized.uri, 'base64');
+      return `data:image/jpeg;base64,${base64}`;
+    } catch (e) {
+      throw new Error('Failed to convert image to base64');
+    }
+  };
 
   const resizeAndConvertToBase64 = async (
     originalUri: string,
@@ -324,17 +367,13 @@ export default function CreateIncidentReport({ navigation, route }: { navigation
   };
 
   const handleImage = async (response: any) => {
-    if (response.didCancel) return;
-    if (response.errorCode) {
-      Alert.alert('Error', response.errorMessage || 'Failed to pick image');
-      return;
-    }
+    if (response.didCancel || !response.assets?.[0]?.uri) return;
 
-    const asset = response.assets?.[0];
-    if (!asset?.uri) return;
+    const asset = response.assets[0];
 
     try {
-      const base64DataUri = await resizeAndConvertToBase64(asset.uri, 1000, 1000, 65);
+      // Resize for preview only
+      const previewUri = await resizeForPreview(asset.uri);
 
       const timestamp = new Date().toLocaleString('en-AU', {
         day: '2-digit',
@@ -345,9 +384,13 @@ export default function CreateIncidentReport({ navigation, route }: { navigation
         hour12: false,
       });
 
-      setPhotos(prev => [...prev, { base64: base64DataUri, timestamp }]);
+      setPhotos(prev => [...prev, {
+        uri: previewUri,
+        timestamp
+      }]);
+
     } catch (err: any) {
-      Alert.alert('Error', err.message || 'Failed to process image');
+      Alert.alert('Error', 'Failed to process image');
     }
   };
 
@@ -363,76 +406,105 @@ export default function CreateIncidentReport({ navigation, route }: { navigation
   };
 
   const submitReport = async () => {
-    if (!selectedIncidentTypeId) return Alert.alert('Required', 'Incident Type is required');
-    if (!incidentDetails.trim()) return Alert.alert('Required', 'Incident Details are required');
-    if (!signatureData) return Alert.alert('Required', 'Staff signature is required');
+    // Basic validation
+    if (!selectedIncidentTypeId) {
+      return Alert.alert('Required', 'Incident Type is required');
+    }
+    if (!incidentDetails.trim()) {
+      return Alert.alert('Required', 'Incident Details are required');
+    }
+    if (!signatureData) {
+      return Alert.alert('Required', 'Staff signature is required');
+    }
+    if (photos.length === 0) {
+      Alert.alert('Warning', 'It is recommended to add at least one photo.');
+      // You can make it mandatory by uncommenting below:
+      // return;
+    }
 
     setIsSubmitting(true);
-
-    const payload = {
-      guard_id: guardId,
-      roster_id: rosterId,
-      date: formattedDate,
-      time: formattedTime,
-      site_name: siteName || 'Unknown Site',
-
-      injury_type: selectedIncidentName,
-      incident_detail: incidentDetails.trim(),
-
-      people_involved: peopleDetails.map(p => ({
-        peopleCount: peopleCount,
-        name: p.name || '',
-        phone: p.phone || '',
-        bodyType: p.bodyType || '',
-        gender: p.gender || '',
-        hair: p.hair || '',
-        height: p.height || '',
-        weight: p.weight || '',
-        marks: p.marks || '',
-        email: p.email || ''
-      })),
-
-      vehicle: vehicleDetails.map(v => ({
-        vehicleCount: vehiclesCount,
-        make: v.make || '',
-        model: v.model || '',
-        vehicle_type: v.vehicleType || '',
-        vehicle_rander: v.rego || ''
-      })),
-
-      emergency_services: {
-        emergency_type: selectedEmergencyId
-          ? emergencyTypes.find(e => e.id === selectedEmergencyId)?.name || ''
-          : '',
-        emergency_detail: emergencyDetail || '',
-        supervisor_name: supervisorName || '',
-        position: supervisorPosition || '',
-        address: supervisorAddress || '',
-        email: supervisorEmail || '',
-        phone: supervisorPhone || ''
-      },
-
-      wittness: witnessDetails.map(w => ({
-        wittness: witnessesCount,
-        wittness_detail: w.detail || '',
-        wittness_name: w.name || '',
-        wittness_address: w.address || '',
-        wittness_email: w.email || '',
-        wittness_phone: w.phone || '',
-        witness_more_info: w.moreInfo || ''
-      })),
-
-      photo: photos.map(p => ({
-        imgPath: p.base64,
-        timestamp: p.timestamp
-      })),
-
-      signature: signatureData
-    };
 
     try {
       const token = await getAuthToken();
       if (!token) throw new Error('No authentication token found');
+
+      // Convert photos to base64 ONLY at submission time (this prevents crash)
+      console.log(`Converting ${photos.length} photos to base64...`);
+
+      const photoPayload = await Promise.all(
+        photos.map(async (photo, index) => {
+          try {
+            const base64 = await convertToBase64ForSubmit(photo.uri);
+            return {
+              imgPath: base64,
+              timestamp: photo.timestamp,
+            };
+          } catch (err) {
+            console.error(`Failed to process photo ${index + 1}:`, err);
+            throw new Error(`Failed to process photo ${index + 1}`);
+          }
+        })
+      );
+
+      // Prepare final payload
+      const payload = {
+        guard_id: guardId,
+        roster_id: rosterId,
+        date: formattedDate,
+        time: formattedTime,
+        site_name: siteName || 'Unknown Site',
+
+        injury_type: selectedIncidentName,
+        incident_detail: incidentDetails.trim(),
+
+        people_involved: peopleDetails.map((p) => ({
+          peopleCount: peopleCount,
+          name: p.name || '',
+          phone: p.phone || '',
+          bodyType: p.bodyType || '',
+          gender: p.gender || '',
+          hair: p.hair || '',
+          height: p.height || '',
+          weight: p.weight || '',
+          marks: p.marks || '',
+          email: p.email || '',
+        })),
+
+        vehicle: vehicleDetails.map((v) => ({
+          vehicleCount: vehiclesCount,
+          make: v.make || '',
+          model: v.model || '',
+          vehicle_type: v.vehicleType || '',
+          vehicle_rander: v.rego || '',
+        })),
+
+        emergency_services: {
+          emergency_type: selectedEmergencyId
+            ? emergencyTypes.find((e) => e.id === selectedEmergencyId)?.name || ''
+            : '',
+          emergency_detail: emergencyDetail || '',
+          supervisor_name: supervisorName || '',
+          position: supervisorPosition || '',
+          address: supervisorAddress || '',
+          email: supervisorEmail || '',
+          phone: supervisorPhone || '',
+        },
+
+        wittness: witnessDetails.map((w) => ({
+          wittness: witnessesCount,
+          wittness_detail: w.detail || '',
+          wittness_name: w.name || '',
+          wittness_address: w.address || '',
+          wittness_email: w.email || '',
+          wittness_phone: w.phone || '',
+          witness_more_info: w.moreInfo || '',
+        })),
+
+        photo: photoPayload,        // ← Now contains properly converted base64
+        signature: signatureData,
+      };
+
+      console.log('Submitting incident report with', photoPayload.length, 'photos');
 
       const response = await fetch(
         `https://apis.staffoo.com.au/api/report-incident/${siteId}`,
@@ -441,9 +513,9 @@ export default function CreateIncidentReport({ navigation, route }: { navigation
           headers: {
             Authorization: `Bearer ${token}`,
             'Content-Type': 'application/json',
-            Accept: 'application/json'
+            Accept: 'application/json',
           },
-          body: JSON.stringify(payload)
+          body: JSON.stringify(payload),
         }
       );
 
@@ -453,20 +525,29 @@ export default function CreateIncidentReport({ navigation, route }: { navigation
         throw new Error(responseData.message || `HTTP error ${response.status}`);
       }
 
-      Alert.alert('Success', 'Incident report submitted successfully!');
-      navigation.goBack();
+      Alert.alert('Success', 'Incident report submitted successfully!', [
+        {
+          text: 'OK',
+          onPress: () => navigation.goBack(),
+        },
+      ]);
 
     } catch (error: any) {
       console.error('Submit error:', error);
-      Alert.alert(
-        'Submission Failed',
-        error.message || 'Failed to submit report. Please try again.'
-      );
+
+      let errorMessage = 'Failed to submit report. Please try again.';
+
+      if (error.message.includes('photo')) {
+        errorMessage = 'Failed to process one or more photos. Please try removing and re-adding photos.';
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+
+      Alert.alert('Submission Failed', errorMessage);
     } finally {
       setIsSubmitting(false);
     }
   };
-
   return (
     <SafeAreaView style={styles.container}>
       <KeyboardAvoidingView
@@ -642,12 +723,12 @@ export default function CreateIncidentReport({ navigation, route }: { navigation
                     onChangeText={v => setPeopleDetails(updateArrayItem(peopleDetails, i, { name: v }))}
                   /> */}
                   <TextInput
-  style={styles.input}
-  value={p.name}
-  placeholder={`Person Name`}
-  placeholderTextColor="#9CA3AF"
-  onChangeText={v => setPeopleDetails(updateArrayItem(peopleDetails, i, { name: v }))}
-/>
+                    style={styles.input}
+                    value={p.name}
+                    placeholder={`Person Name`}
+                    placeholderTextColor="#9CA3AF"
+                    onChangeText={v => setPeopleDetails(updateArrayItem(peopleDetails, i, { name: v }))}
+                  />
 
                   <Text style={styles.label}>Email</Text>
                   <TextInput
@@ -665,7 +746,7 @@ export default function CreateIncidentReport({ navigation, route }: { navigation
                     style={styles.input}
                     value={p.phone}
                     placeholder={`Person Phone`}
-  placeholderTextColor="#9CA3AF"
+                    placeholderTextColor="#9CA3AF"
                     onChangeText={v => setPeopleDetails(updateArrayItem(peopleDetails, i, { phone: v }))}
                     keyboardType="phone-pad"
                   />
@@ -677,7 +758,7 @@ export default function CreateIncidentReport({ navigation, route }: { navigation
                         style={styles.input}
                         value={p.bodyType}
                         placeholder={`Person Body Type`}
-  placeholderTextColor="#9CA3AF"
+                        placeholderTextColor="#9CA3AF"
                         onChangeText={v => setPeopleDetails(updateArrayItem(peopleDetails, i, { bodyType: v }))}
                       />
                     </View>
@@ -686,7 +767,7 @@ export default function CreateIncidentReport({ navigation, route }: { navigation
                       <TextInput
                         style={styles.input}
                         placeholder={`Person Gender`}
-  placeholderTextColor="#9CA3AF"
+                        placeholderTextColor="#9CA3AF"
                         value={p.gender}
                         onChangeText={v => setPeopleDetails(updateArrayItem(peopleDetails, i, { gender: v }))}
                       />
@@ -699,7 +780,7 @@ export default function CreateIncidentReport({ navigation, route }: { navigation
                       <TextInput
                         style={styles.input}
                         placeholder={`Person Hair`}
-  placeholderTextColor="#9CA3AF"
+                        placeholderTextColor="#9CA3AF"
                         value={p.hair}
                         onChangeText={v => setPeopleDetails(updateArrayItem(peopleDetails, i, { hair: v }))}
                       />
@@ -709,7 +790,7 @@ export default function CreateIncidentReport({ navigation, route }: { navigation
                       <TextInput
                         style={styles.input}
                         placeholder={`Person Height`}
-  placeholderTextColor="#9CA3AF"
+                        placeholderTextColor="#9CA3AF"
                         value={p.height}
                         onChangeText={v => setPeopleDetails(updateArrayItem(peopleDetails, i, { height: v }))}
                       />
@@ -722,7 +803,7 @@ export default function CreateIncidentReport({ navigation, route }: { navigation
                       <TextInput
                         style={styles.input}
                         placeholder={`Person Weight`}
-  placeholderTextColor="#9CA3AF"
+                        placeholderTextColor="#9CA3AF"
                         value={p.weight}
                         onChangeText={v => setPeopleDetails(updateArrayItem(peopleDetails, i, { weight: v }))}
                       />
@@ -732,7 +813,7 @@ export default function CreateIncidentReport({ navigation, route }: { navigation
                       <TextInput
                         style={styles.input}
                         placeholder={`Person Marks`}
-  placeholderTextColor="#9CA3AF"
+                        placeholderTextColor="#9CA3AF"
                         value={p.marks}
                         onChangeText={v => setPeopleDetails(updateArrayItem(peopleDetails, i, { marks: v }))}
                       />
@@ -775,7 +856,7 @@ export default function CreateIncidentReport({ navigation, route }: { navigation
                   <TextInput
                     style={styles.input}
                     placeholder={`Enter text here...`}
-  placeholderTextColor="#9CA3AF"
+                    placeholderTextColor="#9CA3AF"
                     value={v.make}
                     onChangeText={txt => setVehicleDetails(updateArrayItem(vehicleDetails, i, { make: txt }))}
                   />
@@ -785,7 +866,7 @@ export default function CreateIncidentReport({ navigation, route }: { navigation
                     style={styles.input}
                     value={v.model}
                     placeholder={`Enter text here...`}
-  placeholderTextColor="#9CA3AF"
+                    placeholderTextColor="#9CA3AF"
                     onChangeText={txt => setVehicleDetails(updateArrayItem(vehicleDetails, i, { model: txt }))}
                   />
 
@@ -794,7 +875,7 @@ export default function CreateIncidentReport({ navigation, route }: { navigation
                     style={styles.input}
                     value={v.rego}
                     placeholder={`Enter text here...`}
-  placeholderTextColor="#9CA3AF"
+                    placeholderTextColor="#9CA3AF"
                     onChangeText={txt => setVehicleDetails(updateArrayItem(vehicleDetails, i, { rego: txt }))}
                   />
 
@@ -803,7 +884,7 @@ export default function CreateIncidentReport({ navigation, route }: { navigation
                     style={styles.input}
                     value={v.vehicleType}
                     placeholder={`Enter text here...`}
-  placeholderTextColor="#9CA3AF"
+                    placeholderTextColor="#9CA3AF"
                     onChangeText={txt => setVehicleDetails(updateArrayItem(vehicleDetails, i, { vehicleType: txt }))}
                   />
                 </View>
@@ -993,7 +1074,7 @@ export default function CreateIncidentReport({ navigation, route }: { navigation
                     </TouchableOpacity>
 
                     <Image
-                      source={{ uri: photo.base64 }}
+                      source={{ uri: photo.uri }}   // ← use .uri instead of .base64
                       style={styles.photo}
                       resizeMode="cover"
                     />
@@ -1214,13 +1295,16 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   photoItem: {
-    width: (width - 64) / 3,
+    width: '30%',
     position: 'relative',
   },
   photo: {
     width: '100%',
-    height: 100,
-    borderRadius: 10,
+    height: 85,
+    borderRadius: 12,
+     backgroundColor: '#f8fafc',
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
   },
   removePhoto: {
     position: 'absolute',
@@ -1232,10 +1316,12 @@ const styles = StyleSheet.create({
     zIndex: 10,
   },
   timestamp: {
-    fontSize: 11,
-    color: '#64748b',
+    fontSize: 7,
+    color: '#b24e45',
     textAlign: 'center',
-    marginTop: 4,
+    marginTop: -14,
+    fontWeight: '900',
+
   },
   uploadArea: {
     alignItems: 'center',
