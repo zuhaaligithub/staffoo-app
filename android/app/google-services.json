@@ -7,25 +7,6 @@
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:1019446395337:android:ea83b50cbdaa5935062818",
-        "android_client_info": {
-          "package_name": "com.staffo"
-        }
-      },
-      "oauth_client": [],
-      "api_key": [
-        {
-          "current_key": "AIzaSyDefYkXnRkTiWc7Xqld6_GFtIZOhmACsUo"
-        }
-      ],
-      "services": {
-        "appinvite_service": {
-          "other_platform_oauth_client": []
-        }
-      }
-    },
-    {
-      "client_info": {
         "mobilesdk_app_id": "1:1019446395337:android:a2b6c3c427544af7062818",
         "android_client_info": {
           "package_name": "com.staffoo.newapp"

@@ -76,6 +76,7 @@ export default function DocumentsScreen({ navigation }: Props) {
     const [userId, setUserId] = useState<string | number | null>(null);
 
     const documentTypes = [
+        'Security License',
         'Application Form',
         'Birth Certificate',
         'Casual Contract Form',
@@ -85,6 +86,14 @@ export default function DocumentsScreen({ navigation }: Props) {
         'Passport',
         'Other',
     ];
+
+    const formatDocName = (name: string) => {
+        if (!name) return '';
+        return name
+            .split('_')
+            .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+            .join(' ');
+    };
 
     // Load user ID and documents
     useEffect(() => {
@@ -121,21 +130,24 @@ export default function DocumentsScreen({ navigation }: Props) {
             setIsEditMode(true);
             setEditingDocId(doc.id);
 
-            // 🔥 Set document type correctly
-            setDocumentType(doc.document_type || '');
+            // 🔥 Set document type correctly (Format if snake_case)
+            setDocumentType(formatDocName(doc.document_type || ''));
 
             // 🔥 Set number
             setDocumentNumber(doc.document_no || '');
             setAddDocNumber(!!doc.document_no);
 
             // 🔥 FIXED DATE (API already gives YYYY-MM-DD)
-            if (doc.document_expiry) {
-                setExpirationDate(new Date(doc.document_expiry));
-                setSetExpiration(true);
-            } else {
-                setExpirationDate(null);
-                setSetExpiration(false);
-            }
+           if (doc.document_expiry) {
+    // Safe parse YYYY-MM-DD (or DD-MM-YYYY if your API sends that)
+    const [year, month, day] = doc.document_expiry.split('-').map(Number);
+    const safeDate = new Date(year, month - 1, day);   // month is 0-indexed
+    setExpirationDate(safeDate);
+    setSetExpiration(true);
+} else {
+    setExpirationDate(null);
+    setSetExpiration(false);
+}
 
             // 🔥 File
             setUploadedFilePath(doc.file || null);
@@ -283,6 +295,8 @@ export default function DocumentsScreen({ navigation }: Props) {
                 console.log('[FINAL FILE NAME SENT]:', fileName);
             }
 
+            // === REPLACE THIS BLOCK in handleSave() ===
+
             // Get user ID
             const userStr = await AsyncStorage.getItem('user');
             const user = userStr ? JSON.parse(userStr) : null;
@@ -290,14 +304,15 @@ export default function DocumentsScreen({ navigation }: Props) {
 
             if (!userId) throw new Error('User not found');
 
-            // Format expiry date as DD-MM-YYYY
-            const expDate = setExpiration
-                ? expirationDate?.toLocaleDateString('en-GB', {
-                    day: '2-digit',
-                    month: '2-digit',
-                    year: 'numeric',
-                })
-                : undefined;
+            // 🔥 SAFE YYYY-MM-DD FORMAT (No timezone issues)
+            let expDate: string | undefined = undefined;
+
+            if (setExpiration && expirationDate) {
+                const year = expirationDate.getFullYear();
+                const month = String(expirationDate.getMonth() + 1).padStart(2, '0');
+                const day = String(expirationDate.getDate()).padStart(2, '0');
+                expDate = `${year}-${month}-${day}`;   // ← YYYY-MM-DD
+            }
 
             // Build payload
             const payload: any = {
@@ -305,7 +320,7 @@ export default function DocumentsScreen({ navigation }: Props) {
                 no: addDocNumber,
                 exp: setExpiration,
                 document_no: addDocNumber ? documentNumber.trim() : undefined,
-                document_expiry: expDate,
+                document_expiry: expDate,           // ← Now sends YYYY-MM-DD
                 file: fileName,
                 document_type: documentType,
                 document_name: documentType,
@@ -398,7 +413,7 @@ export default function DocumentsScreen({ navigation }: Props) {
     const renderDocumentCard = ({ item }: { item: Document }) => (
         <View style={styles.card}>
             <View style={styles.cardHeader}>
-                <Text style={styles.cardTitle}>{item.document_name}</Text>
+                <Text style={styles.cardTitle}>{formatDocName(item.document_name)}</Text>
                 <View style={styles.cardActions}>
                     <TouchableOpacity style={styles.backBox} onPress={() => openInBrowser(item.file || '')}>
                         <Eye size={20} color="#2563EB" />
@@ -420,7 +435,7 @@ export default function DocumentsScreen({ navigation }: Props) {
                 </View>
                 <View style={styles.cardRow}>
                     <Text style={styles.cardLabel}>Type:</Text>
-                    <Text style={styles.cardValue}>{item.document_type}</Text>
+                    <Text style={styles.cardValue}>{formatDocName(item.document_type)}</Text>
                 </View>
                 {item.file && (
                     <View style={styles.cardRow}>
@@ -451,7 +466,7 @@ export default function DocumentsScreen({ navigation }: Props) {
             </View>
 
             {loadingDocs ? (
-                <ActivityIndicator size="large" color="#10B981" style={{ marginTop: 50 }} />
+                <ActivityIndicator size="large" color="#2EB1E2" style={{ marginTop: 50 }} />
             ) : (
                 <FlatList
                     data={documents}
@@ -483,33 +498,7 @@ export default function DocumentsScreen({ navigation }: Props) {
                         </View>
 
                         <ScrollView style={styles.modalBody}>
-                            <View style={styles.inputGroup}>
-                                <Text style={styles.label}>
-                                    Document Name <Text style={styles.required}>*</Text>
-                                </Text>
-                                <View style={styles.pickerWrapper}>
-                                    <Picker selectedValue={documentType} onValueChange={setDocumentType} style={styles.picker}>
-                                        <Picker.Item label="Select Document Type" value="" />
-                                        {documentTypes.map((type) => (
-                                            <Picker.Item key={type} label={type} value={type} />
-                                        ))}
-                                    </Picker>
-                                </View>
-                                {!documentType && <Text style={styles.errorText}>Document Type is required*</Text>}
-                            </View>
-
-                            {/* <View style={styles.inputGroup}>
-                                <Text style={styles.label}>Description (Optional)</Text>
-                                <TextInput
-                                    style={styles.textArea}
-                                    multiline
-                                    numberOfLines={4}
-                                    placeholder="Description"
-                                    placeholderTextColor="#9CA3AF"
-                                    value={description}
-                                    onChangeText={setDescription}
-                                />
-                            </View> */}
+                          
 
                             <View style={styles.imageUploadArea}>
                                 <View style={styles.imagePlaceholder}>
@@ -568,7 +557,7 @@ export default function DocumentsScreen({ navigation }: Props) {
 
                                     {/* Preview */}
                                     <TouchableOpacity
-                                        style={[styles.actionBtn, { backgroundColor: '#10B981' }]}
+                                        style={[styles.actionBtn, { backgroundColor: '#2EB1E2' }]}
                                         onPress={() => {
                                             if (selectedFile?.uri) {
                                                 Linking.openURL(selectedFile.uri);
@@ -598,7 +587,7 @@ export default function DocumentsScreen({ navigation }: Props) {
                                     <TouchableOpacity
                                         style={[
                                             styles.checkbox,
-                                            addDocNumber && { backgroundColor: '#10B981', borderColor: '#10B981' },
+                                            addDocNumber && { backgroundColor: '#2EB1E2', borderColor: '#2EB1E2' },
                                         ]}
                                         onPress={() => setAddDocNumber(!addDocNumber)}
                                     >
@@ -625,7 +614,7 @@ export default function DocumentsScreen({ navigation }: Props) {
                                     <TouchableOpacity
                                         style={[
                                             styles.checkbox,
-                                            setExpiration && { backgroundColor: '#10B981', borderColor: '#10B981' },
+                                            setExpiration && { backgroundColor: '#2EB1E2', borderColor: '#2EB1E2' },
                                         ]}
                                         onPress={() => {
                                             setSetExpiration(!setExpiration);
@@ -838,16 +827,17 @@ const styles = StyleSheet.create({
     dateText: { color: '#111827', fontSize: 16, flex: 1 },
 
     saveButton: {
-        backgroundColor: '#10B981',
+        backgroundColor: '#2EB1E2',
+      
         paddingVertical: 16,
         marginHorizontal: 22,
         marginBottom: 24,
         borderRadius: 14,
         alignItems: 'center',
-        shadowColor: '#10B981',
+        shadowColor: '#2EB1E2',
         shadowOpacity: 0.3,
         shadowRadius: 8,
-        elevation: 5,
+        elevation: 2,
     },
     saveButtonText: { color: '#fff', fontSize: 16, fontWeight: '600' },
     buttonDisabled: { opacity: 0.6 },

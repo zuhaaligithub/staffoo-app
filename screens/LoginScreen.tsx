@@ -349,7 +349,7 @@ export default function LoginScreen({ navigation }: Props) {
               <CheckBox
                 value={rememberMe}
                 onValueChange={setRememberMe}
-                tintColors={{ true: '#0066ff', false: '#999' }}
+                tintColors={{ true: '#2EB1E2', false: '#999' }}
               />
               <Text style={{ fontSize: scale(13) }}>Remember Me</Text>
             </View>
@@ -392,7 +392,12 @@ export default function LoginScreen({ navigation }: Props) {
           {/* SIGN UP LINK */}
           <View style={styles.signupRow}>
             <Text style={{ color: '#666' }}>Don't have an account? </Text>
-            <TouchableOpacity onPress={() => navigation.navigate('SignUp')}>
+            <TouchableOpacity 
+              onPress={() => {
+                console.log('Navigating to SignUp...');
+                navigation.navigate('SignUp');
+              }}
+            >
               <Text style={styles.signupLink}>Sign Up</Text>
             </TouchableOpacity>
           </View>
@@ -448,13 +453,13 @@ const styles = StyleSheet.create({
   input: { flex: 1, marginLeft: 10, color: '#333' },
   rowBetween: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
   checkboxRow: { flexDirection: 'row', alignItems: 'center' },
-  forgotText: { color: '#0066ff', fontWeight: '500' },
-  signInButton: { backgroundColor: '#0066ff', borderRadius: 12, height: 52, justifyContent: 'center', alignItems: 'center', marginBottom: 30 },
+  forgotText: { color: '#2EB1E2', fontWeight: '500' },
+  signInButton: { backgroundColor: '#2EB1E2', borderRadius: 12, height: 52, justifyContent: 'center', alignItems: 'center', marginBottom: 30 },
   signInText: { color: '#fff', fontWeight: '600' },
   divider: { flexDirection: 'row', alignItems: 'center', marginBottom: 25 },
   line: { flex: 1, height: 1, backgroundColor: '#ddd' },
   socialRow: { flexDirection: 'row', justifyContent: 'space-evenly', marginBottom: 30 },
   socialBtn: { width: 60, height: 60, borderRadius: 16, borderWidth: 1, borderColor: '#e0e0e0', justifyContent: 'center', alignItems: 'center' },
   signupRow: { flexDirection: 'row', justifyContent: 'center', paddingBottom: 30 },
-  signupLink: { color: '#0066ff', fontWeight: '600' },
+  signupLink: { color: '#2EB1E2', fontWeight: '600' },
 });

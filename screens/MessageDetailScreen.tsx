@@ -295,7 +295,7 @@ export default function MessageDetailScreen() {
             onPress={handleCallPress}
             disabled={isCalling}
           >
-            <Phone size={22} color={isCurrentlyInCall ? '#6366f1' : '#000'} />
+            <Phone size={22} color={isCurrentlyInCall ? '#2EB1E2' : '#000'} />
           </TouchableOpacity>
 
           {/* <TouchableOpacity style={styles.actionBtn} onPress={openAttachments}>
@@ -398,7 +398,7 @@ const styles = StyleSheet.create({
   backBtn:           { padding: 8 },
   profileContainer:  { flex: 1, flexDirection: 'row', alignItems: 'center', marginLeft: 8 },
   avatarContainer:   { position: 'relative' },
-  avatarInitial:     { width: 44, height: 44, borderRadius: 22, backgroundColor: '#7c3aed', justifyContent: 'center', alignItems: 'center' },
+  avatarInitial:     { width: 44, height: 44, borderRadius: 22, backgroundColor: '#2EB1E2', justifyContent: 'center', alignItems: 'center' },
   avatarInitialText: { color: '#ffffff', fontWeight: '700' },
   onlineDot:         { position: 'absolute', bottom: 2, right: 2, width: 12, height: 12, borderRadius: 6, backgroundColor: '#22c55e', borderWidth: 3, borderColor: '#ffffff' },
   nameContainer:     { marginLeft: 12 },
@@ -416,7 +416,7 @@ const styles = StyleSheet.create({
   messageRowLeft:    { alignSelf: 'flex-start' },
   messageRowRight:   { alignSelf: 'flex-end' },
   bubble:            { paddingVertical: 10, paddingHorizontal: 14, borderRadius: 20 },
-  bubbleMe:          { backgroundColor: '#a78bfa', borderBottomRightRadius: 6 },
+  bubbleMe:          { backgroundColor: '#2EB1E2', borderBottomRightRadius: 6 },
   bubbleOther:       { backgroundColor: '#e2e8f0', borderBottomLeftRadius: 6 },
   messageText:       { fontSize: 15.5, lineHeight: 21, color: '#0f172a' },
   messageTextMe:     { color: '#ffffff' },
@@ -426,7 +426,7 @@ const styles = StyleSheet.create({
   inputBar:          { flexDirection: 'row', alignItems: 'center', backgroundColor: '#ffffff', borderTopWidth: 1, borderTopColor: '#e2e8f0', paddingHorizontal: 12, paddingVertical: 10, paddingBottom: Platform.OS === 'ios' ? 28 : 12 },
   inputBtn:          { padding: 10 },
   textInput:         { flex: 1, minHeight: 44, maxHeight: 120, backgroundColor: '#f1f5f9', borderRadius: 22, paddingHorizontal: 16, paddingVertical: 10, marginHorizontal: 8, fontSize: 16, color: '#0f172a' },
-  sendBtn:           { backgroundColor: '#6366f1', width: 44, height: 44, borderRadius: 22, justifyContent: 'center', alignItems: 'center' },
+  sendBtn:           { backgroundColor: '#2EB1E2', width: 44, height: 44, borderRadius: 22, justifyContent: 'center', alignItems: 'center' },
   sheetBackground:   { backgroundColor: '#FFFFFF', borderTopLeftRadius: 32, borderTopRightRadius: 32 },
   handleIndicator:   { backgroundColor: '#D1D5DB', width: 48, height: 5, borderRadius: 3 },
   sheetContent:      { flex: 1, paddingHorizontal: 24 },

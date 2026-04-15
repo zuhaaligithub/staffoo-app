@@ -6,6 +6,7 @@ import Toast from 'react-native-toast-message';
 import { getEchoInstance, destroyEchoInstance } from './echo';
 import SoundPlayer from 'react-native-sound-player';
 import { navigationRef } from './App';
+import { getAuthToken } from './services/authApi';
 
 // Helper function to play sound in React Native
 const playAlertSound = (type: 'chat' | 'call') => {
@@ -113,7 +114,13 @@ function handleEchoEvent(data: any, userId: string) {
   }
 
   // Handle incoming call
-  if (data.type === 'start_call' && (data.roomName || data.channel_name)) {
+  const isStartCall =
+    data.type === 'start_call' ||
+    data.type === 'incoming_call' ||
+    data.type === 'call_incoming' ||
+    data.type === 'incoming';
+
+  if (isStartCall && (data.roomName || data.channel_name)) {
     if (incomingCallId && _deadCalls.has(incomingCallId)) {
       console.warn('[EchoRN] Blocked ghost ring');
       return;
@@ -208,17 +215,13 @@ function handleEchoEvent(data: any, userId: string) {
   }
 }
 
-// ==================== FIXED ECHO SUBSCRIPTION ====================
+
 
 async function echoSubscribe(): Promise<boolean> {
   try {
-    let token = await AsyncStorage.getItem('@auth_token');
-    if (!token) token = await AsyncStorage.getItem('auth_token');
-    if (!token) token = await AsyncStorage.getItem('@token');
-
-    let userRaw = await AsyncStorage.getItem('@user');
-    if (!userRaw) userRaw = await AsyncStorage.getItem('user');
-
+    const token = await getAuthToken();
+    const userRaw = await AsyncStorage.getItem('@user') || await AsyncStorage.getItem('user');
+    
     let userId: string | null = null;
     if (userRaw) {
       try {
@@ -229,60 +232,74 @@ async function echoSubscribe(): Promise<boolean> {
     if (!userId) userId = await AsyncStorage.getItem('@user_id');
 
     if (!token || !userId) {
-      // ✅ Don't log error — this is normal before login
-      console.log('[EchoRN] Not logged in yet, skipping subscription');
+      console.log('[EchoRN] Missing token or userId → skipping');
       return false;
     }
+
     if (_subscribedUserId === userId && _echo) {
-      console.log('[EchoRN] Already subscribed to this user');
-      return true;
+      const state = _echo.connector.pusher.connection.state;
+      console.log(`[EchoRN] Already subscribed, connection state: ${state}`);
+      
+      // If disconnected or in error, we might want to force reconnect
+      if (state === 'disconnected' || state === 'failed') {
+        console.log('[EchoRN] Connection lost, forcing reconnect...');
+      } else {
+        return true;
+      }
     }
 
     echoUnsubscribe();
 
-    console.log(`[EchoRN] Subscribing for user: ${userId}`);
+    _echo = await getEchoInstance();
+    if (!_echo) return false;
 
-    // ✅ Correct way - await the async function
-    _echo = await getEchoInstance();        // ← This was the main bug
+    // Reset subscription state if we have a fresh echo
     _subscribedUserId = userId;
 
-    if (!_echo) {
-      console.error('[EchoRN] Failed to create Echo instance');
-      return false;
-    }
-
-    // Optional: Log connection
-    const connection = _echo.connector?.pusher?.connection;
-    if (connection) {
-      connection.bind('connected', () => {
-        console.log('%c✅ Pusher Connected Successfully (CallManager)', 'color:#22C55E;font-weight:bold');
-      });
-    }
-
-    // Subscribe to notification channel
-    _echo
-      .private(`notifications.${userId}`)
+    // Re-bind connection error to clear state
+    _echo.connector.pusher.connection.bind('error', (err: any) => {
+      const code = err?.data?.code;
+      const type = err?.type;
+      const message = err?.data?.message || err?.message || '';
+      
+      // Treat transient WebSocket/Pusher errors as warnings
+      if (type === 'WebSocketError' || code === 1006) {
+        console.warn(`[EchoRN] Transient error (${type || code}). Waiting for Pusher auto-reconnect...`);
+        return;
+      }
+      
+      console.error('[EchoRN] Pusher Fatal Connection Error:', err);
+      
+      if (message.includes('401') || message.includes('Unauthorized')) {
+        _subscribedUserId = null; 
+      }
+    });
+    _echo.private(`notifications.${userId}`)
       .listen(EVENT, (data: any) => handleEchoEvent(data, userId!))
-      .error((err: any) => console.error('[EchoRN] Notification channel error:', err));
+      .error((err: any) => {
+        console.error('[EchoRN] Notification channel error:', err);
+        // 🔥 If 401 or auth error, clear subscription so we retry
+        if (err?.status === 401 || String(err?.error || '').includes('401')) {
+          _subscribedUserId = null;
+        }
+      });
 
-    // Subscribe to call channels
-    _echo
-      .private(`user.${userId}`)
-      .listen('.call.ended', () => {
-        console.log('[EchoRN] call.ended received');
-        setCallState({ incoming: null, outgoing: null, inCall: false });
-      })
-      .listen('.call.rejected', () => {
-        console.log('[EchoRN] call.rejected received');
-        setCallState({ incoming: null, outgoing: null, inCall: false });
-      })
-      .error((err: any) => console.error('[EchoRN] Call channel error:', err));
+    // Subscribe to call channel
+    _echo.private(`user.${userId}`)
+      .listen('.call.ended', () => setCallState({ incoming: null, outgoing: null, inCall: false }))
+      .listen('.call.rejected', () => setCallState({ incoming: null, outgoing: null, inCall: false }))
+      .error((err: any) => {
+        console.error('[EchoRN] Call channel error:', err);
+        if (err?.status === 401 || String(err?.error || '').includes('401')) {
+          _subscribedUserId = null;
+        }
+      });
 
-    console.log(`[EchoRN] ✅ Successfully subscribed to notifications.${userId} and user.${userId}`);
+    console.log(`[EchoRN] Subscribed to notifications.${userId} and user.${userId}`);
     return true;
 
   } catch (err: any) {
-    console.error('[EchoRN] Subscribe error:', err);
+    console.error('[EchoRN] Subscribe failed:', err);
     return false;
   }
 }
@@ -293,6 +310,7 @@ function echoUnsubscribe() {
       _echo.private(`notifications.${_subscribedUserId}`).stopListening(EVENT);
       _echo.private(`user.${_subscribedUserId}`).stopListening('.call.ended');
       _echo.private(`user.${_subscribedUserId}`).stopListening('.call.rejected');
+      _echo.disconnect(); // Force disconnect
     }
   } catch (err) {
     // Silent fail on cleanup
@@ -302,87 +320,6 @@ function echoUnsubscribe() {
   }
 }
 
-// function echoUnsubscribe() {
-//   try {
-//     if (_echo && _subscribedUserId) {
-//       _echo.private(`notifications.${_subscribedUserId}`).stopListening(EVENT);
-//       _echo.private(`user.${_subscribedUserId}`).stopListening('.call.ended');
-//       _echo.private(`user.${_subscribedUserId}`).stopListening('.call.rejected');
-//     }
-//     _notifiedSenders.clear(); // Reset notification tracking
-//     _lastSoundTimes.clear(); // Reset sound anti-spam tracking
-//   } catch (err) {
-//     console.error('[EchoRN] Unsubscribe error:', err);
-//   } finally {
-//     _echo = null;
-//     _subscribedUserId = null;
-//   }
-// }
-
-// async function echoSubscribe(): Promise<boolean> {
-//   try {
-//     let token = await AsyncStorage.getItem('@auth_token');
-//     if (!token) token = await AsyncStorage.getItem('auth_token');
-//     if (!token) token = await AsyncStorage.getItem('@token');
-
-//     let userRaw = await AsyncStorage.getItem('@user');
-//     if (!userRaw) userRaw = await AsyncStorage.getItem('user');
-
-//     let userId: string | null = null;
-//     if (userRaw) {
-//       try {
-//         const parsed = JSON.parse(userRaw);
-//         userId = String(parsed?.id ?? parsed?.data?.id ?? '');
-//       } catch {}
-//     }
-//     if (!userId) userId = await AsyncStorage.getItem('@user_id');
-
-//     if (!token || !userId) {
-//       console.log('[EchoRN] Missing token or userId');
-//       return false;
-//     }
-
-//     if (_subscribedUserId === userId && _echo) return true;
-
-//     echoUnsubscribe();
-
-//     _echo = getEchoInstance();
-//     _subscribedUserId = userId;
-
-//     const connection = _echo.connector.pusher.connection;
-//     connection.bind('connected', () => {
-//       console.log('%c✅ Pusher Connected Successfully (CallManager)', 'color:#22C55E;font-weight:bold');
-//     });
-
-//     console.log('[EchoRN] Connecting Echo for user (Private Channels):', userId);
-
-//     _echo
-//       .private(`notifications.${userId}`)
-//       .listen(EVENT, (data: any) => handleEchoEvent(data, userId!))
-//       .error((err: any) => {
-//         console.error('[EchoRN] Channel error:', err);
-//       });
-
-//     _echo
-//       .private(`user.${userId}`)
-//       .listen('.call.ended', () => {
-//         console.log('[EchoRN] call.ended');
-//         setCallState({ incoming: null, outgoing: null, inCall: false });
-//       })
-//       .listen('.call.rejected', () => {
-//         console.log('[EchoRN] call.rejected');
-//         setCallState({ incoming: null, outgoing: null, inCall: false });
-//       });
-
-//     console.log('[EchoRN] ✅ Subscribed to private channels');
-
-//     console.log('[EchoRN] ✅ Subscribed successfully');
-//     return true;
-//   } catch (err) {
-//     console.error('[EchoRN] Subscribe error:', err);
-//     return false;
-//   }
-// }
 
 export function useEchoCallListener() {
   const retryRef = useRef<NodeJS.Timeout | null>(null);

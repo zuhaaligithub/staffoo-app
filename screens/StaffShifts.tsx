@@ -29,7 +29,7 @@ import { getUserProfile, getContractorStaff, postGuardJobs } from '../services/a
 import { useFocusEffect } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Picker } from '@react-native-picker/picker';
-
+import LinearGradient from 'react-native-linear-gradient';
 export default function StaffShifts({ navigation, route }: any) {
   const bottomSheetRef = useRef<BottomSheet>(null);
   const snapPoints = useMemo(() => ['80%', '85%'], []);
@@ -46,6 +46,7 @@ export default function StaffShifts({ navigation, route }: any) {
   const [loadingStaff, setLoadingStaff] = useState(false);
   const [loadingProfile, setLoadingProfile] = useState(true);
   const [userId, setUserId] = useState<number>(0);
+  const [userDocuments, setUserDocuments] = useState<any[]>([]);
 
   const [userName, setUserName] = useState('');
   const [user, setUser] = useState<any>(null);
@@ -199,6 +200,7 @@ export default function StaffShifts({ navigation, route }: any) {
 
         if (res?.success && res?.data) {
           const fresh = res.data;
+          setUserDocuments(fresh.documents || []);
           const type = (fresh.user_type || '').trim().toLowerCase();
           setUserType(type);
           console.log('[Fresh user_type from API]:', type);
@@ -362,7 +364,30 @@ export default function StaffShifts({ navigation, route }: any) {
       buttonText = 'Sign In';
       buttonStyle = styles.signInButton;
       textColor = '#92400e';
-      onPress = () => navigation.navigate('SignIn', { shift });
+
+      // 🔥 Correct Guard ID Logic (check both root and guard object)
+      const guardUserId = shift.guard?.user_id ?? shift.user_id;
+      const isUserAdmin = Number(guardUserId) === 1;
+      let hasMissingDocs = false;
+
+      if (!isUserAdmin && Number(shift.is_document) === 1) {
+        hasMissingDocs = !userDocuments ||
+          userDocuments.length === 0 ||
+          userDocuments.some((doc: any) => !doc.file || !doc.document_no);
+      }
+
+      if (hasMissingDocs) {
+        onPress = () => {
+          Toast.show({
+            type: 'error',
+            text1: 'Incomplete Profile',
+            text2: 'Please add your documents first then you can sign-in into job',
+          });
+        };
+        buttonStyle = [styles.signInButton, { opacity: 0.5 }];
+      } else {
+        onPress = () => navigation.navigate('SignIn', { shift });
+      }
     }
 
     else if (isToday && isConfirmed && signinStatus === 1) {
@@ -481,6 +506,12 @@ export default function StaffShifts({ navigation, route }: any) {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
+        <LinearGradient
+                    colors={['#36D1DC', '#5cabe4']}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={styles.cardTop}
+                  >
         <View style={styles.header}>
           <TouchableOpacity
             style={styles.headerLeft}
@@ -507,6 +538,7 @@ export default function StaffShifts({ navigation, route }: any) {
             </View>
           </TouchableOpacity>
         </View>
+        </LinearGradient>
 
         <View style={styles.tabsWrapper}>
           {[
@@ -530,15 +562,15 @@ export default function StaffShifts({ navigation, route }: any) {
                 onPress={() => setActiveTab(tab.label)}
                 activeOpacity={0.9}
               >
-                <Text
-                  style={{
-                    color: isActive ? '#fff' : '#111',
-                    fontWeight: isActive ? '800' : '600',
-                    fontSize: isActive ? 13 : 12,
-                  }}
-                >
-                  {tab.label}
-                </Text>
+             <Text
+  style={{
+    color: isActive ? '#fff' : tab.dark, // ✅ FIXED
+    fontWeight: isActive ? '800' : '600',
+    fontSize: isActive ? 13 : 12,
+  }}
+>
+  {tab.label}
+</Text>
               </TouchableOpacity>
             );
           })}
@@ -721,9 +753,9 @@ const styles = StyleSheet.create({
   name: { fontSize: 18, fontWeight: '700', color: '#000' },
   tabItem: {
     flex: 1,
-    marginHorizontal: 4,
-    paddingVertical: 12,
-    borderRadius: 12,
+    marginHorizontal: 7,
+    paddingVertical: 11,
+    borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -742,6 +774,17 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 30,
     marginBottom: 10,
+  },
+    cardTop: {
+      flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+  // backgroundColor: '#2EB1E2',
+    borderRadius: 12,
+    // marginBottom: 10,
+    marginTop: 20
   },
   initialsAvatar: {
     width: 50,
@@ -771,12 +814,12 @@ const styles = StyleSheet.create({
   },
 
   sectionHeader: {
-    fontSize: 19,
+    fontSize: 18,
     fontWeight: '700',
-    color: '#0f172a',
     marginTop: 10,
     marginBottom: 9,
     paddingHorizontal: 4,
+    color: '#226a84'
   },
 
   shiftCard: {
@@ -909,8 +952,8 @@ const styles = StyleSheet.create({
 
   emptyText: {
     textAlign: 'center',
-    marginTop: 40,
-    fontSize: 16,
+    marginTop: 25,
+    fontSize: 12,
     color: '#777',
   },
 
@@ -1009,15 +1052,7 @@ const styles = StyleSheet.create({
     marginTop: 20,
   },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    backgroundColor: '#10B981',
-    borderRadius: 12,
-    // marginBottom: 10,
-    marginTop: 20
+ 
   },
   greeting: {
     fontSize: 16,

@@ -155,7 +155,7 @@ export default function HomeScreen({ navigation }: any) {
       // 2. Handle Profile & Image
       const storedUser = await AsyncStorage.getItem('user');
       const cachedImage = await AsyncStorage.getItem('profileImage');
-      
+
       if (storedUser) {
         const parsedUser = JSON.parse(storedUser);
         setUser(parsedUser);
@@ -283,6 +283,7 @@ export default function HomeScreen({ navigation }: any) {
               const sortedJobs = [...(site.job_roster || [])].sort((a: any, b: any) => {
                 const timeA = a.start ? new Date(a.start).getTime() : 0;
                 const timeB = b.start ? new Date(b.start).getTime() : 0;
+
                 return timeB - timeA;
               });
 
@@ -294,6 +295,7 @@ export default function HomeScreen({ navigation }: any) {
                     Total Hours: {totalHours.toFixed(1)} hrs
                   </Text>
                   {sortedJobs.map((job: any) => {
+                    const status = job.job_status?.toLowerCase();
                     const shiftDate = job.start
                       ? new Date(job.start).toLocaleDateString('en-GB', {
                         day: '2-digit',
@@ -318,16 +320,36 @@ export default function HomeScreen({ navigation }: any) {
                           {job.guards?.name || 'Unassigned'}
                         </Text>
 
+
+
                         <View
                           style={[
                             styles.statusBadge,
-                            job.job_status === 'confirmed'
-                              ? { backgroundColor: '#D1FAE5' }
-                              : { backgroundColor: '#FEF3C7' },
+                            status === 'pending'
+                              ? { backgroundColor: '#FEE2E2' }
+                              : status === 'confirmed'
+                                ? { backgroundColor: '#FEF3C7' }
+                                : status === 'completed'
+                                  ? { backgroundColor: '#D1FAE5' }
+                                  : { backgroundColor: '#E5E7EB' },
                           ]}
                         >
-                          <Text style={styles.statusText}>
-                            {job.job_status || 'pending'}
+                          <Text
+                            style={[
+                              styles.statusText,
+                              {
+                                color:
+                                  status === 'pending'
+                                    ? '#DC2626' // 🔴 red
+                                    : status === 'confirmed'
+                                      ? '#F59E0B' // 🟡 yellow/orange
+                                      : status === 'completed'
+                                        ? '#16A34A' // 🟢 green
+                                        : '#374151',
+                              },
+                            ]}
+                          >
+                            {status || 'pending'}
                           </Text>
                         </View>
                       </View>
@@ -392,10 +414,10 @@ const styles = StyleSheet.create({
     width: 50,
     height: 50,
     borderRadius: 25,
-    backgroundColor: '#2eb1e2',     
+    backgroundColor: '#2eb1e2',
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 3,
+    borderWidth: 1,
     borderColor: '#a8a1a1',
   },
   learnMoreText: { color: '#fff', fontWeight: '600' },

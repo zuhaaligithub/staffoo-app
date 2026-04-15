@@ -97,7 +97,7 @@ const fetchCards = async () => {
 
     return (
       <View style={styles.cardItem}>
-        <CreditCard size={28} color="#2563eb" />
+        <CreditCard size={28} color="#2EB1E2" />
         <View style={styles.cardInfo}>
           <Text style={styles.cardName}>{item.card_holder_name.toUpperCase()}</Text>
           <Text style={styles.cardNumber}>{shortFormatted}</Text>
@@ -186,14 +186,14 @@ const styles = StyleSheet.create({
     bottom: 32,
     left: 24,
     right: 24,
-    backgroundColor: '#2563eb',
+    backgroundColor: '#2EB1E2',
     borderRadius: 16,
     paddingVertical: 16,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 10,
-    shadowColor: '#2563eb',
+    shadowColor: '#2EB1E2',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,

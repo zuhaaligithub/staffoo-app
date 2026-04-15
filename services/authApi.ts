@@ -22,19 +22,26 @@ export interface LoginPayload {
 export interface ProfileUpdatePayload {
   name?: string;
   phone?: string;
-  gmail?: string;           // ← if you use this field for something else
-  gender?: string;
-  staff_document_type?: string;
+  gmail?: string;
+  gender?: string | null;
+  staff_document_type?: string | null;
   email?: string;
   email_otp?: string;
-
-  
-
+  address?: string;
+  city?: string;
+  state?: string;
+  country?: string;
+  coordinates?: string;
+  company_name?: string;
+  registration_number?: string;
 }
 
 
 export const getAuthToken = async (): Promise<string | null> => {
-  return AsyncStorage.getItem('@auth_token');
+  let token = await AsyncStorage.getItem('@auth_token');
+  if (!token) token = await AsyncStorage.getItem('auth_token');
+  if (!token) token = await AsyncStorage.getItem('@token');
+  return token;
 };
 
 
@@ -129,13 +136,14 @@ export const getUserProfile = async (userId: string | number) => {
     console.log('🔹 getUserProfile called with ID:', userId);
 
     const token = await getAuthToken();
+
     if (!token) {
-      throw new Error('No authentication token found');
+      const err: any = new Error('No authentication token');
+      err.status = 401;
+      throw err;
     }
 
-
     const endpoint = `${BASE_URL}/user-edit/${userId}`;
-
     console.log('🔹 Calling endpoint:', endpoint);
 
     const response = await axios.get(endpoint, {
@@ -148,21 +156,30 @@ export const getUserProfile = async (userId: string | number) => {
     console.log('✅ Profile API Response:', response.data);
 
     return response.data;
+
   } catch (error: any) {
-    console.log('❌ getUserProfile error:', error.response?.data || error.message);
+    console.log('❌ getUserProfile error:', error?.response?.data || error.message);
 
-    if (error.response?.status === 401) {
-      throw new Error('Session expired. Please login again.');
+    // 🔥 Handle 401 properly
+    if (error?.response?.status === 401) {
+      const err: any = new Error('Unauthorized');
+      err.status = 401;
+      throw err;
     }
 
-    if (error.response?.data?.message) {
-      throw new Error(error.response.data.message);
+    // 🔥 Handle API message
+    if (error?.response?.data?.message) {
+      const err: any = new Error(error.response.data.message);
+      err.status = error.response.status;
+      throw err;
     }
 
-    throw new Error(error.message || 'Failed to fetch profile');
+    // 🔥 Network / unknown error
+    const err: any = new Error(error.message || 'Failed to fetch profile');
+    err.status = error?.response?.status || 500;
+    throw err;
   }
 };
-
 // export const updateUserProfile = async (
 //   userId: string | number,
 //   payload: ProfileUpdatePayload
@@ -250,6 +267,15 @@ export const updateUserProfile = async (
   if (payload.phone) formData.append('phone', payload.phone);
   if (payload.email) formData.append('email', payload.email);
   if (payload.email_otp) formData.append('email_otp', payload.email_otp);
+  if (payload.gender) formData.append('gender', payload.gender);
+  if (payload.staff_document_type) formData.append('staff_document_type', payload.staff_document_type);
+  if (payload.address) formData.append('address', payload.address);
+  if (payload.city) formData.append('city', payload.city);
+  if (payload.state) formData.append('state', payload.state);
+  if (payload.country) formData.append('country', payload.country);
+  if (payload.coordinates) formData.append('coordinates', payload.coordinates);
+  if (payload.company_name) formData.append('company_name', payload.company_name);
+  if (payload.registration_number) formData.append('registration_number', payload.registration_number);
 
   // 🔥 Append image (IMPORTANT)
   if (payload.profile_image) {

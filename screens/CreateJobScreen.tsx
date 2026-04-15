@@ -176,7 +176,7 @@ export default function CreateJobScreen() {
       try {
         const url = `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${encodeURIComponent(
           autocompleteQuery
-        )}&key=${GOOGLE_PLACES_KEY}&components=country:pk`;
+        )}&key=${GOOGLE_PLACES_KEY}`;
 
         const res = await fetch(url);
         const json = await res.json();
@@ -420,7 +420,7 @@ export default function CreateJobScreen() {
                   <Marker
                     coordinate={{ latitude: form.lat, longitude: form.lng }}
                     title={form.location || 'Selected Location'}
-                    pinColor="#2563EB"
+                    pinColor="#2EB1E2"
                     draggable
                     onDragEnd={(e) => {
                       const { latitude, longitude } = e.nativeEvent.coordinate;
@@ -437,7 +437,7 @@ export default function CreateJobScreen() {
                   </Text>
                 ) : (
                   <>
-                    <ActivityIndicator size="large" color="#2563EB" />
+                    <ActivityIndicator size="large" color="#2EB1E2" />
                     <Text style={{ color: '#64748b', marginTop: 12 }}>Loading map...</Text>
                   </>
                 )}
@@ -463,7 +463,7 @@ export default function CreateJobScreen() {
               />
             </View>
 
-            {loadingSuggestions && <ActivityIndicator color="#2563EB" style={{ marginTop: 12 }} />}
+            {loadingSuggestions && <ActivityIndicator color="#2EB1E2" style={{ marginTop: 12 }} />}
 
             {suggestions.slice(0, 5).map((item) => (
               <TouchableOpacity key={item.place_id} style={styles.suggestionItem} onPress={() => selectSuggestion(item)}>
@@ -617,10 +617,10 @@ export default function CreateJobScreen() {
 
             <TouchableOpacity style={styles.uploadButton} onPress={handleUpload} disabled={uploading}>
               {uploading ? (
-                <ActivityIndicator color="#2563EB" />
+                <ActivityIndicator color="#2EB1E2" />
               ) : (
                 <>
-                  <CloudUpload size={20} color="#2563EB" />
+                  <CloudUpload size={20} color="#2EB1E2" />
                   <Text style={styles.uploadText}>Upload Files</Text>
                 </>
               )}
@@ -630,7 +630,7 @@ export default function CreateJobScreen() {
               <View style={styles.fileList}>
                 {uploadedFilePaths.map((path, index) => (
                   <View key={index} style={styles.fileItem}>
-                    <FileCheck size={20} color="#2563EB" />
+                    <FileCheck size={20} color="#2EB1E2" />
                     <Text style={styles.fileName} numberOfLines={1}>
                       {path.split('/').pop() || `File ${index + 1}`}
                     </Text>
@@ -663,7 +663,7 @@ export default function CreateJobScreen() {
 
             <Text style={styles.totalHoursBottom}>
               Total guard hours:{' '}
-              <Text style={{ fontWeight: 'bold', color: '#2563EB' }}>
+              <Text style={{ fontWeight: 'bold', color: '#2EB1E2' }}>
                 {totalManHoursText}
               </Text>
               {' '}({shiftDurationText} h × {guardsCountNum} guards)
@@ -820,13 +820,13 @@ const styles = StyleSheet.create({
     height: 22,
     borderRadius: 6,
     borderWidth: 1.5,
-    borderColor: '#2563EB',
+    borderColor: '#2EB1E2',
 
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 10,
   },
-  checkboxSelected: { backgroundColor: '#2563EB' },
+  checkboxSelected: { backgroundColor: '#2EB1E2' },
   checkboxLabel: { fontSize: 15, color: '#1e293b' },
 
   dropdownButton: {
@@ -846,7 +846,7 @@ const styles = StyleSheet.create({
   modalTitle: { fontSize: 18, fontWeight: '600', marginBottom: 12 },
   modalCloseButton: {
     marginTop: 12,
-    backgroundColor: '#2563EB',
+    backgroundColor: '#2EB1E2',
     paddingVertical: 14,
     borderRadius: 12,
     alignItems: 'center',
@@ -938,12 +938,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1.5,
-    borderColor: '#2563EB',
+    borderColor: '#2EB1E2',
     borderRadius: 12,
     paddingVertical: 14,
     gap: 10,
   },
-  uploadText: { color: '#2563EB', fontSize: 16, fontWeight: '600' },
+  uploadText: { color: '#2EB1E2', fontSize: 16, fontWeight: '600' },
   fileList: { marginTop: 12, gap: 8 },
   fileItem: {
     flexDirection: 'row',
@@ -975,7 +975,7 @@ const styles = StyleSheet.create({
     right: 24,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#2563EB',
+    backgroundColor: '#2EB1E2',
     paddingVertical: 14,
     paddingHorizontal: 28,
     borderRadius: 50,

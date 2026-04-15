@@ -342,7 +342,7 @@ const styles = StyleSheet.create({
   row: { flexDirection: 'row', gap: 12 },
   halfField: { flex: 1 },
   saveButton: {
-    backgroundColor: '#2563eb',
+    backgroundColor: '#2EB1E2',
     paddingVertical: 16,
     borderRadius: 12,
     alignItems: 'center',

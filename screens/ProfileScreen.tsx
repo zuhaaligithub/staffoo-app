@@ -24,6 +24,7 @@ import {
   CreditCard,
   ArrowLeft,
   Trash2,
+  Wallet,
 } from 'lucide-react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { launchImageLibrary } from 'react-native-image-picker';
@@ -80,7 +81,6 @@ export default function ProfileScreen({ navigation }: Props) {
     useCallback(() => {
       const loadProfile = async () => {
         setLoading(true);
-
         try {
           const userId = await AsyncStorage.getItem('@user_id');
           const token = await AsyncStorage.getItem('@auth_token');
@@ -89,7 +89,6 @@ export default function ProfileScreen({ navigation }: Props) {
           if (cachedImage) {
             setProfileImage(cachedImage);
           }
-
           if (!userId || !token) {
             navigation.reset({
               index: 0,
@@ -97,34 +96,33 @@ export default function ProfileScreen({ navigation }: Props) {
             });
             return;
           }
-
           setUserId(userId);
           const profileResponse = await getUserProfile(userId);
-
           if (profileResponse?.success && profileResponse?.data) {
             const freshData = profileResponse.data;
             setUser(freshData);
             setCompletionPercentage(freshData.profile_completion_percentage || 0);
             setIsActive(freshData.is_active || false);
-
             const BASE_IMAGE_URL = 'https://apis.staffoo.com.au/storage/';
-
             let imageUri = null;
-
-            // Contractor / Staff
-            if (freshData.user_type === 'contractor' || freshData.user_type === 'staff') {
-              imageUri = freshData.contractor?.profile_image || freshData.staff?.profile_image;
+            if (
+              freshData.user_type === 'contractor' ||
+              freshData.user_type === 'staff'
+            ) {
+              imageUri =
+                freshData.contractor?.profile_image ||
+                freshData.staff?.profile_image;
             }
-
-            // Customer
             if (freshData.user_type === 'customer') {
-              imageUri = freshData.customer?.profile_image || freshData.profile_image;
+              imageUri =
+                freshData.customer?.profile_image ||
+                freshData.profile_image;
             }
-
-            // Set profile image if exists
             if (imageUri) {
-              // If already full URL, skip base URL
-              const fullUri = imageUri.startsWith('http') ? imageUri : `${BASE_IMAGE_URL}${imageUri}`;
+              const fullUri = imageUri.startsWith('http')
+                ? imageUri
+                : `${BASE_IMAGE_URL}${imageUri}`;
+
               setProfileImage(fullUri);
               await AsyncStorage.setItem('profileImage', fullUri);
             }
@@ -134,14 +132,32 @@ export default function ProfileScreen({ navigation }: Props) {
             if (cached) {
               const parsed = JSON.parse(cached);
               setUser(parsed);
-              if (!cachedImage && parsed?.staff?.profile_image) {
-                const BASE_IMAGE_URL = 'https://apis.staffoo.com.au/storage/';
-                setProfileImage(`${BASE_IMAGE_URL}${parsed.staff.profile_image}`);
-              }
             }
           }
-        } catch (err) {
+
+        } catch (err: any) {
           console.error('❌ Profile fetch error:', err);
+          if (err?.status === 401) {
+            await AsyncStorage.multiRemove([
+              '@user_id',
+              '@auth_token',
+              'user',
+              'profileImage',
+            ]);
+
+            navigation.reset({
+              index: 0,
+              routes: [{ name: 'Login' }],
+            });
+            return;
+          }
+
+          const cached = await AsyncStorage.getItem('user');
+          if (cached) {
+            const parsed = JSON.parse(cached);
+            setUser(parsed);
+          }
+
         } finally {
           setLoading(false);
         }
@@ -159,17 +175,12 @@ export default function ProfileScreen({ navigation }: Props) {
       console.log('[OneSignal] Customer login → do not show in-app notifications');
       return;
     }
-
     let pollTimer: ReturnType<typeof setTimeout> | undefined;
-
     const setupOneSignal = async () => {
       OneSignal.Debug.setLogLevel(LogLevel.Verbose);
       OneSignal.initialize(ONESIGNAL_APP_ID);
       await new Promise((r) => setTimeout(r, 800));
-
       OneSignal.Notifications.requestPermission(true);
-
-      // Subscription change (push token)
       subscriptionChangeHandlerRef.current = async (event: any) => {
         const playerId = event.current?.id ?? null;
         if (playerId && userId) {
@@ -183,20 +194,15 @@ export default function ProfileScreen({ navigation }: Props) {
         'change',
         subscriptionChangeHandlerRef.current
       );
-
-      // Foreground display
       foregroundHandlerRef.current = (event: any) => {
         event.preventDefault();
         event.getNotification().display();
       };
       OneSignal.Notifications.addEventListener('foregroundWillDisplay', foregroundHandlerRef.current);
-
-      // Click handler
       clickHandlerRef.current = (event: any) => {
         const notification = event.notification;
         const additionalData = notification?.additionalData || {};
         const pageName = additionalData.page;
-
         if (pageName === 'asap-job-list') {
           const jobDataRaw = additionalData.job_data;
           let asapData: AsapJobData = {};
@@ -205,14 +211,11 @@ export default function ProfileScreen({ navigation }: Props) {
           } catch (e) {
             console.warn('Failed to parse job_data:', e);
           }
-
           setJobData(asapData);
           setModalVisible(true);
         }
       };
       OneSignal.Notifications.addEventListener('click', clickHandlerRef.current);
-
-      // Poll for Player ID once
       pollTimer = setTimeout(async () => {
         try {
           const playerId = await OneSignal.User.pushSubscription.getIdAsync();
@@ -229,7 +232,6 @@ export default function ProfileScreen({ navigation }: Props) {
     };
 
     setupOneSignal();
-
     return () => {
       if (subscriptionChangeHandlerRef.current)
         OneSignal.User.pushSubscription.removeEventListener('change', subscriptionChangeHandlerRef.current);
@@ -249,45 +251,51 @@ export default function ProfileScreen({ navigation }: Props) {
       const imageUri = result.assets[0].uri;
       if (imageUri) {
         setProfileImage(imageUri);
-        setImageFile(result.assets[0]); // store for API upload
-
-        // Persist in AsyncStorage
+        setImageFile(result.assets[0]);
         await AsyncStorage.setItem('profileImage', imageUri);
       }
     }
   };
 
-
-
   const getProfileSections = (userType: string | undefined, isActive: boolean) => {
     const type = userType?.toLowerCase();
-
     const sections = [
       { title: 'Personal Information', icon: <User size={22} color="#2146a3" />, bgColor: '#a9d8f1', route: 'ProfileSetup' },
       { title: 'Documents', icon: <FileText size={22} color="#2146a3" />, bgColor: '#a9d8f1', route: 'Documents' },
-      // { title: 'Leave Management', icon: <FileText size={22} color="#2146a3" />, bgColor: '#a9d8f1', route: 'LeaveManagement' },
+
+      // ✅ ADD THIS
+      { title: 'Payslip', icon: <Wallet size={22} color="#2146a3" />, bgColor: '#a9d8f1', route: 'Payslip' },
+
       { title: 'Bank Details', icon: <CreditCard size={22} color="#fff" />, bgColor: '#8B5CF6', route: 'PaymentMethod' },
       { title: 'Log out', icon: <LogOut size={22} color="#f7f1f1" />, bgColor: '#f85858', route: 'Logout', isDanger: true },
       { title: 'Delete Profile', icon: <Trash2 size={22} color="#f7f1f1" />, bgColor: '#f85858', route: 'DeleteProfile', isDanger: true },
     ];
 
-    // ✅ STAFF / CONTRACTOR
-    if (type === 'staff' || type === 'contractor') {
-      return sections.filter(s => {
-        // ❌ Hide Leave Management if inactive
-        // if (!isActive && s.title === 'Leave Management') return false;
-
-        return [
+    if (type === 'staff') {
+      return sections.filter(s =>
+        [
           'Personal Information',
           'Documents',
-          // 'Leave Management',
+          'Payslip', // ✅ only for staff
           'Log out',
           'Delete Profile',
-        ].includes(s.title);
-      });
+        ].includes(s.title)
+      );
     }
 
-    // ✅ CUSTOMER
+    if (type === 'contractor') {
+      return sections.filter(s =>
+        [
+          'Personal Information',
+          'Documents',
+          'Log out',
+          'Delete Profile',
+        ].includes(s.title)
+      );
+    }
+
+
+
     if (type === 'customer') {
       return sections.filter(s =>
         [
@@ -302,9 +310,7 @@ export default function ProfileScreen({ navigation }: Props) {
     return sections;
   };
   const isProfileComplete = completionPercentage === 100;
-
   const handleSectionPress = (route: string) => {
-    // Special case: Logout
     if (route === 'Logout') {
       Alert.alert(
         'Logout',
@@ -317,13 +323,9 @@ export default function ProfileScreen({ navigation }: Props) {
             onPress: async () => {
               try {
                 const token = await AsyncStorage.getItem('@auth_token');
-
-                // 🔥 Call API only if token exists
                 if (token) {
                   await logoutUser();
                 }
-
-                // 🧹 Clear local storage
                 await AsyncStorage.multiRemove([
                   '@user_id',
                   '@auth_token',
@@ -335,8 +337,6 @@ export default function ProfileScreen({ navigation }: Props) {
                   type: 'success',
                   text1: 'Logged out successfully',
                 });
-
-                // 🚀 Redirect to Login
                 navigation.reset({
                   index: 0,
                   routes: [{ name: 'Login' }],
@@ -344,8 +344,6 @@ export default function ProfileScreen({ navigation }: Props) {
 
               } catch (error: any) {
                 console.log('Logout error:', error);
-
-                // Even if API fails → force logout locally
                 await AsyncStorage.multiRemove([
                   '@user_id',
                   '@auth_token',
@@ -365,8 +363,6 @@ export default function ProfileScreen({ navigation }: Props) {
 
       return;
     }
-
-    // Special case: Delete Profile → show confirmation + call API
     if (route === 'DeleteProfile') {
       Alert.alert(
         'Delete Profile',
@@ -388,8 +384,6 @@ export default function ProfileScreen({ navigation }: Props) {
                   Toast.show({ type: 'error', text1: 'No auth token' });
                   return;
                 }
-
-                // ── ACTUAL API CALL ──
                 const response = await fetch(`https://apis.staffoo.com.au/api/user-delete/${userId}`, {
                   method: 'GET',
                   headers: {
@@ -397,9 +391,7 @@ export default function ProfileScreen({ navigation }: Props) {
                     Authorization: `Bearer ${token}`,
                   },
                 });
-
                 const data = await response.json();
-
                 if (!response.ok || !data.success) {
                   Toast.show({
                     type: 'error',
@@ -408,8 +400,6 @@ export default function ProfileScreen({ navigation }: Props) {
                   });
                   return;
                 }
-
-                // Success → clean up & logout
                 await AsyncStorage.multiRemove([
                   '@user_id',
                   '@auth_token',
@@ -436,10 +426,8 @@ export default function ProfileScreen({ navigation }: Props) {
           },
         ]
       );
-      return; // ← IMPORTANT: stop here – do NOT navigate
+      return;
     }
-
-    // Normal navigation for all other items
     navigation.navigate(route);
   };
 
@@ -539,13 +527,9 @@ export default function ProfileScreen({ navigation }: Props) {
           ))}
         </View>
       </ScrollView>
-
-
-
       <BottomTab
         navigation={navigation}
         activeTab="Profile"
-      // isActive={isActive}
       />
     </SafeAreaView>
   );
@@ -560,7 +544,6 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     paddingHorizontal: 0,
-    // marginTop: 20,
     marginLeft: 15,
   },
   headerTitle: {
@@ -569,15 +552,21 @@ const styles = StyleSheet.create({
     color: '#000',
     marginLeft: '26%',
   },
-  backBox: {
-    width: 44,
-    height: 44,
+   backBox: {
+    width: 40,
+    height: 40,
     borderRadius: 12,
     backgroundColor: '#fff',
     borderWidth: 1,
     borderColor: '#e0e0e0',
     justifyContent: 'center',
     alignItems: 'center',
+    marginRight: 7,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 2,
   },
   userTypeText: {
     fontSize: 14,
@@ -593,19 +582,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   profileCard: {
-    // backgroundColor: '#fff',
-    // margin: 16,
     paddingTop: 0,
     paddingBottom: 5,
     padding: 32,
-    // borderRadius: 20,
-    // shadowColor: '#000',
-    // shadowOffset: { width: 0, height: 4 },
-    // shadowOpacity: 0.1,
-    // shadowRadius: 12,
-    // elevation: 8,
+
     alignItems: 'center',
   },
+
   initialsAvatar: {
     width: 80,
     height: 80,
@@ -626,13 +609,13 @@ const styles = StyleSheet.create({
     position: 'relative',
     marginBottom: 0,
   },
-  avatar: {
-    width: 110,
-    height: 110,
-    borderRadius: 55,
-    borderWidth: 4,
-    borderColor: '#EFF6FF',
-  },
+ avatar: {
+  width: 110,
+  height: 110,
+  borderRadius: 55,
+  borderWidth: 2,
+  borderColor: '#e0f4fb', // soft blue ring
+},
   cameraButton: {
     position: 'absolute',
     bottom: 4,
@@ -647,75 +630,83 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '600',
   },
-  nameText: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#111827',
-    marginBottom: 3,
-  },
-  emailText: {
-    fontSize: 15,
-    color: '#6B7280',
-    marginBottom: 10,
-  },
-  badgesRow: {
-    flexDirection: 'row',
-    gap: 12,
-    marginBottom: 20,
-  },
-  badge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 6,
-    paddingHorizontal: 14,
-    borderRadius: 20,
-    gap: 6,
-  },
-  badgee: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 0,
+nameText: {
+  fontSize: 22,
+  fontWeight: '700',
+  color: '#111827',
+  // marginTop: 10,
+},
 
-    // paddingVertical: 6,
-    // paddingHorizontal: 14,
-    // borderRadius: 20,
-    // gap: 6,
-    marginBottom: 10,
-  },
+emailText: {
+  fontSize: 14,
+  color: '#6B7280',
+  marginTop: 4,
+  marginBottom: 5,
+},
+  badgesRow: {
+  flexDirection: 'row',
+  justifyContent: 'center',
+  gap: 10,
+  marginBottom: 16,
+},
+badge: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  paddingVertical: 6,
+  paddingHorizontal: 12,
+  borderRadius: 20,
+  gap: 6,
+},
+badgee: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  paddingVertical: 6,
+  paddingHorizontal: 14,
+  marginBottom: 12,
+  backgroundColor: '#e0f4fb',
+  borderRadius: 20, // 🔥 pill shape
+  borderWidth: 1,
+  borderColor: '#b6e6f7',
+},
+
+badgeTextt: {
+  fontSize: 12,
+  fontWeight: '600',
+  color: '#2eb1e2',
+},
   badgeText: {
     fontSize: 13,
     fontWeight: '600',
     color: '#10B981',
 
   },
-  badgeTextt: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#2eb1e2',
-
-  },
 
 
-  incompleteMessage: {
-    marginTop: 0,
-    alignItems: 'center',
-    padding: 14,
-    backgroundColor: '#FEF3C7',
-    borderRadius: 16,
-    width: '100%',
-  },
-  incompleteTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#92400E',
-    marginTop: 5,
-  },
-  incompleteText: {
-    fontSize: 14,
-    color: '#92400E',
-    textAlign: 'center',
-    marginVertical: 5,
-  },
+
+ incompleteMessage: {
+  // marginTop: 10,
+  alignItems: 'center',
+  padding: 16,
+  backgroundColor: '#FEF3C7',
+  borderRadius: 16,
+  width: '100%',
+  borderWidth: 1,
+  borderColor: '#fde68a',
+},
+
+incompleteTitle: {
+  fontSize: 16,
+  fontWeight: '700',
+  color: '#92400E',
+  marginTop: 6,
+},
+
+incompleteText: {
+  fontSize: 13,
+  color: '#92400E',
+  textAlign: 'center',
+  marginTop: 4,
+},
   sectionsContainer: {
     backgroundColor: '#fff',
     margin: 8,

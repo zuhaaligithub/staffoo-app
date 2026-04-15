@@ -42,7 +42,7 @@ export default function SignInDetails({ navigation, route }: SignInDetailsProps)
   const [location, setLocation] = useState<string>('Fetching location...');
   const [locationReady, setLocationReady] = useState(false);
   const [locationLoading, setLocationLoading] = useState(true);
-const [shiftStarted, setShiftStarted] = useState(false);
+  const [shiftStarted, setShiftStarted] = useState(false);
   const rawShift = route?.params?.shift || {};
   const shiftId =
     rawShift.id ||
@@ -63,25 +63,25 @@ const [shiftStarted, setShiftStarted] = useState(false);
   //   break: rawShift.break || 'No',
   //   event: rawShift.event || rawShift.job_title || 'Security Duty',
   //   address: rawShift.guard?.address || rawShift.address || 'No address provided',
-    
+
   //   tasks: rawShift.tasks || 'No task is available',
   //   notes: rawShift.shift_instructions || rawShift.notes || '',
   // };
   const shift = {
-  startTime: formatTime(rawShift.start) || '09:00',
-  endTime:   formatTime(rawShift.end)   || '17:00',
-  break:     rawShift.break             || 'No',
-  event:     rawShift.event || rawShift.job_title || 'Security Duty',
-  
-  // ── Use the same source as StaffShifts ────────────────────────
-  address:   rawShift.site?.address 
-          || rawShift.address 
-          || rawShift.location 
-          || 'No address provided',
-  
-  tasks:     rawShift.tasks || 'No task is available',
-  notes:     rawShift.shift_instructions || rawShift.notes || rawShift.instructions || '',
-};
+    startTime: formatTime(rawShift.start) || '09:00',
+    endTime: formatTime(rawShift.end) || '17:00',
+    break: rawShift.break || 'No',
+    event: rawShift.event || rawShift.job_title || 'Security Duty',
+
+    // ── Use the same source as StaffShifts ────────────────────────
+    address: rawShift.site?.address
+      || rawShift.address
+      || rawShift.location
+      || 'No address provided',
+
+    tasks: rawShift.tasks || 'No task is available',
+    notes: rawShift.shift_instructions || rawShift.notes || rawShift.instructions || '',
+  };
 
   const requestCameraPermission = async (): Promise<boolean> => {
     if (Platform.OS !== 'android') return true;
@@ -168,8 +168,45 @@ const [shiftStarted, setShiftStarted] = useState(false);
     }
   };
 
+  const openCamera = async () => {
+    const hasPermission = await requestCameraPermission();
+    if (!hasPermission) {
+      Alert.alert('Permission Denied', 'Camera access is required.');
+      return;
+    }
+
+    try {
+      const result = await launchCamera({
+        mediaType: 'photo',
+        cameraType: 'front',
+        quality: 0.7,
+        includeBase64: true,
+      });
+
+      if (result.didCancel) return;
+      if (result.errorCode) {
+        Alert.alert('Camera Error', result.errorMessage || 'Failed to open camera.');
+        return;
+      }
+
+      const asset = result.assets?.[0];
+      if (asset?.uri) {
+        setSelfieUri(asset.uri);
+        if (asset.base64) {
+          setSelfieBase64(`data:image/jpeg;base64,${asset.base64}`);
+        }
+      }
+    } catch (err) {
+      console.error('Camera launch failed:', err);
+      Alert.alert('Error', 'Failed to launch camera.');
+    }
+  };
+
+
+
   // const openCamera = async () => {
   //   const hasPermission = await requestCameraPermission();
+
   //   if (!hasPermission) {
   //     Alert.alert('Permission Denied', 'Camera access is required.');
   //     return;
@@ -179,204 +216,167 @@ const [shiftStarted, setShiftStarted] = useState(false);
   //     const result = await launchCamera({
   //       mediaType: 'photo',
   //       cameraType: 'front',
-  //       quality: 0.7,
-  //       includeBase64: true,
+  //       quality: 0.8,
+  //       includeBase64: false, // ❌ don't use base64 here
   //     });
 
   //     if (result.didCancel) return;
+
   //     if (result.errorCode) {
   //       Alert.alert('Camera Error', result.errorMessage || 'Failed to open camera.');
   //       return;
   //     }
 
   //     const asset = result.assets?.[0];
+
   //     if (asset?.uri) {
-  //       setSelfieUri(asset.uri);
-  //       if (asset.base64) {
-  //         setSelfieBase64(`data:image/jpeg;base64,${asset.base64}`);
+  //       try {
+  //         // 🔥 STEP 1: COMPRESS IMAGE
+  //         const compressed = await ImageResizer.createResizedImage(
+  //           asset.uri,
+  //           600,
+  //           600,
+  //           'JPEG',
+  //           60,
+  //           0,
+  //           undefined,
+  //           false,
+  //           { mode: 'contain', onlyScaleDown: true }
+  //         );
+
+  //         // 🔥 STEP 2: SHOW PREVIEW
+  //         setSelfieUri(compressed.uri);
+
+  //         // 🔥 STEP 3: READ BASE64 SAFELY
+  //         const base64 = await ImageResizer.createResizedImage(
+  //           asset.uri,
+  //           600,
+  //           600,
+  //           'JPEG',
+  //           60,
+  //           0,
+  //           undefined,
+  //           true // ✅ THIS RETURNS BASE64
+  //         );
+
+  //         if (base64?.uri) {
+  //           // ⚠️ react-native-image-resizer returns base64 in uri sometimes
+  //           setSelfieBase64(`data:image/jpeg;base64,${base64.uri}`);
+  //         }
+
+  //       } catch (err) {
+  //         console.error('❌ Compression failed:', err);
+  //         Alert.alert('Error', 'Image compression failed.');
   //       }
   //     }
+
   //   } catch (err) {
-  //     console.error('Camera launch failed:', err);
+  //     console.error('❌ Camera launch failed:', err);
   //     Alert.alert('Error', 'Failed to launch camera.');
   //   }
   // };
 
-
-
-const openCamera = async () => {
-  const hasPermission = await requestCameraPermission();
-
-  if (!hasPermission) {
-    Alert.alert('Permission Denied', 'Camera access is required.');
-    return;
-  }
-
-  try {
-    const result = await launchCamera({
-      mediaType: 'photo',
-      cameraType: 'front',
-      quality: 0.8,
-      includeBase64: false, // ❌ don't use base64 here
-    });
-
-    if (result.didCancel) return;
-
-    if (result.errorCode) {
-      Alert.alert('Camera Error', result.errorMessage || 'Failed to open camera.');
-      return;
-    }
-
-    const asset = result.assets?.[0];
-
-    if (asset?.uri) {
-      try {
-        // 🔥 STEP 1: COMPRESS IMAGE
-        const compressed = await ImageResizer.createResizedImage(
-          asset.uri,
-          600,
-          600,
-          'JPEG',
-          60,
-          0,
-          undefined,
-          false,
-          { mode: 'contain', onlyScaleDown: true }
-        );
-
-        // 🔥 STEP 2: SHOW PREVIEW
-        setSelfieUri(compressed.uri);
-
-        // 🔥 STEP 3: READ BASE64 SAFELY
-        const base64 = await ImageResizer.createResizedImage(
-          asset.uri,
-          600,
-          600,
-          'JPEG',
-          60,
-          0,
-          undefined,
-          true // ✅ THIS RETURNS BASE64
-        );
-
-        if (base64?.uri) {
-          // ⚠️ react-native-image-resizer returns base64 in uri sometimes
-          setSelfieBase64(`data:image/jpeg;base64,${base64.uri}`);
-        }
-
-      } catch (err) {
-        console.error('❌ Compression failed:', err);
-        Alert.alert('Error', 'Image compression failed.');
+  const handleStartShift = async () => {
+    try {
+      // ── 1. Validations ──────────────────────────────
+      if (!shiftId) {
+        Toast.show({
+          type: 'error',
+          text1: 'Error',
+          text2: 'Shift ID missing',
+          position: 'bottom',
+        });
+        return;
       }
-    }
 
-  } catch (err) {
-    console.error('❌ Camera launch failed:', err);
-    Alert.alert('Error', 'Failed to launch camera.');
-  }
-};
+      if (!selfieBase64) {
+        Toast.show({
+          type: 'error',
+          text1: 'Required',
+          text2: 'Please take a selfie first.',
+          position: 'bottom',
+        });
+        return;
+      }
 
-const handleStartShift = async () => {
-  try {
-    // ── 1. Validations ──────────────────────────────
-    if (!shiftId) {
+      if (!locationReady) {
+        Toast.show({
+          type: 'error',
+          text1: 'Location Required',
+          text2: 'Waiting for valid location. Try again.',
+          position: 'bottom',
+        });
+        return;
+      }
+
+      setLoading(true);
+
+      console.log('🟡 Starting Shift...');
+      console.log('🟡 Shift ID:', shiftId);
+      console.log('🟡 Location:', location);
+
+      // ── 2. Format current date & time ───────────────
+      const now = new Date();
+      const pad = (n: number) => n.toString().padStart(2, '0');
+      const formatDateTime = (date: Date) =>
+        `${pad(date.getDate())}-${pad(date.getMonth() + 1)}-${date.getFullYear()} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
+
+      // ── 3. Prepare payload ─────────────────────────
+      const payload = {
+        time: formatDateTime(now),
+        location,
+        selfie: selfieBase64,
+        notes: shift.notes || '',
+        signin_time: formatDateTime(now),
+        tasks_photos: '',
+      };
+
+      console.log('📤 Payload:', payload);
+
+      // ── 4. API Call ────────────────────────────────
+      const response = await signInShift(shiftId, payload);
+      console.log('🟢 Sign In Response:', response);
+
+      // ── 5. Handle backend error manually ───────────
+      if (!response?.success) {
+        throw new Error(response?.message || response?.error || 'Could not sign in. Try again.');
+      }
+
+      // ── 6. Success Toast ───────────────────────────
+      Toast.show({
+        type: 'success',
+        text1: 'Shift Started',
+        text2: 'You have successfully signed in.',
+        position: 'bottom',
+        visibilityTime: 4000,
+      });
+
+      // Optional: Update UI state
+      setShiftStarted(true);
+
+      // Navigate back if needed
+      navigation.goBack();
+
+    } catch (err: any) {
+      console.error('🔴 Sign In Error:', err);
+
+      const backendMessage =
+        err?.response?.data?.message ||
+        err?.response?.data?.error ||
+        err?.message ||
+        'Could not sign in. Try again.';
+
       Toast.show({
         type: 'error',
-        text1: 'Error',
-        text2: 'Shift ID missing',
+        text1: 'Sign In Failed',
+        text2: backendMessage,
         position: 'bottom',
+        visibilityTime: 4000,
       });
-      return;
+    } finally {
+      setLoading(false);
     }
-
-    if (!selfieBase64) {
-      Toast.show({
-        type: 'error',
-        text1: 'Required',
-        text2: 'Please take a selfie first.',
-        position: 'bottom',
-      });
-      return;
-    }
-
-    if (!locationReady) {
-      Toast.show({
-        type: 'error',
-        text1: 'Location Required',
-        text2: 'Waiting for valid location. Try again.',
-        position: 'bottom',
-      });
-      return;
-    }
-
-    setLoading(true);
-
-    console.log('🟡 Starting Shift...');
-    console.log('🟡 Shift ID:', shiftId);
-    console.log('🟡 Location:', location);
-
-    // ── 2. Format current date & time ───────────────
-    const now = new Date();
-    const pad = (n: number) => n.toString().padStart(2, '0');
-    const formatDateTime = (date: Date) =>
-      `${pad(date.getDate())}-${pad(date.getMonth() + 1)}-${date.getFullYear()} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
-
-    // ── 3. Prepare payload ─────────────────────────
-    const payload = {
-      time: formatDateTime(now),
-      location,
-      selfie: selfieBase64,
-      notes: shift.notes || '',
-      signin_time: formatDateTime(now),
-      tasks_photos: '',
-    };
-
-    console.log('📤 Payload:', payload);
-
-    // ── 4. API Call ────────────────────────────────
-    const response = await signInShift(shiftId, payload);
-    console.log('🟢 Sign In Response:', response);
-
-    // ── 5. Handle backend error manually ───────────
-    if (!response?.success) {
-      throw new Error(response?.message || response?.error || 'Could not sign in. Try again.');
-    }
-
-    // ── 6. Success Toast ───────────────────────────
-    Toast.show({
-      type: 'success',
-      text1: 'Shift Started',
-      text2: 'You have successfully signed in.',
-      position: 'bottom',
-      visibilityTime: 4000,
-    });
-
-    // Optional: Update UI state
-    setShiftStarted(true);
-
-    // Navigate back if needed
-    navigation.goBack();
-
-  } catch (err: any) {
-    console.error('🔴 Sign In Error:', err);
-
-    const backendMessage =
-      err?.response?.data?.message ||
-      err?.response?.data?.error ||
-      err?.message ||
-      'Could not sign in. Try again.';
-
-    Toast.show({
-      type: 'error',
-      text1: 'Sign In Failed',
-      text2: backendMessage,
-      position: 'bottom',
-      visibilityTime: 4000,
-    });
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
   useEffect(() => {
     fetchLocation();
@@ -497,8 +497,8 @@ const handleStartShift = async () => {
               {locationLoading
                 ? 'Fetching location...'
                 : locationReady
-                ? `Location: ${location}`
-                : location}
+                  ? `Location: ${location}`
+                  : location}
             </Text>
           </View>
 
@@ -579,7 +579,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f1f5f9',
-    paddingTop:20,
+    paddingTop: 20,
   },
   header: {
     flexDirection: 'row',

@@ -52,10 +52,11 @@ export default function CallOverlay() {
     callStatus,
   } = useAgoraVoiceRN();
   const { acceptIncomingCall, endCall } = useCallManagerRN();
+  const isIncoming = !!incomingCall && !sessionInCall;
   const [isAccepting, setIsAccepting] = useState(false);
   const [hasConnectedToRemote, setHasConnectedToRemote] = useState(false);
   const callData = incomingCall || outgoingCall;
-  const isIncoming = !!incomingCall;
+  // const isIncoming = !!incomingCall;
   const isInActiveCall = callStatus === 'in-call' || sessionInCall;
   const visible = !!callData;
   useEffect(() => {

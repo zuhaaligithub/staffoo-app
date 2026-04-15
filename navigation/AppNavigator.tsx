@@ -39,6 +39,7 @@ import PaymentHistoryScreen from '../screens/PaymentHistoryScreen';
 import PaymentMethodsScreen from '../screens/PaymentMethodsScreen';
 import LeaveManagementScreen from '../screens/LeaveManagementScreen';
 import HomeScreen from '../screens/HomeScreen';
+import PayslipScreen from '../screens/PayslipScreen';
 
 
 // ─── Define route params ────────────────────────────────────────────────
@@ -62,6 +63,7 @@ export type RootStackParamList = {
   Profile: undefined;
   ApplyJob: undefined;
   Documents: undefined;
+  Payslip: undefined;
   Accounts: undefined;
   ChargeRates: undefined;
   PayRates: undefined;
@@ -167,6 +169,7 @@ export default function AppNavigator() {
       <Stack.Screen name="Profile" component={ProfileScreen} />
       <Stack.Screen name="ApplyJob" component={ApplyJobScreen} />
       <Stack.Screen name="Documents" component={DocumentsScreen} />
+      <Stack.Screen name="Payslip" component={PayslipScreen} />
       <Stack.Screen name="Accounts" component={AccountsScreen} />
       {/* <Stack.Screen name="ChargeRates" component={ChargeRatesScreen} /> */}
       {/* <Stack.Screen name="PayRates" component={PayRatesScreen} /> */}

@@ -32,6 +32,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getStaff, getCustomers, getContractor, getContractors, readAllMessages, getConversation, getConversations, getAuthToken } from '../services/authApi';
 import { destroyEchoInstance, getEchoInstance } from '../echo';
 import { TextInput } from 'react-native';
+import LinearGradient from 'react-native-linear-gradient';
 
 type ChatUser = {
   id: string | number;
@@ -98,7 +99,7 @@ function RoleSelectionView({
   const allCards = [
     {
       type: 'staff' as const,
-      color: '#1E3A8A',
+      color: '#2EB1E2',
       icon: '👥',
       label: 'STAFF',
       title: 'Staff',
@@ -106,7 +107,7 @@ function RoleSelectionView({
     },
     {
       type: 'customer' as const,
-      color: '#1E3A8A',
+      color: '#2EB1E2',
       icon: '👤',
       label: 'CUSTOMERS',
       title: 'Customers',
@@ -114,7 +115,7 @@ function RoleSelectionView({
     },
     {
       type: 'contractor' as const,
-      color: '#1E3A8A',
+      color: '#2EB1E2',
       icon: '⛑️',
       label: 'CONTRACTORS',
       title: 'Contractors',
@@ -165,12 +166,17 @@ function RoleSelectionView({
       {cards.map((card) => (
         <View key={card.type} style={roleStyles.card}>
           {/* Colored top section */}
-          <View style={[roleStyles.cardTop, { backgroundColor: card.color }]}>
+          <LinearGradient
+            colors={['#36D1DC', '#5B86E5']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={roleStyles.cardTop}
+          >
             <View style={roleStyles.iconCircle}>
               <Text style={roleStyles.icon}>{card.icon}</Text>
             </View>
             <Text style={roleStyles.cardLabel}>{card.label}</Text>
-          </View>
+          </LinearGradient>
 
           {/* White bottom section */}
           <View style={roleStyles.cardBottom}>
@@ -200,7 +206,7 @@ export default function MessageScreen({ navigation }: Props) {
   const [tick, setTick] = useState(0); // forces rerender for live runtimes
   const [refreshing, setRefreshing] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | number | null>(null);
-const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
   // ✅ NEW: Controls whether we show the card picker or the chat list
   const [activeFilter, setActiveFilter] = useState<'staff' | 'customer' | 'contractor' | null>(null);
 
@@ -214,20 +220,20 @@ const [searchQuery, setSearchQuery] = useState('');
   const closeStaffSheet = () => staffSheetRef.current?.close();
 
   // staff list state (shown in FAB bottom sheet)
-const [staffList, setStaffList] = useState<StaffUser[]>([]);
+  const [staffList, setStaffList] = useState<StaffUser[]>([]);
   const [staffLoading, setStaffLoading] = useState(false);
 
   const filteredList = React.useMemo(() => {
-  if (!searchQuery.trim()) return staffList;
+    if (!searchQuery.trim()) return staffList;
 
-  const query = searchQuery.toLowerCase().trim();
+    const query = searchQuery.toLowerCase().trim();
 
-  return staffList.filter((item: StaffUser) => {
-    const name = (item.name || item.full_name || '').toLowerCase();
-    const email = (item.email || item.user_email || '').toLowerCase();
-    return name.includes(query) || email.includes(query);
-  });
-}, [staffList, searchQuery]);
+    return staffList.filter((item: StaffUser) => {
+      const name = (item.name || item.full_name || '').toLowerCase();
+      const email = (item.email || item.user_email || '').toLowerCase();
+      return name.includes(query) || email.includes(query);
+    });
+  }, [staffList, searchQuery]);
 
   // Load user type
   useEffect(() => {
@@ -318,14 +324,14 @@ const [staffList, setStaffList] = useState<StaffUser[]>([]);
 
 
 
-useEffect(() => {
-  if (activeFilter) {
-    console.log('Filtering for:', activeFilter);
-    console.log('All chats:', allChats);
+  useEffect(() => {
+    if (activeFilter) {
+      console.log('Filtering for:', activeFilter);
+      console.log('All chats:', allChats);
 
-    setChats(allChats); // 👈 TEMP remove filter
-  }
-}, [activeFilter, allChats]);
+      setChats(allChats); // 👈 TEMP remove filter
+    }
+  }, [activeFilter, allChats]);
 
   // ✅ Called when user taps "Access Now"
   const handleSelectRole = (type: 'staff' | 'customer' | 'contractor') => {
@@ -430,7 +436,7 @@ useEffect(() => {
           {activeFilter ? `${filterLabel} Chats` : 'Messages'}
         </Text>
 
-     
+
       </View>
 
 
@@ -552,112 +558,112 @@ useEffect(() => {
         </TouchableOpacity>
       )}
 
-{/* FIXED SCROLLING - Staff / User Selection BottomSheet */}
-<BottomSheet
-  ref={staffSheetRef}
-  index={-1}
-  snapPoints={staffSnap}           // ['65%', '70%'] — you can increase to ['60%', '85%'] if needed
-  enablePanDownToClose={true}
-  enableContentPanningGesture={true}
-  backdropComponent={renderBackdrop}
-  backgroundStyle={styles.sheetBackground}
-  handleIndicatorStyle={styles.handleIndicator}
->
-  {/* Remove BottomSheetView for better scrolling in many cases */}
-  {/* Header */}
-  <View style={styles.sheetHeader}>
-    <Text style={styles.sheetTitle}>
-      Select {filterLabel || 'User'}
-    </Text>
-    <TouchableOpacity onPress={closeStaffSheet} style={styles.closeButton}>
-      <Text style={styles.closeText}>×</Text>
-    </TouchableOpacity>
-  </View>
-
-<View style={styles.searchContainer}>
-  <Search size={20} color="#6B7280" style={{ marginRight: 8 }} />
-  <TextInput
-    style={styles.searchInput}
-    placeholder={`Search ${filterLabel?.toLowerCase() || 'users'}...`}
-    placeholderTextColor="#9CA3AF"
-    value={searchQuery}
-    onChangeText={setSearchQuery}
-    autoCapitalize="none"
-    autoCorrect={false}
-  />
-</View>
-
-  {staffLoading ? (
-    <View style={styles.loadingContainer}>
-      <Text style={styles.dropdownLoading}>
-        Loading {filterLabel?.toLowerCase()}...
-      </Text>
-    </View>
-  ) : staffList.length === 0 ? (
-    <View style={styles.emptyContainer}>
-      <Text style={styles.emptyText}>
-        No {filterLabel?.toLowerCase()} found
-      </Text>
-    </View>
-  ) : (
-    <BottomSheetFlatList
-      data={filteredList as StaffUser[]}
-      keyExtractor={(item: StaffUser, index: number) => `user-${item.id || index}`}
-      showsVerticalScrollIndicator={true}
-      nestedScrollEnabled={true}
-      contentContainerStyle={styles.listContentContainer}   // ← Very important
-      style={styles.listContainer}
-      ListEmptyComponent={
-        <View style={styles.emptyContainer}>
-          <Text style={styles.emptyText}>Not exist</Text>
+      {/* FIXED SCROLLING - Staff / User Selection BottomSheet */}
+      <BottomSheet
+        ref={staffSheetRef}
+        index={-1}
+        snapPoints={staffSnap}           // ['65%', '70%'] — you can increase to ['60%', '85%'] if needed
+        enablePanDownToClose={true}
+        enableContentPanningGesture={true}
+        backdropComponent={renderBackdrop}
+        backgroundStyle={styles.sheetBackground}
+        handleIndicatorStyle={styles.handleIndicator}
+      >
+        {/* Remove BottomSheetView for better scrolling in many cases */}
+        {/* Header */}
+        <View style={styles.sheetHeader}>
+          <Text style={styles.sheetTitle}>
+            Select {filterLabel || 'User'}
+          </Text>
+          <TouchableOpacity onPress={closeStaffSheet} style={styles.closeButton}>
+            <Text style={styles.closeText}>×</Text>
+          </TouchableOpacity>
         </View>
-      }
-      renderItem={({ item }: { item: StaffUser }) => (
-        <TouchableOpacity
-          style={styles.dropdownItem}
-          activeOpacity={0.7}
-          onPress={async () => {
-            try {
-              await readAllMessages(item.id);
-              const conversation = await getConversation(item.id);
-              try { await getConversations(); } catch (e) {}
 
-              closeStaffSheet();
-              navigation.navigate('MessageDetail', {
-                chatId: item.id,
-                name: item.name || item.full_name || 'User',
-                conversation,
-              });
-            } catch (err) {
-              console.error('User select error:', err);
-            }
-          }}
-        >
-          <View style={styles.staffRow}>
-            <View style={styles.staffAvatar}>
-              <Text style={styles.staffAvatarText}>
-                {(() => {
-                  const name = (item.name || item.full_name || '').trim();
-                  const parts = name.split(/\s+/);
-                  return ((parts[0]?.[0] || '') + (parts[1]?.[0] || '')).toUpperCase() || '?';
-                })()}
-              </Text>
-            </View>
+        <View style={styles.searchContainer}>
+          <Search size={20} color="#6B7280" style={{ marginRight: 8 }} />
+          <TextInput
+            style={styles.searchInput}
+            placeholder={`Search ${filterLabel?.toLowerCase() || 'users'}...`}
+            placeholderTextColor="#9CA3AF"
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            autoCapitalize="none"
+            autoCorrect={false}
+          />
+        </View>
 
-            <View style={{ marginLeft: 12, flex: 1 }}>
-              <Text style={styles.dropdownItemText}>
-                {item.name || item.full_name || 'Unnamed'}
-              </Text>
-              <Text style={styles.dropdownSubText}>
-                {item.email || item.user_email || ''}
-              </Text>
-            </View>
+        {staffLoading ? (
+          <View style={styles.loadingContainer}>
+            <Text style={styles.dropdownLoading}>
+              Loading {filterLabel?.toLowerCase()}...
+            </Text>
           </View>
-        </TouchableOpacity>
-      )}
-    />
-  )}
-</BottomSheet>
+        ) : staffList.length === 0 ? (
+          <View style={styles.emptyContainer}>
+            <Text style={styles.emptyText}>
+              No {filterLabel?.toLowerCase()} found
+            </Text>
+          </View>
+        ) : (
+          <BottomSheetFlatList
+            data={filteredList as StaffUser[]}
+            keyExtractor={(item: StaffUser, index: number) => `user-${item.id || index}`}
+            showsVerticalScrollIndicator={true}
+            nestedScrollEnabled={true}
+            contentContainerStyle={styles.listContentContainer}   // ← Very important
+            style={styles.listContainer}
+            ListEmptyComponent={
+              <View style={styles.emptyContainer}>
+                <Text style={styles.emptyText}>Not exist</Text>
+              </View>
+            }
+            renderItem={({ item }: { item: StaffUser }) => (
+              <TouchableOpacity
+                style={styles.dropdownItem}
+                activeOpacity={0.7}
+                onPress={async () => {
+                  try {
+                    await readAllMessages(item.id);
+                    const conversation = await getConversation(item.id);
+                    try { await getConversations(); } catch (e) { }
+
+                    closeStaffSheet();
+                    navigation.navigate('MessageDetail', {
+                      chatId: item.id,
+                      name: item.name || item.full_name || 'User',
+                      conversation,
+                    });
+                  } catch (err) {
+                    console.error('User select error:', err);
+                  }
+                }}
+              >
+                <View style={styles.staffRow}>
+                  <View style={styles.staffAvatar}>
+                    <Text style={styles.staffAvatarText}>
+                      {(() => {
+                        const name = (item.name || item.full_name || '').trim();
+                        const parts = name.split(/\s+/);
+                        return ((parts[0]?.[0] || '') + (parts[1]?.[0] || '')).toUpperCase() || '?';
+                      })()}
+                    </Text>
+                  </View>
+
+                  <View style={{ marginLeft: 12, flex: 1 }}>
+                    <Text style={styles.dropdownItemText}>
+                      {item.name || item.full_name || 'Unnamed'}
+                    </Text>
+                    <Text style={styles.dropdownSubText}>
+                      {item.email || item.user_email || ''}
+                    </Text>
+                  </View>
+                </View>
+              </TouchableOpacity>
+            )}
+          />
+        )}
+      </BottomSheet>
 
       {/* ─── Attachments Bottom Sheet ────────────────────────────────────── */}
       <BottomSheet
@@ -819,7 +825,7 @@ const roleStyles = StyleSheet.create({
     marginBottom: 10,
   },
   accessBtn: {
-    backgroundColor: '#6590ed',
+    backgroundColor: '#2EB1E2',
     paddingVertical: 10,
     borderRadius: 12,
     alignItems: 'center',
@@ -865,7 +871,7 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: '700',
     color: '#111827',
-    marginLeft:50
+    marginLeft: 50
   },
   headerRight: {
     flexDirection: 'row',
@@ -906,7 +912,7 @@ const styles = StyleSheet.create({
     width: 54,
     height: 54,
     borderRadius: 27,
-    backgroundColor: '#c7b3ff',
+    backgroundColor: '#2EB1E2',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -950,7 +956,7 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   unreadBadge: {
-    backgroundColor: '#3B82F6',
+    backgroundColor: '#2EB1E2',
     borderRadius: 12,
     minWidth: 24,
     height: 24,
@@ -1066,7 +1072,7 @@ const styles = StyleSheet.create({
   dropdownList: {
     // maxHeight: 220,
   },
- 
+
   dropdownItemText: {
     fontSize: 15,
     color: '#111827',
@@ -1075,19 +1081,19 @@ const styles = StyleSheet.create({
     position: 'absolute',
     right: 18,
     bottom: 84,
-    width: 60,
-    height: 60,
+    width: 45,
+    height: 45,
     borderRadius: 30,
-    backgroundColor: '#2869FE',
+    backgroundColor: '#2EB1E2',
     justifyContent: 'center',
     alignItems: 'center',
     elevation: 10,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.16,
+    shadowOpacity: 0.10,
     shadowRadius: 12,
   },
- 
+
   staffAvatar: {
     width: 44,
     height: 44,
@@ -1114,7 +1120,7 @@ const styles = StyleSheet.create({
   },
 
 
- 
+
 
   staffRow: {
     flexDirection: 'row',
@@ -1123,70 +1129,70 @@ const styles = StyleSheet.create({
   },
 
   // Inside your StyleSheet.create
-sheetHeader: {
-  flexDirection: 'row',
-  justifyContent: 'space-between',
-  alignItems: 'center',
-  paddingHorizontal: 16,
-  paddingVertical: 16,
-  borderBottomWidth: 1,
-  borderBottomColor: '#F1F5F9',
-},
+  sheetHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
+  },
 
-searchContainer: {
-  flexDirection: 'row',
-  alignItems: 'center',
-  backgroundColor: '#F3F4F6',
-  borderRadius: 12,
-  paddingHorizontal: 14,
-  paddingVertical: 11,
-  marginHorizontal: 16,
-  marginBottom: 12,
-},
-searchInput: {
-  flex: 1,
-  fontSize: 15,
-  color: '#111827',
-},
-searchPlaceholder: {
-  color: '#6B7280',
-  fontSize: 15,
-  marginLeft: 8,
-},
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F3F4F6',
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 11,
+    marginHorizontal: 16,
+    marginBottom: 12,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 15,
+    color: '#111827',
+  },
+  searchPlaceholder: {
+    color: '#6B7280',
+    fontSize: 15,
+    marginLeft: 8,
+  },
 
-listContainer: {
-  flex: 1,                    // crucial
-},
+  listContainer: {
+    flex: 1,                    // crucial
+  },
 
-listContentContainer: {
-  paddingHorizontal: 16,
-  paddingTop: 8,
-  paddingBottom: 100,         // ← Increase this if you still can't see the last items
-},
+  listContentContainer: {
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    paddingBottom: 100,         // ← Increase this if you still can't see the last items
+  },
 
-loadingContainer: {
-  flex: 1,
-  justifyContent: 'center',
-  alignItems: 'center',
-  paddingVertical: 60,
-},
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 60,
+  },
 
-emptyContainer: {
-  flex: 1,
-  justifyContent: 'center',
-  alignItems: 'center',
-  paddingVertical: 80,
-},
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 80,
+  },
 
-emptyText: {
-  color: '#6B7280',
-  fontSize: 16,
-},
+  emptyText: {
+    color: '#6B7280',
+    fontSize: 16,
+  },
 
-dropdownItem: {
-  paddingVertical: 14,
-  paddingHorizontal: 8,
-  borderBottomWidth: 1,
-  borderBottomColor: '#F1F5F9',
-},
+  dropdownItem: {
+    paddingVertical: 14,
+    paddingHorizontal: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
+  },
 });

@@ -496,7 +496,7 @@ export default function ReviewConfirmScreen() {
   if (ratesLoading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#2563EB" />
+        <ActivityIndicator size="large" color="#2EB1E2" />
         <Text style={styles.loadingText}>Loading current pricing...</Text>
       </View>
     );
@@ -530,7 +530,7 @@ export default function ReviewConfirmScreen() {
         {/* Job Details */}
         <View style={styles.card}>
           <View style={styles.cardSectionHeader}>
-            <FileText size={22} color="#2563EB" />
+            <FileText size={22} color="#2EB1E2" />
             <Text style={styles.sectionTitle}>Job Details</Text>
           </View>
           {[
@@ -556,8 +556,8 @@ export default function ReviewConfirmScreen() {
               <View style={styles.inputCard}>
                 {uploadedFileUrls.map((url, i) => (
                   <View key={i} style={{ flexDirection: 'row', alignItems: 'center', marginTop: i === 0 ? 0 : 6 }}>
-                    <Files size={18} color="#2563EB" />
-                    <Text style={{ marginLeft: 8, color: '#2563EB', flexShrink: 1, fontSize: 14 }} numberOfLines={1}>
+                    <Files size={18} color="#2EB1E2" />
+                    <Text style={{ marginLeft: 8, color: '#2EB1E2', flexShrink: 1, fontSize: 14 }} numberOfLines={1}>
                       {uploadedFileNames[i] || url.split('/').pop() || `File ${i + 1}`}
                     </Text>
                   </View>
@@ -644,14 +644,14 @@ export default function ReviewConfirmScreen() {
         {/* Terms */}
         <View style={styles.card}>
           <View style={styles.cardSectionHeader}>
-            <ShieldCheck size={22} color="#2563EB" />
+            <ShieldCheck size={22} color="#2EB1E2" />
             <Text style={styles.sectionTitle}>Terms & Conditions</Text>
           </View>
           <View style={styles.agreeRow}>
             <CheckBox
               value={agreeToTerms}
               onValueChange={setAgreeToTerms}
-              tintColors={{ true: '#2563EB', false: '#6b7280' }}
+              tintColors={{ true: '#2EB1E2', false: '#6b7280' }}
             />
             <Text style={styles.agreeText}>
               I agree to the <Text style={styles.termsLink}>Terms & Conditions</Text>.
@@ -669,7 +669,7 @@ export default function ReviewConfirmScreen() {
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.editButton} onPress={() => navigation.goBack()}>
-          <ArrowLeft size={20} color="#2563EB" />
+          <ArrowLeft size={20} color="#2EB1E2" />
           <Text style={styles.editButtonText}>Edit Job</Text>
         </TouchableOpacity>
       </ScrollView>
@@ -851,9 +851,9 @@ const styles = StyleSheet.create({
   inputCardText: { fontSize: 12, color: '#111827', fontWeight: '700' },
   agreeRow: { flexDirection: 'row', alignItems: 'center', marginTop: 12, paddingVertical: 8 },
   agreeText: { flex: 1, marginLeft: 12, fontSize: 15, color: '#374151' },
-  termsLink: { color: '#2563EB', textDecorationLine: 'underline' },
-  editButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#2563EB', borderRadius: 12, paddingVertical: 18, marginTop: 12 },
-  editButtonText: { color: '#2563EB', fontSize: 16, fontWeight: '600' },
+  termsLink: { color: '#2EB1E2', textDecorationLine: 'underline' },
+  editButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#2EB1E2', borderRadius: 12, paddingVertical: 18, marginTop: 12 },
+  editButtonText: { color: '#2EB1E2', fontSize: 16, fontWeight: '600' },
   disabledButton: { opacity: 0.55 },
   rateCard: { backgroundColor: '#fff', borderRadius: 20, marginBottom: 20, padding: 20, shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.15, shadowRadius: 25, elevation: 12 },
   rateMainHeader: { marginBottom: 15, paddingBottom: 12 },
@@ -873,7 +873,7 @@ const styles = StyleSheet.create({
   gstValue: { fontSize: 16, fontWeight: '500', color: '#6b7280' },
   finalTotalLine: { flexDirection: 'row', justifyContent: 'space-between', paddingTop: 16, paddingBottom: 8 },
   finalTotalLabel: { fontSize: 17, fontWeight: '700', color: '#111827' },
-  finalTotalValue: { fontSize: 22, fontWeight: '800', color: '#2563EB' },
+  finalTotalValue: { fontSize: 22, fontWeight: '800', color: '#2EB1E2' },
   totalPayCard: { backgroundColor: '#fff', borderRadius: 16, padding: 20, alignItems: 'center', marginVertical: 16, borderWidth: 2, borderColor: '#bfdbfe' },
   totalPayTitle: { fontSize: 16, color: '#4b5563', marginBottom: 8 },
   totalPayAmount: { fontSize: 36, fontWeight: '800', color: '#1e40af' },
@@ -885,7 +885,7 @@ const styles = StyleSheet.create({
   loadingText: { marginTop: 16, fontSize: 16, color: '#4b5563' },
   errorContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 40, backgroundColor: '#f8fafc' },
   errorText: { color: '#ef4444', fontSize: 18, textAlign: 'center', marginBottom: 24 },
-  backButton: { backgroundColor: '#2563EB', paddingVertical: 14, paddingHorizontal: 32, borderRadius: 12 },
+  backButton: { backgroundColor: '#2EB1E2', paddingVertical: 14, paddingHorizontal: 32, borderRadius: 12 },
   backButtonText: { color: 'white', fontSize: 16, fontWeight: '600' },
 
   // Modal Styles
@@ -926,7 +926,7 @@ const styles = StyleSheet.create({
     borderColor: '#E5E7EB',
   },
   tabButton: { flex: 1, paddingVertical: 14, alignItems: 'center', backgroundColor: '#F9FAFB' },
-  tabActive: { backgroundColor: '#2563EB' },
+  tabActive: { backgroundColor: '#2EB1E2' },
   tabText: { fontSize: 15, color: '#9ba8c2', fontWeight: '600' },
   tabTextActive: { fontSize: 15, color: '#fff', fontWeight: '700' },
 
