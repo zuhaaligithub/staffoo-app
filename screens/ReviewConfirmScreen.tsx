@@ -26,7 +26,7 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import Toast from 'react-native-toast-message';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
-import { postJob, getUserProfile } from '../services/authApi';
+import { postJob, getUserProfile, holdPayment as holdPaymentAPI, getAuthToken } from '../services/authApi';
 import { CardField, createPaymentMethod, useStripe } from '@stripe/stripe-react-native';
 // ─── Types ─────────────────────────────────────────────────────────────────
 interface RateSlot {
@@ -207,22 +207,29 @@ export default function ReviewConfirmScreen() {
     const user = JSON.parse((await AsyncStorage.getItem('user'))!);
     const { startStr, endStr } = buildTimes();
 
-    const res = await axios.post(`${BASE_URL}/payment/hold`, {
+    const payload = {
       start: startStr,
       end: endStr,
       user_id: user.id,
       card_holder_name: holderName,
       payment_method_id: pmId,
-    });
 
-    console.log('💰 HOLD RESPONSE:', res.data);
+      // ✅ ADD THIS
+      number_of_guards: jobData.guardsCount || 1,
+    };
 
-    if (!res.data?.success) {
-      throw new Error(res.data?.message || 'Payment hold failed.');
+    // ✅ LOG FULL PAYLOAD
+    console.log('💳 HOLD PAYMENT PAYLOAD:', JSON.stringify(payload, null, 2));
+
+    const res = await holdPaymentAPI(payload);
+
+    console.log('💰 HOLD RESPONSE:', res);
+
+    if (!res?.success) {
+      throw new Error(res?.message || 'Payment hold failed.');
     }
 
-    // ✅ FIXED PATH
-    const intentId = res.data?.payment?.payment_intent_id;
+    const intentId = res?.payment?.payment_intent_id;
 
     if (!intentId) {
       throw new Error('No payment_intent_id returned');
@@ -382,7 +389,7 @@ export default function ReviewConfirmScreen() {
   useEffect(() => {
     (async () => {
       try {
-        const token = await AsyncStorage.getItem('@auth_token');
+        const token = await getAuthToken();
         if (!token) throw new Error('No auth token');
 
         const res = await axios.get(`${BASE_URL}/get-chargerates`, {
