@@ -15,30 +15,29 @@ import {
   useWindowDimensions,
   Modal,
   StatusBar,
-  Linking,
 } from 'react-native';
 
 import {
-  ArrowLeft,
   Phone,
   Building2,
   FileText,
   UserRound,
   Mail,
-  LockIcon,
+  Lock as LockIcon,
   Eye,
   EyeOff,
   Check,
+  X,
+  Circle,
+  CheckCircle,
 } from 'lucide-react-native';
 
 import Toast from 'react-native-toast-message';
 import { registerUser } from '../services/authApi';
-import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-signin';
+import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { LogLevel, OneSignal } from 'react-native-onesignal';
-import { sendNotificationTokenToServer } from './LoginScreen';
 
-const LOGO = require('../assets/staffo.png');
+const LOGO = require('../assets/staffoo.png');
 
 const PRIVACY_POLICY_TEXT = `Staffoo: Terms of Service & Privacy Policy
 Effective Date: March 14, 2026
@@ -92,12 +91,13 @@ Email: [admin@gmail.com]
 Phone: [0478916034]`;
 
 export default function SignUpScreen({ navigation }: { navigation: any }) {
-  const [userType, setUserType] = useState<'staff' | 'customer' | 'contractor'>('staff');
+  const [userType, setUserType] = useState<'staff' | 'customer' | 'contractor'>(
+    'staff',
+  );
   const [acceptedPolicy, setAcceptedPolicy] = useState(false);
   const [showPolicyModal, setShowPolicyModal] = useState(false);
 
   const fadeAnim = useRef(new Animated.Value(1)).current;
-  const slideAnim = useRef(new Animated.Value(0)).current;
   const { width } = useWindowDimensions();
   const isTablet = width >= 768;
 
@@ -106,94 +106,50 @@ export default function SignUpScreen({ navigation }: { navigation: any }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [phone, setPhone] = useState('');
-  const [companyName, setCompanyName] = useState('');
-  const [registration, setRegistration] = useState('');
+  const [phone, setPhone] = useState(''); // Optional
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  const BASE_URL = 'https://apis.staffoo.com.au/api';
-  const userTypeRef = useRef(userType);
-
   useEffect(() => {
-    userTypeRef.current = userType;
-  }, [userType]);
-
-  useEffect(() => {
-    GoogleSignin.configure({
-      webClientId: '224693258602-a6q3lng2a3c8kte6p0llbu9iiduoiqtq.apps.googleusercontent.com',
-      offlineAccess: true,
-      forceCodeForRefreshToken: true,
-    });
+    if (Platform.OS === 'android') {
+      GoogleSignin.configure({
+        webClientId:
+          '224693258602-a6q3lng2a3c8kte6p0llbu9iiduoiqtq.apps.googleusercontent.com',
+      });
+    }
   }, []);
 
-  const handleGoogleLogin = async () => {
-    try {
-      setLoading(true);
-      await GoogleSignin.hasPlayServices();
-      await GoogleSignin.signOut().catch(() => { });
-      const userInfo = await GoogleSignin.signIn();
-      if (userInfo.type !== 'success') {
-        throw new Error('Google cancelled');
-      }
-      const { accessToken } = await GoogleSignin.getTokens();
+  const handleUserTypeChange = (
+    newType: 'staff' | 'customer' | 'contractor',
+  ) => {
+    if (newType === userType) return;
+    setUserType(newType);
 
-      const payload = {
-        credential: accessToken,
-        user_type: userTypeRef.current,
-      };
-
-      console.log('🔥 GOOGLE CALLBACK PAYLOAD:', JSON.stringify(payload, null, 2));
-
-      const callbackRes = await fetch(`${BASE_URL}/auth/google/callback`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-
-      const data = await callbackRes.json();
-      console.log('✅ API Response:', data);
-
-      const user = data.user;
-      const token = data.token;
-
-      await AsyncStorage.setItem('@auth_token', token);
-      await AsyncStorage.setItem('user', JSON.stringify(user));
-      await AsyncStorage.setItem('@user_id', String(user.id));
-
-      Toast.show({ type: 'success', text1: 'Login Successful' });
-      navigation.reset({ index: 0, routes: [{ name: 'Profile' }] });
-    } catch (err: any) {
-      console.log('❌ Google error:', err);
-      Toast.show({ type: 'error', text1: 'Google Sign Up failed', text2: err.message });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const animateTabChange = () => {
     Animated.sequence([
-      Animated.parallel([
-        Animated.timing(fadeAnim, { toValue: 0, duration: 140, useNativeDriver: true }),
-        Animated.timing(slideAnim, { toValue: 20, duration: 140, useNativeDriver: true }),
-      ]),
-      Animated.parallel([
-        Animated.timing(fadeAnim, { toValue: 1, duration: 180, useNativeDriver: true }),
-        Animated.timing(slideAnim, { toValue: 0, duration: 180, useNativeDriver: true }),
-      ]),
+      Animated.timing(fadeAnim, {
+        toValue: 0.7,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 200,
+        useNativeDriver: true,
+      }),
     ]).start();
   };
 
-  const handleUserTypeChange = (newType: 'staff' | 'customer' | 'contractor') => {
-    if (newType === userType) return;
-    setUserType(newType);
-    animateTabChange();
-  };
+  // const getDisplayName = (type: 'staff' | 'customer' | 'contractor') => {
+  //   if (type === 'staff') return 'Book a Guard';
+  //   if (type === 'customer') return 'Apply For Job';
+  //   return 'Resource Partner';
+  // };
 
-  const getDisplayName = (type: string) => {
-    if (type === 'contractor') return 'Sub Contractor';
-    return type.charAt(0).toUpperCase() + type.slice(1);
+  const getDisplayName = (type: 'staff' | 'customer' | 'contractor') => {
+    if (type === 'customer') return 'Book a Guard';
+    if (type === 'staff') return 'Apply For Job';
+    return 'Resource Partner';
   };
 
   const handleSignUp = async () => {
@@ -204,145 +160,129 @@ export default function SignUpScreen({ navigation }: { navigation: any }) {
       });
     }
 
-    if (!name.trim()) return Toast.show({ type: 'error', text1: 'Name is required' });
-    if (!email.trim() || !email.includes('@')) return Toast.show({ type: 'error', text1: 'Valid email is required' });
-    if (password.length < 6) return Toast.show({ type: 'error', text1: 'Password must be at least 6 characters' });
-    if (password !== confirmPassword) return Toast.show({ type: 'error', text1: 'Passwords do not match' });
+    if (!name.trim())
+      return Toast.show({ type: 'error', text1: 'Name is required' });
+    if (!email.trim() || !email.includes('@'))
+      return Toast.show({ type: 'error', text1: 'Valid email is required' });
+    if (password.length < 6)
+      return Toast.show({
+        type: 'error',
+        text1: 'Password must be at least 6 characters',
+      });
+    if (password !== confirmPassword)
+      return Toast.show({ type: 'error', text1: 'Passwords do not match' });
 
-    const payload: any = {
+    const payload = {
       name: name.trim(),
-      email: email.trim(),
+      email: email.trim().toLowerCase(),
       password,
       password_confirmation: confirmPassword,
+      user_type: userType,
+      phone: phone.trim() || undefined, 
     };
-
-    if (userType === 'contractor') {
-      if (!companyName.trim()) return Toast.show({ type: 'error', text1: 'Company name is required' });
-      if (!registration.trim()) return Toast.show({ type: 'error', text1: 'Registration number is required' });
-      payload.company_name = companyName.trim();
-      payload.registration_number = registration.trim();
-    }
 
     setLoading(true);
     try {
-      await registerUser({ user_type: userType, ...payload });
+      const response = await registerUser(payload);
+
       Toast.show({
         type: 'success',
         text1: 'Account created successfully!',
+        text2: 'Please login to continue',
         onHide: () => navigation.navigate('Login'),
       });
     } catch (error: any) {
       Toast.show({
         type: 'error',
         text1: 'Registration failed',
-        text2: error?.message || 'Please try again',
+        text2: error?.message || 'Please try again later',
       });
     } finally {
       setLoading(false);
     }
   };
 
-  const renderExtraFields = () => {
-    if (userType === 'staff' || userType === 'customer') {
-      return (
-        <View>
-          <Text style={styles.label}>Phone *</Text>
-          <View style={styles.inputWrapper}>
-            <Phone size={22} color="#666" />
-            <TextInput
-              style={styles.input}
-              placeholder="Enter phone number"
-              value={phone}
-              placeholderTextColor="#9CA3AF"
-              onChangeText={setPhone}
-              keyboardType="phone-pad"
-              maxLength={20}
-            />
-          </View>
-        </View>
-      );
-    }
-
-    if (userType === 'contractor') {
-      return (
-        <View>
-          <Text style={styles.label}>Company Name *</Text>
-          <View style={styles.inputWrapper}>
-            <Building2 size={22} color="#666" />
-            <TextInput
-              style={styles.input}
-              placeholder="Company name"
-              placeholderTextColor="#9CA3AF"
-              value={companyName}
-              onChangeText={setCompanyName}
-            />
-          </View>
-          <Text style={styles.label}>Registration Number *</Text>
-          <View style={styles.inputWrapper}>
-            <FileText size={22} color="#666" />
-            <TextInput
-              style={styles.input}
-              placeholder="REG-12345 or NTN number"
-              value={registration}
-              placeholderTextColor="#9CA3AF"
-              onChangeText={setRegistration}
-              autoCapitalize="characters"
-            />
-          </View>
-        </View>
-      );
-    }
-    return <View />;
-  };
+  const UserTypeOption = ({
+    type,
+  }: {
+    type: 'staff' | 'customer' | 'contractor';
+  }) => (
+    <TouchableOpacity
+      style={[
+        styles.radioOption,
+        userType === type && styles.radioOptionSelected,
+      ]}
+      onPress={() => handleUserTypeChange(type)}
+    >
+      {userType === type ? (
+        <CheckCircle size={18} color="#0A7C6E" />
+      ) : (
+        <Circle size={18} color="#94A3B8" />
+      )}
+      <Text
+        style={[
+          styles.radioText,
+          userType === type && styles.radioTextSelected,
+        ]}
+      >
+        {getDisplayName(type)}
+      </Text>
+    </TouchableOpacity>
+  );
 
   return (
     <SafeAreaView style={styles.container}>
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
         <ScrollView
-          contentContainerStyle={{ paddingHorizontal: isTablet ? width * 0.2 : 24 }}
-          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{
+            paddingHorizontal: isTablet ? width * 0.2 : 24,
+          }}
         >
           <View style={styles.content}>
             <View style={styles.logoContainer}>
               <Image source={LOGO} style={styles.logo} resizeMode="contain" />
-              <Text style={styles.subtitle}>Create your account to get started</Text>
+              <Text style={styles.subtitle}>
+                Create your account to get started
+              </Text>
             </View>
 
-            <View style={styles.segmentContainer}>
-              {(['staff', 'customer', 'contractor'] as const).map((type) => (
-                <TouchableOpacity
-                  key={type}
-                  style={[styles.segment, userType === type && styles.segmentActive]}
-                  onPress={() => handleUserTypeChange(type)}
-                >
-                  <Text style={[styles.segmentText, userType === type && styles.segmentTextActive]}>
-                    {getDisplayName(type)}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-
-            <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
-              <Text style={styles.label}>Name *</Text>
+            <Animated.View style={{ opacity: fadeAnim }}>
+              {/* Name */}
+              <Text style={styles.label}>Full Name *</Text>
               <View style={styles.inputWrapper}>
                 <UserRound size={22} color="#666" />
                 <TextInput
                   style={styles.input}
                   placeholder="Full name"
-                  placeholderTextColor="#9CA3AF"
                   value={name}
-                  onChangeText={setName}
+                  onChangeText={text => setName(text)}
                   autoCapitalize="words"
+                  maxLength={25}
                 />
+
+                {/* <TextInput
+  style={styles.input}
+  placeholder="Full name"
+  value={name}
+  onChangeText={text => {
+    const cleaned = text.replace(/[^a-zA-Z\s]/g, '');
+    setName(cleaned);
+  }}
+  autoCapitalize="words"
+  maxLength={25}
+/> */}
               </View>
 
-              <Text style={styles.label}>Email *</Text>
+              {/* Email */}
+              <Text style={styles.label}>Email Address *</Text>
               <View style={styles.inputWrapper}>
                 <Mail size={22} color="#666" />
                 <TextInput
                   style={styles.input}
                   placeholder="your@email.com"
-                  placeholderTextColor="#9CA3AF"
                   value={email}
                   onChangeText={setEmail}
                   keyboardType="email-address"
@@ -350,6 +290,7 @@ export default function SignUpScreen({ navigation }: { navigation: any }) {
                 />
               </View>
 
+              {/* Password */}
               <Text style={styles.label}>Password *</Text>
               <View style={styles.inputWrapper}>
                 <LockIcon size={22} color="#666" />
@@ -357,16 +298,21 @@ export default function SignUpScreen({ navigation }: { navigation: any }) {
                   style={styles.input}
                   placeholder="At least 6 characters"
                   value={password}
-                  placeholderTextColor="#9CA3AF"
                   onChangeText={setPassword}
                   secureTextEntry={!showPassword}
-                  autoCapitalize="none"
                 />
-                <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
-                  {showPassword ? <Eye size={22} color="#666" /> : <EyeOff size={22} color="#666" />}
+                <TouchableOpacity
+                  onPress={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? (
+                    <Eye size={22} color="#666" />
+                  ) : (
+                    <EyeOff size={22} color="#666" />
+                  )}
                 </TouchableOpacity>
               </View>
 
+              {/* Confirm Password */}
               <Text style={styles.label}>Confirm Password *</Text>
               <View style={styles.inputWrapper}>
                 <LockIcon size={22} color="#666" />
@@ -374,76 +320,85 @@ export default function SignUpScreen({ navigation }: { navigation: any }) {
                   style={styles.input}
                   placeholder="Confirm password"
                   value={confirmPassword}
-                  placeholderTextColor="#9CA3AF"
                   onChangeText={setConfirmPassword}
                   secureTextEntry={!showConfirmPassword}
-                  autoCapitalize="none"
                 />
-                <TouchableOpacity onPress={() => setShowConfirmPassword(!showConfirmPassword)}>
-                  {showConfirmPassword ? <Eye size={22} color="#666" /> : <EyeOff size={22} color="#666" />}
+                <TouchableOpacity
+                  onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+                >
+                  {showConfirmPassword ? (
+                    <Eye size={22} color="#666" />
+                  ) : (
+                    <EyeOff size={22} color="#666" />
+                  )}
                 </TouchableOpacity>
               </View>
 
-              {renderExtraFields()}
+              {/* Phone - Optional */}
+              <Text style={styles.label}>Phone Number (Optional)</Text>
+              <View style={styles.inputWrapper}>
+                <Phone size={22} color="#666" />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Phone number"
+                  value={phone}
+                  onChangeText={setPhone}
+                  keyboardType="phone-pad"
+                />
+              </View>
+
+              {/* User Type Selection */}
+              <Text style={styles.label}>I want to</Text>
+              <View style={styles.radioContainer}>
+                <View style={styles.radioRow}>
+                  <UserTypeOption type="staff" />
+                  <UserTypeOption type="customer" />
+                  <UserTypeOption type="contractor" />
+                </View>
+              </View>
             </Animated.View>
 
             {/* Privacy Policy Checkbox */}
             <TouchableOpacity
               style={styles.policyContainer}
               onPress={() => setAcceptedPolicy(!acceptedPolicy)}
-              activeOpacity={0.8}
             >
-              <View style={[styles.checkbox, acceptedPolicy && styles.checkboxChecked]}>
+              <View
+                style={[
+                  styles.checkbox,
+                  acceptedPolicy && styles.checkboxChecked,
+                ]}
+              >
                 {acceptedPolicy && <Check size={16} color="#fff" />}
               </View>
-
               <Text style={styles.policyText}>
                 I accept the{' '}
                 <Text
                   style={styles.policyLink}
-                  onPress={(e) => {
+                  onPress={e => {
                     e.stopPropagation();
                     setShowPolicyModal(true);
                   }}
                 >
-                  Privacy Policy
+                  Privacy Policy & Terms
                 </Text>
               </Text>
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={[styles.signUpButton, (loading || !acceptedPolicy) && styles.buttonDisabled]}
+              style={[
+                styles.signUpButton,
+                (loading || !acceptedPolicy) && styles.buttonDisabled,
+              ]}
               onPress={handleSignUp}
               disabled={loading || !acceptedPolicy}
             >
               {loading ? (
-                <ActivityIndicator color="#fff" size="small" />
+                <ActivityIndicator color="#fff" />
               ) : (
-                <Text style={styles.signUpText}>Sign Up</Text>
+                <Text style={styles.signUpText}>Create Account</Text>
               )}
             </TouchableOpacity>
-
-            <View style={styles.divider}>
-              <View style={styles.line} />
-              <Text style={{ marginHorizontal: 12, color: '#888' }}>or continue with</Text>
-              <View style={styles.line} />
-            </View>
-
-            <Text style={styles.googleNote}>
-              Please choose your account type (Staff, Customer, or Contractor) before continuing with Google
-            </Text>
-
-            <View style={styles.socialRow}>
-              <TouchableOpacity style={styles.googleButton} onPress={handleGoogleLogin} disabled={loading}>
-                <Image
-                  source={require('../assets/google-img.png')}
-                  style={{ width: 22, height: 22, marginRight: 10 }}
-                />
-                <Text style={styles.googleText}>
-                  Sign Up as {getDisplayName(userType)} with Google
-                </Text>
-              </TouchableOpacity>
-            </View>
 
             <View style={styles.footer}>
               <Text style={styles.footerText}>Already have an account? </Text>
@@ -455,7 +410,7 @@ export default function SignUpScreen({ navigation }: { navigation: any }) {
         </ScrollView>
       </KeyboardAvoidingView>
 
-      {/* ==================== Beautiful Privacy Policy Modal ==================== */}
+      {/* Privacy Policy Modal */}
       <Modal
         visible={showPolicyModal}
         animationType="slide"
@@ -463,36 +418,34 @@ export default function SignUpScreen({ navigation }: { navigation: any }) {
         onRequestClose={() => setShowPolicyModal(false)}
       >
         <SafeAreaView style={styles.modalContainer}>
-          {/* Header with Logo */}
           <View style={styles.modalHeader}>
             <View style={styles.headerLeft}>
-              <Image 
-                source={LOGO} 
-                style={styles.modalLogo} 
-                resizeMode="contain" 
+              <Image
+                source={LOGO}
+                style={styles.modalLogo}
+                resizeMode="contain"
               />
               <View>
                 <Text style={styles.modalTitle}>Privacy Policy & Terms</Text>
-                <Text style={styles.modalSubtitle}>Staffoo • Legal Documents</Text>
+                <Text style={styles.modalSubtitle}>
+                  Staffoo • Legal Documents
+                </Text>
               </View>
             </View>
 
-            <TouchableOpacity 
-              onPress={() => setShowPolicyModal(false)} 
+            <TouchableOpacity
+              onPress={() => setShowPolicyModal(false)}
               style={styles.closeBtn}
             >
               <X size={18} color="#b72f0d" />
             </TouchableOpacity>
           </View>
 
-          {/* Content */}
-          <ScrollView 
+          <ScrollView
             style={styles.modalScroll}
             contentContainerStyle={styles.modalScrollContent}
-            showsVerticalScrollIndicator={false}
           >
             <View style={styles.policyCard}>
-              {/* Highlighted Info Section with Light Blue Background */}
               <View style={styles.highlightedInfo}>
                 <Text style={styles.highlightText}>
                   Effective Date: March 14, 2026
@@ -500,15 +453,13 @@ export default function SignUpScreen({ navigation }: { navigation: any }) {
                 <Text style={styles.highlightText}>
                   Operated by: Capital Services Pty Ltd
                 </Text>
+                <Text style={styles.highlightText}>ABN: 48 613 317 838</Text>
                 <Text style={styles.highlightText}>
-                  ABN: 48 613 317 838
-                </Text>
-                <Text style={styles.highlightText}>
-                  Registered Office: 21 Tanglewood Bvd, Truganina VIC 3029, Australia
+                  Registered Office: 21 Tanglewood Bvd, Truganina VIC 3029,
+                  Australia
                 </Text>
               </View>
 
-              {/* Full Policy Text */}
               <Text style={styles.policyBodyText}>{PRIVACY_POLICY_TEXT}</Text>
             </View>
 
@@ -517,7 +468,6 @@ export default function SignUpScreen({ navigation }: { navigation: any }) {
             </Text>
           </ScrollView>
 
-          {/* Accept Footer */}
           <View style={styles.modalFooter}>
             <TouchableOpacity
               style={styles.acceptBtn}
@@ -525,10 +475,11 @@ export default function SignUpScreen({ navigation }: { navigation: any }) {
                 setAcceptedPolicy(true);
                 setShowPolicyModal(false);
               }}
-              activeOpacity={0.88}
             >
               <Check size={22} color="#fff" style={{ marginRight: 10 }} />
-              <Text style={styles.acceptBtnText}>I Accept the Terms & Privacy Policy</Text>
+              <Text style={styles.acceptBtnText}>
+                I Accept the Terms & Privacy Policy
+              </Text>
             </TouchableOpacity>
           </View>
         </SafeAreaView>
@@ -537,55 +488,119 @@ export default function SignUpScreen({ navigation }: { navigation: any }) {
   );
 }
 
-const X = ({ size, color }: { size: number; color: string }) => (
-  <View style={{ width: size, height: size, justifyContent: 'center', alignItems: 'center' }}>
-    <View style={{ position: 'absolute', width: size, height: 2, backgroundColor: color, transform: [{ rotate: '45deg' }] }} />
-    <View style={{ position: 'absolute', width: size, height: 2, backgroundColor: color, transform: [{ rotate: '-45deg' }] }} />
-  </View>
-);
-
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff', paddingTop: 15 },
-  content: { paddingHorizontal: 4 },
-  logoContainer: { marginVertical: 10, justifyContent: 'center', alignItems: 'center' },
-  logo: { width: 160, height: 52 },
-  subtitle: { color: '#666', fontSize: 14, marginTop: 5, marginBottom: 10 },
-  segmentContainer: { flexDirection: 'row', backgroundColor: '#f1f5f9', borderRadius: 14, padding: 5, marginBottom: 14 },
-  segment: { flex: 1, paddingVertical: 12, alignItems: 'center', borderRadius: 10 },
-  segmentActive: { backgroundColor: '#fff', elevation: 3, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4 },
-  segmentText: { fontSize: 12, fontWeight: '600', color: '#64748b' },
-  segmentTextActive: { color: '#2EB1E2', fontWeight: '700' },
-  label: { fontSize: 14, color: '#444', marginBottom: 2, fontWeight: '500' },
-  inputWrapper: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: '#e0e0e0', borderRadius: 12, paddingHorizontal: 16, height: 45, backgroundColor: '#fafafa', marginBottom: 20 },
-  input: { flex: 1, fontSize: 16, color: '#000', marginLeft: 10 },
-  policyContainer: { flexDirection: 'row', alignItems: 'center', marginBottom: 20, paddingHorizontal: 5 },
-  checkbox: { width: 22, height: 22, borderRadius: 6, borderWidth: 2, borderColor: '#2EB1E2', marginRight: 12, justifyContent: 'center', alignItems: 'center' },
-  checkboxChecked: { backgroundColor: '#2EB1E2' },
-  policyText: { fontSize: 14, color: '#444', flex: 1 },
-  policyLink: { color: '#2EB1E2', fontWeight: '700' },
-  signUpButton: { backgroundColor: '#2EB1E2', borderRadius: 14, height: 50, justifyContent: 'center', alignItems: 'center', marginBottom: 15 },
-  buttonDisabled: { opacity: 0.6 },
-  signUpText: { color: '#fff', fontSize: 17, fontWeight: '700' },
-  divider: { flexDirection: 'row', alignItems: 'center', marginBottom: 5 },
-  line: { flex: 1, height: 1, backgroundColor: '#ddd' },
-  googleNote: { textAlign: 'center', color: '#666', fontSize: 12, marginVertical: 10, paddingHorizontal: 10 },
-  socialRow: { marginBottom: 20 },
-  googleButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#ddd', padding: 12, borderRadius: 12 },
-  googleText: { fontSize: 14, fontWeight: '600', color: '#333' },
-  footer: { flexDirection: 'row', justifyContent: 'center', marginBottom: 30 },
-  footerText: { color: '#666', fontSize: 14 },
-  loginLink: { color: '#2EB1E2', fontWeight: '700', fontSize: 14 },
-
-  // Modal Styles
-  // ==================== Updated Modal Styles ====================
-  modalContainer: { 
-    flex: 1, 
-    backgroundColor: '#f8fafc'   // Light elegant background
+  container: {
+    flex: 1,
+    backgroundColor: '#eceff9',
+    paddingTop: StatusBar.currentHeight || 15,
   },
 
-  modalHeader: { 
+  content: { paddingHorizontal: 2 },
+
+  logoContainer: { marginVertical: 20, alignItems: 'center' },
+  logo: { width: 160, height: 52 },
+  subtitle: { color: '#666', fontSize: 14, marginTop: 8, textAlign: 'center' },
+
+  // Radio Selection Styles
+  radioContainer: { marginBottom: 2 },
+  radioRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 10,
+  },
+  radioRowSingle: {
+    justifyContent: 'flex-start',
+    alignItems: 'flex-start',
+  },
+
+  radioOption: {
+    flexDirection: 'row', // 👈 makes them inline
+    alignItems: 'center',
+    paddingVertical: 5,
+    paddingHorizontal: 6,
+    backgroundColor: '#f8fafc',
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    borderRadius: 30,
+    gap: 0,
+
+    // marginHorizontal: 5,
+  },
+  radioOptionSelected: {
+    borderColor: '#0A7C6E',
+    backgroundColor: '#f0f9ff',
+  },
+  radioCircle: {
+    marginBottom: 12,
+  },
+  radioText: {
+    fontSize: 11.5,
+    fontWeight: '600',
+    color: '#475569',
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+  radioTextSelected: {
+    color: '#0A7C6E',
+    fontWeight: '700',
+  },
+
+  label: { fontSize: 14, color: '#444', marginBottom: 5, fontWeight: '500' },
+  inputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    height: 48,
+    backgroundColor: '#fcf9f9',
+    marginBottom: 14,
+  },
+  input: { flex: 1, fontSize: 16, color: '#000', marginLeft: 10 },
+
+  policyContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 18,
+    paddingHorizontal: 4,
+    marginTop: 16,
+  },
+  checkbox: {
+    width: 20,
+    height: 20,
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: '#0A7C6E',
+    marginRight: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  checkboxChecked: { backgroundColor: '#0A7C6E' },
+
+  policyText: { fontSize: 14.5, color: '#444', flex: 1 },
+  policyLink: { color: '#0A7C6E', fontWeight: '700' },
+
+  signUpButton: {
+    backgroundColor: '#0A7C6E',
+    borderRadius: 14,
+    height: 52,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  buttonDisabled: { opacity: 0.6 },
+  signUpText: { color: '#fff', fontSize: 17, fontWeight: '700' },
+
+  footer: { flexDirection: 'row', justifyContent: 'center', marginBottom: 30 },
+  footerText: { color: '#666', fontSize: 14 },
+  loginLink: { color: '#0A7C6E', fontWeight: '700', fontSize: 14 },
+
+  // Modal Styles
+  modalContainer: { flex: 1, backgroundColor: '#f8fafc' },
+  modalHeader: {
     backgroundColor: '#ffffff',
-    paddingHorizontal: 20, 
+    paddingHorizontal: 20,
     paddingVertical: 18,
     flexDirection: 'row',
     alignItems: 'center',
@@ -598,60 +613,24 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 5,
   },
-
-  headerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 14,
-  },
-
-  modalLogo: { 
-    width: 70, 
-    height: 30, 
-  },
-
-  modalTitle: { 
-    fontSize: 14, 
-    fontWeight: '700', 
-    color: '#0f172a' 
-  },
-
-  modalSubtitle: { 
-    fontSize: 10, 
-    color: '#64748b', 
-    marginTop: 2 
-  },
-
-  closeBtn: { 
-    padding: 5, 
-    borderRadius: 30,
-    backgroundColor: '#f1f5f9',
-  },
+  headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 14 },
+  modalLogo: { width: 70, height: 30 },
+  modalTitle: { fontSize: 14, fontWeight: '700', color: '#0f172a' },
+  modalSubtitle: { fontSize: 10, color: '#64748b', marginTop: 2 },
+  closeBtn: { padding: 5, borderRadius: 30, backgroundColor: '#f1f5f9' },
 
   modalScroll: { flex: 1 },
   modalScrollContent: { padding: 20, paddingBottom: 40 },
 
-  policyCard: {
-    // backgroundColor: '#ffffff',
-    // borderRadius: 20,
-    // padding: 24,
-    // shadowColor: '#000',
-    // shadowOffset: { width: 0, height: 8 },
-    // shadowOpacity: 0.07,
-    // shadowRadius: 16,
-    // elevation: 8,
-  },
-
-  // Light Blue Highlight Box
+  policyCard: {},
   highlightedInfo: {
-    backgroundColor: '#e0f2fe',        // Light blue background
+    backgroundColor: '#e0f2fe',
     padding: 18,
     borderRadius: 16,
     marginBottom: 24,
     borderLeftWidth: 5,
-    borderLeftColor: '#3b82f6',        // Blue accent bar
+    borderLeftColor: '#3b82f6',
   },
-
   highlightText: {
     fontSize: 15.5,
     color: '#1e40af',
@@ -659,14 +638,12 @@ const styles = StyleSheet.create({
     lineHeight: 24,
     marginBottom: 6,
   },
-
-  policyBodyText: { 
-    fontSize: 16, 
-    color: '#1e2937', 
+  policyBodyText: {
+    fontSize: 16,
+    color: '#1e2937',
     lineHeight: 26,
     letterSpacing: 0.15,
   },
-
   lastUpdated: {
     textAlign: 'center',
     marginTop: 28,
@@ -674,32 +651,25 @@ const styles = StyleSheet.create({
     color: '#94a3b8',
     fontWeight: '500',
   },
-
-  modalFooter: { 
-    paddingHorizontal: 20, 
-    paddingVertical: 20, 
+  modalFooter: {
+    paddingHorizontal: 20,
+    paddingVertical: 20,
     backgroundColor: '#ffffff',
     borderTopWidth: 1,
     borderTopColor: '#e2e8f0',
   },
-
-  acceptBtn: { 
-    backgroundColor: '#2EB1E2', 
-    paddingVertical: 18, 
-    borderRadius: 16, 
+  acceptBtn: {
+    backgroundColor: '#0A7C6E',
+    paddingVertical: 18,
+    borderRadius: 16,
     alignItems: 'center',
     flexDirection: 'row',
     justifyContent: 'center',
-    shadowColor: '#2EB1E2',
+    shadowColor: '#0A7C6E',
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.35,
     shadowRadius: 12,
     elevation: 10,
   },
-
-  acceptBtnText: { 
-    color: '#fff', 
-    fontSize: 17.5, 
-    fontWeight: '700' 
-  },
+  acceptBtnText: { color: '#fff', fontSize: 17.5, fontWeight: '700' },
 });

@@ -17,7 +17,7 @@ const BASE_URL = 'https://apis.staffoo.com.au/api';
 
 type Card = {
   card_holder_name: string;
-  card_number: string;          // clean digits from backend
+  card_number: string; // clean digits from backend
   expiry_month: string;
   expiry_year: string;
 };
@@ -31,54 +31,58 @@ export default function PaymentMethodsScreen({ navigation }: Props) {
   const [loading, setLoading] = useState(true);
 
   const formatCardNumber = (digits: string) => {
-    return digits.replace(/\D/g, '').match(/.{1,4}/g)?.join(' ') || digits;
+    return (
+      digits
+        .replace(/\D/g, '')
+        .match(/.{1,4}/g)
+        ?.join(' ') || digits
+    );
   };
 
-const fetchCards = async () => {
-  try {
-    setLoading(true);
-
-    const token = await AsyncStorage.getItem('@auth_token');
-    if (!token) throw new Error('No auth token');
-
-    // ✅ Get logged-in user
-    const userStr = await AsyncStorage.getItem('user');
-    if (!userStr) throw new Error('User session not found');
-
-    const user = JSON.parse(userStr);
-    const USER_ID = user.id;
-
-    const res = await axios.get(`${BASE_URL}/user-edit/${USER_ID}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-
-    if (!res.data?.success || !res.data?.data?.customer?.bank_details) {
-      setCards([]);
-      return;
-    }
-
-    const raw = res.data.data.customer.bank_details;
-    let parsed: any[] = [];
-
+  const fetchCards = async () => {
     try {
-      parsed = JSON.parse(raw);
-    } catch (e) {
-      console.warn('Invalid bank_details JSON');
-    }
+      setLoading(true);
 
-    if (Array.isArray(parsed)) {
-      setCards(parsed);
-    } else {
-      setCards([]);
-    }
+      const token = await AsyncStorage.getItem('@auth_token');
+      if (!token) throw new Error('No auth token');
 
-  } catch (err) {
-    console.error('Load cards error:', err);
-    Alert.alert('Error', 'Could not load payment methods');
-  } finally {
-    setLoading(false);
-  }
-};
+      // ✅ Get logged-in user
+      const userStr = await AsyncStorage.getItem('user');
+      if (!userStr) throw new Error('User session not found');
+
+      const user = JSON.parse(userStr);
+      const USER_ID = user.id;
+
+      const res = await axios.get(`${BASE_URL}/user-edit/${USER_ID}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (!res.data?.success || !res.data?.data?.customer?.bank_details) {
+        setCards([]);
+        return;
+      }
+
+      const raw = res.data.data.customer.bank_details;
+      let parsed: any[] = [];
+
+      try {
+        parsed = JSON.parse(raw);
+      } catch (e) {
+        console.warn('Invalid bank_details JSON');
+      }
+
+      if (Array.isArray(parsed)) {
+        setCards(parsed);
+      } else {
+        setCards([]);
+      }
+    } catch (err) {
+      console.error('Load cards error:', err);
+      Alert.alert('Error', 'Could not load payment methods');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     fetchCards();
@@ -93,23 +97,26 @@ const fetchCards = async () => {
   const renderCard = ({ item }: { item: Card }) => {
     const last4 = item.card_number.slice(-4);
     const formatted = formatCardNumber(item.card_number);
-    const shortFormatted = last4 ? `•••• •••• •••• ${last4}` : '•••• •••• •••• ••••';
+    const shortFormatted = last4
+      ? `•••• •••• •••• ${last4}`
+      : '•••• •••• •••• ••••';
 
     return (
       <View style={styles.cardItem}>
         <CreditCard size={28} color="#2EB1E2" />
         <View style={styles.cardInfo}>
-          <Text style={styles.cardName}>{item.card_holder_name.toUpperCase()}</Text>
+          <Text style={styles.cardName}>
+            {item.card_holder_name.toUpperCase()}
+          </Text>
           <Text style={styles.cardNumber}>{shortFormatted}</Text>
           <Text style={styles.expiry}>
-            Expires {item.expiry_month.padStart(2, '0')}/{item.expiry_year.padStart(2, '0')}
+            Expires {item.expiry_month.padStart(2, '0')}/
+            {item.expiry_year.padStart(2, '0')}
           </Text>
         </View>
       </View>
     );
   };
-
- 
 
   return (
     <SafeAreaView style={styles.container}>
@@ -179,7 +186,12 @@ const styles = StyleSheet.create({
   },
   cardInfo: { marginLeft: 16, flex: 1 },
   cardName: { fontSize: 17, fontWeight: '600', color: '#111827' },
-  cardNumber: { fontSize: 16, color: '#4b5563', marginTop: 4, letterSpacing: 0.5 },
+  cardNumber: {
+    fontSize: 16,
+    color: '#4b5563',
+    marginTop: 4,
+    letterSpacing: 0.5,
+  },
   expiry: { fontSize: 14, color: '#6b7280', marginTop: 4 },
   addButton: {
     position: 'absolute',

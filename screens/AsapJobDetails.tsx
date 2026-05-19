@@ -77,7 +77,7 @@ export default function AsapJobDetails({ route, navigation }: any) {
         type: 'error',
         text1: 'Cannot accept job',
         text2: 'Roster ID is missing',
-        position: 'top',
+        position: 'bottom',
       });
       return;
     }
@@ -133,7 +133,7 @@ export default function AsapJobDetails({ route, navigation }: any) {
                   type: 'success',
                   text1: 'Success!',
                   text2: 'Job accepted' + (selectedStaffId ? ' (assigned to staff)' : ''),
-                  position: 'top',
+                  position: 'bottom',
                 });
 
                 setTimeout(() => navigation.goBack(), 800);
@@ -141,7 +141,7 @@ export default function AsapJobDetails({ route, navigation }: any) {
                 Toast.show({
                   type: 'error',
                   text1: data?.message || 'Failed to accept job',
-                  position: 'top',
+                  position: 'bottom',
                 });
               }
             } catch (error: any) {
@@ -150,7 +150,7 @@ export default function AsapJobDetails({ route, navigation }: any) {
                 type: 'error',
                 text1: 'Failed to accept job',
                 text2: error.message || 'Network/server error',
-                position: 'top',
+                position: 'bottom',
               });
             } finally {
               setAccepting(false);

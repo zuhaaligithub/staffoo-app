@@ -22,7 +22,18 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 
 const { width } = Dimensions.get('window');
-
+const COLORS = {
+  primary: '#0A7C6E',
+  card: '#0A7C6E',
+  cardLight: '#2A335A',
+  text: '#FFFFFF',
+  muted: '#AAB0C0',
+  accent: '#4FACFE',
+  success: '#22C55E',
+  warning: '#F59E0B',
+  danger: '#EF4444',
+  border: '#0A7C6E',
+};
 type Category = {
   id: string;
   title: string;
@@ -32,11 +43,23 @@ type Category = {
 const categories = [
   { id: '1', title: 'Security License', icon: require('../assets/admin.png') },
   { id: '2', title: 'MISC Time License', icon: require('../assets/it.png') },
-  { id: '3', title: 'Working With Children', icon: require('../assets/developer.png') },
+  {
+    id: '3',
+    title: 'Working With Children',
+    icon: require('../assets/developer.png'),
+  },
   { id: '4', title: 'First Aid', icon: require('../assets/data-admin.png') },
   { id: '5', title: 'CPR', icon: require('../assets/electrician.png') },
-  { id: '6', title: 'White Card', icon: require('../assets/development-web.png') },
-  { id: '7', title: 'Traffic Controller', icon: require('../assets/business-management.png') },
+  {
+    id: '6',
+    title: 'White Card',
+    icon: require('../assets/development-web.png'),
+  },
+  {
+    id: '7',
+    title: 'Traffic Controller',
+    icon: require('../assets/business-management.png'),
+  },
 ];
 
 export default function HomeScreen({ navigation }: any) {
@@ -44,7 +67,10 @@ export default function HomeScreen({ navigation }: any) {
   const [user, setUser] = useState<any>(null);
   const [isActive, setIsActive] = useState<boolean>(false);
   const [profileImage, setProfileImage] = useState<string | null>(null);
-  const [currentLocation, setCurrentLocation] = useState<{ latitude: number; longitude: number } | null>(null);
+  const [currentLocation, setCurrentLocation] = useState<{
+    latitude: number;
+    longitude: number;
+  } | null>(null);
 
   const formatDateMMDDYYYY = (date: Date) =>
     `${(date.getMonth() + 1).toString().padStart(2, '0')}-${date
@@ -81,7 +107,9 @@ export default function HomeScreen({ navigation }: any) {
       if (!token || !userStr) return;
       const userData = JSON.parse(userStr);
       const start = formatDateMMDDYYYY(weekStart);
-      const end = formatDateMMDDYYYY(new Date(weekStart.getTime() + 6 * 86400000));
+      const end = formatDateMMDDYYYY(
+        new Date(weekStart.getTime() + 6 * 86400000),
+      );
 
       const payload = {
         user_id: [userData.id],
@@ -99,7 +127,7 @@ export default function HomeScreen({ navigation }: any) {
             Authorization: `Bearer ${token}`,
             'Content-Type': 'application/json',
           },
-        }
+        },
       );
 
       if (res.data?.success) {
@@ -122,7 +150,6 @@ export default function HomeScreen({ navigation }: any) {
     );
   };
 
-
   useEffect(() => {
     fetchCustomerSites();
   }, []);
@@ -136,11 +163,12 @@ export default function HomeScreen({ navigation }: any) {
             PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
             {
               title: 'Location Permission',
-              message: 'This app needs access to your location to show relevant jobs near you.',
+              message:
+                'This app needs access to your location to show relevant jobs near you.',
               buttonNeutral: 'Ask Me Later',
               buttonNegative: 'Cancel',
               buttonPositive: 'OK',
-            }
+            },
           );
           if (granted === PermissionsAndroid.RESULTS.GRANTED) {
             getCurrentLocation();
@@ -173,15 +201,19 @@ export default function HomeScreen({ navigation }: any) {
 
     const getCurrentLocation = () => {
       Geolocation.getCurrentPosition(
-        (position) => {
+        position => {
           const { latitude, longitude } = position.coords;
           setCurrentLocation({ latitude, longitude });
           console.log('[Location] Current location:', latitude, longitude);
         },
         (error: any) => {
-          console.log('[Location] Error getting location:', error.code, error.message);
+          console.log(
+            '[Location] Error getting location:',
+            error.code,
+            error.message,
+          );
         },
-        { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 }
+        { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 },
       );
     };
 
@@ -190,11 +222,15 @@ export default function HomeScreen({ navigation }: any) {
 
   const sortedSites = [...sites].sort((siteA, siteB) => {
     const latestA = siteA.job_roster?.length
-      ? Math.max(...siteA.job_roster.map((j: any) => new Date(j.start).getTime()))
+      ? Math.max(
+          ...siteA.job_roster.map((j: any) => new Date(j.start).getTime()),
+        )
       : 0;
 
     const latestB = siteB.job_roster?.length
-      ? Math.max(...siteB.job_roster.map((j: any) => new Date(j.start).getTime()))
+      ? Math.max(
+          ...siteB.job_roster.map((j: any) => new Date(j.start).getTime()),
+        )
       : 0;
 
     return latestB - latestA;
@@ -207,7 +243,10 @@ export default function HomeScreen({ navigation }: any) {
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#fff" />
       <View style={styles.header}>
-        <TouchableOpacity style={styles.avatarBox} onPress={() => navigation.navigate('ProfileSetup')}>
+        <TouchableOpacity
+          style={styles.avatarBox}
+          onPress={() => navigation.navigate('ProfileSetup')}
+        >
           {profileImage ? (
             <Image source={{ uri: profileImage }} style={styles.avatar} />
           ) : (
@@ -221,26 +260,38 @@ export default function HomeScreen({ navigation }: any) {
             <Text style={styles.welcomeText}>Welcome back!</Text>
             <View style={styles.nameRow}>
               <Text style={styles.name}>{user?.name || 'User Name'}</Text>
-              <Image source={require('../assets/hello.png')} style={styles.helloIcon} />
+              <Image
+                source={require('../assets/hello.png')}
+                style={styles.helloIcon}
+              />
             </View>
           </View>
         </TouchableOpacity>
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false} style={styles.scrollContent}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        style={styles.scrollContent}
+      >
         <View style={styles.banner}>
           <View style={styles.bannerContent}>
             <Text style={styles.bannerTitle}>
               Let’s find a new job{'\n'}suitable for you
             </Text>
-            <TouchableOpacity
-              style={styles.learnMoreBtn}
-              onPress={() => Linking.openURL('https://app.staffoo.com.au/')}
-            >
-              <Text style={styles.learnMoreText}>Learn More</Text>
-            </TouchableOpacity>
+
+            {/* Static Info Box */}
+            <View style={styles.infoBox}>
+              <Text style={styles.infoText}>💼 Jobs Available</Text>
+              <Text style={styles.infoSubText}>
+                Remote • Full Time • Part Time
+              </Text>
+            </View>
           </View>
-          <Image source={require('../assets/banner-1.png')} style={styles.bannerImage} />
+
+          <Image
+            source={require('../assets/banner-1.png')}
+            style={styles.bannerImage}
+          />
         </View>
 
         <View style={styles.section}>
@@ -249,7 +300,7 @@ export default function HomeScreen({ navigation }: any) {
             data={categories}
             horizontal
             showsHorizontalScrollIndicator={false}
-            keyExtractor={(item) => item.id}
+            keyExtractor={item => item.id}
             renderItem={({ item }) => (
               <TouchableOpacity style={styles.categoryItem} activeOpacity={0.8}>
                 <Image source={item.icon} style={styles.categoryIcon} />
@@ -280,16 +331,20 @@ export default function HomeScreen({ navigation }: any) {
           ) : (
             displayedSites.map((site: any) => {
               const totalHours = calculateTotalHours(site.job_roster || []);
-              const sortedJobs = [...(site.job_roster || [])].sort((a: any, b: any) => {
-                const timeA = a.start ? new Date(a.start).getTime() : 0;
-                const timeB = b.start ? new Date(b.start).getTime() : 0;
+              const sortedJobs = [...(site.job_roster || [])].sort(
+                (a: any, b: any) => {
+                  const timeA = a.start ? new Date(a.start).getTime() : 0;
+                  const timeB = b.start ? new Date(b.start).getTime() : 0;
 
-                return timeB - timeA;
-              });
+                  return timeB - timeA;
+                },
+              );
 
               return (
                 <View key={site.id} style={styles.siteCard}>
-                  <Text style={styles.siteName}>{site.site_name || 'Unnamed Site'}</Text>
+                  <Text style={styles.siteName}>
+                    {site.site_name || 'Unnamed Site'}
+                  </Text>
                   <Text style={styles.siteAddress}>{site.address}</Text>
                   <Text style={styles.totalHours}>
                     Total Hours: {totalHours.toFixed(1)} hrs
@@ -298,14 +353,16 @@ export default function HomeScreen({ navigation }: any) {
                     const status = job.job_status?.toLowerCase();
                     const shiftDate = job.start
                       ? new Date(job.start).toLocaleDateString('en-GB', {
-                        day: '2-digit',
-                        month: 'short',
-                        year: 'numeric',
-                      })
+                          day: '2-digit',
+                          month: 'short',
+                          year: 'numeric',
+                        })
                       : '--';
 
-                    const startTime = job.start?.split(' ')[1]?.slice(0, 5) || '--:--';
-                    const endTime = job.end?.split(' ')[1]?.slice(0, 5) || '--:--';
+                    const startTime =
+                      job.start?.split(' ')[1]?.slice(0, 5) || '--:--';
+                    const endTime =
+                      job.end?.split(' ')[1]?.slice(0, 5) || '--:--';
 
                     return (
                       <View key={job.id} style={styles.shiftRow}>
@@ -320,18 +377,16 @@ export default function HomeScreen({ navigation }: any) {
                           {job.guards?.name || 'Unassigned'}
                         </Text>
 
-
-
                         <View
                           style={[
                             styles.statusBadge,
                             status === 'pending'
                               ? { backgroundColor: '#FEE2E2' }
                               : status === 'confirmed'
-                                ? { backgroundColor: '#FEF3C7' }
-                                : status === 'completed'
-                                  ? { backgroundColor: '#D1FAE5' }
-                                  : { backgroundColor: '#E5E7EB' },
+                              ? { backgroundColor: '#FEF3C7' }
+                              : status === 'completed'
+                              ? { backgroundColor: '#D1FAE5' }
+                              : { backgroundColor: '#E5E7EB' },
                           ]}
                         >
                           <Text
@@ -342,10 +397,10 @@ export default function HomeScreen({ navigation }: any) {
                                   status === 'pending'
                                     ? '#DC2626' // 🔴 red
                                     : status === 'confirmed'
-                                      ? '#F59E0B' // 🟡 yellow/orange
-                                      : status === 'completed'
-                                        ? '#16A34A' // 🟢 green
-                                        : '#374151',
+                                    ? '#F59E0B' // 🟡 yellow/orange
+                                    : status === 'completed'
+                                    ? '#16A34A' // 🟢 green
+                                    : '#374151',
                               },
                             ]}
                           >
@@ -368,7 +423,7 @@ export default function HomeScreen({ navigation }: any) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff', paddingTop: 20 },
+  container: { flex: 1, backgroundColor: '#dfe6f9', paddingTop: 20 },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -376,33 +431,79 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 10,
   },
+  infoBox: {
+    marginTop: 16,
+    backgroundColor: '#fff',
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderRadius: 12,
+    alignSelf: 'flex-start',
+  },
+
+  infoText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#000',
+  },
+
+  infoSubText: {
+    fontSize: 12,
+    color: '#666',
+    marginTop: 2,
+  },
   avatarBox: { flexDirection: 'row', alignItems: 'center' },
-  avatar: { width: 50, height: 50, borderRadius: 25 },
+  avatar: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    borderWidth: 2,
+    borderColor: '#4FACFE',
+  },
+
+  initialsAvatar: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#2A335A',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#4FACFE',
+  },
   welcomeContent: { marginLeft: 12 },
   welcomeText: { fontSize: 13, color: '#666' },
   nameRow: { flexDirection: 'row', alignItems: 'center' },
   name: { fontSize: 18, fontWeight: '700', color: '#000' },
   helloIcon: { width: 20, height: 20, marginLeft: 6 },
   scrollContent: { flex: 1 },
+
+  bannerContent: { flex: 1 },
   banner: {
     marginHorizontal: 20,
-    marginVertical: 10,
-    backgroundColor: '#c2e0eb',
-    borderRadius: 16,
-    padding: 16,
+    marginVertical: 12,
+    backgroundColor: '#0A7C6E',
+    borderRadius: 18,
+    padding: 18,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#0A7C6E',
   },
-  bannerContent: { flex: 1 },
-  bannerTitle: { fontSize: 18, fontWeight: '700', color: '#226a84', lineHeight: 28 },
+
+  bannerTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#fff',
+    lineHeight: 26,
+  },
+
   learnMoreBtn: {
-    backgroundColor: '#2eb1e2',
+    backgroundColor: '#4FACFE',
     paddingVertical: 10,
     paddingHorizontal: 14,
-    borderRadius: 8,
+    borderRadius: 10,
     marginTop: 12,
-    alignSelf: 'flex-start',
   },
   shiftDate: {
     fontSize: 12,
@@ -410,16 +511,7 @@ const styles = StyleSheet.create({
     marginBottom: 2,
     fontWeight: '500',
   },
-  initialsAvatar: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: '#2eb1e2',
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#a8a1a1',
-  },
+
   learnMoreText: { color: '#fff', fontWeight: '600' },
   bannerImage: { width: 130, height: 130, resizeMode: 'contain' },
 
@@ -430,21 +522,35 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 12,
   },
-  sectionTitle: { fontSize: 18, fontWeight: '700', color: '#226a84' },
+  sectionTitle: { fontSize: 18, fontWeight: '700', color: '#323a5b' },
   seeAll: { color: '#2869FE', fontWeight: '600' },
 
   siteCard: {
-    backgroundColor: '#fff',
+    backgroundColor: '#f6f6f6',
     padding: 16,
-    borderRadius: 14,
-    marginBottom: 14,
+    borderRadius: 12,
+    marginBottom: 10,
     borderWidth: 1,
-    borderColor: '#e0e0e0',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.06,
-    shadowRadius: 10,
-    elevation: 4,
+    borderColor: '#e8e8e9',
+  },
+
+  siteName: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#4d4c4c',
+  },
+
+  siteAddress: {
+    fontSize: 12,
+    color: '#AAB0C0',
+    marginVertical: 6,
+  },
+
+  totalHours: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#4FACFE',
+    marginBottom: 10,
   },
   initialsText: {
     color: '#fff',
@@ -452,14 +558,6 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
 
-  siteName: { fontSize: 16, fontWeight: '700', color: '#000' },
-  siteAddress: { fontSize: 12, color: '#666', marginVertical: 4 },
-  totalHours: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#3b82f6',
-    marginBottom: 10,
-  },
   shiftRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -485,22 +583,26 @@ const styles = StyleSheet.create({
     width: 80,
     height: 78,
     borderRadius: 14,
-    backgroundColor: '#fff',
+    backgroundColor: '#c9daf7',
     borderWidth: 1,
-    borderColor: '#e0dddd',
+    borderColor: '#d1cfcf',
     marginRight: 12,
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 6,
 
-    shadowColor: '#000',
+    shadowColor: '#979292',
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.06,
     shadowRadius: 10,
     elevation: 2,
   },
   categoryList: { paddingVertical: 8 },
-  categoryIcon: { width: 32, height: 32, resizeMode: 'contain', marginBottom: 6 },
-  categoryTitle: { fontSize: 11, color: '#8a8989', textAlign: 'center' },
+  categoryIcon: {
+    width: 32,
+    height: 32,
+    resizeMode: 'contain',
+    marginBottom: 6,
+  },
+  categoryTitle: { fontSize: 9, color: '#111111', textAlign: 'center' },
 });
-

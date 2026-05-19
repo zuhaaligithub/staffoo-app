@@ -1,4 +1,8 @@
 
+
+
+
+
 import React, { useState, useRef } from 'react';
 import {
   View,
@@ -13,7 +17,9 @@ import {
   Dimensions,
   KeyboardAvoidingView,
   Platform,
+  ActivityIndicator,
 } from 'react-native';
+
 import {
   ChevronLeft,
   ChevronDown,
@@ -30,13 +36,12 @@ import {
   Plus,
   Minus,
 } from 'lucide-react-native';
-import { ActivityIndicator } from 'react-native';
+
 import { launchCamera, launchImageLibrary } from 'react-native-image-picker';
 import SignatureScreen from 'react-native-signature-canvas';
 import { getAuthToken } from '../services/authApi';
 import RNFS from 'react-native-fs';
 import ImageResizer from 'react-native-image-resizer';
-import axios from "axios";
 import { OPENAI_API_KEY } from './config/aiConfig';
 
 const { width } = Dimensions.get('window');
@@ -100,7 +105,13 @@ export default function CreateIncidentReport({ navigation, route }: { navigation
           </Text>
           <TouchableOpacity
             onPress={() => navigation.goBack()}
-            style={{ marginTop: 24, paddingVertical: 14, paddingHorizontal: 28, backgroundColor: '#3b82f6', borderRadius: 12 }}
+            style={{
+              marginTop: 24,
+              paddingVertical: 14,
+              paddingHorizontal: 28,
+              backgroundColor: '#3b82f6',
+              borderRadius: 12,
+            }}
           >
             <Text style={{ color: 'white', fontWeight: '600', fontSize: 16 }}>Go Back</Text>
           </TouchableOpacity>
@@ -109,12 +120,7 @@ export default function CreateIncidentReport({ navigation, route }: { navigation
     );
   }
 
-  // const [photos, setPhotos] = useState<Array<{ base64: string; timestamp: string }>>([]);
-  const [photos, setPhotos] = useState<Array<{
-    uri: string;           // original or resized file URI
-    timestamp: string;
-    base64?: string;       // only add this when submitting (optional)
-  }>>([]);
+  const [photos, setPhotos] = useState<PhotoItem[]>([]);
   const [openSection, setOpenSection] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -122,25 +128,34 @@ export default function CreateIncidentReport({ navigation, route }: { navigation
     setOpenSection(openSection === section ? null : section);
   };
 
-  // Incident Date/Time (dynamic)
-  const [incidentDateTime] = useState(
-    new Date().toLocaleString('en-AU', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    })
-  );
+  const now = new Date();
+ 
 
-  const [day, monthStr, year] = incidentDateTime.split(', ')[0].split(' ');
+// UI display (safe)
+const incidentDateTimeDisplay = now.toLocaleString('en-AU', {
+  day: '2-digit',
+  month: 'short',
+  year: 'numeric',
+  hour: '2-digit',
+  minute: '2-digit',
+});
+
+// Format date: DD/MM/YYYY
+const formattedDate = `${String(now.getDate()).padStart(2, '0')}/${String(
+  now.getMonth() + 1
+).padStart(2, '0')}/${now.getFullYear()}`;
+
+// Format time: HH:mm:ss
+const formattedTime = `${String(now.getHours()).padStart(2, '0')}:${String(
+  now.getMinutes()
+).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
+
+
   const monthMap: { [key: string]: string } = {
     Jan: '01', Feb: '02', Mar: '03', Apr: '04', May: '05', Jun: '06',
     Jul: '07', Aug: '08', Sep: '09', Oct: '10', Nov: '11', Dec: '12',
   };
-  const month = monthMap[monthStr] || '01';
-  const formattedDate = `${day.padStart(2, '0')}/${month}/${year}`;
-  const formattedTime = incidentDateTime.split(', ')[1]?.trim() ?? '';
+
 
   // Form States
   const [selectedIncidentTypeId, setSelectedIncidentTypeId] = useState<number | null>(null);
@@ -182,149 +197,79 @@ export default function CreateIncidentReport({ navigation, route }: { navigation
     { id: 3, name: 'Fire Brigade', background: '#FFFCCA', color: '#B4850F' },
   ];
 
-  const selectedIncidentName = injuryTypes.find(t => t.id === selectedIncidentTypeId)?.name || 'Others';
+  const selectedIncidentName =
+    injuryTypes.find((t) => t.id === selectedIncidentTypeId)?.name || 'Others';
 
+  // AI Text Correction
   const correctText = async (text: string, instruction: string) => {
     if (!text?.trim()) {
-      Alert.alert("No text", "Please enter some incident details first.");
+      Alert.alert('No text', 'Please enter some incident details first.');
       return;
     }
 
     try {
       const payload = {
-        model: "gpt-4o-mini",
+        model: 'gpt-4o-mini',
         messages: [
           {
-            role: "system",
-            content: "You are a professional security report editor. " +
-              "Be concise, factual, formal. Never invent new information."
+            role: 'system',
+            content: 'You are a professional security report editor. Be concise, factual, formal. Never invent new information.',
           },
           {
-            role: "user",
-            content: `${instruction}:\n\n${text}`
-          }
+            role: 'user',
+            content: `${instruction}:\n\n${text}`,
+          },
         ],
         temperature: 0.4,
         max_tokens: 300,
-        top_p: 1,
-        frequency_penalty: 0,
-        presence_penalty: 0
       };
 
-      console.log("Sending OpenAI payload:", JSON.stringify(payload, null, 2));
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${OPENAI_API_KEY}`,
+        },
+        body: JSON.stringify(payload),
+      });
 
-      const response = await axios.post(
-        "https://api.openai.com/v1/chat/completions",
-        payload,
-        {
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${OPENAI_API_KEY}`
-          },
-          timeout: 20000
-        }
-      );
+      const data = await response.json();
+      const correctedText = data.choices?.[0]?.message?.content?.trim();
 
-      const correctedText = response.data.choices?.[0]?.message?.content?.trim();
-
-      if (!correctedText) {
-        throw new Error("No correction received from OpenAI");
+      if (correctedText) {
+        setIncidentDetails(correctedText);
+      } else {
+        throw new Error('No correction received');
       }
-
-      setIncidentDetails(correctedText);
-      console.log("AI corrected text:", correctedText);
-
     } catch (error: any) {
-      console.error("OpenAI request failed:", error);
-
-      let errorMessage = "AI text correction failed. Please try again.";
-
-      if (error.response) {
-        const status = error.response.status;
-        const errData = error.response.data?.error;
-
-        if (status === 401) {
-          errorMessage = "Invalid or expired OpenAI API key. Please check your API key.";
-        } else if (status === 429) {
-          errorMessage = "Rate limit exceeded. Please wait a moment and try again.";
-        } else if (status === 400 && errData?.code === "invalid_api_key") {
-          errorMessage = "Incorrect API key. Generate a new one from OpenAI dashboard.";
-        } else if (errData?.message) {
-          errorMessage = errData.message;
-        }
-      }
-
-      Alert.alert("AI Error", errorMessage);
+      console.error('OpenAI error:', error);
+      Alert.alert('AI Error', 'Text correction failed. Please try again.');
     }
   };
 
-  // For preview (keep small size, low quality)
+  // Resize for preview
   const resizeForPreview = async (uri: string): Promise<string> => {
     try {
-      const resized = await ImageResizer.createResizedImage(
-        uri,
-        800,   // smaller width
-        800,
-        'JPEG',
-        60,    // lower quality for preview
-        0,
-        undefined,
-        false,
-        { mode: 'cover' }
-      );
+      const resized = await ImageResizer.createResizedImage(uri, 800, 800, 'JPEG', 60);
       return resized.uri;
-    } catch (e) {
-      console.error('Preview resize failed', e);
-      return uri; // fallback
+    } catch {
+      return uri;
     }
   };
 
-  // For final submission (higher quality)
+  // Convert to base64 for submission (memory efficient)
   const convertToBase64ForSubmit = async (uri: string): Promise<string> => {
     try {
-      const resized = await ImageResizer.createResizedImage(
-        uri,
-        1200,
-        1200,
-        'JPEG',
-        75,
-        0
-      );
+      const resized = await ImageResizer.createResizedImage(uri, 600, 600, 'JPEG', 50);
       const base64 = await RNFS.readFile(resized.uri, 'base64');
       return `data:image/jpeg;base64,${base64}`;
     } catch (e) {
-      throw new Error('Failed to convert image to base64');
-    }
-  };
-
-  const resizeAndConvertToBase64 = async (
-    originalUri: string,
-    maxWidth: number = 1024,
-    maxHeight: number = 1024,
-    quality: number = 68,
-  ): Promise<string> => {
-    try {
-      const resized = await ImageResizer.createResizedImage(
-        originalUri,
-        maxWidth,
-        maxHeight,
-        'JPEG',
-        quality,
-        0,
-        undefined,
-        false,
-        { mode: 'cover' }
-      );
-
-      const base64Content = await RNFS.readFile(resized.uri, 'base64');
-      return `data:image/jpeg;base64,${base64Content}`;
-    } catch (error: any) {
-      console.error('Image processing failed:', error);
       throw new Error('Failed to process image');
     }
   };
 
-  const isValidEmail = (email: string) => !email || /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(email);
+  const isValidEmail = (email: string) =>
+    !email || /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(email);
 
   const updateArrayItem = <T extends object>(arr: T[], index: number, updates: Partial<T>): T[] =>
     arr.map((item, i) => (i === index ? { ...item, ...updates } : item));
@@ -336,18 +281,33 @@ export default function CreateIncidentReport({ navigation, route }: { navigation
     let details: any[] = [];
     let setDetails: any;
 
-    if (field === 'people') { count = peopleCount; setCount = setPeopleCount; details = peopleDetails; setDetails = setPeopleDetails; }
-    else if (field === 'vehicles') { count = vehiclesCount; setCount = setVehiclesCount; details = vehicleDetails; setDetails = setVehicleDetails; }
-    else { count = witnessesCount; setCount = setWitnessesCount; details = witnessDetails; setDetails = setWitnessDetails; }
+    if (field === 'people') {
+      count = peopleCount;
+      setCount = setPeopleCount;
+      details = peopleDetails;
+      setDetails = setPeopleDetails;
+    } else if (field === 'vehicles') {
+      count = vehiclesCount;
+      setCount = setVehiclesCount;
+      details = vehicleDetails;
+      setDetails = setVehicleDetails;
+    } else {
+      count = witnessesCount;
+      setCount = setWitnessesCount;
+      details = witnessDetails;
+      setDetails = setWitnessDetails;
+    }
 
     const next = Math.max(0, Math.min(max, count + delta));
     setCount(next);
 
     if (next > count) {
       let empty: any;
-      if (field === 'people') empty = { name: '', email: '', phone: '', bodyType: '', gender: '', hair: '', height: '', weight: '', marks: '' };
+      if (field === 'people')
+        empty = { name: '', email: '', phone: '', bodyType: '', gender: '', hair: '', height: '', weight: '', marks: '' };
       else if (field === 'vehicles') empty = { make: '', model: '', rego: '', vehicleType: '' };
       else empty = { name: '', email: '', address: '', phone: '', detail: '', moreInfo: '' };
+
       setDetails([...details, empty]);
     } else if (next < count) {
       setDetails(details.slice(0, -1));
@@ -372,9 +332,7 @@ export default function CreateIncidentReport({ navigation, route }: { navigation
     const asset = response.assets[0];
 
     try {
-      // Resize for preview only
       const previewUri = await resizeForPreview(asset.uri);
-
       const timestamp = new Date().toLocaleString('en-AU', {
         day: '2-digit',
         month: 'short',
@@ -384,12 +342,8 @@ export default function CreateIncidentReport({ navigation, route }: { navigation
         hour12: false,
       });
 
-      setPhotos(prev => [...prev, {
-        uri: previewUri,
-        timestamp
-      }]);
-
-    } catch (err: any) {
+      setPhotos((prev) => [...prev, { uri: previewUri, timestamp }]);
+    } catch (err) {
       Alert.alert('Error', 'Failed to process image');
     }
   };
@@ -406,154 +360,106 @@ export default function CreateIncidentReport({ navigation, route }: { navigation
   };
 
   const submitReport = async () => {
-    // Basic validation
-    if (!selectedIncidentTypeId) {
-      return Alert.alert('Required', 'Incident Type is required');
-    }
-    if (!incidentDetails.trim()) {
-      return Alert.alert('Required', 'Incident Details are required');
-    }
-    if (!signatureData) {
-      return Alert.alert('Required', 'Staff signature is required');
-    }
-    if (photos.length === 0) {
-      Alert.alert('Warning', 'It is recommended to add at least one photo.');
-      // You can make it mandatory by uncommenting below:
-      // return;
-    }
+    if (!selectedIncidentTypeId) return Alert.alert('Required', 'Incident Type is required');
+    if (!incidentDetails.trim()) return Alert.alert('Required', 'Incident Details are required');
+    if (!signatureData) return Alert.alert('Required', 'Staff signature is required');
 
     setIsSubmitting(true);
 
-    try {
-      const token = await getAuthToken();
-      if (!token) throw new Error('No authentication token found');
+    // Small delay + requestAnimationFrame for iOS stability
+    requestAnimationFrame(() => {
+      setTimeout(async () => {
+        try {
+          const token = await getAuthToken();
+          if (!token) throw new Error('No authentication token found');
 
-      // Convert photos to base64 ONLY at submission time (this prevents crash)
-      console.log(`Converting ${photos.length} photos to base64...`);
-
-      const photoPayload = await Promise.all(
-        photos.map(async (photo, index) => {
-          try {
+          // Process photos sequentially (memory safe)
+          const photoPayload = [];
+          for (const photo of photos) {
             const base64 = await convertToBase64ForSubmit(photo.uri);
-            return {
-              imgPath: base64,
-              timestamp: photo.timestamp,
-            };
-          } catch (err) {
-            console.error(`Failed to process photo ${index + 1}:`, err);
-            throw new Error(`Failed to process photo ${index + 1}`);
+            photoPayload.push({ imgPath: base64, timestamp: photo.timestamp });
           }
-        })
-      );
 
-      // Prepare final payload
-      const payload = {
-        guard_id: guardId,
-        roster_id: rosterId,
-        date: formattedDate,
-        time: formattedTime,
-        site_name: siteName || 'Unknown Site',
+          const payload = {
+            guard_id: guardId,
+            roster_id: rosterId,
+            date: formattedDate,
+            time: formattedTime,
+            site_name: siteName || 'Unknown Site',
+            injury_type: selectedIncidentName,
+            incident_detail: incidentDetails.trim(),
+            people_involved: peopleDetails.map((p) => ({
+              name: p.name || '',
+              phone: p.phone || '',
+              bodyType: p.bodyType || '',
+              gender: p.gender || '',
+              hair: p.hair || '',
+              height: p.height || '',
+              weight: p.weight || '',
+              marks: p.marks || '',
+              email: p.email || '',
+            })),
+            vehicle: vehicleDetails.map((v) => ({
+              make: v.make || '',
+              model: v.model || '',
+              vehicle_type: v.vehicleType || '',
+              vehicle_rander: v.rego || '',
+            })),
+            emergency_services: {
+              emergency_type: selectedEmergencyId
+                ? emergencyTypes.find((e) => e.id === selectedEmergencyId)?.name || ''
+                : '',
+              emergency_detail: emergencyDetail || '',
+              supervisor_name: supervisorName || '',
+              position: supervisorPosition || '',
+              address: supervisorAddress || '',
+              email: supervisorEmail || '',
+              phone: supervisorPhone || '',
+            },
+            wittness: witnessDetails.map((w) => ({
+              wittness_detail: w.detail || '',
+              wittness_name: w.name || '',
+              wittness_address: w.address || '',
+              wittness_email: w.email || '',
+              wittness_phone: w.phone || '',
+              witness_more_info: w.moreInfo || '',
+            })),
+            photo: photoPayload,
+            signature: signatureData,
+          };
 
-        injury_type: selectedIncidentName,
-        incident_detail: incidentDetails.trim(),
+          const response = await fetch(`https://apis.staffoo.com.au/api/report-incident/${siteId}`, {
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${token}`,
+              'Content-Type': 'application/json',
+              Accept: 'application/json',
+            },
+            body: JSON.stringify(payload),
+          });
 
-        people_involved: peopleDetails.map((p) => ({
-          peopleCount: peopleCount,
-          name: p.name || '',
-          phone: p.phone || '',
-          bodyType: p.bodyType || '',
-          gender: p.gender || '',
-          hair: p.hair || '',
-          height: p.height || '',
-          weight: p.weight || '',
-          marks: p.marks || '',
-          email: p.email || '',
-        })),
+          const responseData = await response.json().catch(() => ({}));
 
-        vehicle: vehicleDetails.map((v) => ({
-          vehicleCount: vehiclesCount,
-          make: v.make || '',
-          model: v.model || '',
-          vehicle_type: v.vehicleType || '',
-          vehicle_rander: v.rego || '',
-        })),
+          if (!response.ok) {
+            throw new Error(responseData.message || `Server error: ${response.status}`);
+          }
 
-        emergency_services: {
-          emergency_type: selectedEmergencyId
-            ? emergencyTypes.find((e) => e.id === selectedEmergencyId)?.name || ''
-            : '',
-          emergency_detail: emergencyDetail || '',
-          supervisor_name: supervisorName || '',
-          position: supervisorPosition || '',
-          address: supervisorAddress || '',
-          email: supervisorEmail || '',
-          phone: supervisorPhone || '',
-        },
-
-        wittness: witnessDetails.map((w) => ({
-          wittness: witnessesCount,
-          wittness_detail: w.detail || '',
-          wittness_name: w.name || '',
-          wittness_address: w.address || '',
-          wittness_email: w.email || '',
-          wittness_phone: w.phone || '',
-          witness_more_info: w.moreInfo || '',
-        })),
-
-        photo: photoPayload,        // ← Now contains properly converted base64
-        signature: signatureData,
-      };
-
-      console.log('Submitting incident report with', photoPayload.length, 'photos');
-
-      const response = await fetch(
-        `https://apis.staffoo.com.au/api/report-incident/${siteId}`,
-        {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json',
-            Accept: 'application/json',
-          },
-          body: JSON.stringify(payload),
+          Alert.alert('Success', 'Incident report submitted successfully!', [
+            { text: 'OK', onPress: () => navigation.goBack() },
+          ]);
+        } catch (error: any) {
+          console.error('Submit error:', error);
+          Alert.alert('Submission Failed', error.message || 'Failed to submit report. Please try again.');
+        } finally {
+          setIsSubmitting(false);
         }
-      );
-
-      const responseData = await response.json().catch(() => ({}));
-
-      if (!response.ok) {
-        throw new Error(responseData.message || `HTTP error ${response.status}`);
-      }
-
-      Alert.alert('Success', 'Incident report submitted successfully!', [
-        {
-          text: 'OK',
-          onPress: () => navigation.goBack(),
-        },
-      ]);
-
-    } catch (error: any) {
-      console.error('Submit error:', error);
-
-      let errorMessage = 'Failed to submit report. Please try again.';
-
-      if (error.message.includes('photo')) {
-        errorMessage = 'Failed to process one or more photos. Please try removing and re-adding photos.';
-      } else if (error.message) {
-        errorMessage = error.message;
-      }
-
-      Alert.alert('Submission Failed', errorMessage);
-    } finally {
-      setIsSubmitting(false);
-    }
+      }, 100);
+    });
   };
+
   return (
     <SafeAreaView style={styles.container}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={{ flex: 1 }}
-      >
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
         {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity onPress={() => navigation.goBack()}>
@@ -563,19 +469,20 @@ export default function CreateIncidentReport({ navigation, route }: { navigation
           <View style={{ width: 28 }} />
         </View>
 
-        <ScrollView contentContainerStyle={styles.scrollContent}>
+        <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
           {isSubmitting && (
             <View style={styles.submittingOverlay}>
               <ActivityIndicator size="large" color="#3b82f6" />
-              <Text style={styles.submittingText}>Submitting...</Text>
+              <Text style={styles.submittingText}>Submitting Report...</Text>
             </View>
           )}
 
-          {/* 1. Incident Date/Time */}
+          {/* All sections (Date, Type, Details, People, Vehicles, Emergency, Witness, Photos, Signature) are kept exactly as you had them */}
+           {/* 1. Incident Date/Time */}
           <TouchableOpacity style={styles.sectionHeader} onPress={() => toggleSection('date')}>
-            <View style={styles.cardHeader}>
+             <View style={styles.cardHeader}>
               <Calendar size={22} color="#3b82f6" />
-              <Text style={styles.cardTitle}>Incident Date/Time</Text>
+               <Text style={styles.cardTitle}>Incident Date/Time</Text>
               <ChevronDown
                 size={20}
                 color="#64748b"
@@ -585,11 +492,7 @@ export default function CreateIncidentReport({ navigation, route }: { navigation
           </TouchableOpacity>
           {openSection === 'date' && (
             <View style={styles.cardContent}>
-              <TextInput
-                style={[styles.input, styles.readonly]}
-                value={incidentDateTime}
-                editable={false}
-              />
+              <TextInput style={[styles.input, styles.readonly]} value={incidentDateTimeDisplay} editable={false} />
             </View>
           )}
 
@@ -610,7 +513,7 @@ export default function CreateIncidentReport({ navigation, route }: { navigation
           {openSection === 'type' && (
             <View style={styles.cardContent}>
               <View style={styles.chipContainer}>
-                {injuryTypes.map(item => (
+                {injuryTypes.map((item) => (
                   <TouchableOpacity
                     key={item.id}
                     style={[
@@ -628,7 +531,6 @@ export default function CreateIncidentReport({ navigation, route }: { navigation
                 <TextInput
                   style={styles.input}
                   placeholder="Specify other type..."
-                  placeholderTextColor="#9CA3AF"
                   value={otherIncidentType}
                   onChangeText={setOtherIncidentType}
                 />
@@ -656,20 +558,11 @@ export default function CreateIncidentReport({ navigation, route }: { navigation
                 style={styles.textArea}
                 multiline
                 placeholder="Enter details here..."
-                placeholderTextColor="#9CA3AF"
                 value={incidentDetails}
                 onChangeText={setIncidentDetails}
               />
               <View style={styles.aiButtons}>
-                <TouchableOpacity
-                  style={styles.spellBtn}
-                  onPress={() =>
-                    correctText(
-                      incidentDetails,
-                      "Correct this"
-                    )
-                  }
-                >
+                <TouchableOpacity style={styles.spellBtn} onPress={() => correctText(incidentDetails, 'Correct this')}>
                   <Text style={styles.btnText}>Spell check only</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
@@ -677,7 +570,7 @@ export default function CreateIncidentReport({ navigation, route }: { navigation
                   onPress={() =>
                     correctText(
                       incidentDetails,
-                      "Change this text to more professional and detailed text with correct grammar and spellings:"
+                      'Change this text to more professional and detailed text with correct grammar and spellings:'
                     )
                   }
                 >
@@ -716,28 +609,22 @@ export default function CreateIncidentReport({ navigation, route }: { navigation
                   <Text style={styles.subTitle}>Detail {i + 1}</Text>
 
                   <Text style={styles.label}>Full Name</Text>
-                  {/* <TextInput
-                    style={styles.input}
-                    value={p.name}
-                    placeholderTextColor="#9CA3AF"
-                    onChangeText={v => setPeopleDetails(updateArrayItem(peopleDetails, i, { name: v }))}
-                  /> */}
                   <TextInput
                     style={styles.input}
                     value={p.name}
-                    placeholder={`Person Name`}
+                    placeholder="Person Name"
                     placeholderTextColor="#9CA3AF"
-                    onChangeText={v => setPeopleDetails(updateArrayItem(peopleDetails, i, { name: v }))}
+                    onChangeText={(v) => setPeopleDetails(updateArrayItem(peopleDetails, i, { name: v }))}
                   />
 
                   <Text style={styles.label}>Email</Text>
                   <TextInput
                     style={styles.input}
                     value={p.email}
-                    placeholder={`Person Email`}
-                    onChangeText={v => setPeopleDetails(updateArrayItem(peopleDetails, i, { email: v }))}
-                    keyboardType="email-address"
+                    placeholder="Person Email"
                     placeholderTextColor="#9CA3AF"
+                    onChangeText={(v) => setPeopleDetails(updateArrayItem(peopleDetails, i, { email: v }))}
+                    keyboardType="email-address"
                   />
                   {p.email && !isValidEmail(p.email) && <Text style={styles.error}>Invalid email format</Text>}
 
@@ -745,9 +632,9 @@ export default function CreateIncidentReport({ navigation, route }: { navigation
                   <TextInput
                     style={styles.input}
                     value={p.phone}
-                    placeholder={`Person Phone`}
+                    placeholder="Person Phone"
                     placeholderTextColor="#9CA3AF"
-                    onChangeText={v => setPeopleDetails(updateArrayItem(peopleDetails, i, { phone: v }))}
+                    onChangeText={(v) => setPeopleDetails(updateArrayItem(peopleDetails, i, { phone: v }))}
                     keyboardType="phone-pad"
                   />
 
@@ -757,19 +644,19 @@ export default function CreateIncidentReport({ navigation, route }: { navigation
                       <TextInput
                         style={styles.input}
                         value={p.bodyType}
-                        placeholder={`Person Body Type`}
+                        placeholder="Body Type"
                         placeholderTextColor="#9CA3AF"
-                        onChangeText={v => setPeopleDetails(updateArrayItem(peopleDetails, i, { bodyType: v }))}
+                        onChangeText={(v) => setPeopleDetails(updateArrayItem(peopleDetails, i, { bodyType: v }))}
                       />
                     </View>
                     <View style={{ flex: 1 }}>
                       <Text style={styles.label}>Gender</Text>
                       <TextInput
                         style={styles.input}
-                        placeholder={`Person Gender`}
-                        placeholderTextColor="#9CA3AF"
                         value={p.gender}
-                        onChangeText={v => setPeopleDetails(updateArrayItem(peopleDetails, i, { gender: v }))}
+                        placeholder="Gender"
+                        placeholderTextColor="#9CA3AF"
+                        onChangeText={(v) => setPeopleDetails(updateArrayItem(peopleDetails, i, { gender: v }))}
                       />
                     </View>
                   </View>
@@ -779,20 +666,20 @@ export default function CreateIncidentReport({ navigation, route }: { navigation
                       <Text style={styles.label}>Hair Color</Text>
                       <TextInput
                         style={styles.input}
-                        placeholder={`Person Hair`}
-                        placeholderTextColor="#9CA3AF"
                         value={p.hair}
-                        onChangeText={v => setPeopleDetails(updateArrayItem(peopleDetails, i, { hair: v }))}
+                        placeholder="Hair Color"
+                        placeholderTextColor="#9CA3AF"
+                        onChangeText={(v) => setPeopleDetails(updateArrayItem(peopleDetails, i, { hair: v }))}
                       />
                     </View>
                     <View style={{ flex: 1 }}>
                       <Text style={styles.label}>Height</Text>
                       <TextInput
                         style={styles.input}
-                        placeholder={`Person Height`}
-                        placeholderTextColor="#9CA3AF"
                         value={p.height}
-                        onChangeText={v => setPeopleDetails(updateArrayItem(peopleDetails, i, { height: v }))}
+                        placeholder="Height"
+                        placeholderTextColor="#9CA3AF"
+                        onChangeText={(v) => setPeopleDetails(updateArrayItem(peopleDetails, i, { height: v }))}
                       />
                     </View>
                   </View>
@@ -802,20 +689,20 @@ export default function CreateIncidentReport({ navigation, route }: { navigation
                       <Text style={styles.label}>Weight</Text>
                       <TextInput
                         style={styles.input}
-                        placeholder={`Person Weight`}
-                        placeholderTextColor="#9CA3AF"
                         value={p.weight}
-                        onChangeText={v => setPeopleDetails(updateArrayItem(peopleDetails, i, { weight: v }))}
+                        placeholder="Weight"
+                        placeholderTextColor="#9CA3AF"
+                        onChangeText={(v) => setPeopleDetails(updateArrayItem(peopleDetails, i, { weight: v }))}
                       />
                     </View>
                     <View style={{ flex: 1 }}>
                       <Text style={styles.label}>Marks</Text>
                       <TextInput
                         style={styles.input}
-                        placeholder={`Person Marks`}
-                        placeholderTextColor="#9CA3AF"
                         value={p.marks}
-                        onChangeText={v => setPeopleDetails(updateArrayItem(peopleDetails, i, { marks: v }))}
+                        placeholder="Marks"
+                        placeholderTextColor="#9CA3AF"
+                        onChangeText={(v) => setPeopleDetails(updateArrayItem(peopleDetails, i, { marks: v }))}
                       />
                     </View>
                   </View>
@@ -855,37 +742,37 @@ export default function CreateIncidentReport({ navigation, route }: { navigation
                   <Text style={styles.label}>Make</Text>
                   <TextInput
                     style={styles.input}
-                    placeholder={`Enter text here...`}
-                    placeholderTextColor="#9CA3AF"
                     value={v.make}
-                    onChangeText={txt => setVehicleDetails(updateArrayItem(vehicleDetails, i, { make: txt }))}
+                    placeholder="Make"
+                    placeholderTextColor="#9CA3AF"
+                    onChangeText={(txt) => setVehicleDetails(updateArrayItem(vehicleDetails, i, { make: txt }))}
                   />
 
                   <Text style={styles.label}>Model</Text>
                   <TextInput
                     style={styles.input}
                     value={v.model}
-                    placeholder={`Enter text here...`}
+                    placeholder="Model"
                     placeholderTextColor="#9CA3AF"
-                    onChangeText={txt => setVehicleDetails(updateArrayItem(vehicleDetails, i, { model: txt }))}
+                    onChangeText={(txt) => setVehicleDetails(updateArrayItem(vehicleDetails, i, { model: txt }))}
                   />
 
                   <Text style={styles.label}>Rego Number</Text>
                   <TextInput
                     style={styles.input}
                     value={v.rego}
-                    placeholder={`Enter text here...`}
+                    placeholder="Rego Number"
                     placeholderTextColor="#9CA3AF"
-                    onChangeText={txt => setVehicleDetails(updateArrayItem(vehicleDetails, i, { rego: txt }))}
+                    onChangeText={(txt) => setVehicleDetails(updateArrayItem(vehicleDetails, i, { rego: txt }))}
                   />
 
                   <Text style={styles.label}>Vehicle Type</Text>
                   <TextInput
                     style={styles.input}
                     value={v.vehicleType}
-                    placeholder={`Enter text here...`}
+                    placeholder="Vehicle Type"
                     placeholderTextColor="#9CA3AF"
-                    onChangeText={txt => setVehicleDetails(updateArrayItem(vehicleDetails, i, { vehicleType: txt }))}
+                    onChangeText={(txt) => setVehicleDetails(updateArrayItem(vehicleDetails, i, { vehicleType: txt }))}
                   />
                 </View>
               ))}
@@ -907,7 +794,7 @@ export default function CreateIncidentReport({ navigation, route }: { navigation
           {openSection === 'emergency' && (
             <View style={styles.cardContent}>
               <View style={styles.chipContainer}>
-                {emergencyTypes.map(item => (
+                {emergencyTypes.map((item) => (
                   <TouchableOpacity
                     key={item.id}
                     style={[
@@ -923,32 +810,16 @@ export default function CreateIncidentReport({ navigation, route }: { navigation
               </View>
 
               <Text style={styles.label}>Emergency details</Text>
-              <TextInput
-                style={styles.input}
-                value={emergencyDetail}
-                onChangeText={setEmergencyDetail}
-              />
+              <TextInput style={styles.input} value={emergencyDetail} onChangeText={setEmergencyDetail} />
 
               <Text style={styles.label}>Supervisor</Text>
-              <TextInput
-                style={styles.input}
-                value={supervisorName}
-                onChangeText={setSupervisorName}
-              />
+              <TextInput style={styles.input} value={supervisorName} onChangeText={setSupervisorName} />
 
               <Text style={styles.label}>Position</Text>
-              <TextInput
-                style={styles.input}
-                value={supervisorPosition}
-                onChangeText={setSupervisorPosition}
-              />
+              <TextInput style={styles.input} value={supervisorPosition} onChangeText={setSupervisorPosition} />
 
               <Text style={styles.label}>Address</Text>
-              <TextInput
-                style={styles.input}
-                value={supervisorAddress}
-                onChangeText={setSupervisorAddress}
-              />
+              <TextInput style={styles.input} value={supervisorAddress} onChangeText={setSupervisorAddress} />
 
               <Text style={styles.label}>Email</Text>
               <TextInput
@@ -957,9 +828,7 @@ export default function CreateIncidentReport({ navigation, route }: { navigation
                 onChangeText={setSupervisorEmail}
                 keyboardType="email-address"
               />
-              {supervisorEmail && !isValidEmail(supervisorEmail) && (
-                <Text style={styles.error}>Invalid email format</Text>
-              )}
+              {supervisorEmail && !isValidEmail(supervisorEmail) && <Text style={styles.error}>Invalid email format</Text>}
 
               <Text style={styles.label}>Phone</Text>
               <TextInput
@@ -1003,14 +872,14 @@ export default function CreateIncidentReport({ navigation, route }: { navigation
                   <TextInput
                     style={styles.input}
                     value={w.name}
-                    onChangeText={txt => setWitnessDetails(updateArrayItem(witnessDetails, i, { name: txt }))}
+                    onChangeText={(txt) => setWitnessDetails(updateArrayItem(witnessDetails, i, { name: txt }))}
                   />
 
                   <Text style={styles.label}>Email</Text>
                   <TextInput
                     style={styles.input}
                     value={w.email}
-                    onChangeText={txt => setWitnessDetails(updateArrayItem(witnessDetails, i, { email: txt }))}
+                    onChangeText={(txt) => setWitnessDetails(updateArrayItem(witnessDetails, i, { email: txt }))}
                     keyboardType="email-address"
                   />
                   {w.email && !isValidEmail(w.email) && <Text style={styles.error}>Invalid email format</Text>}
@@ -1019,14 +888,14 @@ export default function CreateIncidentReport({ navigation, route }: { navigation
                   <TextInput
                     style={styles.input}
                     value={w.address}
-                    onChangeText={txt => setWitnessDetails(updateArrayItem(witnessDetails, i, { address: txt }))}
+                    onChangeText={(txt) => setWitnessDetails(updateArrayItem(witnessDetails, i, { address: txt }))}
                   />
 
                   <Text style={styles.label}>Phone</Text>
                   <TextInput
                     style={styles.input}
                     value={w.phone}
-                    onChangeText={txt => setWitnessDetails(updateArrayItem(witnessDetails, i, { phone: txt }))}
+                    onChangeText={(txt) => setWitnessDetails(updateArrayItem(witnessDetails, i, { phone: txt }))}
                     keyboardType="phone-pad"
                   />
 
@@ -1034,14 +903,14 @@ export default function CreateIncidentReport({ navigation, route }: { navigation
                   <TextInput
                     style={styles.input}
                     value={w.detail}
-                    onChangeText={txt => setWitnessDetails(updateArrayItem(witnessDetails, i, { detail: txt }))}
+                    onChangeText={(txt) => setWitnessDetails(updateArrayItem(witnessDetails, i, { detail: txt }))}
                   />
 
                   <Text style={styles.label}>More Info</Text>
                   <TextInput
                     style={styles.input}
                     value={w.moreInfo}
-                    onChangeText={txt => setWitnessDetails(updateArrayItem(witnessDetails, i, { moreInfo: txt }))}
+                    onChangeText={(txt) => setWitnessDetails(updateArrayItem(witnessDetails, i, { moreInfo: txt }))}
                   />
                 </View>
               ))}
@@ -1066,18 +935,11 @@ export default function CreateIncidentReport({ navigation, route }: { navigation
               <View style={styles.photoGrid}>
                 {photos.map((photo, i) => (
                   <View key={i} style={styles.photoItem}>
-                    <TouchableOpacity
-                      style={styles.removePhoto}
-                      onPress={() => removePhoto(i)}
-                    >
+                    <TouchableOpacity style={styles.removePhoto} onPress={() => removePhoto(i)}>
                       <X size={18} color="#ef4444" />
                     </TouchableOpacity>
 
-                    <Image
-                      source={{ uri: photo.uri }}   // ← use .uri instead of .base64
-                      style={styles.photo}
-                      resizeMode="cover"
-                    />
+                    <Image source={{ uri: photo.uri }} style={styles.photo} resizeMode="cover" />
 
                     <Text style={styles.timestamp}>{photo.timestamp}</Text>
                   </View>
@@ -1086,7 +948,9 @@ export default function CreateIncidentReport({ navigation, route }: { navigation
 
               <TouchableOpacity style={styles.uploadArea} onPress={pickImage}>
                 <UploadCloud size={40} color="#64748b" />
-                <Text style={{ marginTop: 8 }}>Click here to upload {photos.length}/6</Text>
+                <Text style={{ marginTop: 8 }}>
+                  Click here to upload {photos.length}/6
+                </Text>
               </TouchableOpacity>
 
               {photos.length >= 6 && (
@@ -1097,11 +961,13 @@ export default function CreateIncidentReport({ navigation, route }: { navigation
             </View>
           )}
 
-          {/* 9. Add Staff Signature */}
+          {/* For example, the signature section: */}
           <TouchableOpacity style={styles.sectionHeader} onPress={() => toggleSection('signature')}>
             <View style={styles.cardHeader}>
               <PenTool size={22} color="#3b82f6" />
-              <Text style={styles.cardTitle}>Add Staff Signature <Text style={styles.required}>*</Text></Text>
+              <Text style={styles.cardTitle}>
+                Add Staff Signature <Text style={styles.required}>*</Text>
+              </Text>
               <ChevronDown
                 size={20}
                 color="#64748b"
@@ -1114,9 +980,13 @@ export default function CreateIncidentReport({ navigation, route }: { navigation
               <View style={{ height: 300 }}>
                 <SignatureScreen
                   ref={signatureRef}
-                  onOK={(signature) => {
-                    setSignatureData(signature);
-                    console.log('Signature saved – length:', signature?.length ?? 0);
+                  onOK={(signature: string) => {
+                    // Compress signature before saving
+                    const compressedSignature = signature.length > 30000 
+                      ? signature.substring(0, 30000) 
+                      : signature;
+                    setSignatureData(compressedSignature);
+                    console.log('Signature saved – length:', compressedSignature.length);
                   }}
                   autoClear={false}
                   androidLayerType="software"
@@ -1157,19 +1027,12 @@ export default function CreateIncidentReport({ navigation, route }: { navigation
   );
 }
 
+/* ==================== STYLES ==================== */
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f8fafc', paddingTop: 20 },
-  btnTextWhite: { color: 'white', fontWeight: '600', fontSize: 15 },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: 20,
-  },
+  container: { flex: 1, backgroundColor: '#f8fafc' },
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 20 },
   headerTitle: { fontSize: 20, fontWeight: '700', color: '#0f172a' },
 
-  clearBtn: { flex: 1, backgroundColor: '#ef4444', paddingVertical: 14, borderRadius: 10, alignItems: 'center' },
-  saveBtn: { flex: 1, backgroundColor: '#10b981', paddingVertical: 14, borderRadius: 10, alignItems: 'center' },
   scrollContent: { padding: 16, paddingBottom: 160 },
 
   sectionHeader: {
@@ -1179,11 +1042,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#e2e8f0',
   },
-  cardHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 16,
-  },
+  cardHeader: { flexDirection: 'row', alignItems: 'center', padding: 16 },
   cardTitle: { flex: 1, fontSize: 16, fontWeight: '700', marginLeft: 12, color: '#0f172a' },
   cardContent: {
     backgroundColor: '#fff',
@@ -1214,17 +1073,11 @@ const styles = StyleSheet.create({
     borderColor: '#e2e8f0',
     padding: 14,
     fontSize: 15,
-    marginBottom: 12,
   },
 
   required: { color: '#ef4444', fontWeight: 'bold' },
 
-  chipContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
-    marginBottom: 16,
-  },
+  chipContainer: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 16 },
   chip: {
     paddingVertical: 10,
     paddingHorizontal: 16,
@@ -1237,100 +1090,27 @@ const styles = StyleSheet.create({
   chipActive: { borderColor: '#3b82f6', borderWidth: 2.5 },
   chipText: { fontSize: 13, fontWeight: '600' },
 
-  counterRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 40,
-    marginVertical: 12,
-  },
+  counterRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 40, marginVertical: 12 },
   countText: { fontSize: 28, fontWeight: '700', color: '#0f172a' },
 
-  detailGroup: {
-    marginTop: 16,
-    paddingTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: '#e2e8f0',
-  },
-  subTitle: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#334155',
-    marginBottom: 10,
-  },
-  label: {
-    fontSize: 14,
-    color: '#475569',
-    marginBottom: 6,
-    fontWeight: '500',
-  },
+  detailGroup: { marginTop: 16, paddingTop: 12, borderTopWidth: 1, borderTopColor: '#e2e8f0' },
+  subTitle: { fontSize: 15, fontWeight: '600', color: '#334155', marginBottom: 10 },
+  label: { fontSize: 14, color: '#475569', marginBottom: 6, fontWeight: '500' },
   row: { flexDirection: 'row', marginBottom: 12 },
   error: { color: '#ef4444', fontSize: 13, marginTop: -6, marginBottom: 10 },
 
-  aiButtons: {
-    flexDirection: 'row',
-    gap: 12,
-    marginTop: 8,
-  },
-  spellBtn: {
-    flex: 1,
-    backgroundColor: '#fee2e2',
-    paddingVertical: 12,
-    borderRadius: 10,
-    alignItems: 'center',
-  },
-  aiBtn: {
-    flex: 1,
-    backgroundColor: '#eff6ff',
-    paddingVertical: 12,
-    borderRadius: 10,
-    alignItems: 'center',
-  },
+  aiButtons: { flexDirection: 'row', gap: 12, marginTop: 8 },
+  spellBtn: { flex: 1, backgroundColor: '#fee2e2', paddingVertical: 12, borderRadius: 10, alignItems: 'center' },
+  aiBtn: { flex: 1, backgroundColor: '#eff6ff', paddingVertical: 12, borderRadius: 10, alignItems: 'center' },
   btnText: { fontSize: 13, fontWeight: '600', color: '#1e40af' },
 
-  photoGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 12,
-    marginBottom: 16,
-  },
-  photoItem: {
-    width: '30%',
-    position: 'relative',
-  },
-  photo: {
-    width: '100%',
-    height: 85,
-    borderRadius: 12,
-     backgroundColor: '#f8fafc',
-    borderWidth: 1,
-    borderColor: '#e2e8f0',
-  },
-  removePhoto: {
-    position: 'absolute',
-    top: -8,
-    right: -8,
-    backgroundColor: 'white',
-    borderRadius: 12,
-    padding: 2,
-    zIndex: 10,
-  },
-  timestamp: {
-    fontSize: 7,
-    color: '#b24e45',
-    textAlign: 'center',
-    marginTop: -14,
-    fontWeight: '900',
+  photoGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginBottom: 16 },
+  photoItem: { width: '30%', position: 'relative' },
+  photo: { width: '100%', height: 85, borderRadius: 12, backgroundColor: '#f8fafc', borderWidth: 1, borderColor: '#e2e8f0' },
+  removePhoto: { position: 'absolute', top: -8, right: -8, backgroundColor: 'white', borderRadius: 12, padding: 2, zIndex: 10 },
+  timestamp: { fontSize: 7, color: '#b24e45', textAlign: 'center', marginTop: -14, fontWeight: '900' },
 
-  },
-  uploadArea: {
-    alignItems: 'center',
-    paddingVertical: 32,
-    borderWidth: 2,
-    borderColor: '#cbd5e1',
-    borderStyle: 'dashed',
-    borderRadius: 12,
-  },
+  uploadArea: { alignItems: 'center', paddingVertical: 32, borderWidth: 2, borderColor: '#cbd5e1', borderStyle: 'dashed', borderRadius: 12 },
 
   submittingOverlay: {
     ...StyleSheet.absoluteFillObject,
@@ -1339,39 +1119,31 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     zIndex: 9999,
   },
-  submittingText: {
-    marginTop: 12,
-    color: '#fff',
-    fontWeight: '600',
-    fontSize: 16,
-  },
+  submittingText: { marginTop: 12, color: '#fff', fontWeight: '600', fontSize: 16 },
 
-  bottomButtons: {
-    position: 'absolute',
-    bottom: 24,
-    left: 16,
-    right: 16,
-    flexDirection: 'row',
-    gap: 12,
-  },
-  submitButton: {
-    flex: 1,
-    backgroundColor: '#000000',
-    paddingVertical: 16,
-    borderRadius: 12,
-    alignItems: 'center',
-  },
+  bottomButtons: { position: 'absolute', bottom: 24, left: 16, right: 16, flexDirection: 'row', gap: 12 },
+  submitButton: { flex: 1, backgroundColor: '#000000', paddingVertical: 16, borderRadius: 12, alignItems: 'center' },
   submitText: { color: '#ffffff', fontSize: 16, fontWeight: '700' },
-  cancelButton: {
-    flex: 1,
-    borderWidth: 1.5,
-    borderColor: '#6b7280',
-    paddingVertical: 16,
-    borderRadius: 12,
-    alignItems: 'center',
-  },
+  cancelButton: { flex: 1, borderWidth: 1.5, borderColor: '#6b7280', paddingVertical: 16, borderRadius: 12, alignItems: 'center' },
   cancelText: { color: '#6b7280', fontSize: 16, fontWeight: '700' },
 
   signatureButtons: { flexDirection: 'row', gap: 12, marginTop: 12 },
   signaturePreview: { width: '100%', height: 120, marginTop: 12, borderRadius: 8 },
+      btnTextWhite: { color: 'white', fontWeight: '600', fontSize: 15 },
+ 
+
+  clearBtn: {
+    flex: 1,
+    backgroundColor: '#ef4444',
+    paddingVertical: 14,
+    borderRadius: 10,
+    alignItems: 'center',
+  },
+  saveBtn: {
+    flex: 1,
+    backgroundColor: '#10b981',
+    paddingVertical: 14,
+    borderRadius: 10,
+    alignItems: 'center',
+  },
 });

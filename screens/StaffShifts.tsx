@@ -1,7 +1,10 @@
-
-
-
-import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
+import React, {
+  useState,
+  useRef,
+  useEffect,
+  useMemo,
+  useCallback,
+} from 'react';
 import {
   View,
   Text,
@@ -12,7 +15,10 @@ import {
   Image,
   ScrollView,
   ActivityIndicator,
+  Modal,
+  FlatList,
 } from 'react-native';
+import { ChevronDown, ChevronUp, UserCheck } from 'lucide-react-native';
 import {
   ChevronLeft,
   ChevronRight,
@@ -25,14 +31,20 @@ import {
 import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet';
 import BottomTab from './BottomTab';
 import Toast from 'react-native-toast-message';
-import { getUserProfile, getContractorStaff, postGuardJobs } from '../services/authApi';
+import {
+  getUserProfile,
+  getContractorStaff,
+  postGuardJobs,
+} from '../services/authApi';
 import { useFocusEffect } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Picker } from '@react-native-picker/picker';
 import LinearGradient from 'react-native-linear-gradient';
+
 export default function StaffShifts({ navigation, route }: any) {
   const bottomSheetRef = useRef<BottomSheet>(null);
-  const snapPoints = useMemo(() => ['80%', '85%'], []);
+  // FIX 1: snapPoints must be memoized and stable
+  const snapPoints = useMemo(() => ['60%', '70%'], []);
 
   const [notificationJob, setNotificationJob] = useState<any>(null);
   const [activeTab, setActiveTab] = useState('Accepted');
@@ -47,11 +59,12 @@ export default function StaffShifts({ navigation, route }: any) {
   const [loadingProfile, setLoadingProfile] = useState(true);
   const [userId, setUserId] = useState<number>(0);
   const [userDocuments, setUserDocuments] = useState<any[]>([]);
-
   const [userName, setUserName] = useState('');
   const [user, setUser] = useState<any>(null);
-
   const [profileImage, setProfileImage] = useState<string | null>(null);
+  const [showStaffDropdown, setShowStaffDropdown] = useState(false);
+  // FIX 2: Track sheet open state separately so we control it cleanly
+  const [sheetOpen, setSheetOpen] = useState(false);
 
   useEffect(() => {
     const loadUser = async () => {
@@ -62,12 +75,14 @@ export default function StaffShifts({ navigation, route }: any) {
         if (userStr) {
           const parsedUser = JSON.parse(userStr);
           setUser(parsedUser);
-          
+
           if (cachedImage) {
             setProfileImage(cachedImage);
           } else if (parsedUser?.staff?.profile_image) {
             const BASE_IMAGE_URL = 'https://apis.staffoo.com.au/storage/';
-            setProfileImage(`${BASE_IMAGE_URL}${parsedUser.staff.profile_image}`);
+            setProfileImage(
+              `${BASE_IMAGE_URL}${parsedUser.staff.profile_image}`,
+            );
           }
         }
       } catch (e) {
@@ -76,35 +91,31 @@ export default function StaffShifts({ navigation, route }: any) {
     };
     loadUser();
   }, []);
+
   useEffect(() => {
     const getUser = async () => {
       try {
         const userJson = await AsyncStorage.getItem('user');
-
         if (userJson) {
           const parsedUser = JSON.parse(userJson);
-
-          console.log("Stored user:", parsedUser);
-
           setUserName(parsedUser?.user?.data?.name || '');
         }
       } catch (error) {
-        console.log("User load error:", error);
+        console.log('User load error:', error);
       }
     };
-
     getUser();
   }, []);
 
-  // ────────────────────────────────────────────────
-  // FIXED: Prioritize staff path first (matches your log)
-  // ────────────────────────────────────────────────
   const extractJobData = (notif: any): any => {
     if (!notif) return {};
 
-    console.log('[EXTRACT DEBUG] Full notification:', JSON.stringify(notif, null, 2));
+    console.log(
+      '[EXTRACT DEBUG] Full notification:',
+      JSON.stringify(notif, null, 2),
+    );
 
-    // 1. STAFF – deepest path (your log shows this works)
+    // 1. STAFF – deepest path
     if (notif?.additionalData?.roster?.roster?.id) {
       console.log('[EXTRACT] STAFF deep path: additionalData.roster.roster');
       return notif.additionalData.roster.roster;
@@ -116,7 +127,7 @@ export default function StaffShifts({ navigation, route }: any) {
       return notif.additionalData.roster;
     }
 
-    // 3. CONTRACTOR path (after staff)
+    // 3. CONTRACTOR path
     if (notif?.roster?.roster?.id) {
       console.log('[EXTRACT] CONTRACTOR path: roster.roster');
       return notif.roster.roster;
@@ -149,9 +160,6 @@ export default function StaffShifts({ navigation, route }: any) {
     return notif;
   };
 
-  // ────────────────────────────────────────────────
-  // Safer format functions (handle your exact format)
-  // ────────────────────────────────────────────────
   const formatDate = (val: any) => {
     if (!val) return '—';
     const str = String(val).trim();
@@ -245,28 +253,31 @@ export default function StaffShifts({ navigation, route }: any) {
     loadStaff();
   }, [userType, notificationJob, userId]);
 
+  // FIX 3: Removed setTimeout + expand() — let index prop control the sheet
   useEffect(() => {
     if (route?.params?.notificationJob && userType) {
-      console.log('[DEBUG] Setting notificationJob from route.params:', route.params.notificationJob);
+      console.log(
+        '[DEBUG] Setting notificationJob from route.params:',
+        route.params.notificationJob,
+      );
       setNotificationJob(route.params.notificationJob);
-      setTimeout(() => {
-        bottomSheetRef.current?.expand();
-      }, 400);
+      setSheetOpen(true);
     }
   }, [route?.params?.notificationJob, userType]);
 
+  // FIX 4: Removed setTimeout + expand() from pending notification check
   useFocusEffect(
     useCallback(() => {
       const checkPending = async () => {
         try {
-          const pending = await AsyncStorage.getItem('@pending_asap_notification');
+          const pending = await AsyncStorage.getItem(
+            '@pending_asap_notification',
+          );
           if (pending && userType) {
             const job = JSON.parse(pending);
             console.log('[DEBUG] Pending notification from storage:', job);
             setNotificationJob(job);
-            setTimeout(() => {
-              bottomSheetRef.current?.expand();
-            }, 600);
+            setSheetOpen(true);
             await AsyncStorage.removeItem('@pending_asap_notification');
           }
         } catch (err) {
@@ -274,27 +285,21 @@ export default function StaffShifts({ navigation, route }: any) {
         }
       };
       checkPending();
-    }, [userType])
+    }, [userType]),
   );
 
   const getInitials = (name: string): string => {
     if (!name) return 'U';
-
     const parts = name.trim().split(' ').filter(Boolean);
-
-    if (parts.length === 1) {
-      return parts[0][0].toUpperCase();
-    }
-
-    return (
-      parts[0][0].toUpperCase() +
-      parts[parts.length - 1][0].toUpperCase()
-    );
+    if (parts.length === 1) return parts[0][0].toUpperCase();
+    return parts[0][0].toUpperCase() + parts[parts.length - 1][0].toUpperCase();
   };
 
+  // FIX 5: Reset both notificationJob and sheetOpen on close
   const handleSheetClose = () => {
     setNotificationJob(null);
     setSelectedStaff(null);
+    setSheetOpen(false);
   };
 
   const handleAccept = () => {
@@ -306,16 +311,17 @@ export default function StaffShifts({ navigation, route }: any) {
     navigation.navigate('AsapJobDetails', {
       job: notificationJob,
       staff_id: userType === 'contractor' ? selectedStaff : undefined,
-
     });
 
     bottomSheetRef.current?.close();
     setSelectedStaff(null);
+    setSheetOpen(false);
   };
 
   const handleDecline = () => {
     console.log('Job Declined:', notificationJob);
     bottomSheetRef.current?.close();
+    setSheetOpen(false);
   };
 
   useFocusEffect(
@@ -343,7 +349,7 @@ export default function StaffShifts({ navigation, route }: any) {
       };
 
       fetchShifts();
-    }, [])
+    }, []),
   );
 
   const renderShiftCard = (shift: any, index: number, isToday = false) => {
@@ -365,13 +371,13 @@ export default function StaffShifts({ navigation, route }: any) {
       buttonStyle = styles.signInButton;
       textColor = '#92400e';
 
-      // 🔥 Correct Guard ID Logic (check both root and guard object)
       const guardUserId = shift.guard?.user_id ?? shift.user_id;
       const isUserAdmin = Number(guardUserId) === 1;
       let hasMissingDocs = false;
 
       if (!isUserAdmin && Number(shift.is_document) === 1) {
-        hasMissingDocs = !userDocuments ||
+        hasMissingDocs =
+          !userDocuments ||
           userDocuments.length === 0 ||
           userDocuments.some((doc: any) => !doc.file || !doc.document_no);
       }
@@ -381,34 +387,27 @@ export default function StaffShifts({ navigation, route }: any) {
           Toast.show({
             type: 'error',
             text1: 'Incomplete Profile',
-            text2: 'Please add your documents first then you can sign-in into job',
+            text2:
+              'Please add your documents first then you can sign-in into job',
           });
         };
         buttonStyle = [styles.signInButton, { opacity: 0.5 }];
       } else {
         onPress = () => navigation.navigate('SignIn', { shift });
       }
-    }
-
-    else if (isToday && isConfirmed && signinStatus === 1) {
+    } else if (isToday && isConfirmed && signinStatus === 1) {
       showButton = true;
       buttonText = 'Ongoing';
       buttonStyle = styles.ongoingButton;
       textColor = '#166534';
       onPress = () => navigation.navigate('Ongoing', { currentShift: shift });
-    }
-
-    else if (!isToday) {
-      // 👉 WEEK SHIFT
+    } else if (!isToday) {
       showButton = true;
       buttonText = 'Upcoming';
       buttonStyle = styles.viewButton;
       textColor = '#6b7280';
       disabled = true;
     }
-
-
-
 
     return (
       <View key={index} style={styles.shiftCard}>
@@ -419,7 +418,9 @@ export default function StaffShifts({ navigation, route }: any) {
             </View>
             <Text style={styles.rowText}>
               {formatDate(shift.start) ||
-                `${shift.job_start_day || '—'}-${shift.job_start_month || '—'}-${shift.job_start_year || '—'}`}
+                `${shift.job_start_day || '—'}-${
+                  shift.job_start_month || '—'
+                }-${shift.job_start_year || '—'}`}
             </Text>
           </View>
 
@@ -431,7 +432,6 @@ export default function StaffShifts({ navigation, route }: any) {
               {formatTime(shift.start)} – {formatTime(shift.end)}
             </Text>
           </View>
-
         </View>
 
         <View style={styles.rowItem}>
@@ -472,7 +472,7 @@ export default function StaffShifts({ navigation, route }: any) {
               style={[
                 styles.actionButton,
                 buttonStyle,
-                disabled && { opacity: 0.5 }
+                disabled && { opacity: 0.5 },
               ]}
             >
               <Text style={[styles.actionButtonText, { color: textColor }]}>
@@ -493,7 +493,10 @@ export default function StaffShifts({ navigation, route }: any) {
       console.log('[DEBUG] Extracted jobData:', jobData);
       console.log('[DEBUG] start:', jobData?.start);
       console.log('[DEBUG] end:', jobData?.end);
-      console.log('[DEBUG] address:', jobData?.site?.address || jobData?.address);
+      console.log(
+        '[DEBUG] address:',
+        jobData?.site?.address || jobData?.address,
+      );
     }
   }, [notificationJob]);
 
@@ -507,45 +510,44 @@ export default function StaffShifts({ navigation, route }: any) {
         showsVerticalScrollIndicator={false}
       >
         <LinearGradient
-                    colors={['#36D1DC', '#5cabe4']}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }}
-                    style={styles.cardTop}
-                  >
-        <View style={styles.header}>
-          <TouchableOpacity
-            style={styles.headerLeft}
-            onPress={() => navigation.navigate('Profile')}
-          >
-            {/* ✅ Avatar */}
-            {profileImage ? (
-              <Image source={{ uri: profileImage }} style={styles.avatar} />
-            ) : (
-              <View style={styles.initialsAvatar}>
-                <Text style={styles.initialsText}>
-                  {getInitials(user?.name || 'User')}
-                </Text>
-              </View>
-            )}
+          colors={['#0A7C6E', '#2A2F4F']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.cardTop}
+        >
+          <View style={styles.header}>
+            <TouchableOpacity
+              style={styles.headerLeft}
+              onPress={() => navigation.navigate('Profile')}
+            >
+              {profileImage ? (
+                <Image source={{ uri: profileImage }} style={styles.avatar} />
+              ) : (
+                <View style={styles.initialsAvatar}>
+                  <Text style={styles.initialsText}>
+                    {getInitials(user?.name || 'User')}
+                  </Text>
+                </View>
+              )}
 
-            <View>
-              <View style={styles.nameRow}>
-                <Text style={styles.greeting}>
-                  {user?.name || 'User Name'} 👋
-                </Text>
+              <View>
+                <View style={styles.nameRow}>
+                  <Text style={styles.greeting}>
+                    {user?.name || 'User Name'} 👋
+                  </Text>
+                </View>
+                <Text style={styles.staffName}>Welcome to Staffoo</Text>
               </View>
-              <Text style={styles.staffName}>Welcome to Staffo</Text>
-            </View>
-          </TouchableOpacity>
-        </View>
+            </TouchableOpacity>
+          </View>
         </LinearGradient>
 
-        <View style={styles.tabsWrapper}>
+        {/* <View style={styles.tabsWrapper}>
           {[
             { label: 'Ongoing', light: '#dcfce7', dark: '#16a34a' },
             { label: 'Pending', light: '#fee2e2', dark: '#dc2626' },
             { label: 'Completed', light: '#fef3c7', dark: '#f59e0b' },
-          ].map((tab) => {
+          ].map(tab => {
             const isActive = activeTab === tab.label;
 
             return (
@@ -562,20 +564,19 @@ export default function StaffShifts({ navigation, route }: any) {
                 onPress={() => setActiveTab(tab.label)}
                 activeOpacity={0.9}
               >
-             <Text
-  style={{
-    color: isActive ? '#fff' : tab.dark, // ✅ FIXED
-    fontWeight: isActive ? '800' : '600',
-    fontSize: isActive ? 13 : 12,
-  }}
->
-  {tab.label}
-</Text>
+                <Text
+                  style={{
+                    color: isActive ? '#fff' : tab.dark,
+                    fontWeight: isActive ? '800' : '600',
+                    fontSize: isActive ? 13 : 12,
+                  }}
+                >
+                  {tab.label}
+                </Text>
               </TouchableOpacity>
             );
           })}
-        </View>
-
+        </View> */}
 
         {loadingToday || loadingWeek ? (
           <View style={styles.loadingContainer}>
@@ -588,14 +589,18 @@ export default function StaffShifts({ navigation, route }: any) {
             {todayShifts.length === 0 ? (
               <Text style={styles.emptyText}>No shifts today</Text>
             ) : (
-              todayShifts.map((shift, index) => renderShiftCard(shift, index, true))
+              todayShifts.map((shift, index) =>
+                renderShiftCard(shift, index, true),
+              )
             )}
 
             <Text style={styles.sectionHeader}>This Week's Shifts</Text>
             {weekShifts.length === 0 ? (
               <Text style={styles.emptyText}>No shifts this week</Text>
             ) : (
-              weekShifts.map((shift, index) => renderShiftCard(shift, index, false))
+              weekShifts.map((shift, index) =>
+                renderShiftCard(shift, index, false),
+              )
             )}
           </>
         )}
@@ -603,98 +608,169 @@ export default function StaffShifts({ navigation, route }: any) {
         {!notificationJob && <View style={styles.placeholder} />}
       </ScrollView>
 
-      {Object.keys(jobData).length > 0 && (
-        <BottomSheet
-          ref={bottomSheetRef}
-          index={notificationJob ? 0 : -1}
-          snapPoints={snapPoints}
-          enablePanDownToClose
-          onClose={handleSheetClose}
-          backgroundStyle={styles.sheetBackground}
-          handleIndicatorStyle={styles.sheetHandle}
-        >
-          <BottomSheetView style={styles.sheetContent}>
-            {/* <Text style={styles.cardTitle}>NEW JOB</Text> */}
-            <Text style={styles.newRequest}>New Request</Text>
+      {/*
+        FIX 6: index is controlled by sheetOpen state only.
+        No more setTimeout + expand() anywhere.
+        FIX 7: BottomSheetView has flex:1 so content renders correctly in v5.
+      */}
+      <BottomSheet
+        ref={bottomSheetRef}
+        index={sheetOpen ? 0 : -1}
+        snapPoints={snapPoints}
+        enablePanDownToClose={true}
+        onClose={handleSheetClose}
+        backgroundStyle={styles.sheetBackground}
+        handleIndicatorStyle={styles.sheetHandle}
+        enableDynamicSizing={false}
+        android_keyboardInputMode="adjustResize"
+        onChange={index => {
+          console.log('[BottomSheet] index changed to:', index);
+          if (index === -1) {
+            handleSheetClose();
+          }
+        }}
+      >
+        {/* FIX 7: flex:1 is required in @gorhom/bottom-sheet v5 */}
+        <BottomSheetView style={[styles.sheetContent, { flex: 1 }]}>
+          <Text style={styles.newRequest}>New Request</Text>
 
-            <View style={styles.infoRow}>
-              <Calendar size={18} color="#555" />
-              <Text style={styles.infoText}>{formatDate(jobData.start)}</Text>
-            </View>
+          <View style={styles.infoRow}>
+            <Calendar size={20} color="#555" />
+            <Text style={styles.infoText}>{formatDate(jobData.start)}</Text>
+          </View>
 
-            <View style={styles.infoRow}>
-              <Clock size={18} color="#555" />
-              <Text style={styles.infoText}>
-                {formatTime(jobData.start)} – {formatTime(jobData.end)}
-              </Text>
-            </View>
+          <View style={styles.infoRow}>
+            <Clock size={20} color="#555" />
+            <Text style={styles.infoText}>
+              {formatTime(jobData.start)} – {formatTime(jobData.end)}
+            </Text>
+          </View>
 
-            <View style={styles.infoRow}>
-              <MapPin size={20} color="#EF4444" />
-              <Text style={styles.addressInSheet} numberOfLines={3}>
-                {jobData?.site?.address || jobData?.address || 'No address available'}
-              </Text>
-            </View>
+          <View style={styles.infoRow}>
+            <MapPin size={20} color="#EF4444" />
+            <Text style={styles.addressInSheet} numberOfLines={3}>
+              {jobData?.site?.address ||
+                jobData?.address ||
+                'No address available'}
+            </Text>
+          </View>
 
-            <View style={styles.infoRow}>
-              <Text style={styles.infoText}>Hours: {jobData?.hours ?? '—'}</Text>
-            </View>
+          <View style={styles.infoRow}>
+            <Text style={styles.infoTextt}>
+              Total Hours: {jobData?.hours ?? '—'}
+            </Text>
+          </View>
 
-            {userType === 'contractor' && (
-              <View style={{ marginVertical: 10 }}>
-                <Text style={styles.assignLabel}>Assign to Staff Member</Text>
+          {userType === 'contractor' && (
+            <View style={{ marginVertical: 10 }}>
+              <Text style={styles.assignLabel}>Assign to Staff Member</Text>
 
-                {loadingStaff ? (
-                  <ActivityIndicator size="small" color="#10B981" />
-                ) : staffList.length === 0 ? (
-                  <Text style={{ color: '#DC2626' }}>No staff available</Text>
-                ) : (
-                  <View style={styles.pickerContainer}>
-                    <Picker
-                      selectedValue={selectedStaff}
-                      onValueChange={setSelectedStaff}
-                      style={{ color: '#111827' }}
-                    >
-                      <Picker.Item label="Select staff..." value={null} />
-                      {staffList.map((s: any) => (
-                        <Picker.Item
-                          key={s.id}
-                          label={s.name || s.email || `Staff #${s.id}`}
-                          value={s.id}
+              {loadingStaff ? (
+                <ActivityIndicator size="small" color="#10B981" />
+              ) : staffList.length === 0 ? (
+                <Text style={{ color: '#DC2626', padding: 10 }}>
+                  No staff available
+                </Text>
+              ) : (
+                <>
+                  {/* Custom Dropdown */}
+                  <TouchableOpacity
+                    style={styles.customDropdown}
+                    onPress={() => setShowStaffDropdown(true)}
+                    activeOpacity={0.8}
+                  >
+                    <View style={styles.dropdownContent}>
+                      <UserCheck size={20} color="#64748b" />
+
+                      <Text style={styles.dropdownText} numberOfLines={1}>
+                        {selectedStaff
+                          ? staffList.find(s => s.id === selectedStaff)?.name ||
+                            `Staff #${selectedStaff}`
+                          : 'Select staff member'}
+                      </Text>
+                    </View>
+
+                    <View style={styles.iconRight}>
+                      <ChevronDown size={20} color="#64748b" />
+                    </View>
+                  </TouchableOpacity>
+
+                  {/* Dropdown Modal */}
+                  <Modal
+                    visible={showStaffDropdown}
+                    transparent
+                    animationType="fade"
+                    onRequestClose={() => setShowStaffDropdown(false)}
+                  >
+                    <View style={styles.modalOverlay}>
+                      <View style={styles.dropdownModal}>
+                        <Text style={styles.modalTitle}>Select Staff</Text>
+
+                        <FlatList
+                          data={staffList}
+                          keyExtractor={item => item.id.toString()}
+                          renderItem={({ item }) => (
+                            <TouchableOpacity
+                              style={styles.staffItem}
+                              onPress={() => {
+                                setSelectedStaff(item.id);
+                                setShowStaffDropdown(false);
+                              }}
+                            >
+                              <Text style={styles.staffNameText}>
+                                {item.name || item.email || `Staff #${item.id}`}
+                              </Text>
+                            </TouchableOpacity>
+                          )}
                         />
-                      ))}
-                    </Picker>
-                  </View>
-                )}
-              </View>
-            )}
 
-            <View style={styles.buttonContainer}>
-              <TouchableOpacity
-                style={[
-                  styles.acceptButton,
-                  userType === 'contractor' && !selectedStaff && styles.disabledButton,
-                ]}
-                disabled={userType === 'contractor' && !selectedStaff}
-                onPress={handleAccept}
-              >
-                <Text style={styles.buttonText}>ACCEPT</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity style={styles.declineButton} onPress={handleDecline}>
-                <Text style={styles.buttonText}>DECLINE</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.cancelButton}
-                onPress={() => bottomSheetRef.current?.close()}
-              >
-                <Text style={styles.buttonText}>CANCEL</Text>
-              </TouchableOpacity>
+                        <TouchableOpacity
+                          style={styles.cancelButtonModal}
+                          onPress={() => setShowStaffDropdown(false)}
+                        >
+                          <Text style={styles.cancelText}>Cancel</Text>
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  </Modal>
+                </>
+              )}
             </View>
-          </BottomSheetView>
-        </BottomSheet>
-      )}
+          )}
+
+          <View style={styles.buttonContainer}>
+            <TouchableOpacity
+              style={[
+                styles.acceptButton,
+                userType === 'contractor' &&
+                  !selectedStaff &&
+                  styles.disabledButton,
+              ]}
+              disabled={userType === 'contractor' && !selectedStaff}
+              onPress={handleAccept}
+            >
+              <Text style={styles.buttonText}>ACCEPT</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.declineButton}
+              onPress={handleDecline}
+            >
+              <Text style={styles.buttonText}>DECLINE</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.cancelButton}
+              onPress={() => {
+                bottomSheetRef.current?.close();
+                setSheetOpen(false);
+              }}
+            >
+              <Text style={styles.buttonText}>CANCEL</Text>
+            </TouchableOpacity>
+          </View>
+        </BottomSheetView>
+      </BottomSheet>
 
       <BottomTab navigation={navigation} activeTab="StaffShifts" />
     </SafeAreaView>
@@ -704,8 +780,8 @@ export default function StaffShifts({ navigation, route }: any) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
-    paddingTop: 20
+    backgroundColor: '#dfe6f9',
+    paddingTop: 20,
   },
   scrollContainer: {
     flex: 1,
@@ -726,8 +802,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingBottom: 100,
   },
-
-
   headerLeft: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -744,20 +818,20 @@ const styles = StyleSheet.create({
     color: '#666',
     marginTop: 2,
   },
-
   tabsWrapper: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingVertical: 18,
+    paddingVertical: 5,
   },
   name: { fontSize: 18, fontWeight: '700', color: '#000' },
   tabItem: {
     flex: 1,
-    marginHorizontal: 7,
-    paddingVertical: 11,
-    borderRadius: 8,
+    marginHorizontal: 6,
+    paddingVertical: 12,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: '#E9ECF5',
   },
 
   activeShadow: {
@@ -775,27 +849,24 @@ const styles = StyleSheet.create({
     gap: 30,
     marginBottom: 10,
   },
-    cardTop: {
-      flexDirection: 'row',
+  cardTop: {
+    flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingVertical: 14,
-    paddingHorizontal: 16,
-  // backgroundColor: '#2EB1E2',
+    paddingHorizontal: 10,
     borderRadius: 12,
-    // marginBottom: 10,
-    marginTop: 20
+    // marginTop: 10,
   },
   initialsAvatar: {
     width: 50,
     height: 50,
     borderRadius: 25,
-    backgroundColor: '#bee1ee', // same as profile screen or customize
+    backgroundColor: '#bee1ee',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 0,
   },
-
   initialsText: {
     color: '#2c7f71',
     fontSize: 18,
@@ -812,57 +883,54 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     fontSize: 15.5,
   },
-
   sectionHeader: {
     fontSize: 18,
     fontWeight: '700',
     marginTop: 10,
     marginBottom: 9,
     paddingHorizontal: 4,
-    color: '#226a84'
+    color: '#0A7C6E',
   },
-
+  btn: { paddingRight: 25 },
   shiftCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: 14,
-    padding: 14,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 18,
+    padding: 16,
     marginBottom: 14,
-    borderWidth: 1,
-    borderColor: '#e2e8f0',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.06,
-    shadowRadius: 4,
-    elevation: 2,
-  },
 
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+
+    shadowColor: '#0A7C6E',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.08,
+    shadowRadius: 10,
+    elevation: 4,
+  },
   rowBetween: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     marginBottom: 2,
   },
-
   rowItem: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     gap: 8,
     marginBottom: 5,
   },
-
   rowText: {
     fontSize: 13,
     color: '#1e293b',
     fontWeight: '500',
     alignItems: 'center',
-    marginTop: 5
+    marginTop: 10,
   },
-
   iconBgGrey: {
-    width: 30,
-    height: 30,
-    borderRadius: 8,
-    backgroundColor: '#e2e8f0',
+    width: 38,
+    height: 38,
+    borderRadius: 12,
+    backgroundColor: '#EEF2FF',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -876,18 +944,17 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderRadius: 8,
   },
-
   directionText: {
     fontSize: 12,
     fontWeight: '600',
     color: '#1d4ed8',
   },
-
   addressText: {
     fontSize: 13,
     color: '#475569',
     flex: 1,
     flexWrap: 'wrap',
+    marginTop: 10,
   },
   addressContainer: {
     flex: 1,
@@ -897,22 +964,19 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#1e293b',
     fontWeight: '500',
-    marginTop: 5
+    marginTop: 10,
   },
-
   detailsLabel: {
     fontSize: 14,
     fontWeight: '600',
     color: '#475569',
     marginBottom: 3,
   },
-
   detailsValue: {
     fontSize: 13,
     color: '#0f172a',
     marginTop: 5,
   },
-
   actionButton: {
     paddingHorizontal: 18,
     paddingVertical: 10,
@@ -920,16 +984,13 @@ const styles = StyleSheet.create({
     minWidth: 90,
     alignItems: 'center',
   },
-
   ongoingButton: {
     backgroundColor: '#dcfce7',
   },
-
   actionButtonText: {
     fontSize: 11,
     fontWeight: '700',
   },
-
   placeholder: {
     flex: 1,
     justifyContent: 'center',
@@ -937,7 +998,6 @@ const styles = StyleSheet.create({
     minHeight: 300,
     paddingVertical: 40,
   },
-
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -949,16 +1009,14 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#666',
   },
-
   emptyText: {
     textAlign: 'center',
     marginTop: 25,
     fontSize: 12,
     color: '#777',
   },
-
   sheetBackground: {
-    backgroundColor: '#ffffff',
+    backgroundColor: '#c3e3eb',
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
   },
@@ -969,7 +1027,6 @@ const styles = StyleSheet.create({
     borderRadius: 999,
   },
   sheetContent: {
-    flex: 1,
     paddingHorizontal: 24,
     paddingTop: 10,
     paddingBottom: 44,
@@ -984,8 +1041,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '500',
     color: '#1F2937',
-    // flex: 1,
-    // lineHeight: 15,
   },
   assignLabel: {
     fontSize: 14,
@@ -997,12 +1052,12 @@ const styles = StyleSheet.create({
     fontSize: 20,
     color: '#10B981',
     fontWeight: '700',
-    marginBottom: 10,
+    marginBottom: 15,
   },
   infoRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 10,
+    marginBottom: 15,
     gap: 16,
   },
   infoText: {
@@ -1010,32 +1065,37 @@ const styles = StyleSheet.create({
     color: '#111',
     fontWeight: '500',
   },
-
+  infoTextt: {
+    fontSize: 16,
+    color: '#111',
+    fontWeight: '700',
+  },
   buttonContainer: {
     gap: 12,
-    marginTop: 10,
+    marginTop: 20,
+    paddingHorizontal: 50,
   },
   acceptButton: {
     backgroundColor: '#10B981',
-    paddingVertical: 10,
+    paddingVertical: 14,
     borderRadius: 14,
     alignItems: 'center',
   },
   declineButton: {
     backgroundColor: '#EF4444',
-    paddingVertical: 10,
+    paddingVertical: 14,
     borderRadius: 14,
     alignItems: 'center',
   },
   cancelButton: {
     backgroundColor: '#6B7280',
-    paddingVertical: 10,
+    paddingVertical: 14,
     borderRadius: 14,
     alignItems: 'center',
   },
   buttonText: {
     color: 'white',
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: 'bold',
   },
   pickerContainer: {
@@ -1052,7 +1112,7 @@ const styles = StyleSheet.create({
     marginTop: 20,
   },
   header: {
- 
+    height: 80,
   },
   greeting: {
     fontSize: 16,
@@ -1074,5 +1134,87 @@ const styles = StyleSheet.create({
   },
   notificationText: {
     fontSize: 18,
+  },
+
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+
+  dropdownModal: {
+    width: '85%',
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 16,
+    maxHeight: '60%',
+  },
+
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#1E2937',
+    textAlign: 'center',
+    marginBottom: 16,
+  },
+
+  staffItem: {
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
+  },
+
+  staffNameText: {
+    fontSize: 16,
+    color: '#1E2937',
+  },
+
+  cancelButtonModal: {
+    marginTop: 12,
+    paddingVertical: 14,
+    backgroundColor: '#F1F5F9',
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+
+  cancelText: {
+    color: '#64748B',
+    fontWeight: '600',
+    fontSize: 16,
+  },
+  customDropdown: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    // marginTop: 8,
+    width: '100%', // 🔥 IMPORTANT (prevents overflow)
+    overflow: 'hidden', // 🔥 keeps icon inside card
+  },
+
+  dropdownContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1, // 🔥 important for text truncation
+    gap: 12,
+  },
+
+  dropdownText: {
+    fontSize: 15,
+    color: '#1E2937',
+    flexShrink: 1, // 🔥 prevents pushing icon outside
+  },
+
+  iconRight: {
+    marginLeft: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });

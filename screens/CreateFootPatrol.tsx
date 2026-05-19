@@ -22,7 +22,12 @@ import {
   X,
   UploadCloud,
 } from 'lucide-react-native';
-import { launchCamera, launchImageLibrary, CameraOptions, ImagePickerResponse } from 'react-native-image-picker';
+import {
+  launchCamera,
+  launchImageLibrary,
+  CameraOptions,
+  ImagePickerResponse,
+} from 'react-native-image-picker';
 import SignatureScreen from 'react-native-signature-canvas';
 import RNFS from 'react-native-fs';
 import ImageResizer from 'react-native-image-resizer';
@@ -35,8 +40,13 @@ interface PhotoItem {
   timestamp: string;
 }
 
-export default function CreateFootPatrol({ navigation, route }: { navigation: any; route: any }) {
-
+export default function CreateFootPatrol({
+  navigation,
+  route,
+}: {
+  navigation: any;
+  route: any;
+}) {
   let siteId: string | number;
   let siteName: string;
   let guardId: string | number;
@@ -57,39 +67,63 @@ export default function CreateFootPatrol({ navigation, route }: { navigation: an
   if (!siteId) {
     return (
       <SafeAreaView style={styles.container}>
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 40 }}>
+        <View
+          style={{
+            flex: 1,
+            justifyContent: 'center',
+            alignItems: 'center',
+            padding: 40,
+          }}
+        >
           <Text style={{ fontSize: 18, color: '#ef4444', textAlign: 'center' }}>
-            Missing required site or roster information.{'\n'}Go back and try again.
+            Missing required site or roster information.{'\n'}Go back and try
+            again.
           </Text>
           <TouchableOpacity
             onPress={() => navigation.goBack()}
-            style={{ marginTop: 24, paddingVertical: 14, paddingHorizontal: 32, backgroundColor: '#3b82f6', borderRadius: 12 }}
+            style={{
+              marginTop: 24,
+              paddingVertical: 14,
+              paddingHorizontal: 32,
+              backgroundColor: '#3b82f6',
+              borderRadius: 12,
+            }}
           >
-            <Text style={{ color: '#fff', fontWeight: '600', fontSize: 16 }}>Go Back</Text>
+            <Text style={{ color: '#fff', fontWeight: '600', fontSize: 16 }}>
+              Go Back
+            </Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
     );
   }
 
-  const [incidentDateTime] = useState(
-    new Date().toLocaleString('en-AU', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    })
-  );
+  const now = new Date();
 
-  const [day, monthStr, year] = incidentDateTime.split(', ')[0].split(' ');
+  // Date → DD/MM/YYYY
+  const formattedDate = `${String(now.getDate()).padStart(2, '0')}/${String(
+    now.getMonth() + 1,
+  ).padStart(2, '0')}/${now.getFullYear()}`;
+
+  // Time → HH:mm:ss
+  const formattedTime = `${String(now.getHours()).padStart(2, '0')}:${String(
+    now.getMinutes(),
+  ).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
+
   const monthMap: { [key: string]: string } = {
-    Jan: '01', Feb: '02', Mar: '03', Apr: '04', May: '05', Jun: '06',
-    Jul: '07', Aug: '08', Sep: '09', Oct: '10', Nov: '11', Dec: '12',
+    Jan: '01',
+    Feb: '02',
+    Mar: '03',
+    Apr: '04',
+    May: '05',
+    Jun: '06',
+    Jul: '07',
+    Aug: '08',
+    Sep: '09',
+    Oct: '10',
+    Nov: '11',
+    Dec: '12',
   };
-  const month = monthMap[monthStr] || '01';
-  const formattedDate = `${day.padStart(2, '0')}/${month}/${year}`;
-  const formattedTime = incidentDateTime.split(', ')[1].trim();
 
   const [expanded, setExpanded] = useState<string | null>(null);
   const [signatureData, setSignatureData] = useState<string | null>(null);
@@ -100,7 +134,6 @@ export default function CreateFootPatrol({ navigation, route }: { navigation: an
   const toggleSection = (section: string) => {
     setExpanded(expanded === section ? null : section);
   };
-
 
   const resizeForPreview = async (uri: string): Promise<string> => {
     try {
@@ -113,7 +146,7 @@ export default function CreateFootPatrol({ navigation, route }: { navigation: an
         0,
         undefined,
         false,
-        { mode: 'cover' }
+        { mode: 'cover' },
       );
       return resized.uri;
     } catch (e) {
@@ -126,11 +159,11 @@ export default function CreateFootPatrol({ navigation, route }: { navigation: an
     try {
       const resized = await ImageResizer.createResizedImage(
         uri,
-        1000,   // Good balance for foot patrol
+        1000, // Good balance for foot patrol
         1000,
         'JPEG',
         70,
-        0
+        0,
       );
       const base64Content = await RNFS.readFile(resized.uri, 'base64');
       return `data:image/jpeg;base64,${base64Content}`;
@@ -177,12 +210,12 @@ export default function CreateFootPatrol({ navigation, route }: { navigation: an
         0,
         undefined,
         false,
-        { mode: 'cover' }
+        { mode: 'cover' },
       );
       console.log('[resize] Resized uri:', resized.uri);
       const base64Content = await RNFS.readFile(resized.uri, 'base64');
       const dataUri = `data:image/jpeg;base64,${base64Content}`;
-      const sizeKB = Math.round(dataUri.length * 3 / 4 / 1024);
+      const sizeKB = Math.round((dataUri.length * 3) / 4 / 1024);
       console.log('[resize] Success - aggressive compression');
       console.log('[resize] Final size ≈', sizeKB, 'KB (target < 200 KB)');
 
@@ -195,77 +228,80 @@ export default function CreateFootPatrol({ navigation, route }: { navigation: an
 
   const correctText = async (text: string, instruction: string) => {
     if (!text?.trim()) {
-      Alert.alert("No text", "Please enter some incident details first.");
+      Alert.alert('No text', 'Please enter some incident details first.');
       return;
     }
     try {
       const payload = {
-        model: "gpt-4o-mini",                 
+        model: 'gpt-4o-mini',
         messages: [
           {
-            role: "system",
-            content: "You are a professional security report editor. " +
-              "Be concise, factual, formal. Never invent new information."
+            role: 'system',
+            content:
+              'You are a professional security report editor. ' +
+              'Be concise, factual, formal. Never invent new information.',
           },
           {
-            role: "user",
-            content: `${instruction}:\n\n${text}`  
-          }
+            role: 'user',
+            content: `${instruction}:\n\n${text}`,
+          },
         ],
-        temperature: 0.4,                      
-        max_tokens: 300,                       
+        temperature: 0.4,
+        max_tokens: 300,
         top_p: 1,
         frequency_penalty: 0,
-        presence_penalty: 0
+        presence_penalty: 0,
       };
 
-      console.log("Sending OpenAI payload:", JSON.stringify(payload, null, 2));
+      console.log('Sending OpenAI payload:', JSON.stringify(payload, null, 2));
 
       const response = await axios.post(
-        "https://api.openai.com/v1/chat/completions",
-        payload,                                  
+        'https://api.openai.com/v1/chat/completions',
+        payload,
         {
           headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${OPENAI_API_KEY}`
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${OPENAI_API_KEY}`,
           },
-          timeout: 20000                        
-        }
+          timeout: 20000,
+        },
       );
 
-      const correctedText = response.data.choices?.[0]?.message?.content?.trim();
+      const correctedText =
+        response.data.choices?.[0]?.message?.content?.trim();
 
       if (!correctedText) {
-        throw new Error("No correction received from OpenAI");
+        throw new Error('No correction received from OpenAI');
       }
 
       setPatrollingDetails(correctedText);
-      console.log("AI corrected text:", correctedText);
-
+      console.log('AI corrected text:', correctedText);
     } catch (error: any) {
-      console.error("OpenAI request failed:", error);
+      console.error('OpenAI request failed:', error);
 
-      let errorMessage = "AI text correction failed. Please try again.";
+      let errorMessage = 'AI text correction failed. Please try again.';
 
       if (error.response) {
         const status = error.response.status;
         const errData = error.response.data?.error;
 
         if (status === 401) {
-          errorMessage = "Invalid or expired OpenAI API key. Please check your API key.";
+          errorMessage =
+            'Invalid or expired OpenAI API key. Please check your API key.';
         } else if (status === 429) {
-          errorMessage = "Rate limit exceeded. Please wait a moment and try again.";
-        } else if (status === 400 && errData?.code === "invalid_api_key") {
-          errorMessage = "Incorrect API key. Generate a new one from OpenAI dashboard.";
+          errorMessage =
+            'Rate limit exceeded. Please wait a moment and try again.';
+        } else if (status === 400 && errData?.code === 'invalid_api_key') {
+          errorMessage =
+            'Incorrect API key. Generate a new one from OpenAI dashboard.';
         } else if (errData?.message) {
           errorMessage = errData.message;
         }
       }
 
-      Alert.alert("AI Error", errorMessage);
+      Alert.alert('AI Error', errorMessage);
     }
   };
-
 
   const handleImage = async (response: ImagePickerResponse) => {
     if (response.didCancel) return;
@@ -291,9 +327,11 @@ export default function CreateFootPatrol({ navigation, route }: { navigation: an
         hour12: false,
       });
 
-      setPhotos((prev) => {
+      setPhotos(prev => {
         const newPhotos = [...prev, { uri: previewUri, timestamp }];
-        console.log(`[handleImage] Added photo. Total now: ${newPhotos.length}`);
+        console.log(
+          `[handleImage] Added photo. Total now: ${newPhotos.length}`,
+        );
         return newPhotos;
       });
     } catch (err: any) {
@@ -306,7 +344,7 @@ export default function CreateFootPatrol({ navigation, route }: { navigation: an
     setPhotos(photos.filter((_, i) => i !== index));
   };
 
- const submitReport = async () => {
+  const submitReport = async () => {
     if (!patrollingDetails.trim()) {
       return Alert.alert('Required', 'Please enter patrolling details.');
     }
@@ -314,7 +352,7 @@ export default function CreateFootPatrol({ navigation, route }: { navigation: an
       return Alert.alert('Required', 'Please provide staff signature.');
     }
 
-    setIsSubmitting(true);   // ← Add this state if not already present
+    setIsSubmitting(true); // ← Add this state if not already present
 
     try {
       console.log('═══════ FOOT PATROL SUBMISSION START ═══════');
@@ -334,7 +372,7 @@ export default function CreateFootPatrol({ navigation, route }: { navigation: an
             console.error(`Failed to process photo ${index + 1}`, err);
             throw err;
           }
-        })
+        }),
       );
 
       const payload = {
@@ -344,7 +382,7 @@ export default function CreateFootPatrol({ navigation, route }: { navigation: an
         time: formattedTime,
         site_name: siteName,
         patrolling_detail: patrollingDetails.trim(),
-        photo: JSON.stringify(photoPayload),   // Keep as stringified JSON (as per your backend)
+        photo: JSON.stringify(photoPayload), // Keep as stringified JSON (as per your backend)
         signature: signatureData,
       };
 
@@ -363,13 +401,16 @@ export default function CreateFootPatrol({ navigation, route }: { navigation: an
             Accept: 'application/json',
           },
           body: JSON.stringify(payload),
-        }
+        },
       );
 
       const result = await response.json().catch(() => ({}));
 
       if (response.ok) {
-        Alert.alert('Success', 'Foot Patrolling Report submitted successfully!');
+        Alert.alert(
+          'Success',
+          'Foot Patrolling Report submitted successfully!',
+        );
         navigation.goBack();
       } else {
         const msg = result.message || `Server error (${response.status})`;
@@ -377,7 +418,10 @@ export default function CreateFootPatrol({ navigation, route }: { navigation: an
       }
     } catch (error: any) {
       console.error('Submit failed:', error);
-      Alert.alert('Failed', error.message || 'Something went wrong. Please try again.');
+      Alert.alert(
+        'Failed',
+        error.message || 'Something went wrong. Please try again.',
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -390,7 +434,7 @@ export default function CreateFootPatrol({ navigation, route }: { navigation: an
     signatureRef.current?.clearSignature();
     setSignatureData(null);
   };
-const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#fff" />
@@ -404,7 +448,10 @@ const [isSubmitting, setIsSubmitting] = useState(false);
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        <TouchableOpacity style={styles.fieldCard} onPress={() => toggleSection('date')}>
+        <TouchableOpacity
+          style={styles.fieldCard}
+          onPress={() => toggleSection('date')}
+        >
           <View style={styles.iconCircle}>
             <Calendar size={22} color="#3b82f6" />
           </View>
@@ -416,11 +463,16 @@ const [isSubmitting, setIsSubmitting] = useState(false);
 
         {expanded === 'date' && (
           <View style={styles.expandedContent}>
-            <Text style={styles.fieldValue}>{formattedDate} {formattedTime}</Text>
+            <Text style={styles.fieldValue}>
+              {formattedDate} {formattedTime}
+            </Text>
           </View>
         )}
 
-        <TouchableOpacity style={styles.fieldCard} onPress={() => toggleSection('details')}>
+        <TouchableOpacity
+          style={styles.fieldCard}
+          onPress={() => toggleSection('details')}
+        >
           <View style={styles.iconCircle}>
             <FileText size={22} color="#3b82f6" />
           </View>
@@ -439,19 +491,14 @@ const [isSubmitting, setIsSubmitting] = useState(false);
               style={styles.textArea}
               multiline
               placeholder="Enter patrolling details here..."
-                     placeholderTextColor="#9CA3AF"
+              placeholderTextColor="#9CA3AF"
               value={patrollingDetails}
               onChangeText={setPatrollingDetails}
             />
             <View style={styles.aiButtons}>
               <TouchableOpacity
                 style={styles.spellBtn}
-                onPress={() =>
-                  correctText(
-                    patrollingDetails,
-                    "Correct this"
-                  )
-                }
+                onPress={() => correctText(patrollingDetails, 'Correct this')}
               >
                 <Text style={styles.btnText}>Spell check only</Text>
               </TouchableOpacity>
@@ -460,7 +507,7 @@ const [isSubmitting, setIsSubmitting] = useState(false);
                 onPress={() =>
                   correctText(
                     patrollingDetails,
-                    "Change this text to more professional and detailed text with correct grammar and spellings:"
+                    'Change this text to more professional and detailed text with correct grammar and spellings:',
                   )
                 }
               >
@@ -470,7 +517,10 @@ const [isSubmitting, setIsSubmitting] = useState(false);
           </View>
         )}
 
-        <TouchableOpacity style={styles.fieldCard} onPress={() => toggleSection('photos')}>
+        <TouchableOpacity
+          style={styles.fieldCard}
+          onPress={() => toggleSection('photos')}
+        >
           <View style={styles.iconCircle}>
             <Camera size={22} color="#3b82f6" />
           </View>
@@ -486,10 +536,17 @@ const [isSubmitting, setIsSubmitting] = useState(false);
             <View style={styles.photoGrid}>
               {photos.map((photo, i) => (
                 <View key={i} style={styles.photoItem}>
-                  <TouchableOpacity style={styles.removePhotoBtn} onPress={() => removePhoto(i)}>
+                  <TouchableOpacity
+                    style={styles.removePhotoBtn}
+                    onPress={() => removePhoto(i)}
+                  >
                     <X size={18} color="#ef4444" />
                   </TouchableOpacity>
-                  <Image source={{ uri: photo.uri }} style={styles.photo} resizeMode="cover" />
+                  <Image
+                    source={{ uri: photo.uri }}
+                    style={styles.photo}
+                    resizeMode="cover"
+                  />
                   <Text style={styles.timestamp}>{photo.timestamp}</Text>
                 </View>
               ))}
@@ -502,17 +559,28 @@ const [isSubmitting, setIsSubmitting] = useState(false);
           </View>
         )}
 
-        <TouchableOpacity style={styles.fieldCard} onPress={() => toggleSection('signature')}>
+        <TouchableOpacity
+          style={styles.fieldCard}
+          onPress={() => toggleSection('signature')}
+        >
           <View style={styles.iconCircle}>
             <PenTool size={22} color="#3b82f6" />
           </View>
           <View style={styles.fieldContent}>
-            <Text style={styles.fieldLabel}>Staff Signature <Text style={styles.required}>*</Text></Text>
-
+            <Text style={styles.fieldLabel}>
+              Staff Signature <Text style={styles.required}>*</Text>
+            </Text>
           </View>
 
-          <ChevronDown size={20} color="#64748b" style={{ transform: [{ rotate: expanded === 'signature' ? '180deg' : '0deg' }] }} />
-
+          <ChevronDown
+            size={20}
+            color="#64748b"
+            style={{
+              transform: [
+                { rotate: expanded === 'signature' ? '180deg' : '0deg' },
+              ],
+            }}
+          />
         </TouchableOpacity>
 
         {expanded === 'signature' && (
@@ -535,16 +603,26 @@ const [isSubmitting, setIsSubmitting] = useState(false);
             </View>
 
             <View style={styles.signatureButtons}>
-              <TouchableOpacity style={styles.clearBtn} onPress={handleClearSignature}>
+              <TouchableOpacity
+                style={styles.clearBtn}
+                onPress={handleClearSignature}
+              >
                 <Text style={styles.btnTextWhite}>Clear</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.saveBtn} onPress={handleSaveSignature}>
+              <TouchableOpacity
+                style={styles.saveBtn}
+                onPress={handleSaveSignature}
+              >
                 <Text style={styles.btnTextWhite}>Save</Text>
               </TouchableOpacity>
             </View>
 
             {signatureData && (
-              <Image source={{ uri: signatureData }} style={styles.signaturePreview} resizeMode="contain" />
+              <Image
+                source={{ uri: signatureData }}
+                style={styles.signaturePreview}
+                resizeMode="contain"
+              />
             )}
           </View>
         )}
@@ -554,7 +632,10 @@ const [isSubmitting, setIsSubmitting] = useState(false);
         <TouchableOpacity style={styles.submitButton} onPress={submitReport}>
           <Text style={styles.submitText}>Submit Report</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.cancelButton} onPress={() => navigation.goBack()}>
+        <TouchableOpacity
+          style={styles.cancelButton}
+          onPress={() => navigation.goBack()}
+        >
           <Text style={styles.cancelText}>Cancel</Text>
         </TouchableOpacity>
       </View>
@@ -638,7 +719,12 @@ const styles = StyleSheet.create({
   },
   btnText: { fontSize: 13, fontWeight: '600', color: '#1e40af' },
 
-  photoGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginBottom: 16 },
+  photoGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+    marginBottom: 16,
+  },
   photoItem: { width: '30%', position: 'relative' },
   photo: { width: '100%', height: 85, borderRadius: 12 },
   removePhotoBtn: {
@@ -650,13 +736,12 @@ const styles = StyleSheet.create({
     padding: 4,
     zIndex: 1,
   },
-   timestamp: {
+  timestamp: {
     fontSize: 7,
     color: '#b24e45',
     textAlign: 'center',
     marginTop: -14,
     fontWeight: '900',
-
   },
   uploadArea: {
     alignItems: 'center',
@@ -680,7 +765,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 16,
   },
-  cardTitle: { flex: 1, fontSize: 16, fontWeight: '700', marginLeft: 12, color: '#0f172a' },
+  cardTitle: {
+    flex: 1,
+    fontSize: 16,
+    fontWeight: '700',
+    marginLeft: 12,
+    color: '#0f172a',
+  },
   cardContent: {
     backgroundColor: '#fff',
     padding: 16,
@@ -691,10 +782,27 @@ const styles = StyleSheet.create({
   },
 
   signatureButtons: { flexDirection: 'row', gap: 12, marginTop: 12 },
-  clearBtn: { flex: 1, backgroundColor: '#ef4444', paddingVertical: 14, borderRadius: 10, alignItems: 'center' },
-  saveBtn: { flex: 1, backgroundColor: '#10b981', paddingVertical: 14, borderRadius: 10, alignItems: 'center' },
+  clearBtn: {
+    flex: 1,
+    backgroundColor: '#ef4444',
+    paddingVertical: 14,
+    borderRadius: 10,
+    alignItems: 'center',
+  },
+  saveBtn: {
+    flex: 1,
+    backgroundColor: '#10b981',
+    paddingVertical: 14,
+    borderRadius: 10,
+    alignItems: 'center',
+  },
   btnTextWhite: { color: 'white', fontWeight: '600', fontSize: 15 },
-  signaturePreview: { width: '100%', height: 120, marginTop: 12, borderRadius: 8 },
+  signaturePreview: {
+    width: '100%',
+    height: 120,
+    marginTop: 12,
+    borderRadius: 8,
+  },
 
   bottomButtons: {
     position: 'absolute',

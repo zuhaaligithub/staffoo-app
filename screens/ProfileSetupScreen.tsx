@@ -1,6 +1,3 @@
-
-
-
 import React, { useEffect, useState, useRef } from 'react';
 import {
   View,
@@ -38,7 +35,22 @@ import { launchImageLibrary } from 'react-native-image-picker';
 import ImageResizer from 'react-native-image-resizer';
 
 const GOOGLE_API_KEY = 'AIzaSyCS-DB39Kk-Z25C5GWymVGshXIALbjXPGY';
+const COLORS = {
+  background: '#0B1220', // main dark background
+  surface: '#111A2E', // cards / inputs background
+  surfaceLight: '#16213A', // hover / elevated
+  primary: '#2c9c78', // main action (blue-purple)
+  secondary: '#7C3AED', // accent
+  success: '#22C55E',
+  warning: '#F59E0B',
+  danger: '#EF4444',
 
+  textPrimary: '#E5E7EB',
+  textSecondary: '#94A3B8',
+  textMuted: '#64748B',
+
+  border: '#1F2A44',
+};
 type Props = { navigation: any };
 
 export default function ProfileSetupScreen({ navigation }: Props) {
@@ -49,7 +61,10 @@ export default function ProfileSetupScreen({ navigation }: Props) {
   const [originalGmail, setOriginalGmail] = useState('');
   const [gender, setGender] = useState<string | null>(null);
   const [userType, setUserType] = useState<string | null>(null);
-  const [residentialStatus, setResidentialStatus] = useState<string | null>(null);
+  const [residentialStatus, setResidentialStatus] = useState<string | null>(
+    null,
+  );
+  const [scrollY, setScrollY] = useState(0);
   const [companyName, setCompanyName] = useState('');
   const [registrationNumber, setRegistrationNumber] = useState('');
   const [address, setAddress] = useState('');
@@ -57,7 +72,8 @@ export default function ProfileSetupScreen({ navigation }: Props) {
   const [stateValue, setStateValue] = useState('');
   const [country, setCountry] = useState('');
   const [coordinates, setCoordinates] = useState<any>(null);
-
+  const [acn, setAcn] = useState(''); // ← NEW
+  const [abn, setAbn] = useState('');
   const [predictions, setPredictions] = useState<any[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -65,7 +81,7 @@ export default function ProfileSetupScreen({ navigation }: Props) {
   const [userId, setUserId] = useState<number | string | null>(null);
   const [profileImage, setProfileImage] = useState<string | null>(null);
   const [imageFile, setImageFile] = useState<any>(null);
-
+  const [addressLayout, setAddressLayout] = useState({ y: 0, height: 0 });
   const scrollRef = useRef<ScrollView>(null);
   const addressInputRef = useRef<TextInput>(null);
 
@@ -90,6 +106,48 @@ export default function ProfileSetupScreen({ navigation }: Props) {
     { label: 'Visa Subclass 485', value: 'visa_485' },
   ];
 
+  // ==================== IMPROVED PHONE HANDLER ====================
+  const handlePhoneChange = (text: string) => {
+    // Remove everything except digits and optional leading +
+    let cleaned = text.replace(/[^\d+]/g, '');
+
+    // Allow +61 international format OR domestic 0...
+    if (cleaned.startsWith('+')) {
+      if (cleaned.startsWith('+61')) {
+        // +61 followed by 9 digits = total 12 chars
+        if (cleaned.length > 12) {
+          cleaned = cleaned.slice(0, 12);
+        }
+      } else {
+        // Block other country codes
+        cleaned = cleaned.replace(/^\+\d*/, '+61');
+      }
+    } else {
+      // Domestic Australian format (must start with 0)
+      if (cleaned.length > 0 && !cleaned.startsWith('0')) {
+        cleaned = '0' + cleaned;
+      }
+      // Max 10 digits for Australian numbers
+      if (cleaned.length > 10) {
+        cleaned = cleaned.slice(0, 10);
+      }
+    }
+
+    setPhoneNumber(cleaned);
+  };
+
+  // Optional: Add this for better UX (formatting with spaces)
+  const formatPhoneForDisplay = (num: string): string => {
+    if (!num) return '';
+    if (num.startsWith('+61')) {
+      return num
+        .replace(/(\+61)(\d{1,4})(\d{1,4})(\d{1,4})/, '$1 $2 $3 $4')
+        .trim();
+    }
+    // Domestic: 04xx xxx xxx or 02xx xxxx xx
+    return num.replace(/(\d{4})(\d{3})(\d{3})/, '$1 $2 $3').trim();
+  };
+
   // useEffect must also be at top level
   useEffect(() => {
     const initializeProfile = async () => {
@@ -113,7 +171,9 @@ export default function ProfileSetupScreen({ navigation }: Props) {
         } else if (profile?.customer?.profile_image) {
           setProfileImage(`${BASE_IMAGE_URL}${profile.customer.profile_image}`);
         } else if (profile?.contractor?.profile_image) {
-          setProfileImage(`${BASE_IMAGE_URL}${profile.contractor.profile_image}`);
+          setProfileImage(
+            `${BASE_IMAGE_URL}${profile.contractor.profile_image}`,
+          );
         }
 
         setUserType(profile?.user_type ?? null);
@@ -176,6 +236,8 @@ export default function ProfileSetupScreen({ navigation }: Props) {
           setPhoneNumber(profile?.contractor?.phone ?? '');
           setCompanyName(profile?.contractor?.company_name ?? '');
           setRegistrationNumber(profile?.contractor?.registration_number ?? '');
+          setAcn(profile?.contractor?.acn ?? ''); // ← NEW
+          setAbn(profile?.contractor?.abn ?? '');
         } else if (profile?.user_type === 'staff') {
           setPhoneNumber(profile?.staff?.phone ?? '');
           setGender(profile?.staff?.gender ?? null);
@@ -192,19 +254,20 @@ export default function ProfileSetupScreen({ navigation }: Props) {
     };
 
     initializeProfile();
-  }, [navigation])
+  }, [navigation]);
 
   const fetchPlaces = async (text: string) => {
-    setAddress(text);
     if (text.length < 3) {
       setPredictions([]);
+      setShowSuggestions(false);
       return;
     }
 
     try {
       const res = await fetch(
-        `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${text}&key=${GOOGLE_API_KEY}`
+        `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${text}&key=${GOOGLE_API_KEY}`,
       );
+
       const json = await res.json();
       setPredictions(json.predictions || []);
       setShowSuggestions(true);
@@ -215,37 +278,42 @@ export default function ProfileSetupScreen({ navigation }: Props) {
 
   const fetchPlaceDetails = async (placeId: string, description: string) => {
     try {
-      const res = await fetch(
-        `https://maps.googleapis.com/maps/api/place/details/json?place_id=${placeId}&key=${GOOGLE_API_KEY}`
-      );
-      const json = await res.json();
-      const details = json.result;
-
-      setAddress(description);
-
-      let tempCity = '';
-      let tempState = '';
-      let tempCountry = '';
-
-      details.address_components?.forEach((comp: any) => {
-        if (comp.types.includes('locality')) tempCity = comp.long_name;
-        if (comp.types.includes('administrative_area_level_1')) tempState = comp.long_name;
-        if (comp.types.includes('country')) tempCountry = comp.long_name;
-      });
-
-      setCity(tempCity);
-      setStateValue(tempState);
-      setCountry(tempCountry);
-
-      if (details.geometry?.location) {
-        setCoordinates({
-          lat: details.geometry.location.lat,
-          lng: details.geometry.location.lng,
-        });
-      }
-
       setShowSuggestions(false);
       Keyboard.dismiss();
+
+      // 🔥 IMPORTANT: delay state sync until tap finishes
+      requestAnimationFrame(async () => {
+        const res = await fetch(
+          `https://maps.googleapis.com/maps/api/place/details/json?place_id=${placeId}&key=${GOOGLE_API_KEY}`,
+        );
+
+        const json = await res.json();
+        const details = json.result;
+
+        setAddress(description);
+
+        let tempCity = '';
+        let tempState = '';
+        let tempCountry = '';
+
+        details.address_components?.forEach((comp: any) => {
+          if (comp.types.includes('locality')) tempCity = comp.long_name;
+          if (comp.types.includes('administrative_area_level_1'))
+            tempState = comp.long_name;
+          if (comp.types.includes('country')) tempCountry = comp.long_name;
+        });
+
+        setCity(tempCity);
+        setStateValue(tempState);
+        setCountry(tempCountry);
+
+        if (details.geometry?.location) {
+          setCoordinates({
+            lat: details.geometry.location.lat,
+            lng: details.geometry.location.lng,
+          });
+        }
+      });
     } catch (err) {
       console.log('Place details error:', err);
     }
@@ -262,6 +330,23 @@ export default function ProfileSetupScreen({ navigation }: Props) {
     }
     if (!address.trim()) {
       Toast.show({ type: 'error', text1: 'Address is required' });
+      return false;
+    }
+    if (!phoneNumber) {
+      Toast.show({ type: 'error', text1: 'Phone Number is required' });
+      return false;
+    }
+
+    // Basic Australian validation
+    const isValidAU =
+      (phoneNumber.startsWith('0') && phoneNumber.length === 10) ||
+      (phoneNumber.startsWith('+61') && phoneNumber.length === 12);
+
+    if (!isValidAU) {
+      Toast.show({
+        type: 'error',
+        text1: 'Please enter a valid Australian phone number',
+      });
       return false;
     }
 
@@ -287,8 +372,6 @@ export default function ProfileSetupScreen({ navigation }: Props) {
     return true;
   };
 
-
-
   const pickImage = async () => {
     const result = await launchImageLibrary({
       mediaType: 'photo',
@@ -304,7 +387,7 @@ export default function ProfileSetupScreen({ navigation }: Props) {
         800, // maxWidth
         800, // maxHeight
         'JPEG',
-        70   // compression 0-100
+        70, // compression 0-100
       );
 
       const file = {
@@ -314,13 +397,14 @@ export default function ProfileSetupScreen({ navigation }: Props) {
       };
 
       setProfileImage(file.uri); // for preview
-      setImageFile(file);         // for API
+      setImageFile(file); // for API
     }
   };
   const handleContinue = async () => {
     if (!validateForm() || !userId) return;
 
-    const emailChanged = gmail.trim().toLowerCase() !== originalGmail.trim().toLowerCase();
+    const emailChanged =
+      gmail.trim().toLowerCase() !== originalGmail.trim().toLowerCase();
 
     setLoading(true);
 
@@ -345,8 +429,9 @@ export default function ProfileSetupScreen({ navigation }: Props) {
       if (userType === 'contractor') {
         payload.company_name = companyName.trim();
         payload.registration_number = registrationNumber.trim();
-      }
-      else if (userType === 'staff') {
+        payload.acn = acn.trim(); // ← NEW
+        payload.abn = abn.trim(); // ← NEW
+      } else if (userType === 'staff') {
         payload.gender = gender;
         payload.staff_document_type = residentialStatus;
 
@@ -358,8 +443,7 @@ export default function ProfileSetupScreen({ navigation }: Props) {
         //   state: stateValue.trim(),
         //   country: country.trim(),
         // };
-      }
-      else if (userType === 'customer') {
+      } else if (userType === 'customer') {
         // Same for customer if needed
         // payload.customer = { address: address.trim(), ... };
       }
@@ -375,11 +459,11 @@ export default function ProfileSetupScreen({ navigation }: Props) {
       Toast.show({ type: 'success', text1: 'Profile Updated Successfully' });
       setOriginalGmail(gmail.trim().toLowerCase());
       navigation.navigate('Profile');
-
     } catch (err: any) {
       console.log('Update Error:', err?.response?.data || err);
 
-      const errorMsg = err?.response?.data?.error ||
+      const errorMsg =
+        err?.response?.data?.error ||
         err?.response?.data?.message ||
         'Failed to update profile';
 
@@ -413,7 +497,8 @@ export default function ProfileSetupScreen({ navigation }: Props) {
       setOtpModalVisible(false);
       setOtp('');
     } catch (err: any) {
-      const errorMsg = err?.response?.data?.error ||
+      const errorMsg =
+        err?.response?.data?.error ||
         err?.response?.data?.message ||
         err?.message ||
         'Failed to verify OTP';
@@ -432,7 +517,11 @@ export default function ProfileSetupScreen({ navigation }: Props) {
   if (fetching) {
     return (
       <SafeAreaView style={styles.container}>
-        <ActivityIndicator size="large" color="#2EB1E2" style={{ marginTop: 100 }} />
+        <ActivityIndicator
+          size="large"
+          color="#2EB1E2"
+          style={{ marginTop: 100 }}
+        />
       </SafeAreaView>
     );
   }
@@ -444,22 +533,21 @@ export default function ProfileSetupScreen({ navigation }: Props) {
       <ScrollView
         ref={scrollRef}
         contentContainerStyle={styles.scrollContent}
-        keyboardShouldPersistTaps="handled"
+        keyboardShouldPersistTaps="always"
         showsVerticalScrollIndicator={false}
+        onScroll={e => setScrollY(e.nativeEvent.contentOffset.y)}
+        scrollEventThrottle={16}
       >
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-            <ArrowLeft size={24} color="#000" />
+          <TouchableOpacity onPress={() => navigation.goBack()}>
+            <ArrowLeft size={24} color="#fff" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Complete Your Profile</Text>
           <View style={{ width: 24 }} />
         </View>
         <TouchableOpacity onPress={pickImage} style={styles.imageContainer}>
           {profileImage ? (
-            <Image
-              source={{ uri: profileImage }}
-              style={styles.profileImage}
-            />
+            <Image source={{ uri: profileImage }} style={styles.profileImage} />
           ) : (
             <View style={styles.placeholderImage}>
               <User size={30} color="#999" />
@@ -467,33 +555,42 @@ export default function ProfileSetupScreen({ navigation }: Props) {
             </View>
           )}
 
-          {/* ✅ Edit Icon */}
           <View style={styles.editIcon}>
             <Edit2 size={16} color="#fff" />
           </View>
         </TouchableOpacity>
-        {/* Full Name */}
+
         <InputField
           icon={User}
-          label="Full Name"
+          label={
+            <>
+              Full Name <Text style={styles.required}>*</Text>
+            </>
+          }
           value={fullName}
           onChange={setFullName}
           placeholder="Enter your full name"
         />
 
-        {/* Phone Number */}
         <InputField
           icon={Phone}
-          label="Phone Number"
-          value={phoneNumber}
-          onChange={setPhoneNumber}
-          placeholder="Enter your phone number"
+          label={
+            <>
+              Phone Number <Text style={styles.required}>*</Text>
+            </>
+          }
+          value={formatPhoneForDisplay(phoneNumber)} // Nice formatting
+          onChange={handlePhoneChange}
+          placeholder="0412 345 678"
           keyboardType="phone-pad"
+          maxLength={12} // +61xxxxxxxxx
         />
 
         {/* Email */}
         <View style={styles.field}>
-          <Text style={styles.label}>Email</Text>
+          <Text style={styles.label}>
+            Email <Text style={styles.required}>*</Text>
+          </Text>
           <View style={styles.inputContainer}>
             <Mail size={20} color="#666" style={styles.inputIcon} />
             <TextInput
@@ -505,58 +602,95 @@ export default function ProfileSetupScreen({ navigation }: Props) {
               keyboardType="email-address"
               autoCapitalize="none"
               autoCorrect={false}
-
             />
           </View>
         </View>
 
-        {/* Contractor Fields */}
         {userType === 'contractor' && (
           <>
             <InputField
               icon={Building2}
-              label="Company Name"
+              // label="Company Name *"
+              label={
+                <>
+                  Company Name <Text style={styles.required}>*</Text>
+                </>
+              }
               value={companyName}
               onChange={setCompanyName}
               placeholder="Enter company name"
             />
             <InputField
               icon={FileText}
-              label="Registration Number"
+              label={
+                <>
+                  Registration Number <Text style={styles.required}>*</Text>
+                </>
+              }
               value={registrationNumber}
               onChange={setRegistrationNumber}
               placeholder="Enter registration number"
             />
+
+            <InputField
+              icon={FileText}
+              label="ACN (Australian Company Number)"
+              value={acn}
+              onChange={setAcn}
+              placeholder="Enter ACN (9 digits)"
+              keyboardType="numeric"
+            />
+
+            <InputField
+              icon={FileText}
+              label="ABN (Australian Business Number)"
+              value={abn}
+              onChange={setAbn}
+              placeholder="Enter ABN (11 digits)"
+              keyboardType="numeric"
+            />
           </>
         )}
 
-        {/* Staff Fields */}
         {userType === 'staff' && (
           <>
-            <TouchableOpacity 
-              style={styles.field} 
+            <TouchableOpacity
+              style={styles.field}
               onPress={() => setShowGenderModal(true)}
             >
-              <Text style={styles.label}>Gender</Text>
+              <Text style={styles.label}>
+                Gender <Text style={styles.required}>*</Text>
+              </Text>
               <View style={styles.inputContainer}>
                 <User size={20} color="#666" style={styles.inputIcon} />
                 <Text style={[styles.input, !gender && { color: '#9CA3AF' }]}>
-                  {gender ? genderOptions.find(o => o.value === gender)?.label : 'Select Gender'}
+                  {gender
+                    ? genderOptions.find(o => o.value === gender)?.label
+                    : 'Select Gender'}
                 </Text>
                 <ChevronDown size={20} color="#9CA3AF" />
               </View>
             </TouchableOpacity>
 
-            <TouchableOpacity 
-              style={styles.field} 
+            <TouchableOpacity
+              style={styles.field}
               onPress={() => setShowResidentialModal(true)}
             >
-              <Text style={styles.label}>Residential Status</Text>
+              <Text style={styles.label}>
+                Residential Status <Text style={styles.required}>*</Text>
+              </Text>
               <View style={styles.inputContainer}>
                 <Globe size={20} color="#666" style={styles.inputIcon} />
-                <Text style={[styles.input, !residentialStatus && { color: '#9CA3AF' }]}>
-                  {residentialStatus 
-                    ? residentialOptions.find(o => o.value === residentialStatus)?.label 
+                <Text
+                  style={[
+                    styles.input,
+                    !residentialStatus && { color: '#9CA3AF' },
+                  ]}
+                >
+                  {residentialStatus
+                    ? residentialOptions.find(
+                        o => o.value === residentialStatus,
+                      )?.label
                     : 'Select Residential Status'}
                 </Text>
                 <ChevronDown size={20} color="#9CA3AF" />
@@ -571,7 +705,7 @@ export default function ProfileSetupScreen({ navigation }: Props) {
               <Text style={styles.modalTitle}>Select Gender</Text>
               <FlatList
                 data={genderOptions}
-                keyExtractor={(item) => item.value}
+                keyExtractor={item => item.value}
                 renderItem={({ item }) => (
                   <TouchableOpacity
                     style={styles.modalItem}
@@ -594,14 +728,13 @@ export default function ProfileSetupScreen({ navigation }: Props) {
           </View>
         </Modal>
 
-        {/* Residential Status Selection Modal */}
         <Modal visible={showResidentialModal} transparent animationType="slide">
           <View style={styles.modalOverlay}>
             <View style={styles.customModal}>
               <Text style={styles.modalTitle}>Select Residential Status</Text>
               <FlatList
                 data={residentialOptions}
-                keyExtractor={(item) => item.value}
+                keyExtractor={item => item.value}
                 renderItem={({ item }) => (
                   <TouchableOpacity
                     style={styles.modalItem}
@@ -624,9 +757,16 @@ export default function ProfileSetupScreen({ navigation }: Props) {
           </View>
         </Modal>
 
-        {/* Address */}
-        <View style={styles.field}>
-          <Text style={styles.label}>Address</Text>
+        <View
+          style={styles.field}
+          onLayout={event => {
+            const { y, height } = event.nativeEvent.layout;
+            setAddressLayout({ y, height });
+          }}
+        >
+          <Text style={styles.label}>
+            Address <Text style={styles.required}>*</Text>
+          </Text>
           <View style={styles.inputContainer}>
             <MapPin size={20} color="#666" style={styles.inputIcon} />
             <TextInput
@@ -635,7 +775,11 @@ export default function ProfileSetupScreen({ navigation }: Props) {
               value={address}
               placeholder="Start typing your address..."
               placeholderTextColor="#9CA3AF"
-              onChangeText={fetchPlaces}
+              onChangeText={text => {
+                setAddress(text);
+
+                fetchPlaces(text);
+              }}
               autoCorrect={false}
             />
             {address.length > 0 && (
@@ -654,51 +798,48 @@ export default function ProfileSetupScreen({ navigation }: Props) {
           </View>
         </View>
 
-        {/* City */}
         <InputField
           icon={Building2}
           label="City"
           value={city}
-          onChange={() => { }}
+          onChange={() => {}}
           editable={false}
           placeholder="City will appear here"
         />
 
-        {/* State */}
         <InputField
           icon={Globe}
           label="State"
           value={stateValue}
-          onChange={() => { }}
+          onChange={() => {}}
           editable={false}
           placeholder="State will appear here"
         />
 
-        {/* Country */}
         <InputField
           icon={Globe}
           label="Country"
           value={country}
-          onChange={() => { }}
+          onChange={() => {}}
           editable={false}
           placeholder="Country will appear here"
         />
 
-        {/* Coordinates */}
         <InputField
           icon={Navigation}
           label="Coordinates"
           value={
-            coordinates && typeof coordinates.lat === 'number' && typeof coordinates.lng === 'number'
+            coordinates &&
+            typeof coordinates.lat === 'number' &&
+            typeof coordinates.lng === 'number'
               ? `${coordinates.lat.toFixed(6)}, ${coordinates.lng.toFixed(6)}`
               : ''
           }
-          onChange={() => { }}
+          onChange={() => {}}
           editable={false}
           placeholder="Coordinates will appear here"
         />
 
-        {/* Continue Button */}
         <TouchableOpacity
           style={[styles.continueButton, loading && styles.buttonDisabled]}
           onPress={handleContinue}
@@ -713,17 +854,30 @@ export default function ProfileSetupScreen({ navigation }: Props) {
         </TouchableOpacity>
       </ScrollView>
 
-      {/* Google Places Suggestions */}
       {showSuggestions && predictions.length > 0 && (
         <FlatList
           data={predictions}
-          keyExtractor={(item) => item.place_id}
-          style={styles.suggestionsList}
-          keyboardShouldPersistTaps="handled"
+          keyExtractor={item => item.place_id}
+          keyboardShouldPersistTaps="always"
+          style={[
+            styles.suggestionsList,
+            {
+              position: 'absolute',
+              top: addressLayout.y - scrollY + addressLayout.height + 70,
+              left: 24,
+              right: 24,
+              zIndex: 9999,
+            },
+          ]}
           renderItem={({ item }) => (
             <TouchableOpacity
+              activeOpacity={0.7}
+              delayPressIn={0}
+              onPress={() => {
+                Keyboard.dismiss();
+                fetchPlaceDetails(item.place_id, item.description);
+              }}
               style={styles.suggestionItem}
-              onPress={() => fetchPlaceDetails(item.place_id, item.description)}
             >
               <MapPin size={18} color="#666" style={{ marginRight: 8 }} />
               <Text style={styles.suggestionText}>{item.description}</Text>
@@ -732,7 +886,6 @@ export default function ProfileSetupScreen({ navigation }: Props) {
         />
       )}
 
-      {/* OTP Modal */}
       <Modal
         animationType="slide"
         transparent={true}
@@ -743,7 +896,8 @@ export default function ProfileSetupScreen({ navigation }: Props) {
           <View style={styles.otpModalContainer}>
             <Text style={styles.modalTitle}>Verify Email Change</Text>
             <Text style={styles.modalSubtitle}>
-              Enter the OTP sent to <Text style={{ fontWeight: 'bold' }}>{gmail}</Text>
+              Enter the OTP sent to{' '}
+              <Text style={{ fontWeight: 'bold' }}>{gmail}</Text>
             </Text>
 
             <TextInput
@@ -769,7 +923,10 @@ export default function ProfileSetupScreen({ navigation }: Props) {
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={[styles.verifyModalBtn, isVerifyingOtp && styles.btnDisabled]}
+                style={[
+                  styles.verifyModalBtn,
+                  isVerifyingOtp && styles.btnDisabled,
+                ]}
                 disabled={isVerifyingOtp || otp.length !== 6}
                 onPress={handleVerifyAndSave}
               >
@@ -818,46 +975,31 @@ const InputField = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8fafc',
-    paddingTop: 20,
+    backgroundColor: '#dfe6f9',
+    width: '100%',
+    position: 'relative',
   },
   scrollContent: {
-    paddingHorizontal: 24,
-    paddingBottom: 120,
+    paddingHorizontal: 15,
+    paddingBottom: 50,
   },
   header: {
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 20,
+    alignItems: 'center',
+    paddingHorizontal: 15,
+    paddingVertical: 14,
+    backgroundColor: '#0A7C6E',
+    marginHorizontal: 16,
+    borderRadius: 16,
+    marginBottom: 10,
   },
-  // imageContainer: {
-  //   alignItems: 'center',
-  //   marginBottom: 5,
-  // },
 
-  // profileImage: {
-  //   width: 100,
-  //   height: 100,
-  //   borderRadius: 50,
-  //   borderWidth: 1,
-  //   borderColor: '#e2e8f0',
-  //    shadowColor: '#000',
-  //   shadowOffset: { width: 0, height: 2 },
-  //   shadowOpacity: 0.08,
-  //   shadowRadius: 4,
-  //   elevation: 3,
-
-  // },
-
-  // placeholderImage: {
-  //   width: 100,
-  //   height: 100,
-  //   borderRadius: 50,
-  //   backgroundColor: '#f1f5f9',
-  //   justifyContent: 'center',
-  //   alignItems: 'center',
-  // },
+  screenTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#fff',
+  },
 
   imageContainer: {
     alignSelf: 'center',
@@ -869,30 +1011,25 @@ const styles = StyleSheet.create({
     width: 110,
     height: 110,
     borderRadius: 55,
-    borderWidth: 1,
-    borderColor: '#e2e8f0',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
-    elevation: 3,
+    borderWidth: 2,
+    borderColor: COLORS.primary,
   },
-
   placeholderImage: {
     width: 110,
     height: 110,
     borderRadius: 55,
-    backgroundColor: '#e5e7eb',
+    backgroundColor: COLORS.surface,
     justifyContent: 'center',
     alignItems: 'center',
-
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
 
   editIcon: {
     position: 'absolute',
     bottom: 5,
     right: 5,
-    backgroundColor: '#2EB1E2',
+    backgroundColor: '#0A7C6E',
     width: 32,
     height: 32,
     borderRadius: 16,
@@ -901,29 +1038,19 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
 
-  backButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
-    backgroundColor: '#fff',
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#e2e8f0',
-  },
   headerTitle: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#1e293b',
+    color: '#fff',
   },
   field: {
-    marginBottom: 16,
+    marginBottom: 10,
   },
   label: {
     fontSize: 13,
     fontWeight: '600',
     color: '#475569',
-    marginBottom: 8,
+    marginBottom: 5,
   },
   inputContainer: {
     flexDirection: 'row',
@@ -931,9 +1058,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: '#aeb2c5',
     paddingHorizontal: 14,
-    height: 52,
+    height: 45,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
@@ -951,6 +1078,10 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 15,
     color: '#1e293b',
+  },
+  required: {
+    color: '#EF4444',
+    fontWeight: '700',
   },
   pickerContainer: {
     backgroundColor: '#ffffff',
@@ -972,11 +1103,11 @@ const styles = StyleSheet.create({
     fontSize: 15,
   },
   continueButton: {
-    backgroundColor: '#2EB1E2',
+    backgroundColor: '#0A7C6E',
     paddingVertical: 16,
     borderRadius: 14,
     alignItems: 'center',
-    marginTop: 32,
+    marginTop: 15,
   },
   buttonDisabled: {
     opacity: 0.6,
@@ -1012,8 +1143,6 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: '#334155',
   },
-
-
 
   modalOverlay: {
     flex: 1,
@@ -1109,7 +1238,7 @@ const styles = StyleSheet.create({
   verifyModalBtn: {
     flex: 1,
     paddingVertical: 14,
-    backgroundColor: '#2EB1E2',
+    backgroundColor: '#0A7C6E',
     borderRadius: 12,
     alignItems: 'center',
   },

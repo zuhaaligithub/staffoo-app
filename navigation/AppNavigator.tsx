@@ -40,7 +40,13 @@ import PaymentMethodsScreen from '../screens/PaymentMethodsScreen';
 import LeaveManagementScreen from '../screens/LeaveManagementScreen';
 import HomeScreen from '../screens/HomeScreen';
 import PayslipScreen from '../screens/PayslipScreen';
+import JobPaymentHistory from '../screens/JobPaymentHistory';
+import StaffInduction from '../screens/StaffInduction';
+import InductionQuestionsScreen from '../screens/InductionQuestionScreen';
+import StaffFormsScreen from '../screens/StaffFormsScreen';
+import TestScreen from '../screens/TestScreen';
 
+// import InductionQuestionScreen from '../screens/InductionQuestionScreen';
 
 // ─── Define route params ────────────────────────────────────────────────
 export type RootStackParamList = {
@@ -64,6 +70,7 @@ export type RootStackParamList = {
   ApplyJob: undefined;
   Documents: undefined;
   Payslip: undefined;
+  Test: undefined;
   Accounts: undefined;
   ChargeRates: undefined;
   PayRates: undefined;
@@ -92,10 +99,14 @@ export type RootStackParamList = {
   Ongoing: undefined;
   CreateIncidentReport: undefined;
   CreateFootReport: undefined;
-  AsapJobDetails:undefined;
-  BreakForm:undefined;
-  PaymentHistory:undefined;
-  PaymentMethod:undefined;
+  AsapJobDetails: undefined;
+  BreakForm: undefined;
+  PaymentHistory: undefined;
+  PaymentMethod: undefined;
+  JobPayment: undefined;
+  Induction: undefined;
+  StaffForms: undefined;
+  InductionQuestions: undefined;
   Main: undefined;
 };
 
@@ -103,7 +114,9 @@ const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export default function AppNavigator() {
   const [isLoading, setIsLoading] = useState(true);
-  const [initialRoute, setInitialRoute] = useState<keyof RootStackParamList | null>(null);
+  const [initialRoute, setInitialRoute] = useState<
+    keyof RootStackParamList | null
+  >(null);
 
   useEffect(() => {
     const bootstrapAsync = async () => {
@@ -145,20 +158,17 @@ export default function AppNavigator() {
 
   return (
     <Stack.Navigator
-     initialRouteName={initialRoute!}
+      initialRouteName={initialRoute!}
       screenOptions={{ headerShown: false, animation: 'slide_from_right' }}
     >
       <Stack.Screen name="Onboarding" component={OnboardingScreen} />
       <Stack.Screen name="Login" component={LoginScreen} />
       <Stack.Screen name="SignUp" component={SignUpScreen} />
       <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
-
       <Stack.Screen name="Filter" component={FilterScreen} />
-
       <Stack.Screen name="ProfileSetup" component={ProfileSetupScreen} />
-       <Stack.Screen name="LeaveManagement" component={LeaveManagementScreen} />
+      <Stack.Screen name="LeaveManagement" component={LeaveManagementScreen} />
       <Stack.Screen name="Notifications" component={NotificationScreen} />
-
       <Stack.Screen name="JobDetails" component={JobDetailScreen} />
       <Stack.Screen name="AllJobs" component={AllJobsScreen} />
       <Stack.Screen name="Applications" component={ApplicationsScreen} />
@@ -178,13 +188,27 @@ export default function AppNavigator() {
       <Stack.Screen name="StaffShifts" component={StaffShifts} />
       <Stack.Screen name="SignIn" component={SignInDetails} />
       <Stack.Screen name="Ongoing" component={OngoingShift} />
-      <Stack.Screen name="CreateIncidentReport" component={CreateIncidentReport} />
+      <Stack.Screen
+        name="CreateIncidentReport"
+        component={CreateIncidentReport}
+      />
       <Stack.Screen name="CreateFootReport" component={CreateFootPatrol} />
-       <Stack.Screen name="AsapJobDetails" component={AsapJobDetails} />
-<Stack.Screen name="PaymentHistory" component={PaymentHistoryScreen} />
-<Stack.Screen name="PaymentMethod" component={PaymentMethodsScreen} />
+      <Stack.Screen name="AsapJobDetails" component={AsapJobDetails} />
+      <Stack.Screen name="PaymentHistory" component={PaymentHistoryScreen} />
+      <Stack.Screen name="PaymentMethod" component={PaymentMethodsScreen} />
+      <Stack.Screen name="JobPayment" component={JobPaymentHistory} />
+      <Stack.Screen name="Induction" component={StaffInduction} />
+      <Stack.Screen name="StaffForms" component={StaffFormsScreen} />
+      <Stack.Screen name="Test" component={TestScreen} />
+      <Stack.Screen
+        name="InductionQuestions"
+        component={InductionQuestionsScreen}
+        options={{
+          headerShown: false,
+          gestureEnabled: true,
+        }}
+      />
       {/* <Stack.Screen name="Success" component={SuccessScreen} /> */}
-
       {/* <Stack.Screen
         name="Main"
         component={MainDrawer}

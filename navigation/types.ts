@@ -58,7 +58,6 @@ export type RootStackParamList = {
   ReviewConfirm: {
     jobData: {
       category: string;
-      guardsCount: number;
       location: string;
       lat: number;
       lng: number;
@@ -67,12 +66,15 @@ export type RootStackParamList = {
       startTime: Date;
       endDate: Date;
       endTime: Date;
-      // uploadedFilesCount  ← REMOVED (was causing the error)
-      // It should NOT be inside jobData
+      shifts: {
+        date: Date;
+        startTime: Date;
+        endTime: Date;
+        guardsCount: number;
+      }[];
     };
-    uploadedFileUrls?: string[];           // ← add this
-  uploadedFileNames?: string[];          // optional
-  selectedDocuments?: string[];    // ← for the array of uploaded file paths
+    uploadedFileUrls?: string[];
+    selectedDocuments?: string[];
   };
 
   Main: undefined; // your drawer / tabs root
@@ -129,4 +131,3 @@ export type RootParamList = {
 };
 
 const Stack = createNativeStackNavigator<RootParamList>();
-

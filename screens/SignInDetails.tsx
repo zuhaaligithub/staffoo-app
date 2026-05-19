@@ -13,6 +13,7 @@ import {
   PermissionsAndroid,
   ActivityIndicator,
 } from 'react-native';
+import RNFS from 'react-native-fs';
 import Toast from 'react-native-toast-message';
 import {
   Clock,
@@ -22,6 +23,7 @@ import {
   MapPin,
   AlertCircle,
   ChevronLeft,
+  ArrowLeft,
 } from 'lucide-react-native';
 import { launchCamera } from 'react-native-image-picker';
 import Geolocation from 'react-native-geolocation-service';
@@ -35,7 +37,10 @@ interface SignInDetailsProps {
   route: any;
 }
 
-export default function SignInDetails({ navigation, route }: SignInDetailsProps) {
+export default function SignInDetails({
+  navigation,
+  route,
+}: SignInDetailsProps) {
   const [selfieUri, setSelfieUri] = useState<string | null>(null);
   const [selfieBase64, setSelfieBase64] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -74,13 +79,18 @@ export default function SignInDetails({ navigation, route }: SignInDetailsProps)
     event: rawShift.event || rawShift.job_title || 'Security Duty',
 
     // ── Use the same source as StaffShifts ────────────────────────
-    address: rawShift.site?.address
-      || rawShift.address
-      || rawShift.location
-      || 'No address provided',
+    address:
+      rawShift.site?.address ||
+      rawShift.address ||
+      rawShift.location ||
+      'No address provided',
 
     tasks: rawShift.tasks || 'No task is available',
-    notes: rawShift.shift_instructions || rawShift.notes || rawShift.instructions || '',
+    notes:
+      rawShift.shift_instructions ||
+      rawShift.notes ||
+      rawShift.instructions ||
+      '',
   };
 
   const requestCameraPermission = async (): Promise<boolean> => {
@@ -94,7 +104,7 @@ export default function SignInDetails({ navigation, route }: SignInDetailsProps)
           buttonNeutral: 'Ask Me Later',
           buttonNegative: 'Cancel',
           buttonPositive: 'OK',
-        }
+        },
       );
       return granted === PermissionsAndroid.RESULTS.GRANTED;
     } catch (err) {
@@ -114,7 +124,7 @@ export default function SignInDetails({ navigation, route }: SignInDetailsProps)
           buttonNeutral: 'Ask Me Later',
           buttonNegative: 'Cancel',
           buttonPositive: 'OK',
-        }
+        },
       );
       return granted === PermissionsAndroid.RESULTS.GRANTED;
     } catch (err) {
@@ -135,7 +145,7 @@ export default function SignInDetails({ navigation, route }: SignInDetailsProps)
 
     try {
       Geolocation.getCurrentPosition(
-        (pos) => {
+        pos => {
           console.log('Location success:', pos);
           const { latitude, longitude } = pos.coords;
           const locStr = `${latitude.toFixed(7)},${longitude.toFixed(7)}`;
@@ -143,7 +153,7 @@ export default function SignInDetails({ navigation, route }: SignInDetailsProps)
           setLocationReady(true);
           setLocationLoading(false);
         },
-        (err) => {
+        err => {
           console.log('Location error:', err.code, err.message);
           let msg = 'Could not get location';
           if (err.code === 3) msg = 'Location timeout – check GPS is on';
@@ -158,7 +168,7 @@ export default function SignInDetails({ navigation, route }: SignInDetailsProps)
           timeout: 25000,
           maximumAge: 0,
           distanceFilter: 0,
-        }
+        },
       );
     } catch (err) {
       console.error('Geolocation setup error:', err);
@@ -168,45 +178,8 @@ export default function SignInDetails({ navigation, route }: SignInDetailsProps)
     }
   };
 
-  const openCamera = async () => {
-    const hasPermission = await requestCameraPermission();
-    if (!hasPermission) {
-      Alert.alert('Permission Denied', 'Camera access is required.');
-      return;
-    }
-
-    try {
-      const result = await launchCamera({
-        mediaType: 'photo',
-        cameraType: 'front',
-        quality: 0.7,
-        includeBase64: true,
-      });
-
-      if (result.didCancel) return;
-      if (result.errorCode) {
-        Alert.alert('Camera Error', result.errorMessage || 'Failed to open camera.');
-        return;
-      }
-
-      const asset = result.assets?.[0];
-      if (asset?.uri) {
-        setSelfieUri(asset.uri);
-        if (asset.base64) {
-          setSelfieBase64(`data:image/jpeg;base64,${asset.base64}`);
-        }
-      }
-    } catch (err) {
-      console.error('Camera launch failed:', err);
-      Alert.alert('Error', 'Failed to launch camera.');
-    }
-  };
-
-
-
   // const openCamera = async () => {
   //   const hasPermission = await requestCameraPermission();
-
   //   if (!hasPermission) {
   //     Alert.alert('Permission Denied', 'Camera access is required.');
   //     return;
@@ -216,65 +189,65 @@ export default function SignInDetails({ navigation, route }: SignInDetailsProps)
   //     const result = await launchCamera({
   //       mediaType: 'photo',
   //       cameraType: 'front',
-  //       quality: 0.8,
-  //       includeBase64: false, // ❌ don't use base64 here
+  //       quality: 0.7,
+  //       includeBase64: true,
   //     });
 
   //     if (result.didCancel) return;
-
   //     if (result.errorCode) {
-  //       Alert.alert('Camera Error', result.errorMessage || 'Failed to open camera.');
+  //       Alert.alert(
+  //         'Camera Error',
+  //         result.errorMessage || 'Failed to open camera.',
+  //       );
   //       return;
   //     }
 
   //     const asset = result.assets?.[0];
-
   //     if (asset?.uri) {
-  //       try {
-  //         // 🔥 STEP 1: COMPRESS IMAGE
-  //         const compressed = await ImageResizer.createResizedImage(
-  //           asset.uri,
-  //           600,
-  //           600,
-  //           'JPEG',
-  //           60,
-  //           0,
-  //           undefined,
-  //           false,
-  //           { mode: 'contain', onlyScaleDown: true }
-  //         );
-
-  //         // 🔥 STEP 2: SHOW PREVIEW
-  //         setSelfieUri(compressed.uri);
-
-  //         // 🔥 STEP 3: READ BASE64 SAFELY
-  //         const base64 = await ImageResizer.createResizedImage(
-  //           asset.uri,
-  //           600,
-  //           600,
-  //           'JPEG',
-  //           60,
-  //           0,
-  //           undefined,
-  //           true // ✅ THIS RETURNS BASE64
-  //         );
-
-  //         if (base64?.uri) {
-  //           // ⚠️ react-native-image-resizer returns base64 in uri sometimes
-  //           setSelfieBase64(`data:image/jpeg;base64,${base64.uri}`);
-  //         }
-
-  //       } catch (err) {
-  //         console.error('❌ Compression failed:', err);
-  //         Alert.alert('Error', 'Image compression failed.');
+  //       setSelfieUri(asset.uri);
+  //       if (asset.base64) {
+  //         setSelfieBase64(`data:image/jpeg;base64,${asset.base64}`);
   //       }
   //     }
-
   //   } catch (err) {
-  //     console.error('❌ Camera launch failed:', err);
+  //     console.error('Camera launch failed:', err);
   //     Alert.alert('Error', 'Failed to launch camera.');
   //   }
   // };
+
+  const openCamera = async () => {
+    const hasPermission = await requestCameraPermission();
+    if (!hasPermission) return;
+
+    try {
+      const result = await launchCamera({
+        mediaType: 'photo',
+        cameraType: 'front',
+        quality: 0.8,
+      });
+
+      if (result.didCancel || !result.assets?.[0].uri) return;
+
+      // 1. Resize/Compress the image
+      const compressed = await ImageResizer.createResizedImage(
+        result.assets[0].uri,
+        600,
+        600,
+        'JPEG',
+        60,
+      );
+
+      // 2. Read the file and convert to base64
+      const base64Data = await RNFS.readFile(compressed.uri, 'base64');
+
+      // 3. Set the state
+      setSelfieUri(compressed.uri);
+      setSelfieBase64(`data:image/jpeg;base64,${base64Data}`);
+    } catch (err) {
+      console.error('Error processing image:', err);
+      Alert.alert('Error', 'Failed to process image.');
+    }
+  };
 
   const handleStartShift = async () => {
     try {
@@ -319,7 +292,11 @@ export default function SignInDetails({ navigation, route }: SignInDetailsProps)
       const now = new Date();
       const pad = (n: number) => n.toString().padStart(2, '0');
       const formatDateTime = (date: Date) =>
-        `${pad(date.getDate())}-${pad(date.getMonth() + 1)}-${date.getFullYear()} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
+        `${pad(date.getDate())}-${pad(
+          date.getMonth() + 1,
+        )}-${date.getFullYear()} ${pad(date.getHours())}:${pad(
+          date.getMinutes(),
+        )}`;
 
       // ── 3. Prepare payload ─────────────────────────
       const payload = {
@@ -339,7 +316,11 @@ export default function SignInDetails({ navigation, route }: SignInDetailsProps)
 
       // ── 5. Handle backend error manually ───────────
       if (!response?.success) {
-        throw new Error(response?.message || response?.error || 'Could not sign in. Try again.');
+        throw new Error(
+          response?.message ||
+            response?.error ||
+            'Could not sign in. Try again.',
+        );
       }
 
       // ── 6. Success Toast ───────────────────────────
@@ -356,7 +337,6 @@ export default function SignInDetails({ navigation, route }: SignInDetailsProps)
 
       // Navigate back if needed
       navigation.goBack();
-
     } catch (err: any) {
       console.error('🔴 Sign In Error:', err);
 
@@ -387,7 +367,14 @@ export default function SignInDetails({ navigation, route }: SignInDetailsProps)
   if (!shiftId) {
     return (
       <SafeAreaView style={styles.container}>
-        <Text style={{ padding: 40, textAlign: 'center', color: 'red', fontSize: 16 }}>
+        <Text
+          style={{
+            padding: 40,
+            textAlign: 'center',
+            color: 'red',
+            fontSize: 16,
+          }}
+        >
           Error: No shift information received.
         </Text>
       </SafeAreaView>
@@ -398,13 +385,12 @@ export default function SignInDetails({ navigation, route }: SignInDetailsProps)
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#f1f5f9" />
 
-      {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBox}>
-          <ChevronLeft size={24} color="#0f172a" />
+        <TouchableOpacity onPress={() => navigation.goBack()}>
+          <ArrowLeft size={24} color="#fff" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Sign In Details</Text>
-        <View style={{ width: 40 }} />
+        <View style={{ width: 24 }} />
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
@@ -458,7 +444,11 @@ export default function SignInDetails({ navigation, route }: SignInDetailsProps)
               <TouchableOpacity
                 activeOpacity={0.8}
                 onPress={openCamera}
-                style={{ alignItems: 'center', flex: 1, justifyContent: 'center' }}
+                style={{
+                  alignItems: 'center',
+                  flex: 1,
+                  justifyContent: 'center',
+                }}
               >
                 {selfieUri ? (
                   <Image
@@ -472,7 +462,9 @@ export default function SignInDetails({ navigation, route }: SignInDetailsProps)
                       <Camera size={20} color="#64748b" />
                     </View>
                     <Text style={styles.smallTitle}>SignIn Selfie</Text>
-                    <Text style={{ fontSize: 12, color: '#64748b', marginTop: 4 }}>
+                    <Text
+                      style={{ fontSize: 12, color: '#64748b', marginTop: 4 }}
+                    >
                       Tap to take photo
                     </Text>
                   </>
@@ -480,7 +472,10 @@ export default function SignInDetails({ navigation, route }: SignInDetailsProps)
               </TouchableOpacity>
             </View>
           </View>
-
+          <View style={styles.statusBadge}>
+            <View style={styles.dot} />
+            <Text style={styles.statusText}>Ready to Sign In</Text>
+          </View>
           {/* Location Status */}
           <View style={styles.locationBanner}>
             {locationLoading ? (
@@ -491,14 +486,20 @@ export default function SignInDetails({ navigation, route }: SignInDetailsProps)
             <Text
               style={[
                 styles.locationText,
-                { color: locationReady ? '#10b981' : locationLoading ? '#3b82f6' : '#ef4444' },
+                {
+                  color: locationReady
+                    ? '#10b981'
+                    : locationLoading
+                    ? '#3b82f6'
+                    : '#ef4444',
+                },
               ]}
             >
               {locationLoading
                 ? 'Fetching location...'
                 : locationReady
-                  ? `Location: ${location}`
-                  : location}
+                ? `Location: ${location}`
+                : location}
             </Text>
           </View>
 
@@ -578,15 +579,49 @@ export default function SignInDetails({ navigation, route }: SignInDetailsProps)
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f1f5f9',
+    backgroundColor: '#dfe6f9',
     paddingTop: 20,
   },
   header: {
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 16,
+    alignItems: 'center',
+    paddingHorizontal: 15,
+    paddingVertical: 14,
+    backgroundColor: '#0A7C6E',
+    marginHorizontal: 16,
+    borderRadius: 16,
+    marginBottom: 10,
+  },
+
+  screenTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#fff',
+  },
+  statusBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    backgroundColor: '#dcfce7',
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 999,
+    marginBottom: 14,
+  },
+
+  dot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#22c55e',
+    marginRight: 8,
+  },
+
+  statusText: {
+    color: '#15803d',
+    fontWeight: '700',
+    fontSize: 12,
   },
   backBox: {
     width: 40,
@@ -599,7 +634,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#0f172a',
+    color: '#fff',
   },
   scrollContent: {
     padding: 14,
@@ -607,8 +642,12 @@ const styles = StyleSheet.create({
   },
   mainCard: {
     backgroundColor: '#ffffff',
-    borderRadius: 20,
-    padding: 12,
+    borderRadius: 28,
+    padding: 18,
+    shadowColor: '#000',
+    shadowOpacity: 0.06,
+    shadowRadius: 20,
+    elevation: 5,
   },
   timeRow: {
     flexDirection: 'row',
@@ -616,20 +655,22 @@ const styles = StyleSheet.create({
   },
   timeCard: {
     flex: 1,
-    backgroundColor: '#f1f5f9',
-    borderRadius: 20,
-    paddingVertical: 10,
+    backgroundColor: '#ffffff',
+    borderRadius: 24,
+    paddingVertical: 18,
     alignItems: 'center',
-    marginHorizontal: 6,
+    marginHorizontal: 5,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
   },
   iconCircle: {
-    width: 40,
-    height: 40,
-    borderRadius: 22,
-    backgroundColor: '#e0ecff',
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: '#dbeafe',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 2,
+    marginBottom: 10,
   },
   timeLabel: {
     fontSize: 11,
@@ -677,9 +718,14 @@ const styles = StyleSheet.create({
   },
   selfieCard: {
     flex: 1,
-    backgroundColor: '#f1f5f9',
-    borderRadius: 18,
-    padding: 10,
+    backgroundColor: '#ffffff',
+    borderRadius: 22,
+    borderWidth: 2,
+    borderColor: '#dbeafe',
+    borderStyle: 'dashed',
+    padding: 12,
+    overflow: 'hidden',
+    minHeight: 140,
   },
   selfieIconCircle: {
     width: 60,
@@ -693,16 +739,17 @@ const styles = StyleSheet.create({
   selfieImage: {
     width: '100%',
     height: '100%',
-    borderRadius: 12,
+    borderRadius: 18,
   },
   locationBanner: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f0fdf4',
-    borderRadius: 12,
-    padding: 12,
-    marginBottom: 16,
-    gap: 8,
+    backgroundColor: '#eff6ff',
+    borderRadius: 18,
+    padding: 14,
+    marginBottom: 18,
+    borderWidth: 1,
+    borderColor: '#bfdbfe',
   },
   locationText: {
     fontSize: 13,
@@ -710,11 +757,16 @@ const styles = StyleSheet.create({
   },
   fieldCard: {
     flexDirection: 'row',
-    backgroundColor: '#f1f5f9',
-    borderRadius: 16,
-    padding: 14,
-    marginBottom: 10,
+    backgroundColor: '#ffffff',
+    borderRadius: 22,
+    padding: 16,
+    marginBottom: 14,
     alignItems: 'flex-start',
+
+    shadowColor: '#000',
+    shadowOpacity: 0.04,
+    shadowRadius: 10,
+    elevation: 2,
   },
   fieldIcon: {
     width: 40,

@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef } from 'react';
 import { StyleSheet, StatusBar, Alert, Platform } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -17,14 +16,13 @@ import AppNavigator from './navigation/AppNavigator';
 import CallOverlay from './screens/CallOverlay';
 import { useEchoCallListener } from './useCallManagerRN';
 
-
-const ONESIGNAL_APP_ID = "79041c59-5506-4e56-9de4-8a6619f85e1d";
+const ONESIGNAL_APP_ID = '79041c59-5506-4e56-9de4-8a6619f85e1d';
 const PENDING_ASAP_NOTIFICATION_KEY = '@pending_asap_notification';
 
 export let navigationRef: NavigationContainerRef<any> | null = null;
 
 export default function App() {
-   useEchoCallListener(); 
+  useEchoCallListener();
   const userTypeRef = useRef<string | null>(null);
 
   const clickHandlerRef = useRef<any>(null);
@@ -81,17 +79,26 @@ export default function App() {
       };
 
       foregroundHandlerRef.current = handleForeground;
-      OneSignal.Notifications.addEventListener('foregroundWillDisplay', handleForeground);
+      OneSignal.Notifications.addEventListener(
+        'foregroundWillDisplay',
+        handleForeground,
+      );
     };
 
     initOneSignal();
 
     return () => {
       if (clickHandlerRef.current)
-        OneSignal.Notifications.removeEventListener('click', clickHandlerRef.current);
+        OneSignal.Notifications.removeEventListener(
+          'click',
+          clickHandlerRef.current,
+        );
 
       if (foregroundHandlerRef.current)
-        OneSignal.Notifications.removeEventListener('foregroundWillDisplay', foregroundHandlerRef.current);
+        OneSignal.Notifications.removeEventListener(
+          'foregroundWillDisplay',
+          foregroundHandlerRef.current,
+        );
     };
   }, []);
 
@@ -116,7 +123,10 @@ export default function App() {
 
     const notificationJob = {
       additionalData: {
-        roster: { roster: { ...rawRoster }, distance: rosterWrapper.distance ?? null },
+        roster: {
+          roster: { ...rawRoster },
+          distance: rosterWrapper.distance ?? null,
+        },
       },
       roster: { roster: { ...rawRoster } },
       distance: rosterWrapper.distance ?? null,
@@ -125,7 +135,10 @@ export default function App() {
     if (navigationRef?.isReady()) {
       navigationRef.navigate('StaffShifts', { notificationJob });
     } else {
-      await AsyncStorage.setItem(PENDING_ASAP_NOTIFICATION_KEY, JSON.stringify(notificationJob));
+      await AsyncStorage.setItem(
+        PENDING_ASAP_NOTIFICATION_KEY,
+        JSON.stringify(notificationJob),
+      );
     }
   };
 
@@ -138,7 +151,11 @@ export default function App() {
         merchantIdentifier="merchant.identifier"
         urlScheme="your-url-scheme"
       >
-        <NavigationContainer ref={(ref) => { navigationRef = ref; }}>
+        <NavigationContainer
+          ref={ref => {
+            navigationRef = ref;
+          }}
+        >
           <AppNavigator />
         </NavigationContainer>
       </StripeProvider>

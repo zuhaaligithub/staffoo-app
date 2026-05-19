@@ -2,13 +2,13 @@
 import React from 'react';
 import { View, Text, ActivityIndicator, StyleSheet, Image } from 'react-native';
 
-const LOGO = require('../assets/staffo.png');
+const LOGO = require('../assets/staffoo.png');
 
 export default function SplashScreen() {
   return (
     <View style={styles.container}>
       <Image source={LOGO} style={styles.logo} resizeMode="contain" />
-      <ActivityIndicator size="large" color="#6085c6" />
+      <ActivityIndicator size="large" color="#0A7C6E" />
     </View>
   );
 }

@@ -197,7 +197,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderRadius: 30,
     borderWidth: 20,
-    borderColor: '#2869fe',
+    borderColor: '#0A7C6E',
   },
 
   boardingImg: {
@@ -234,7 +234,7 @@ const styles = StyleSheet.create({
   dot: {
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#2869fe',
+    backgroundColor: '#0A7C6E',
     marginHorizontal: 6,
   },
 
@@ -246,7 +246,7 @@ const styles = StyleSheet.create({
   },
 
   getStartedButton: {
-    backgroundColor: '#2869fe',
+    backgroundColor: '#0A7C6E',
     height: 56,
     borderRadius: 14,
     justifyContent: 'center',
