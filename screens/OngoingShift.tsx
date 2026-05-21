@@ -1,5 +1,3 @@
-
-
 import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
@@ -905,6 +903,62 @@ export default function OngoingShift({
     }
   };
 
+  //   const handleToggleBreak = (value: boolean) => {
+  //   if (value) {
+  //     let allowedBreak = false;
+  //     let message = '';
+
+  //     // 4 to 6 hours → after 4 hours → 10 min break
+  //     if (shiftHours >= 4 && shiftHours <= 6) {
+  //       if (elapsedSeconds >= 4 * 60 * 60) {
+  //         allowedBreak = true;
+  //       } else {
+  //         message =
+  //           'You can take a 10 minute break after 4 hours of your shift.';
+  //       }
+  //     }
+
+  //     // 6 to 8 hours → after 5 hours → 30 min break
+  //     else if (shiftHours > 6 && shiftHours <= 8) {
+  //       if (elapsedSeconds >= 5 * 60 * 60) {
+  //         allowedBreak = true;
+  //       } else {
+  //         message =
+  //           'You can take a 30 minute break after 5 hours of your shift.';
+  //       }
+  //     }
+
+  //     // 8 to 10 hours → after 4 hours → 30 min break
+  //     else if (shiftHours > 8 && shiftHours <= 10) {
+  //       if (elapsedSeconds >= 4 * 60 * 60) {
+  //         allowedBreak = true;
+  //       } else {
+  //         message =
+  //           'You can take a 30 minute break after 4 hours of your shift.';
+  //       }
+  //     }
+
+  //     // 10 to 12 hours → 3 breaks every 4 hours
+  //     else if (shiftHours > 10 && shiftHours <= 12) {
+  //       if (elapsedSeconds >= 4 * 60 * 60) {
+  //         allowedBreak = true;
+  //       } else {
+  //         message =
+  //           'You can take breaks every 4 hours during your shift.';
+  //       }
+  //     }
+
+  //     if (!allowedBreak) {
+  //       Alert.alert('Break Not Allowed', message);
+  //       return;
+  //     }
+
+  //     setBreakModalVisible(true);
+  //   } else {
+  //     handleEndBreak();
+  //   }
+  // };
+
   const submitStartBreak = async () => {
     try {
       setBreakLoading(true);
@@ -1304,8 +1358,8 @@ export default function OngoingShift({
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1,  backgroundColor: '#dfe6f9',},
-header: {
+  container: { flex: 1, backgroundColor: '#dfe6f9' },
+  header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -1319,48 +1373,47 @@ header: {
 
   headerTitle: { fontSize: 20, fontWeight: '700', color: '#fff' },
   scrollContent: { padding: 16, paddingBottom: 100 },
-timerCard: {
-  backgroundColor: '#ffffff',
-  borderRadius: 16,
-  paddingVertical: 20,
-  paddingHorizontal: 15,
-  alignItems: 'center',
-  marginBottom: 15,
+  timerCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+    paddingVertical: 20,
+    paddingHorizontal: 15,
+    alignItems: 'center',
+    marginBottom: 15,
 
-  shadowColor: '#000',
-  shadowOffset: {
-    width: 0,
-    height: 5,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 5,
+    },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+
+    elevation: 5,
   },
-  shadowOpacity: 0.08,
-  shadowRadius: 12,
-
-  elevation: 5,
-},
- timerText: {
-  fontSize: 38,
-  fontWeight: '800',
-  color: '#0f172a',
-  letterSpacing: 1,
-},
+  timerText: {
+    fontSize: 38,
+    fontWeight: '800',
+    color: '#0f172a',
+    letterSpacing: 1,
+  },
   infoCard: {
-   
     padding: 16,
     marginBottom: 15,
     borderWidth: 1,
     borderColor: '#e2e8f0',
     backgroundColor: '#fff',
-borderRadius: 16,
+    borderRadius: 16,
 
-shadowColor: '#000',
-shadowOffset: {
-  width: 0,
-  height: 4,
-},
-shadowOpacity: 0.05,
-shadowRadius: 8,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
 
-elevation: 4,
+    elevation: 4,
   },
   infoLabel: { fontSize: 12, color: '#64748b', marginBottom: 4 },
   infoValue: { fontSize: 16, fontWeight: '600', color: '#0f172a' },
@@ -1370,64 +1423,64 @@ elevation: 4,
   halfCard: {
     flexDirection: 'row',
     alignItems: 'center',
-   
+
     padding: 12,
     borderWidth: 1,
     borderColor: '#e2e8f0',
     backgroundColor: '#fff',
-borderRadius: 16,
+    borderRadius: 16,
 
-shadowColor: '#000',
-shadowOffset: {
-  width: 0,
-  height: 4,
-},
-shadowOpacity: 0.05,
-shadowRadius: 8,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
 
-elevation: 4,
+    elevation: 4,
   },
   selfieCard: {
     flex: 1,
-  
+
     padding: 12,
     borderWidth: 1,
     borderColor: '#e2e8f0',
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: '#fff',
-borderRadius: 16,
+    borderRadius: 16,
 
-shadowColor: '#000',
-shadowOffset: {
-  width: 0,
-  height: 4,
-},
-shadowOpacity: 0.05,
-shadowRadius: 8,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
 
-elevation: 4,
+    elevation: 4,
   },
   selfieImage: { width: '100%', height: 120, borderRadius: 12 },
   iconCircleBlue: {
     width: 32,
     height: 32,
-  
+
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 10,
     backgroundColor: '#fff',
-borderRadius: 16,
+    borderRadius: 16,
 
-shadowColor: '#000',
-shadowOffset: {
-  width: 0,
-  height: 4,
-},
-shadowOpacity: 0.05,
-shadowRadius: 8,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
 
-elevation: 4,
+    elevation: 4,
   },
   iconCircleGreen: {
     width: 32,
@@ -1437,18 +1490,16 @@ elevation: 4,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 10,
-  
 
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
 
-shadowColor: '#000',
-shadowOffset: {
-  width: 0,
-  height: 4,
-},
-shadowOpacity: 0.05,
-shadowRadius: 8,
-
-elevation: 4,
+    elevation: 4,
   },
   cardTitle: { fontSize: 12, fontWeight: '600', color: '#0f172a' },
   cardSubValue: { fontSize: 11, color: '#64748b', marginTop: 2 },
@@ -1470,17 +1521,16 @@ elevation: 4,
     marginBottom: 15,
     borderWidth: 1,
     borderColor: '#e2e8f0',
-  
 
-shadowColor: '#000',
-shadowOffset: {
-  width: 0,
-  height: 4,
-},
-shadowOpacity: 0.05,
-shadowRadius: 8,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
 
-elevation: 4,
+    elevation: 4,
   },
   actionRow: { flexDirection: 'row', alignItems: 'center', padding: 12 },
   actionIcon: {
@@ -1508,17 +1558,16 @@ elevation: 4,
     borderWidth: 1,
     borderColor: '#e2e8f0',
     marginBottom: 15,
-   
 
-shadowColor: '#000',
-shadowOffset: {
-  width: 0,
-  height: 4,
-},
-shadowOpacity: 0.05,
-shadowRadius: 8,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
 
-elevation: 4,
+    elevation: 4,
   },
   taskHeader: {
     flexDirection: 'row',
@@ -1548,32 +1597,32 @@ elevation: 4,
   taskCompletedText: { textDecorationLine: 'line-through', color: '#9ca3af' },
   taskTime: { fontSize: 12, color: '#64748b', marginTop: 2 },
   taskActions: { marginTop: 8 },
- startButton: {
-  backgroundColor: '#2563eb',
-  paddingVertical: 8,
-  paddingHorizontal: 18,
-  borderRadius: 999,
-  alignSelf: 'flex-start',
-},
+  startButton: {
+    backgroundColor: '#2563eb',
+    paddingVertical: 8,
+    paddingHorizontal: 18,
+    borderRadius: 999,
+    alignSelf: 'flex-start',
+  },
   startButtonText: { color: '#fff', fontSize: 12, fontWeight: '600' },
   completedLabel: { fontSize: 12, color: '#10b981', fontWeight: '600' },
-shakehandButton: {
-  backgroundColor: '#10b981',
-  paddingVertical: 16,
-  borderRadius: 18,
-  alignItems: 'center',
-  marginBottom: 14,
+  shakehandButton: {
+    backgroundColor: '#10b981',
+    paddingVertical: 16,
+    borderRadius: 18,
+    alignItems: 'center',
+    marginBottom: 14,
 
-  shadowColor: '#10b981',
-  shadowOffset: {
-    width: 0,
-    height: 5,
+    shadowColor: '#10b981',
+    shadowOffset: {
+      width: 0,
+      height: 5,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+
+    elevation: 5,
   },
-  shadowOpacity: 0.3,
-  shadowRadius: 10,
-
-  elevation: 5,
-},
   shakehandButtonText: { color: '#fff', fontWeight: '700' },
   handoverSection: {
     backgroundColor: '#fefce8',
@@ -1582,26 +1631,26 @@ shakehandButton: {
     borderWidth: 1,
     borderColor: '#eab308',
   },
-handoverButton: {
-  backgroundColor: '#2563eb',
-  paddingVertical: 15,
-  borderRadius: 18,
-  alignItems: 'center',
-},
+  handoverButton: {
+    backgroundColor: '#2563eb',
+    paddingVertical: 15,
+    borderRadius: 18,
+    alignItems: 'center',
+  },
   handoverButtonText: { color: '#fff', fontWeight: '600' },
- qrContainer: {
-  alignItems: 'center',
-  marginTop: 20,
-  backgroundColor: '#fff',
-  borderRadius: 24,
-  padding: 20,
-},
+  qrContainer: {
+    alignItems: 'center',
+    marginTop: 20,
+    backgroundColor: '#fff',
+    borderRadius: 24,
+    padding: 20,
+  },
   qrNote: {
-  fontSize: 13,
-  color: '#64748b',
-  marginTop: 12,
-  fontWeight: '600',
-},
+    fontSize: 13,
+    color: '#64748b',
+    marginTop: 12,
+    fontWeight: '600',
+  },
   bottomButtonContainer: {
     position: 'absolute',
     bottom: 0,

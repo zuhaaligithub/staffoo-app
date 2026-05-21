@@ -20,19 +20,35 @@ import Geolocation from 'react-native-geolocation-service';
 import BottomTab from './BottomTab';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
+import LinearGradient from 'react-native-linear-gradient';
 
 const { width } = Dimensions.get('window');
 const COLORS = {
-  primary: '#0A7C6E',
-  card: '#0A7C6E',
-  cardLight: '#2A335A',
+  // 🌿 Primary Brand
+  primary: '#89E7D0', // mint accent
+  primaryDark: '#4FCBB3',
+
+  // 🌙 Background system (clean dark navy)
+  background: '#070F1E',
+  surface: '#0E1A2B',
+  surface2: '#12243A',
+
+  // ✨ Card / Glass
+  card: 'rgba(255,255,255,0.06)',
+  cardBorder: 'rgba(255,255,255,0.08)',
+
+  // ✍️ Text
   text: '#FFFFFF',
-  muted: '#AAB0C0',
-  accent: '#4FACFE',
+  textSecondary: 'rgba(255,255,255,0.7)',
+  textMuted: 'rgba(255,255,255,0.5)',
+
+  // 🔴🟡🟢 Status
   success: '#22C55E',
   warning: '#F59E0B',
   danger: '#EF4444',
-  border: '#0A7C6E',
+
+  // Border
+  border: 'rgba(255,255,255,0.08)',
 };
 type Category = {
   id: string;
@@ -273,7 +289,18 @@ export default function HomeScreen({ navigation }: any) {
         showsVerticalScrollIndicator={false}
         style={styles.scrollContent}
       >
-        <View style={styles.banner}>
+        <LinearGradient
+          colors={[
+            'rgba(255, 255, 255, 0.42)',
+            'rgba(255, 255, 255, 0.35)',
+            'rgba(255, 255, 255, 0.22)',
+            'rgba(255, 255, 255, 0.12)',
+            'rgba(255, 255, 255, 0.25)',
+          ]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.banner}
+        >
           <View style={styles.bannerContent}>
             <Text style={styles.bannerTitle}>
               Let’s find a new job{'\n'}suitable for you
@@ -292,20 +319,35 @@ export default function HomeScreen({ navigation }: any) {
             source={require('../assets/banner-1.png')}
             style={styles.bannerImage}
           />
-        </View>
+        </LinearGradient>
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Browse By Category</Text>
+
           <FlatList
             data={categories}
             horizontal
             showsHorizontalScrollIndicator={false}
             keyExtractor={item => item.id}
             renderItem={({ item }) => (
-              <TouchableOpacity style={styles.categoryItem} activeOpacity={0.8}>
-                <Image source={item.icon} style={styles.categoryIcon} />
-                <Text style={styles.categoryTitle}>{item.title}</Text>
-              </TouchableOpacity>
+              <LinearGradient
+                colors={[
+                  'rgba(255,255,255,0.22)',
+                  'rgba(255,255,255,0.12)',
+                  'rgba(255,255,255,0.06)',
+                ]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.categoryItem}
+              >
+                <TouchableOpacity
+                  activeOpacity={0.8}
+                  style={{ alignItems: 'center' }}
+                >
+                  <Image source={item.icon} style={styles.categoryIcon} />
+                  <Text style={styles.categoryTitle}>{item.title}</Text>
+                </TouchableOpacity>
+              </LinearGradient>
             )}
             contentContainerStyle={styles.categoryList}
           />
@@ -341,76 +383,87 @@ export default function HomeScreen({ navigation }: any) {
               );
 
               return (
-                <View key={site.id} style={styles.siteCard}>
-                  <Text style={styles.siteName}>
-                    {site.site_name || 'Unnamed Site'}
-                  </Text>
-                  <Text style={styles.siteAddress}>{site.address}</Text>
-                  <Text style={styles.totalHours}>
-                    Total Hours: {totalHours.toFixed(1)} hrs
-                  </Text>
-                  {sortedJobs.map((job: any) => {
-                    const status = job.job_status?.toLowerCase();
-                    const shiftDate = job.start
-                      ? new Date(job.start).toLocaleDateString('en-GB', {
-                          day: '2-digit',
-                          month: 'short',
-                          year: 'numeric',
-                        })
-                      : '--';
+                <LinearGradient
+                  colors={[
+                    'rgba(255,255,255,0.20)',
+                    'rgba(255,255,255,0.10)',
+                    'rgba(255,255,255,0.05)',
+                  ]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={styles.siteCard}
+                >
+                  <View style={styles.siteCardInner}>
+                    <Text style={styles.siteName}>
+                      {site.site_name || 'Unnamed Site'}
+                    </Text>
+                    <Text style={styles.siteAddress}>{site.address}</Text>
+                    <Text style={styles.totalHours}>
+                      Total Hours: {totalHours.toFixed(1)} hrs
+                    </Text>
+                    {sortedJobs.map((job: any) => {
+                      const status = job.job_status?.toLowerCase();
+                      const shiftDate = job.start
+                        ? new Date(job.start).toLocaleDateString('en-GB', {
+                            day: '2-digit',
+                            month: 'short',
+                            year: 'numeric',
+                          })
+                        : '--';
 
-                    const startTime =
-                      job.start?.split(' ')[1]?.slice(0, 5) || '--:--';
-                    const endTime =
-                      job.end?.split(' ')[1]?.slice(0, 5) || '--:--';
+                      const startTime =
+                        job.start?.split(' ')[1]?.slice(0, 5) || '--:--';
+                      const endTime =
+                        job.end?.split(' ')[1]?.slice(0, 5) || '--:--';
 
-                    return (
-                      <View key={job.id} style={styles.shiftRow}>
-                        <View>
-                          <Text style={styles.shiftDate}>{shiftDate}</Text>
-                          <Text style={styles.shiftTime}>
-                            {startTime} - {endTime}
+                      return (
+                        <View key={job.id} style={styles.shiftRow}>
+                          <View>
+                            <Text style={styles.shiftDate}>{shiftDate}</Text>
+                            <Text style={styles.shiftTime}>
+                              {startTime} - {endTime}
+                            </Text>
+                          </View>
+
+                          <Text style={styles.guardName}>
+                            {job.guards?.name || 'Unassigned'}
                           </Text>
-                        </View>
 
-                        <Text style={styles.guardName}>
-                          {job.guards?.name || 'Unassigned'}
-                        </Text>
-
-                        <View
-                          style={[
-                            styles.statusBadge,
-                            status === 'pending'
-                              ? { backgroundColor: '#FEE2E2' }
-                              : status === 'confirmed'
-                              ? { backgroundColor: '#FEF3C7' }
-                              : status === 'completed'
-                              ? { backgroundColor: '#D1FAE5' }
-                              : { backgroundColor: '#E5E7EB' },
-                          ]}
-                        >
-                          <Text
+                          <View
                             style={[
-                              styles.statusText,
-                              {
-                                color:
-                                  status === 'pending'
-                                    ? '#DC2626' // 🔴 red
-                                    : status === 'confirmed'
-                                    ? '#F59E0B' // 🟡 yellow/orange
-                                    : status === 'completed'
-                                    ? '#16A34A' // 🟢 green
-                                    : '#374151',
-                              },
+                              styles.statusBadge,
+                              status === 'pending'
+                                ? { backgroundColor: '#FEE2E2' }
+                                : status === 'confirmed'
+                                ? { backgroundColor: '#FEF3C7' }
+                                : status === 'completed'
+                                ? { backgroundColor: '#D1FAE5' }
+                                : { backgroundColor: '#E5E7EB' },
                             ]}
                           >
-                            {status || 'pending'}
-                          </Text>
+                            <Text
+                              style={[
+                                styles.statusText,
+                                {
+                                  color:
+                                    status === 'pending'
+                                      ? '#DC2626' // 🔴 red
+                                      : status === 'confirmed'
+                                      ? '#F59E0B' // 🟡 yellow/orange
+                                      : status === 'completed'
+                                      ? '#16A34A' // 🟢 green
+                                      : '#374151',
+                                },
+                              ]}
+                            >
+                              {status || 'pending'}
+                            </Text>
+                          </View>
                         </View>
-                      </View>
-                    );
-                  })}
-                </View>
+                      );
+                    })}
+                  </View>
+                </LinearGradient>
               );
             })
           )}
@@ -423,7 +476,11 @@ export default function HomeScreen({ navigation }: any) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#dfe6f9', paddingTop: 20 },
+  container: {
+    flex: 1,
+    backgroundColor: COLORS.background,
+    paddingTop: 20,
+  },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -438,6 +495,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     borderRadius: 12,
     alignSelf: 'flex-start',
+    marginBottom: 20,
   },
 
   infoText: {
@@ -470,25 +528,30 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#4FACFE',
   },
+  siteCardInner: {
+    padding: 12, // 👈 REAL CARD PADDING HERE
+  },
   welcomeContent: { marginLeft: 12 },
-  welcomeText: { fontSize: 13, color: '#666' },
+  welcomeText: { fontSize: 13, color: '#fff' },
   nameRow: { flexDirection: 'row', alignItems: 'center' },
-  name: { fontSize: 18, fontWeight: '700', color: '#000' },
+  name: { fontSize: 18, fontWeight: '700', color: '#fff' },
   helloIcon: { width: 20, height: 20, marginLeft: 6 },
   scrollContent: { flex: 1 },
 
   bannerContent: { flex: 1 },
   banner: {
-    marginHorizontal: 20,
-    marginVertical: 12,
-    backgroundColor: '#0A7C6E',
+    // marginHorizontal: 20,
+    // marginVertical: 12,
     borderRadius: 18,
-    padding: 18,
+    padding: 12,
+    paddingRight: 20,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#0A7C6E',
+
+    // backgroundColor: COLORS.card,
+    // borderWidth: 1,
+    // borderColor: COLORS.cardBorder,
   },
 
   bannerTitle: {
@@ -507,7 +570,7 @@ const styles = StyleSheet.create({
   },
   shiftDate: {
     fontSize: 12,
-    color: '#666',
+    color: '#fff',
     marginBottom: 2,
     fontWeight: '500',
   },
@@ -522,27 +585,29 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 12,
   },
-  sectionTitle: { fontSize: 18, fontWeight: '700', color: '#323a5b' },
+  sectionTitle: { fontSize: 18, fontWeight: '800', color: '#fff' },
   seeAll: { color: '#2869FE', fontWeight: '600' },
 
   siteCard: {
-    backgroundColor: '#f6f6f6',
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 10,
-    borderWidth: 1,
-    borderColor: '#e8e8e9',
-  },
+    // padding: 16,
+    width: '100%',
+    // paddingLeft:10,
+    borderRadius: 14,
+    marginBottom: 12,
+    overflow: 'hidden',
 
+    // borderWidth: 1,
+    // borderColor: 'rgba(255,255,255,0.08)',
+  },
   siteName: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#4d4c4c',
+    color: '#fff',
   },
 
   siteAddress: {
     fontSize: 12,
-    color: '#AAB0C0',
+    color: '#ffff',
     marginVertical: 6,
   },
 
@@ -566,8 +631,8 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: '#f0f0f0',
   },
-  shiftTime: { fontSize: 13, color: '#111', fontWeight: '500' },
-  guardName: { fontSize: 13, color: '#444' },
+  shiftTime: { fontSize: 13, color: '#fff', fontWeight: '500' },
+  guardName: { fontSize: 13, color: '#fff' },
   statusBadge: {
     paddingHorizontal: 10,
     paddingVertical: 4,
@@ -580,18 +645,21 @@ const styles = StyleSheet.create({
   },
 
   categoryItem: {
-    width: 80,
-    height: 78,
-    borderRadius: 14,
-    backgroundColor: '#c9daf7',
+    // backgroundColor: COLORS.card,
+    // borderColor: COLORS.cardBorder,
     borderWidth: 1,
-    borderColor: '#d1cfcf',
-    marginRight: 12,
+    width: 90,
+    height: 78,
+    borderRadius: 12,
+    // backgroundColor: '#c9daf7',
+    // borderWidth: 1,
+    // borderColor: '#d1cfcf',
+    marginRight: 10,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 6,
+    // paddingVertical: 6,
 
-    shadowColor: '#979292',
+    shadowColor: '#fff',
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.06,
     shadowRadius: 10,
@@ -599,10 +667,10 @@ const styles = StyleSheet.create({
   },
   categoryList: { paddingVertical: 8 },
   categoryIcon: {
-    width: 32,
-    height: 32,
-    resizeMode: 'contain',
+    width: 34,
+    height: 34,
+    tintColor: COLORS.primary,
     marginBottom: 6,
   },
-  categoryTitle: { fontSize: 9, color: '#111111', textAlign: 'center' },
+  categoryTitle: { fontSize: 10, color: '#fff', textAlign: 'center' },
 });

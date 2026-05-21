@@ -55,6 +55,7 @@ export type RootStackParamList = {
   // Create Job Flow
   CreateJob: undefined;
 
+  // ── Create Job Flow ─────────────────────────────────────────────────────
   ReviewConfirm: {
     jobData: {
       category: string;
@@ -62,16 +63,25 @@ export type RootStackParamList = {
       lat: number;
       lng: number;
       description: string;
+
+      // Legacy fields (still required by your type)
       startDate: Date;
       startTime: Date;
       endDate: Date;
       endTime: Date;
+
+      // Main shifts array
       shifts: {
         date: Date;
         startTime: Date;
         endTime: Date;
         guardsCount: number;
       }[];
+
+      // Optional extra fields (good to have)
+      title?: string;
+      job_location_state?: string;
+      tasks?: Array<{ id?: number; title?: string; completed?: boolean }>;
     };
     uploadedFileUrls?: string[];
     selectedDocuments?: string[];

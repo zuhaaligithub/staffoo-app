@@ -71,28 +71,50 @@ type Card = {
   payment_method_id?: string;
 };
 
+type JobTask = {
+  id?: number;
+  title?: string;
+  completed?: boolean;
+};
+
 type RouteParams = {
   jobData?: {
     title?: string;
+
     category?: string;
+
     shifts?: Array<{
       date: Date;
       startTime: Date;
       endTime: Date;
       guardsCount: number;
     }>;
+
     startDate?: Date;
     startTime?: Date;
+
     endDate?: Date;
     endTime?: Date;
+
     location?: string;
+
     description?: string;
+
     lat?: number;
     lng?: number;
+
     guardsCount?: number;
+
+    // ADD THESE
+    job_location_state?: string;
+
+    tasks?: JobTask[];
   };
+
   uploadedFileUrls?: string[];
+
   uploadedFileNames?: string[];
+
   selectedDocuments?: string[];
 };
 const COLORS = {
@@ -350,14 +372,33 @@ Phone: [0478916034]`;
     if (!res?.success) throw new Error(res?.message || 'Payment hold failed.');
     return res.payment.payment_intent_id;
   };
-
   const submitJob = async (intentId: string | null) => {
     const user = JSON.parse((await AsyncStorage.getItem('user'))!);
 
-    // Format the shifts array exactly as the backend expects
+    const parseLocalDate = (value: any): Date => {
+      if (!value) return new Date();
+
+      if (value instanceof Date) return value;
+
+      // ISO string
+      if (typeof value === 'string') {
+        if (value.includes('T')) {
+          return new Date(value); // Let JS parse ISO properly
+        }
+        // YYYY-MM-DD format
+        if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+          const [year, month, day] = value.split('-').map(Number);
+          return new Date(year, month - 1, day);
+        }
+      }
+
+      return new Date(value);
+    };
+
+    // Format shifts exactly like backend expects (FIXED)
     const formattedShifts = (jobData.shifts || []).map((shift: any) => {
-      const start = new Date(shift.startTime);
-      const end = new Date(shift.endTime);
+      const start = parseLocalDate(shift.startTime);
+      const end = parseLocalDate(shift.endTime);
 
       return {
         start: `${start.getFullYear()}-${pad(start.getMonth() + 1)}-${pad(
@@ -366,47 +407,120 @@ Phone: [0478916034]`;
         end: `${end.getFullYear()}-${pad(end.getMonth() + 1)}-${pad(
           end.getDate(),
         )}T${pad(end.getHours())}:${pad(end.getMinutes())}`,
-        numberOfGuards: Number(shift.guardsCount || jobData.guardsCount || 1),
+        numberOfGuards: Number(shift.guardsCount || 1),
       };
     });
 
-    // Also build legacy startTime / endTime for backward compatibility
-    const { startStrSec, endStrSec } = buildTimes();
-
-    return postJob({
+    const payload = {
       user_id: user.id,
+
       title: jobData.title || `${getCategoryDisplay(jobData.category)}`,
+
       description: jobData.description || 'No description provided',
+
       address: jobData.location || 'Not specified',
-      coordinates: `${(jobData.lat ?? -33.8688).toFixed(8)},${(
-        jobData.lng ?? 151.2093
-      ).toFixed(8)}`,
-      state: 'NSW',
-      numberOfGuards: jobData.guardsCount || 1,
+
+      coordinates: `${jobData.lat},${jobData.lng}`,
+
+      state: 'open',
+
+      shifts: formattedShifts,
+
+      payment_option: selectedPlan,
+
+      job_location_state: jobData.job_location_state || 'punjab',
+
       financials: {
         base_total_inc_gst: parseFloat(totalIncGST.toFixed(2)),
-        discount_applied: parseFloat((totalIncGST * 0.05).toFixed(2)), // 5% discount for full pay
+
+        discount_applied:
+          selectedPlan === 'full'
+            ? parseFloat((totalIncGST * 0.05).toFixed(2))
+            : 0,
+
         amount_to_charge_today: parseFloat(ctaAmount.toFixed(2)),
+
         balance_deferred:
           selectedPlan === 'split'
             ? parseFloat((totalIncGST * 0.5).toFixed(2))
             : 0,
       },
-      // Legacy fields (keep these)
-      startTime: startStrSec,
-      endTime: endStrSec,
-
-      // New field - this is what you want for multiple shifts
-      shifts: formattedShifts,
 
       is_document: selectedDocuments.length > 0,
-      document_list: uploadedFileUrls,
-      document_types: selectedDocuments,
+
+      document_list: uploadedFileUrls || [],
+
+      document_types: selectedDocuments || [],
+
       job_instruction: jobData.description || '',
+
+      tasks: jobData.tasks || [],
+
       payment_intent_id: intentId,
-      payment_option: selectedPlan, // 'full' or 'split'
-    } as any); // Temporary type assertion until you update the interface
+    };
+
+    console.log('[CREATE JOB PAYLOAD]', JSON.stringify(payload, null, 2));
+
+    return postJob(payload);
   };
+  // const submitJob = async (intentId: string | null) => {
+  //   const user = JSON.parse((await AsyncStorage.getItem('user'))!);
+
+  //   // Format the shifts array exactly as the backend expects
+  //   const formattedShifts = (jobData.shifts || []).map((shift: any) => {
+  //     const start = new Date(shift.startTime);
+  //     const end = new Date(shift.endTime);
+
+  //     return {
+  //       start: `${start.getFullYear()}-${pad(start.getMonth() + 1)}-${pad(
+  //         start.getDate(),
+  //       )}T${pad(start.getHours())}:${pad(start.getMinutes())}`,
+  //       end: `${end.getFullYear()}-${pad(end.getMonth() + 1)}-${pad(
+  //         end.getDate(),
+  //       )}T${pad(end.getHours())}:${pad(end.getMinutes())}`,
+  //       numberOfGuards: Number(shift.guardsCount || jobData.guardsCount || 1),
+  //     };
+  //   });
+
+  //   // Also build legacy startTime / endTime for backward compatibility
+  //   const { startStrSec, endStrSec } = buildTimes();
+
+  //   return postJob({
+  //     user_id: user.id,
+
+  //     job_type: jobData.title || `${getCategoryDisplay(jobData.category)}`,
+  //     description: jobData.description || 'No description provided',
+  //     address: jobData.location || 'Not specified',
+  //     coordinates: `${(jobData.lat ?? -33.8688).toFixed(8)},${(
+  //       jobData.lng ?? 151.2093
+  //     ).toFixed(8)}`,
+  //     state: 'NSW',
+  //     numberOfGuards: jobData.guardsCount || 1,
+  //     financials: {
+  //       base_total_inc_gst: parseFloat(totalIncGST.toFixed(2)),
+  //       discount_applied: parseFloat((totalIncGST * 0.05).toFixed(2)), // 5% discount for full pay
+  //       amount_to_charge_today: parseFloat(ctaAmount.toFixed(2)),
+  //       balance_deferred:
+  //         selectedPlan === 'split'
+  //           ? parseFloat((totalIncGST * 0.5).toFixed(2))
+  //           : 0,
+  //     },
+  //     // Legacy fields (keep these)
+  //     startTime: startStrSec,
+  //     endTime: endStrSec,
+
+  //     // New field - this is what you want for multiple shifts
+  //     shifts: formattedShifts,
+
+  //     is_document: selectedDocuments.length > 0,
+  //     document_list: uploadedFileUrls,
+  //     document_types: selectedDocuments,
+  //     job_instruction: jobData.description || '',
+  //     payment_intent_id: intentId,
+  //     payment_option: selectedPlan, // 'full' or 'split'
+  //   } as any); // Temporary type assertion until you update the interface
+  // };
+
   const handlePayment = async () => {
     if (processing) return;
     setProcessing(true);
@@ -1327,7 +1441,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginHorizontal: 16,
     // paddingVertical: 25,
-  
   },
 
   headerTitle: {

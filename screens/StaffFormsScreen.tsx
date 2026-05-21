@@ -1,3 +1,5 @@
+
+
 import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
@@ -37,20 +39,16 @@ import axios from 'axios';
 import { generatePDF as pdfConvert } from 'react-native-html-to-pdf';
 
 const BASE_URL = 'https://apis.staffoo.com.au';
-const BRAND = '#0A7C6E'; // Primary
-const BRAND_DARK = '#111827';
-const BRAND_LIGHT = '#F1F5F9';
-const ACCENT = '#3B82F6';
-const SUCCESS = '#10B981';
+const BRAND = '#89E7D0'; // Mint accent
+const BRAND_DARK = '#001F3F'; // Deep Navy
+const BRAND_LIGHT = '#021d37'; // Darker navy
+const ACCENT = '#0047FF'; // Bright blue
+const SUCCESS = '#89E7D0';
 const ERROR = '#EF4444';
-const GRAY_BG = '#F8FAFC';
-const CARD_BG = '#FFFFFF';
+const GRAY_BG = '#001F3F';
+const CARD_BG = '#021d37';
 
 type StaffTab = 'tfn' | 'super' | 'onboarding';
-
-// ─────────────────────────────────────────────────────────────────────────────
-// PDF HELPERS
-// ─────────────────────────────────────────────────────────────────────────────
 
 const pdfStyles = `
   <style>
@@ -60,55 +58,29 @@ const pdfStyles = `
     .header-title{color:#fff;font-size:22px;font-weight:bold;}
     .header-sub{color:#CBD5E1;font-size:11px;margin-top:2px;}
     .body{padding:24px 32px;}
-    h2{font-size:16px;font-weight:bold;color:#111;margin-bottom:8px;
-       border-bottom:1px solid #ddd;padding-bottom:6px;}
-    .section-title{font-size:10px;font-weight:700;color:#0284C7;
-       text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;
-       border-bottom:1px solid #e2f4fb;padding-bottom:4px;margin-top:16px;}
+    h2{font-size:16px;font-weight:bold;color:#111;margin-bottom:8px; border-bottom:1px solid #ddd;padding-bottom:6px;}
+    .section-title{font-size:10px;font-weight:700;color:#0284C7; text-transform:uppercase;letter-spacing:1px;margin-bottom:10px; border-bottom:1px solid #e2f4fb;padding-bottom:4px;margin-top:16px;}
     .row{display:flex;gap:12px;margin-bottom:12px;}
     .field{flex:1;}
     .field label{display:block;font-size:9px;color:#666;margin-bottom:3px;}
-    .field .value{background:#f5f5f5;border:1px solid #ccc;border-radius:5px;
-       padding:6px 8px;font-size:12px;min-height:28px;word-break:break-all;}
+    .field .value{background:#f5f5f5;border:1px solid #ccc;border-radius:5px; padding:6px 8px;font-size:12px;min-height:28px;word-break:break-all;}
     .checkbox-row{display:flex;align-items:center;gap:8px;margin-bottom:8px;font-size:12px;}
-    .cb{width:13px;height:13px;border:1px solid #999;border-radius:3px;
-        display:inline-block;background:#fff;flex-shrink:0;}
+    .cb{width:13px;height:13px;border:1px solid #999;border-radius:3px; display:inline-block;background:#fff;flex-shrink:0;}
     .cb.on{background:#2EB1E2;border-color:#2EB1E2;}
     .sig-box{border:1px solid #ccc;border-radius:6px;height:70px;background:#fafafa;}
-    .sig-img{height:65px;border:1px solid #ccc;border-radius:6px;
-             background:#fafafa;max-width:280px;object-fit:contain;}
+    .sig-img{height:65px;border:1px solid #ccc;border-radius:6px; background:#fafafa;max-width:280px;object-fit:contain;}
     table{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:16px;}
     th,td{border:1px solid #e2eef6;padding:7px 10px;text-align:left;}
     th{background:#f1f7fc;font-size:10px;color:#64748b;font-weight:700;}
-    .footer{margin-top:32px;padding-top:10px;border-top:1px solid #ddd;
-            font-size:9px;color:#888;text-align:center;}
+    .footer{margin-top:32px;padding-top:10px;border-top:1px solid #ddd; font-size:9px;color:#888;text-align:center;}
   </style>
 `;
 
-/** Renders a filled / empty checkbox span */
-const cb = (checked: boolean) =>
-  `<span class="cb${checked ? ' on' : ''}"></span>`;
-
-/** Renders a labelled value field with optional flex override */
-const field = (label: string, value: string, flex = 1) => `
-  <div class="field" style="flex:${flex}">
-    <label>${label}</label>
-    <div class="value">${value || '—'}</div>
-  </div>`;
-
-/** Renders a signature: image if URL available, else empty box */
-const sigHtml = (signature?: string) =>
-  signature
-    ? `<img src="${signature}" class="sig-img" />`
-    : `<div class="sig-box"></div>`;
-
-const FOOTER = `<div class="footer">STAFFOO · Capital Services Pty Ltd · ABN: 48 613 317 838</div>`;
 type FormUrls = {
   tfn?: string;
   super_form?: string;
   onboarding?: string;
 };
-// ─────────────────────────────────────────────────────────────────────────────
 
 const StaffFormsScreen = ({ navigation }: any) => {
   const [activeStaffTab, setActiveStaffTab] = useState<StaffTab>('tfn');
@@ -137,6 +109,7 @@ const StaffFormsScreen = ({ navigation }: any) => {
   const [dateTfnBackend, setDateTfnBackend] = useState('');
 
   // ── Super Fields ────────────────────────────────────────────────────────────
+  const [superFullName, setSuperFullName] = useState('');
   const [superEmployeeNumber, setSuperEmployeeNumber] = useState('');
   const [fundChoice, setFundChoice] = useState<'own' | 'employer'>('employer');
   const [superFundName, setSuperFundName] = useState('');
@@ -148,7 +121,9 @@ const StaffFormsScreen = ({ navigation }: any) => {
   const [dateSuperBackend, setDateSuperBackend] = useState('');
 
   const [formUrls, setFormUrls] = useState<FormUrls>({});
+
   // ── Onboarding Fields ───────────────────────────────────────────────────────
+  const [onboardFullName, setOnboardFullName] = useState('');
   const [onboardMobile, setOnboardMobile] = useState('');
   const [onboardEmail, setOnboardEmail] = useState('');
   const [passportNumber, setPassportNumber] = useState('');
@@ -196,18 +171,22 @@ const StaffFormsScreen = ({ navigation }: any) => {
         if (storedUser) {
           const parsed = JSON.parse(storedUser);
           setUserId(parsed.id);
+
           const profileResponse = await getUserProfile(parsed.id);
           const profile = profileResponse?.data || {};
+
           if (profile.name) {
-            const names = profile.name.trim().split(' ');
-            setTfnFirstName(names[0] || '');
-            setTfnSurname(names.slice(1).join(' ') || '');
+            const fullName = profile.name.trim();
+            setTfnFirstName(fullName.split(' ')[0] || '');
+            setTfnSurname(fullName.split(' ').slice(1).join(' ') || '');
+            setSuperFullName(fullName);
+            setOnboardFullName(fullName);
           }
           if (profile.email) setOnboardEmail(profile.email);
           if (profile.phone) setOnboardMobile(profile.phone);
         }
-      } catch (_) {
-      } finally {
+      } catch (_) {}
+      {
         setFetching(false);
       }
     };
@@ -272,39 +251,8 @@ const StaffFormsScreen = ({ navigation }: any) => {
   };
 
   useEffect(() => {
-    const init = async () => {
-      try {
-        const storedUser = await AsyncStorage.getItem('user');
-        if (storedUser) {
-          const parsed = JSON.parse(storedUser);
-          setUserId(parsed.id);
-
-          const profileResponse = await getUserProfile(parsed.id);
-          const profile = profileResponse?.data || {};
-
-          if (profile.name) {
-            const names = profile.name.trim().split(' ');
-            setTfnFirstName(names[0] || '');
-            setTfnSurname(names.slice(1).join(' ') || '');
-          }
-          if (profile.email) setOnboardEmail(profile.email);
-          if (profile.phone) setOnboardMobile(profile.phone);
-
-          // Fetch saved form data
-          await fetchFormData(parsed.id);
-        }
-      } catch (e) {
-        console.log(e);
-      } finally {
-        setFetching(false);
-      }
-    };
-    init();
-  }, []);
-
-  // Refetch when tab changes (optional but useful)
-  useEffect(() => {
     if (userId && activeStaffTab) {
+      resetAllFields();
       fetchFormData(userId);
     }
   }, [activeStaffTab, userId]);
@@ -314,6 +262,7 @@ const StaffFormsScreen = ({ navigation }: any) => {
     if (tab === 'super') return formUrls.super_form;
     return formUrls[tab as keyof FormUrls];
   };
+
   const fetchExistingForms = async (id: number | string) => {
     try {
       const token = await getToken();
@@ -386,7 +335,7 @@ const StaffFormsScreen = ({ navigation }: any) => {
     (await AsyncStorage.getItem('@token'));
 
   // ═══════════════════════════════════════════════════════════════════════════
-  // PDF GENERATORS  (react-native-html-to-pdf)
+  // PDF GENERATORS
   // ═══════════════════════════════════════════════════════════════════════════
 
   const generateTfnPdf = async (data: Record<string, any>): Promise<string> => {
@@ -399,16 +348,13 @@ const StaffFormsScreen = ({ navigation }: any) => {
         const yyyy = date.getFullYear();
         return `${dd} / ${mm} / ${yyyy}`;
       } catch {
-        return '__ / __ / 2026';
+        return dateStr || '__ / __ / 2026';
       }
     };
 
-    // Improved check function - handles 0, 1, "0", "1", "yes", "no", true, false
     const check = (value: any, expectedYes: boolean = true): string => {
       if (value === undefined || value === null) return '☐';
-
       const val = String(value).toLowerCase().trim();
-
       if (expectedYes) {
         return val === '1' || val === 'yes' || val === 'true' || val === 'on'
           ? '☑'
@@ -427,19 +373,8 @@ const StaffFormsScreen = ({ navigation }: any) => {
 <meta charset="utf-8" />
 <style>
   @page { margin: 0; size: A4; }
-  body {
-    margin: 0; padding: 0;
-    font-family: Helvetica, Arial, sans-serif;
-    color: #222;
-    background: #fff;
-    -webkit-print-color-adjust: exact !important;
-  }
-  .header {
-    background-color: #06264d !important;
-    color: #ffffff !important;
-    text-align: center;
-    padding: 22px 20px 18px;
-  }
+  body { margin: 0; padding: 0; font-family: Helvetica, Arial, sans-serif; color: #222; background: #fff; -webkit-print-color-adjust: exact !important; }
+  .header { background-color: #06264d !important; color: #ffffff !important; text-align: center; padding: 22px 20px 18px; }
   .header-title { font-size: 30px; font-weight: bold; }
   .header-sub { font-size: 11px; }
   .content { padding: 25px 30px; }
@@ -457,18 +392,14 @@ const StaffFormsScreen = ({ navigation }: any) => {
   <div class="header-title">STAFFOO</div>
   <div class="header-sub">Capital Services Pty Ltd | ABN: 48 613 317 838</div>
 </div>
-
 <div class="content">
   <div class="title">Tax File Number (TFN) Declaration</div>
   <div class="title-line"></div>
-
   <div class="form-box">
-
     <div class="section">
       <div class="label">1. Tax file number (TFN)</div>
       <div class="field">${data.tfn || '—'}</div>
     </div>
-
     <div class="section">
       <div class="label">2. Name</div>
       <div style="display:flex; gap:15px;">
@@ -483,22 +414,18 @@ const StaffFormsScreen = ({ navigation }: any) => {
         }</div></div>
       </div>
     </div>
-
     <div class="section">
       <div class="label">3. Previous name (if applicable)</div>
       <div class="field">${data.previous_name || '—'}</div>
     </div>
-
     <div class="section">
       <div class="label">4. Date of birth</div>
       <div class="field">${data.dob || '—'}</div>
     </div>
-
     <div class="section">
       <div class="label">5. Residential address</div>
       <div class="field" style="min-height:45px;">${data.address || '—'}</div>
     </div>
-
     <div class="section">
       <div class="label">6. Basis of payment</div>
       <div class="checkbox-line">
@@ -511,7 +438,6 @@ const StaffFormsScreen = ({ navigation }: any) => {
         ${check(data.basis_of_payment === 'casual')} Casual
       </div>
     </div>
-
     <div class="section">
       <div class="label">7. Are you an Australian resident for tax purposes?</div>
       <div class="checkbox-line">
@@ -519,7 +445,6 @@ const StaffFormsScreen = ({ navigation }: any) => {
         ${check(data.australian_resident, false)} No
       </div>
     </div>
-
     <div class="section">
       <div class="label">8. Do you want to claim the tax-free threshold?</div>
       <div class="checkbox-line">
@@ -527,7 +452,6 @@ const StaffFormsScreen = ({ navigation }: any) => {
         ${check(data.claim_threshold, false)} No
       </div>
     </div>
-
     <div class="section">
       <div class="label">9. Do you have a HELP, VSL, FS, SSL or TSL debt?</div>
       <div class="checkbox-line">
@@ -535,10 +459,7 @@ const StaffFormsScreen = ({ navigation }: any) => {
         ${check(data.help_debt, false)} No
       </div>
     </div>
-
   </div>
-
-  <!-- Signature -->
   <div style="margin-top:50px;">
     ${
       data.signature
@@ -560,16 +481,15 @@ const StaffFormsScreen = ({ navigation }: any) => {
       width: 595,
       height: 842,
     });
-
     if (!result?.filePath) throw new Error('PDF generation failed');
     return result.filePath;
   };
+
   const generateSuperPdf = async (
     data: Record<string, any>,
   ): Promise<string> => {
     const formatDate = (dateStr?: string): string => {
       if (!dateStr) return '__ / __ / 2026';
-
       try {
         const date = new Date(dateStr);
         const dd = ('0' + date.getDate()).slice(-2);
@@ -577,7 +497,7 @@ const StaffFormsScreen = ({ navigation }: any) => {
         const yyyy = date.getFullYear();
         return `${dd} / ${mm} / ${yyyy}`;
       } catch {
-        return '__ / __ / 2026';
+        return dateStr || '__ / __ / 2026';
       }
     };
 
@@ -586,306 +506,94 @@ const StaffFormsScreen = ({ navigation }: any) => {
 <html>
 <head>
 <meta charset="utf-8" />
-
 <style>
-  @page {
-    size: A4;
-    margin: 0;
-  }
-
-  html, body {
-    margin: 0;
-    padding: 0;
-    font-family: Helvetica, Arial, sans-serif;
-    background: #fff;
-
-    -webkit-print-color-adjust: exact !important;
-    print-color-adjust: exact !important;
-  }
-     .header {
-  background-color: #06264d !important;
-  color: #ffffff !important;
-  text-align: center;
-  padding: 22px 20px 18px;
-}
-
-
-  body {
-    margin: 0;
-    padding: 0;
-    font-family: Helvetica, Arial, sans-serif;
-    color: #222;
-    background: #fff;
-  }
-
-  .page {
-    width: 100%;
-    padding: 0;
-  }
-
-
-  .header-title {
-    font-size: 30px;
-    font-weight: bold;
-    letter-spacing: 1px;
-    margin-bottom: 5px;
-  }
-
-  .header-sub {
-    font-size: 11px;
-    opacity: 0.95;
-  }
-
-  /* BODY */
-  .content {
-    padding: 22px 28px 30px;
-  }
-
-  .title {
-    color: #2563eb;
-    font-size: 17px;
-    font-weight: bold;
-    margin-bottom: 6px;
-  }
-
-  .title-line {
-    height: 2px;
-    background: #3b82f6;
-    margin-bottom: 12px;
-  }
-
-  /* FORM */
-  .form-box {
-    border: 1px solid #d7d7d7;
-  }
-
-  .section {
-    border-bottom: 1px solid #dcdcdc;
-    padding: 10px 12px;
-  }
-
-  .section:last-child {
-    border-bottom: none;
-  }
-
-  .label {
-    font-size: 10px;
-    font-weight: bold;
-    margin-bottom: 5px;
-    color: #222;
-  }
-
-  .field {
-    border-bottom: 1px solid #888;
-    min-height: 16px;
-    font-size: 11px;
-    padding-bottom: 2px;
-    word-wrap: break-word;
-  }
-
-  .row {
-    display: flex;
-    gap: 12px;
-  }
-
-  .col {
-    flex: 1;
-  }
-
-  .checkbox-line {
-    font-size: 10px;
-    margin-top: 4px;
-    line-height: 1.7;
-  }
-
-  /* EMPLOYER BOX */
-  .employer-box {
-    border: 1px solid #dcdcdc;
-    padding: 10px 12px;
-    margin-top: 10px;
-  }
-
-  .employer-title {
-    font-size: 10px;
-    font-weight: bold;
-    margin-bottom: 6px;
-  }
-
-  .small {
-    font-size: 9px;
-    line-height: 1.5;
-  }
-
-  /* SIGNATURE */
-  .signature-area {
-    margin-top: 18px;
-  }
-
-  .signature-line {
-    width: 180px;
-    height: 32px;
-    border-bottom: 1px solid #666;
-    position: relative;
-  }
-
-  .signature-img {
-    position: absolute;
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
-    left: 0;
-    top: 0;
-  }
-
-  .signature-label {
-    font-size: 9px;
-    font-weight: bold;
-    margin-top: 4px;
-  }
-
-  .date {
-    font-size: 9px;
-    margin-top: 2px;
-  }
+  @page { size: A4; margin: 0; }
+  html, body { margin: 0; padding: 0; font-family: Helvetica, Arial, sans-serif; background: #fff; -webkit-print-color-adjust: exact !important; }
+  .header { background-color: #06264d !important; color: #ffffff !important; text-align: center; padding: 22px 20px 18px; }
+  body { margin: 0; padding: 0; font-family: Helvetica, Arial, sans-serif; color: #222; background: #fff; }
+  .page { width: 100%; padding: 0; }
+  .header-title { font-size: 30px; font-weight: bold; letter-spacing: 1px; margin-bottom: 5px; }
+  .header-sub { font-size: 11px; opacity: 0.95; }
+  .content { padding: 22px 28px 30px; }
+  .title { color: #2563eb; font-size: 17px; font-weight: bold; margin-bottom: 6px; }
+  .title-line { height: 2px; background: #3b82f6; margin-bottom: 12px; }
+  .form-box { border: 1px solid #d7d7d7; }
+  .section { border-bottom: 1px solid #dcdcdc; padding: 10px 12px; }
+  .label { font-size: 10px; font-weight: bold; margin-bottom: 5px; color: #222; }
+  .field { border-bottom: 1px solid #888; min-height: 16px; font-size: 11px; padding-bottom: 2px; word-wrap: break-word; }
+  .checkbox-line { font-size: 10px; margin-top: 4px; line-height: 1.7; }
+  .employer-box { border: 1px solid #dcdcdc; padding: 10px 12px; margin-top: 10px; }
+  .employer-title { font-size: 10px; font-weight: bold; margin-bottom: 6px; }
+  .small { font-size: 9px; line-height: 1.5; }
+  .signature-area { margin-top: 18px; }
+  .signature-line { width: 180px; height: 32px; border-bottom: 1px solid #666; position: relative; }
+  .signature-img { position: absolute; width: 100%; height: 100%; object-fit: contain; left: 0; top: 0; }
+  .signature-label { font-size: 9px; font-weight: bold; margin-top: 4px; }
+  .date { font-size: 9px; margin-top: 2px; }
 </style>
 </head>
-
 <body>
-
 <div class="page">
-
-  <!-- HEADER -->
   <div class="header">
     <div class="header-title">STAFFOO</div>
-
-    <div class="header-sub">
-      Capital Services Pty Ltd | ABN: 48 613 317 838
-    </div>
+    <div class="header-sub">Capital Services Pty Ltd | ABN: 48 613 317 838</div>
   </div>
-
-  <!-- CONTENT -->
   <div class="content">
-
-    <div class="title">
-      Superannuation Standard Choice Form
-    </div>
-
+    <div class="title">Superannuation Standard Choice Form</div>
     <div class="title-line"></div>
-
-    <!-- FORM -->
     <div class="form-box">
-
-      <!-- EMPLOYEE -->
       <div class="section">
-
-        <div class="label">
-          Employee Details
-        </div>
-
+        <div class="label">Employee Details</div>
         <div style="margin-bottom:10px;">
           <div class="small">Name:</div>
           <div class="field">${data.full_name || ''}</div>
         </div>
-
         <div>
           <div class="small">Employee Number (if known):</div>
           <div class="field">${data.employee_number || ''}</div>
         </div>
-
       </div>
-
-      <!-- FUND -->
       <div class="section">
-
-        <div class="label">
-          Choice of Fund
-        </div>
-
-        <div class="checkbox-line">
-          ${
-            data.fund_choice === 'own' ? '☑' : '☐'
-          } 1. I nominate my own individual fund:
-        </div>
-
-        <div style="margin-top:8px;">
-          <div class="small">Fund Name:</div>
-          <div class="field">${data.fund_name || ''}</div>
-        </div>
-
-        <div style="margin-top:8px;">
-          <div class="small">Fund ABN:</div>
-          <div class="field">${data.fund_abn || ''}</div>
-        </div>
-
-        <div style="margin-top:8px;">
-          <div class="small">Fund USI:</div>
-          <div class="field">${data.fund_usi || ''}</div>
-        </div>
-
-        <div style="margin-top:8px;">
-          <div class="small">Member Account Number:</div>
-          <div class="field">${data.member_account || ''}</div>
-        </div>
-
-        <div class="checkbox-line" style="margin-top:16px;">
-          ${
-            data.fund_choice === 'employer' ? '☑' : '☐'
-          } 2. Employer-nominated fund (default)
-        </div>
-
+        <div class="label">Choice of Fund</div>
+        <div class="checkbox-line">${
+          data.fund_choice === 'own' ? '☑' : '☐'
+        } 1. I nominate my own individual fund:</div>
+        <div style="margin-top:8px;"><div class="small">Fund Name:</div><div class="field">${
+          data.fund_name || ''
+        }</div></div>
+        <div style="margin-top:8px;"><div class="small">Fund ABN:</div><div class="field">${
+          data.fund_abn || ''
+        }</div></div>
+        <div style="margin-top:8px;"><div class="small">Fund USI:</div><div class="field">${
+          data.fund_usi || ''
+        }</div></div>
+        <div style="margin-top:8px;"><div class="small">Member Account Number:</div><div class="field">${
+          data.member_account || ''
+        }</div></div>
+        <div class="checkbox-line" style="margin-top:16px;">${
+          data.fund_choice === 'employer' ? '☑' : '☐'
+        } 2. Employer-nominated fund (default)</div>
       </div>
-
     </div>
-
-    <!-- EMPLOYER -->
     <div class="employer-box">
-
-      <div class="employer-title">
-        Employer Details (Pre-filled)
-      </div>
-
-      <div class="small">
-        Employer Name: Capital Services Pty Ltd
-      </div>
-
-      <div class="small">
-        ABN: 48 613 317 838
-      </div>
-
-      <div class="small">
-        Address: 21 Tigriswood Blvd, Truganina VIC 3029
-      </div>
-
+      <div class="employer-title">Employer Details (Pre-filled)</div>
+      <div class="small">Employer Name: Capital Services Pty Ltd</div>
+      <div class="small">ABN: 48 613 317 838</div>
+      <div class="small">Address: 21 Tigriswood Blvd, Truganina VIC 3029</div>
     </div>
-
-    <!-- SIGNATURE -->
     <div class="signature-area">
-
-      <div class="signature-line">
-        ${
-          data.signature
-            ? `<img src="${data.signature}" class="signature-img" />`
-            : ''
-        }
-      </div>
-
-      <div class="signature-label">
-        Employee Signature
-      </div>
-
-      <div class="date">
-         Date: ${formatDate(data.signed_date || data.date)}
-      </div>
-
+      <div class="signature-line">${
+        data.signature
+          ? `<img src="${data.signature}" class="signature-img" />`
+          : ''
+      }</div>
+      <div class="signature-label">Employee Signature</div>
+      <div class="date">Date: ${formatDate(data.signed_date || data.date)}</div>
     </div>
- 
   </div>
-
 </div>
-
 </body>
-</html>
-`;
+</html>`;
 
     const result = await pdfConvert({
       html,
@@ -921,10 +629,9 @@ const StaffFormsScreen = ({ navigation }: any) => {
         pts: 25,
         key: 'medicare_or_utility',
       },
-    ] as { label: string; pts: number; key: keyof typeof idChecks }[];
+    ];
     const formatDate = (dateStr?: string): string => {
       if (!dateStr) return '__ / __ / 2026';
-
       try {
         const date = new Date(dateStr);
         const dd = ('0' + date.getDate()).slice(-2);
@@ -932,466 +639,182 @@ const StaffFormsScreen = ({ navigation }: any) => {
         const yyyy = date.getFullYear();
         return `${dd} / ${mm} / ${yyyy}`;
       } catch {
-        return '__ / __ / 2026';
+        return dateStr || '__ / __ / 2026';
       }
     };
+
+    // Safely parse id checks structure since it's passed as a JSON object string or standard dictionary
+    let normalizedChecks: any = {};
+    if (typeof data.id_checks === 'string') {
+      try {
+        normalizedChecks = JSON.parse(data.id_checks);
+      } catch (_) {}
+    } else {
+      normalizedChecks = data.id_checks || {};
+    }
+
     const html = `
 <!DOCTYPE html>
 <html>
 <head>
 <meta charset="utf-8" />
-
 <style>
-
-@page {
-  size: A4;
-  margin: 0;
-}
-
-html, body {
-  margin: 0;
-  padding: 0;
-  background: #fff;
-  font-family: Helvetica, Arial, sans-serif;
-
-  -webkit-print-color-adjust: exact !important;
-  print-color-adjust: exact !important;
-}
-
- body {
-    margin: 0;
-    padding: 0;
-    font-family: Helvetica, Arial, sans-serif;
-    color: #222;
-    background: #fff;
-  }
-
-  .page {
-    width: 100%;
-    padding: 0;
-  }
-
- 
-/* HEADER */
-
-    .header {
-  background-color: #06264d !important;
-  color: #ffffff !important;
-  text-align: center;
-  padding: 22px 20px 18px;
-}
-
-.header-left {
-  font-size: 24px;
-  font-weight: bold;
-  letter-spacing: 1px;
-}
-
-.header-right {
-  text-align: right;
-  font-size: 8px;
-  line-height: 1.4;
-}
-
-/* CONTENT */
-
-.content {
-  padding: 10px 18px 14px;
-}
-
-.title {
-  text-align: center;
-  color: #1d4ed8;
-  font-size: 16px;
-  font-weight: bold;
-  margin-bottom: 8px;
-}
-
-.notice {
-  border: 1px dashed #2563eb;
-  background: #eef4ff;
-  color: #1e3a8a;
-  font-size: 8px;
-  text-align: center;
-  padding: 5px;
-  margin-bottom: 10px;
-  font-weight: bold;
-}
-
-/* SECTIONS */
-
-.section-title {
-  background: #f1f5ff;
-  color: #1d4ed8;
-  font-size: 10px;
-  font-weight: bold;
-  padding: 4px 6px;
-  margin-top: 8px;
-  border-left: 3px solid #2563eb;
-}
-
-.row {
-  display: flex;
-  gap: 10px;
-  margin-top: 4px;
-}
-
-.field {
-  flex: 1;
-}
-
-.field-label {
-  font-size: 8px;
-  font-weight: bold;
-  margin-bottom: 2px;
-  color: #333;
-}
-
-.field-input {
-  border: 1px solid #d8d8d8;
-  min-height: 16px;
-  padding: 2px 4px;
-  font-size: 9px;
-  background: #fff;
-  box-sizing: border-box;
-}
-
-.checkbox-line {
-  font-size: 8px;
-  margin-top: 4px;
-  line-height: 1.6;
-}
-
-/* TABLE */
-
-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 5px;
-}
-
-th {
-  background: #f3f4f6;
-  font-size: 8px;
-  padding: 4px;
-  border: 1px solid #dcdcdc;
-  text-align: left;
-}
-
-td {
-  border: 1px solid #e2e2e2;
-  padding: 4px;
-  font-size: 8px;
-}
-
-/* DECLARATION */
-
-.declaration {
-  margin-top: 10px;
-  border: 1px solid #f2c46d;
-  background: #fff8ea;
-  padding: 6px;
-  font-size: 7px;
-  line-height: 1.5;
-  color: #444;
-}
-
-/* SIGNATURE */
-
-.signature-row {
-  display: flex;
-  justify-content: space-between;
-  margin-top: 10px;
-}
-
-.signature-box {
-  width: 220px;
-}
-
-.signature-line {
-  border-bottom: 1px solid #666;
-  height: 28px;
-  position: relative;
-}
-
-.signature-img {
-  position: absolute;
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-}
-
-.signature-label {
-  font-size: 8px;
-  font-weight: bold;
-  margin-top: 3px;
-}
-
-.date-box {
-  width: 120px;
-}
-
-.footer {
-  margin-top: 10px;
-  text-align: center;
-  font-size: 7px;
-  color: #888;
-}
-
+  @page { size: A4; margin: 0; }
+  html, body { margin: 0; padding: 0; background: #fff; font-family: Helvetica, Arial, sans-serif; -webkit-print-color-adjust: exact !important; }
+  body { margin: 0; padding: 0; color: #222; }
+  .header { background-color: #06264d !important; color: #ffffff !important; text-align: center; padding: 22px 20px 18px; display: flex; justify-content: space-between; align-items: center; }
+  .header-left { font-size: 24px; font-weight: bold; }
+  .header-right { text-align: right; font-size: 8px; line-height: 1.4; }
+  .content { padding: 10px 18px 14px; }
+  .title { text-align: center; color: #1d4ed8; font-size: 16px; font-weight: bold; margin-bottom: 8px; }
+  .notice { border: 1px dashed #2563eb; background: #eef4ff; color: #1e3a8a; font-size: 8px; text-align: center; padding: 5px; margin-bottom: 10px; font-weight: bold; }
+  .section-title { background: #f1f5ff; color: #1d4ed8; font-size: 10px; font-weight: bold; padding: 4px 6px; margin-top: 8px; border-left: 3px solid #2563eb; }
+  .row { display: flex; gap: 10px; margin-top: 4px; }
+  .field { flex: 1; }
+  .field-label { font-size: 8px; font-weight: bold; margin-bottom: 2px; color: #333; }
+  .field-input { border: 1px solid #d8d8d8; min-height: 16px; padding: 2px 4px; font-size: 9px; background: #fff; }
+  .checkbox-line { font-size: 8px; margin-top: 4px; line-height: 1.6; }
+  table { width: 100%; border-collapse: collapse; margin-top: 5px; }
+  th { background: #f3f4f6; font-size: 8px; padding: 4px; border: 1px solid #dcdcdc; text-align: left; }
+  td { border: 1px solid #e2e2e2; padding: 4px; font-size: 8px; }
+  .declaration { margin-top: 10px; border: 1px solid #f2c46d; background: #fff8ea; padding: 6px; font-size: 7px; line-height: 1.5; color: #444; }
+  .signature-row { display: flex; justify-content: space-between; margin-top: 10px; }
+  .signature-box { width: 220px; }
+  .signature-line { border-bottom: 1px solid #666; height: 28px; position: relative; }
+  .signature-img { position: absolute; width: 100%; height: 100%; object-fit: contain; }
+  .signature-label { font-size: 8px; font-weight: bold; margin-top: 3px; }
+  .date-box { width: 120px; }
+  .footer { margin-top: 10px; text-align: center; font-size: 7px; color: #888; }
 </style>
 </head>
-
 <body>
-
 <div class="page">
-
-  <!-- HEADER -->
   <div class="header">
-
-    <div class="header-left">
-      STAFFOO
-    </div>
-
-    <div class="header-right">
-      Capital Services Pty Ltd<br/>
-      ABN: 48 613 317 838<br/>
-      21 Tigriswood Blvd, Truganina VIC 3029<br/>
-      admin@staffoo.com.au
-    </div>
-
+    <div class="header-left">STAFFOO</div>
+    <div class="header-right">Capital Services Pty Ltd<br/>ABN: 48 613 317 838<br/>21 Tigriswood Blvd, Truganina VIC 3029</div>
   </div>
-
-  <!-- CONTENT -->
   <div class="content">
-
-    <div class="title">
-      EMPLOYEE ONBOARDING & ID VERIFICATION FORM
-    </div>
-
-    <div class="notice">
-      MANDATORY: ATTACH CLEAR COPIES OF ALL DOCUMENTS
-      (PASSPORT, LICENSE, ID) WITH THIS FORM.
-    </div>
-
-    <!-- PERSONAL -->
-    <div class="section-title">
-      1. PERSONAL CONTACT DETAILS
-    </div>
-
+    <div class="title">EMPLOYEE ONBOARDING & ID VERIFICATION FORM</div>
+    <div class="notice">MANDATORY: ATTACH CLEAR COPIES OF ALL DOCUMENTS WITH THIS FORM.</div>
+    
+    <div class="section-title">1. PERSONAL CONTACT DETAILS</div>
     <div class="row">
-      <div class="field">
-        <div class="field-label">Full Name (as per ID):</div>
-        <div class="field-input">${data.full_name || ''}</div>
-      </div>
-
-      <div class="field">
-        <div class="field-label">Date of Birth:</div>
-        <div class="field-input">${data.dob || ''}</div>
-      </div>
+      <div class="field"><div class="field-label">Full Name (as per ID):</div><div class="field-input">${
+        data.full_name || ''
+      }</div></div>
+      <div class="field"><div class="field-label">Date of Birth:</div><div class="field-input">${
+        data.dob || ''
+      }</div></div>
     </div>
-
     <div class="row">
-      <div class="field">
-        <div class="field-label">Residential Address:</div>
-        <div class="field-input">${data.address || ''}</div>
-      </div>
+      <div class="field"><div class="field-label">Residential Address:</div><div class="field-input">${
+        data.address || ''
+      }</div></div>
     </div>
-
     <div class="row">
-      <div class="field">
-        <div class="field-label">Mobile Phone Number:</div>
-        <div class="field-input">${data.mobile || ''}</div>
-      </div>
-
-      <div class="field">
-        <div class="field-label">Personal Email Address:</div>
-        <div class="field-input">${data.email || ''}</div>
-      </div>
+      <div class="field"><div class="field-label">Mobile Phone Number:</div><div class="field-input">${
+        data.mobile || ''
+      }</div></div>
+      <div class="field"><div class="field-label">Personal Email Address:</div><div class="field-input">${
+        data.email || ''
+      }</div></div>
     </div>
 
-    <!-- PASSPORT -->
-    <div class="section-title">
-      2. PASSPORT & WORK RIGHTS
-    </div>
-
+    <div class="section-title">2. PASSPORT & WORK RIGHTS</div>
     <div class="row">
-      <div class="field">
-        <div class="field-label">Passport Number:</div>
-        <div class="field-input">${data.passport_number || ''}</div>
-      </div>
-
-      <div class="field">
-        <div class="field-label">Country of Issue:</div>
-        <div class="field-input">${data.passport_country || ''}</div>
-      </div>
-
-      <div class="field">
-        <div class="field-label">Passport Expiry Date:</div>
-        <div class="field-input">${data.passport_expiry || ''}</div>
-      </div>
+      <div class="field"><div class="field-label">Passport Number:</div><div class="field-input">${
+        data.passport_number || ''
+      }</div></div>
+      <div class="field"><div class="field-label">Country of Issue:</div><div class="field-input">${
+        data.passport_country || ''
+      }</div></div>
+      <div class="field"><div class="field-label">Passport Expiry Date:</div><div class="field-input">${
+        data.passport_expiry || ''
+      }</div></div>
     </div>
-
     <div class="checkbox-line">
       Work Rights Status:
-      ${data.work_rights === 'citizen_pr' ? '[✓]' : '[ ]'} Australian Citizen/PR
+      ${
+        data.work_rights === 'citizen_pr' ? '[✓]' : '[ ]'
+      } Australian Citizen/PR &nbsp;&nbsp;
       ${
         data.work_rights === 'student_visa' ? '[✓]' : '[ ]'
-      } Student Visa (24hr Cap)
-      ${data.work_rights === 'other_visa' ? '[✓]' : '[ ]'} Other Visa: ________
+      } Student Visa &nbsp;&nbsp;
+      ${data.work_rights === 'other_visa' ? '[✓]' : '[ ]'} Other Visa
     </div>
 
-    <!-- ID CHECK -->
-    <div class="section-title">
-      3. 100-POINT IDENTIFICATION CHECK
-    </div>
-
+    <div class="section-title">3. 100-POINT IDENTIFICATION CHECK</div>
     <table>
-      <tr>
-        <th>Document Type</th>
-        <th style="width:60px;">Points</th>
-        <th style="width:70px;">Tick Attached</th>
-      </tr>
-
+      <tr><th>Document Type</th><th style="width:60px;">Points</th><th style="width:70px;">Tick Attached</th></tr>
       ${idRows
         .map(
-          r => `
-      <tr>
-        <td>${r.label}</td>
-        <td>${r.pts}</td>
-        <td style="text-align:center;">
-          ${data.id_checks?.[r.key] ? '[✓]' : '[ ]'}
-        </td>
-      </tr>
-      `,
+          r =>
+            `<tr><td>${r.label}</td><td>${
+              r.pts
+            }</td><td style="text-align:center;">${
+              normalizedChecks[r.key] ? '[✓]' : '[ ]'
+            }</td></tr>`,
         )
         .join('')}
-
     </table>
 
-    <!-- BANK -->
-    <div class="section-title">
-      4. BANKING, TAX & SUPERANNUATION
-    </div>
-
+    <div class="section-title">4. BANKING, TAX & SUPERANNUATION</div>
     <div class="row">
-      <div class="field">
-        <div class="field-label">Bank Name:</div>
-        <div class="field-input">${data.bank_name || ''}</div>
-      </div>
-
-      <div class="field">
-        <div class="field-label">BSB Number:</div>
-        <div class="field-input">${data.bsb || ''}</div>
-      </div>
-
-      <div class="field">
-        <div class="field-label">Account Number:</div>
-        <div class="field-input">${data.account_number || ''}</div>
-      </div>
+      <div class="field"><div class="field-label">Bank Name:</div><div class="field-input">${
+        data.bank_name || ''
+      }</div></div>
+      <div class="field"><div class="field-label">BSB Number:</div><div class="field-input">${
+        data.bsb || ''
+      }</div></div>
+      <div class="field"><div class="field-label">Account Number:</div><div class="field-input">${
+        data.account_number || ''
+      }</div></div>
     </div>
 
+    <div class="section-title">5. LICENCES & CERTIFICATIONS</div>
     <div class="row">
-      <div class="field">
-        <div class="field-label">Tax File Number (TFN):</div>
-        <div class="field-input">${data.tfn || ''}</div>
-      </div>
-
-      <div class="field">
-        <div class="field-label">Superannuation Fund Name:</div>
-        <div class="field-input">${data.super_fund || ''}</div>
-      </div>
+      <div class="field"><div class="field-label">Security licence No:</div><div class="field-input">${
+        data.security_license || ''
+      }</div></div>
+      <div class="field"><div class="field-label">Licence Expiry:</div><div class="field-input">${
+        data.security_license_expiry || ''
+      }</div></div>
     </div>
-
     <div class="row">
-      <div class="field">
-        <div class="field-label">Super Fund USI / Member Number:</div>
-        <div class="field-input">
-          ${data.super_usi || ''} ${data.super_member || ''}
-        </div>
+      <div class="field"><div class="field-label">First Aid Cert No:</div><div class="field-input">${
+        data.first_aid_cert || ''
+      }</div>
+
+      
       </div>
+      <div class="field"><div class="field-label">First Aid Expiry:</div><div class="field-input">${
+        data.first_aid_expiry || ''
+      }</div></div>
     </div>
 
-    <!-- LICENSE -->
-    <div class="section-title">
-      5. PROFESSIONAL LICENSING
-    </div>
-
-    <div class="row">
-      <div class="field">
-        <div class="field-label">Security License No:</div>
-        <div class="field-input">${data.security_license || ''}</div>
-      </div>
-
-      <div class="field">
-        <div class="field-label">Security License Expiry:</div>
-        <div class="field-input">${data.security_license_expiry || ''}</div>
-      </div>
-    </div>
-
-    <div class="row">
-      <div class="field">
-        <div class="field-label">First Aid Certificate No:</div>
-        <div class="field-input">${data.first_aid_cert || ''}</div>
-      </div>
-
-      <div class="field">
-        <div class="field-label">First Aid Expiry:</div>
-        <div class="field-input">${data.first_aid_expiry || ''}</div>
-      </div>
-    </div>
-
-    <!-- DECLARATION -->
     <div class="declaration">
-      <strong>DECLARATION:</strong>
-      I confirm that all information and attached documents are authentic.
-      I agree to the Staffoo App Handshake Protocol for shift verification
-      and, if a student, will strictly adhere to the 24-hour weekly cap.
+      I declare that the information provided here is true and authentic.
     </div>
-
-    <!-- SIGNATURE -->
     <div class="signature-row">
-
       <div class="signature-box">
-
-        <div class="signature-line">
-          ${
-            data.signature
-              ? `<img src="${data.signature}" class="signature-img" />`
-              : ''
-          }
-        </div>
-
-        <div class="signature-label">
-          Signature:
-        </div>
-
+        <div class="signature-line">${
+          data.signature
+            ? `<img src="${data.signature}" class="signature-img" />`
+            : ''
+        }</div>
+        <div class="signature-label">Signature</div>
       </div>
-
       <div class="date-box">
-
-        <div class="signature-line"></div>
-
-        <div class="signature-label">
-           Date: ${formatDate(data.signed_date || data.date)}
-        </div>
-
+        <div style="height:28px; border-bottom:1px solid #666; font-size:10px; padding-top:14px;">${formatDate(
+          data.signed_date || data.date,
+        )}</div>
+        <div class="signature-label">Date</div>
       </div>
-
     </div>
-
-    <!-- FOOTER -->
-    <div class="footer">
-      Staffoo is a brand of Capital Services Pty Ltd.
-      ABN: 48 613 317 838. Truganina, VIC 3029.
-    </div>
-
   </div>
-
 </div>
-
 </body>
-</html>
-`;
+</html>`;
 
     const result = await pdfConvert({
       html,
@@ -1402,6 +825,7 @@ td {
     if (!result.filePath) throw new Error('Onboarding PDF generation failed');
     return result.filePath;
   };
+
   const generateUploadAndOpenPdf = async (
     pdfType: 'tfn' | 'super_form' | 'onboarding',
   ) => {
@@ -1410,15 +834,12 @@ td {
       const token = await getToken();
       if (!token) throw new Error('Auth token not found');
 
-      console.log(`[PDF] Starting ${pdfType} process...`);
-
       const apiType = pdfType === 'super_form' ? 'superannuation' : pdfType;
       const formRes = await axios.post(
         `${BASE_URL}/api/form-data`,
         { user_id: userId, type: apiType },
         { headers: { Authorization: `Bearer ${token}` } },
       );
-
       const formData = formRes.data?.data || formRes.data || {};
 
       let pdfFilePath = '';
@@ -1430,27 +851,15 @@ td {
         pdfFilePath = await generateOnboardingPdf(formData);
       }
 
-      console.log(`[PDF] PDF generated: ${pdfFilePath}`);
-
       const form = new FormData();
       form.append('user_id', String(userId));
       form.append('type', pdfType);
-      form.append('folder', 'staff_documents');
-
-      const fileName = `${pdfType}_${Date.now()}.pdf`;
-      const fileUri = Platform.select({
-        ios: pdfFilePath.replace(/^file:\/\//, ''),
-        android: pdfFilePath,
-        default: pdfFilePath,
-      });
-
+      form.append('folder', 'forms');
       form.append('file', {
-        uri: fileUri,
+        uri: Platform.OS === 'ios' ? pdfFilePath : `file://${pdfFilePath}`,
         type: 'application/pdf',
-        name: fileName,
+        name: `${pdfType}_${Date.now()}.pdf`,
       } as any);
-
-      console.log('[PDF] Uploading file', { fileName, fileUri, pdfType });
 
       const uploadRes = await axios.post(
         `${BASE_URL}/api/upload-staff-file`,
@@ -1459,43 +868,40 @@ td {
           headers: {
             Authorization: `Bearer ${token}`,
             'Content-Type': 'multipart/form-data',
-            Accept: 'application/json',
           },
-          timeout: 60000,
         },
       );
 
-      console.log(`[PDF] Upload Response:`, uploadRes.data);
-
-      // === IMPORTANT: Update formUrls with returned URL ===
-      if (uploadRes.data?.success && uploadRes.data?.url) {
+      const uploadedUrl = uploadRes.data?.url || uploadRes.data?.data?.url;
+      if (uploadedUrl) {
         setFormUrls(prev => ({
           ...prev,
-          [pdfType === 'super_form' ? 'super_form' : pdfType]:
-            uploadRes.data.url,
+          [pdfType]: uploadedUrl.startsWith('http')
+            ? uploadedUrl
+            : `${BASE_URL}/storage/${uploadedUrl}`,
         }));
+        openPdf(
+          uploadedUrl.startsWith('http')
+            ? uploadedUrl
+            : `${BASE_URL}/storage/${uploadedUrl}`,
+        );
+      } else {
+        openPdf(Platform.OS === 'ios' ? pdfFilePath : `file://${pdfFilePath}`);
       }
-
-      Toast.show({
-        type: 'success',
-        text1: '✅ PDF Generated & Uploaded Successfully',
-      });
-
-      await FileViewer.open(pdfFilePath, { showOpenWithDialog: true });
     } catch (error: any) {
-      console.error('=== FULL PDF ERROR ===', error?.response?.data || error);
       Toast.show({
         type: 'error',
-        text1: 'PDF Upload Failed',
+        text1: 'PDF Flow Failed',
         text2:
-          error?.response?.data?.message || error.message || 'Check console',
+          error?.response?.data?.message || error.message || 'Error occurred',
       });
     } finally {
       setLoading(false);
     }
   };
+
   // ═══════════════════════════════════════════════════════════════════════════
-  // SAVE
+  // SAVE / FETCH FLOWS
   // ═══════════════════════════════════════════════════════════════════════════
 
   const openPdf = async (url?: string) => {
@@ -1536,15 +942,11 @@ td {
           setTfnPrevName(data.previous_name || '');
           setTfnAddress(data.address || '');
           setBasisOfPayment(data.basis_of_payment || null);
-
-          // ✅ FIXED: Convert 0/1 to 'yes'/'no'
           setAustralianResident(convertToYesNo(data.australian_resident));
           setClaimTaxFree(convertToYesNo(data.claim_threshold));
           setHasDebt(convertToYesNo(data.help_debt));
-
           setSignatureTfn(data.signature || '');
 
-          // DOB
           if (data.dob) {
             const d = new Date(data.dob);
             setTfnDob(
@@ -1556,7 +958,6 @@ td {
             setTfnDobBackend(data.dob);
           }
 
-          // Signed Date
           if (data.signed_date) {
             const d = new Date(data.signed_date);
             setDateTfn(
@@ -1570,6 +971,7 @@ td {
         }
 
         if (type === 'superannuation' && data.full_name) {
+          setSuperFullName(data.full_name || ''); // ← Added
           setSuperEmployeeNumber(data.employee_number || '');
           setFundChoice(data.fund_choice || 'employer');
           setSuperFundName(data.fund_name || '');
@@ -1577,6 +979,7 @@ td {
           setSuperFundUsi(data.fund_usi || '');
           setSuperMemberNumber(data.member_account || '');
           setSignatureSuper(data.signature || '');
+
           if (data.signed_date) {
             const d = new Date(data.signed_date);
             setDateSuper(
@@ -1590,6 +993,7 @@ td {
         }
 
         if (type === 'onboarding' && data.full_name) {
+          setOnboardFullName(data.full_name || ''); // ← Added
           setOnboardMobile(data.mobile || '');
           setOnboardEmail(data.email || '');
           setPassportNumber(data.passport_number || '');
@@ -1635,14 +1039,79 @@ td {
       }
     } catch (err) {
       console.log('Failed to fetch form data:', err);
-      // Toast optional: Toast.show({ type: 'info', text1: 'No previous data found' });
     }
   };
 
+  // const convertToYesNo = (value: any): string | null => {
+  //   if (value === 1 || value === '1' || value === true) return 'yes';
+  //   if (value === 0 || value === '0' || value === false) return 'no';
+  //   return null;
+  // };
+
   const convertToYesNo = (value: any): string | null => {
-    if (value === 1 || value === '1' || value === true) return 'yes';
-    if (value === 0 || value === '0' || value === false) return 'no';
+    if (value === 1 || value === '1' || value === true || value === 'yes')
+      return 'yes';
+    if (value === 0 || value === '0' || value === false || value === 'no')
+      return 'no';
     return null;
+  };
+
+  const yesNoToString = (value: string | null): string | null => {
+    if (value === 'yes') return 'yes';
+    if (value === 'no') return 'no';
+    return null;
+  };
+
+  const resetAllFields = () => {
+    setTfnNumber('');
+    setTfnTitle('');
+    setTfnFirstName('');
+    setTfnSurname('');
+    setTfnPrevName('');
+    setTfnDob('');
+    setTfnDobBackend('');
+    setTfnAddress('');
+    setBasisOfPayment(null);
+    setAustralianResident(null);
+    setClaimTaxFree(null);
+    setHasDebt(null);
+    setSignatureTfn('');
+    setDateTfn('');
+    setDateTfnBackend('');
+    setSuperEmployeeNumber('');
+    setFundChoice('employer');
+    setSuperFundName('');
+    setSuperFundAbn('');
+    setSuperFundUsi('');
+    setSuperMemberNumber('');
+    setSignatureSuper('');
+    setDateSuper('');
+    setDateSuperBackend('');
+    setSuperFullName('');
+    setOnboardMobile('');
+    setOnboardEmail('');
+    setPassportNumber('');
+    setPassportCountry('Australia');
+    setPassportExpiry('');
+    setWorkRights(null);
+    setBankName('');
+    setBsb('');
+    setAccountNumber('');
+    setSecurityLicence('');
+    setSecurityExpiry('');
+    setFirstAidNumber('');
+    setFirstAidExpiry('');
+    setSignatureOnboard('');
+    setDateOnboard('');
+    setDateOnboardBackend('');
+    setOnboardFullName('');
+    setIdChecks({
+      primary_id: false,
+      drivers_license: false,
+      security_license: false,
+      medicare_or_utility: false,
+    });
+    setFormUrls({});
   };
 
   const handleSave = async () => {
@@ -1656,6 +1125,7 @@ td {
         await axios.post(
           `${BASE_URL}/api/tfn-declaration`,
           {
+            user_id: userId,
             tfn: tfnNumber,
             title: tfnTitle,
             first_name: tfnFirstName,
@@ -1664,26 +1134,22 @@ td {
             dob: tfnDobBackend,
             address: tfnAddress,
             basis_of_payment: basisOfPayment,
-
-            // ✅ Send as strings "yes" / "no"
             australian_resident: yesNoToString(australianResident),
             claim_threshold: yesNoToString(claimTaxFree),
             help_debt: yesNoToString(hasDebt),
-
             signature: signatureTfn,
             date: dateTfnBackend,
-            user_id: userId,
           },
           { headers },
         );
-
+        Toast.show({ type: 'success', text1: '✓ TFN saved!' });
         await generateUploadAndOpenPdf('tfn');
-        Toast.show({ type: 'success', text1: '✓ TFN Declaration saved!' });
       } else if (activeStaffTab === 'super') {
         await axios.post(
           `${BASE_URL}/api/superannuation`,
           {
-            full_name: autoFullName,
+            user_id: userId,
+            full_name: superFullName || autoFullName,
             employee_number: superEmployeeNumber,
             fund_choice: fundChoice,
             fund_name: fundChoice === 'own' ? superFundName : '',
@@ -1692,51 +1158,60 @@ td {
             member_account: fundChoice === 'own' ? superMemberNumber : '',
             signature: signatureSuper,
             date: dateSuperBackend,
-            user_id: userId,
           },
           { headers },
         );
-        await generateUploadAndOpenPdf('super_form');
         Toast.show({ type: 'success', text1: '✓ Superannuation saved!' });
+        await generateUploadAndOpenPdf('super_form');
       } else if (activeStaffTab === 'onboarding') {
-        await axios.post(
-          `${BASE_URL}/api/onboarding`,
-          {
-            full_name: autoFullName,
-            dob: tfnDobBackend,
-            address: tfnAddress,
-            mobile: onboardMobile,
-            email: onboardEmail,
-            passport_number: passportNumber,
-            passport_country: passportCountry,
-            passport_expiry: passportExpiry,
-            work_rights: workRights,
-            id_checks: idChecks,
-            bank_name: bankName,
-            bsb,
-            account_number: accountNumber,
-            tfn: tfnNumber,
-            super_fund: superFundName,
-            super_usi: superFundUsi,
-            super_member: superMemberNumber,
-            security_license: securityLicence,
-            security_license_expiry: securityExpiry,
-            first_aid_cert: firstAidNumber,
-            first_aid_expiry: firstAidExpiry,
-            signature: signatureOnboard,
-            date: dateOnboardBackend,
-            user_id: userId,
+        const onboardingPayload = {
+          user_id: userId,
+          full_name: onboardFullName || autoFullName,
+          dob: tfnDobBackend,
+          address: tfnAddress,
+          mobile: onboardMobile,
+          email: onboardEmail,
+          passport_number: passportNumber,
+          passport_country: passportCountry,
+          passport_expiry: passportExpiry,
+          work_rights: workRights,
+
+          // 1. Pass the id_checks object structure intact
+          id_checks: {
+            primary_id: idChecks.primary_id,
+            drivers_license: idChecks.drivers_license,
+            security_license: idChecks.security_license,
+            medicare_or_utility: idChecks.medicare_or_utility,
           },
-          { headers },
-        );
+
+          // 2. Flattened validation flags (Renamed or checked parameters)
+          primary_id: idChecks.primary_id,
+          drivers_license: idChecks.drivers_license,
+          medicare_or_utility: idChecks.medicare_or_utility,
+          // Note: Removed the root level boolean "security_license: true"
+          // to prevent overwriting your actual licence string below.
+
+          bank_name: bankName,
+          bsb: bsb,
+          account_number: accountNumber,
+
+          // 3. LICENCE TEXT STRING FIELDS (Mapped to correct API keys)
+          security_license: securityLicence, // <--- Correct parameter name sending the String payload "Ggyuguy"
+          security_license_expiry: securityExpiry, // <--- Matches your target database sample schema
+          first_aid_cert: firstAidNumber, // <--- Aligns with target schema key "first_aid_cert"
+          first_aid_expiry: firstAidExpiry,
+
+          signature: signatureOnboard,
+          date: dateOnboardBackend,
+        };
+
+        await axios.post(`${BASE_URL}/api/onboarding`, onboardingPayload, {
+          headers,
+        });
+        Toast.show({ type: 'success', text1: '✓ Onboarding saved!' });
         await generateUploadAndOpenPdf('onboarding');
-        Toast.show({ type: 'success', text1: '✓ Onboarding form saved!' });
       }
-      Toast.show({
-        type: 'success',
-        text1: `✓ ${activeStaffTab.toUpperCase()} saved!`,
-      });
-      await fetchExistingForms(userId);
+      await fetchFormData(userId);
     } catch (err: any) {
       Toast.show({
         type: 'error',
@@ -1748,7 +1223,6 @@ td {
     }
   };
 
-  // Add this function after your other helpers
   const isFormComplete = (tab: StaffTab): boolean => {
     if (tab === 'tfn') {
       return !!(
@@ -1765,19 +1239,17 @@ td {
         signatureTfn
       );
     }
-
     if (tab === 'super') {
       return !!(
-        autoFullName &&
+        (superFullName || autoFullName) &&
         signatureSuper &&
         (fundChoice === 'employer' ||
           (fundChoice === 'own' && superFundName && superFundUsi))
       );
     }
-
     if (tab === 'onboarding') {
       return !!(
-        autoFullName &&
+        (onboardFullName || autoFullName) &&
         tfnDobBackend &&
         tfnAddress &&
         onboardMobile &&
@@ -1791,19 +1263,12 @@ td {
         accountNumber
       );
     }
-
     return false;
   };
 
-  const yesNoToString = (value: string | null): string | null => {
-    if (value === 'yes') return 'yes';
-    if (value === 'no') return 'no';
-    return null;
-  };
   // ═══════════════════════════════════════════════════════════════════════════
-  // RENDER
+  // RENDER INTERFACE (Sub-components & UI Layout)
   // ═══════════════════════════════════════════════════════════════════════════
-
   if (fetching) {
     return (
       <SafeAreaView style={s.container}>
@@ -1825,16 +1290,16 @@ td {
     <SafeAreaView style={s.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#f8faff" />
 
-      {/* ── Header ── */}
+      {/* Header */}
       <View style={s.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={s.backBtn}>
-          <ArrowLeft size={22} color="#fff" />
+          <ArrowLeft size={20} color="#fff" />
         </TouchableOpacity>
-        <View style={{ flex: 1 }}>
-          <Text style={s.headerTitle}>Staff Onboarding Forms</Text>
-        </View>
+        <Text style={s.headerTitle}>Staff Forms</Text>
+        <View style={{ width: 40 }} />
       </View>
 
+      {/* Tabs */}
       {/* ── Tab Bar ── */}
       <View style={s.tabBar}>
         {[
@@ -1858,12 +1323,8 @@ td {
         })}
       </View>
 
-      <ScrollView
-        contentContainerStyle={s.scroll}
-        showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled"
-      >
-        {/* ═══════════ TFN TAB ═══════════ */}
+      <ScrollView contentContainerStyle={s.scrollContent}>
+        {/* TFN TAB VIEW */}
         {activeStaffTab === 'tfn' && (
           <View style={s.card}>
             <SectionLabel>Tax File Number</SectionLabel>
@@ -1879,7 +1340,7 @@ td {
 
             <SectionLabel>Personal Details</SectionLabel>
             <View style={s.row3}>
-              <View style={{ flex: 2 }}>
+              <View style={{ flex: 1 }}>
                 <Field label="Title">
                   <TouchableOpacity
                     style={s.selectBtn}
@@ -1894,7 +1355,7 @@ td {
                   </TouchableOpacity>
                 </Field>
               </View>
-              <View style={{ flex: 2 }}>
+              <View style={{ flex: 1 }}>
                 <Field label="First name">
                   <StyledInput
                     value={tfnFirstName}
@@ -1903,7 +1364,7 @@ td {
                   />
                 </Field>
               </View>
-              <View style={{ flex: 2 }}>
+              <View style={{ flex: 1 }}>
                 <Field label="Surname">
                   <StyledInput
                     value={tfnSurname}
@@ -1958,29 +1419,23 @@ td {
             </Field>
 
             <SectionLabel>Declarations</SectionLabel>
-            <View style={s.row2}>
-              <View style={{ flex: 1 }}>
-                <Field label="Australian resident for tax?">
-                  <YesNoGroup
-                    value={australianResident}
-                    onChange={setAustralianResident}
-                  />
-                </Field>
-              </View>
-              <View style={{ flex: 1 }}>
-                <Field label="Claim tax-free threshold?">
-                  <YesNoGroup value={claimTaxFree} onChange={setClaimTaxFree} />
-                </Field>
-              </View>
-            </View>
-            <Field label="HELP / VSL / FS / SSL / TSL debt?">
+            <Field label="Australian resident for tax?">
+              <YesNoGroup
+                value={australianResident}
+                onChange={setAustralianResident}
+              />
+            </Field>
+            <Field label="Claim tax-free threshold?">
+              <YesNoGroup value={claimTaxFree} onChange={setClaimTaxFree} />
+            </Field>
+            <Field label="Have HELP / VSL / trade debt?">
               <YesNoGroup value={hasDebt} onChange={setHasDebt} />
             </Field>
 
-            <SectionLabel>Signature</SectionLabel>
+            <SectionLabel>Signature & Date</SectionLabel>
             <View style={s.row2}>
               <View style={{ flex: 1 }}>
-                <Field label="Employee signature">
+                <Field label="Signature">
                   <SignatureButton
                     value={signatureTfn}
                     onPress={() => openSignature('tfn')}
@@ -1999,60 +1454,41 @@ td {
               </View>
             </View>
 
-            {/* Download PDF Button */}
-            {isFormComplete(activeStaffTab) && (
+            {/* {getFormUrl('tfn') && (
               <TouchableOpacity
                 style={s.downloadBtn}
-                onPress={() => {
-                  if (getFormUrl(activeStaffTab)) {
-                    openPdf(getFormUrl(activeStaffTab));
-                  } else {
-                    // Auto generate if not exists
-                    generateUploadAndOpenPdf('tfn');
-                  }
-                }}
+                onPress={() => openPdf(getFormUrl('tfn'))}
               >
-                <Download size={18} color="#fff" />
-                <Text style={s.downloadBtnText}>
-                  📄{' '}
-                  {getFormUrl(activeStaffTab)
-                    ? 'View Saved PDF'
-                    : 'Generate & Download PDF'}
-                </Text>
+                <Download size={18} color="#001F3F" />
+                <Text style={s.downloadBtnText}>View Saved TFN PDF</Text>
               </TouchableOpacity>
-            )}
-
+            )} */}
             <SaveButton
-              label="Save TFN Declaration"
+              label="Save TFN Form"
               loading={loading}
               onPress={handleSave}
             />
           </View>
         )}
 
-        {/* ═══════════ SUPER TAB ═══════════ */}
+        {/* SUPER TAB VIEW */}
         {activeStaffTab === 'super' && (
           <View style={s.card}>
             <SectionLabel>Employee Details</SectionLabel>
-            <View style={s.row2}>
-              <View style={{ flex: 1 }}>
-                <Field label="Full name">
-                  <AutoFilledInput
-                    value={autoFullName}
-                    placeholder="Synced from TFN form"
-                  />
-                </Field>
-              </View>
-              <View style={{ flex: 1 }}>
-                <Field label="Employee number">
-                  <StyledInput
-                    value={superEmployeeNumber}
-                    onChangeText={setSuperEmployeeNumber}
-                    placeholder="Optional"
-                  />
-                </Field>
-              </View>
-            </View>
+            <Field label="Full Name">
+              <StyledInput
+                value={superFullName}
+                onChangeText={setSuperFullName}
+                placeholder="Full Name"
+              />
+            </Field>
+            <Field label="Employee number (if known)">
+              <StyledInput
+                value={superEmployeeNumber}
+                onChangeText={setSuperEmployeeNumber}
+                placeholder="Optional"
+              />
+            </Field>
 
             <SectionLabel>Fund Choice</SectionLabel>
             <RadioGroup
@@ -2064,7 +1500,7 @@ td {
               onChange={(v: any) => setFundChoice(v)}
             />
 
-            {fundChoice === 'own' ? (
+            {fundChoice === 'own' && (
               <View style={s.ownFundBox}>
                 <View style={s.row2}>
                   <View style={{ flex: 1 }}>
@@ -2093,37 +1529,27 @@ td {
                       <StyledInput
                         value={superFundUsi}
                         onChangeText={setSuperFundUsi}
-                        placeholder="USI code"
+                        placeholder="e.g. 12345678901001"
                       />
                     </Field>
                   </View>
                   <View style={{ flex: 1 }}>
-                    <Field label="Member number">
+                    <Field label="Member account No.">
                       <StyledInput
                         value={superMemberNumber}
                         onChangeText={setSuperMemberNumber}
-                        placeholder="Member no."
+                        placeholder="Account Number"
                       />
                     </Field>
                   </View>
                 </View>
               </View>
-            ) : (
-              <View style={s.employerFundBox}>
-                <Text style={s.employerFundTitle}>
-                  Capital Services Pty Ltd
-                </Text>
-                <Text style={s.employerFundDesc}>
-                  Default employer fund. Your contributions will be directed
-                  here unless you nominate your own.
-                </Text>
-              </View>
             )}
 
-            <SectionLabel>Signature</SectionLabel>
+            <SectionLabel>Signature & Date</SectionLabel>
             <View style={s.row2}>
               <View style={{ flex: 1 }}>
-                <Field label="Employee signature">
+                <Field label="Signature">
                   <SignatureButton
                     value={signatureSuper}
                     onPress={() => openSignature('super')}
@@ -2142,97 +1568,66 @@ td {
               </View>
             </View>
 
-            {/* Download PDF Button */}
-            {isFormComplete(activeStaffTab) && (
+            {/* {getFormUrl('super') && (
               <TouchableOpacity
                 style={s.downloadBtn}
-                onPress={() => {
-                  if (getFormUrl(activeStaffTab)) {
-                    openPdf(getFormUrl(activeStaffTab));
-                  } else {
-                    generateUploadAndOpenPdf('super_form');
-                  }
-                }}
+                onPress={() => openPdf(getFormUrl('super'))}
               >
-                <Download size={18} color="#fff" />
-                <Text style={s.downloadBtnText}>
-                  📄{' '}
-                  {getFormUrl(activeStaffTab)
-                    ? 'View Saved PDF'
-                    : 'Generate & Download PDF'}
-                </Text>
+                <Download size={18} color="#001F3F" />
+                <Text style={s.downloadBtnText}>View Saved Super PDF</Text>
               </TouchableOpacity>
-            )}
-
+            )} */}
             <SaveButton
-              label="Save Superannuation"
+              label="Save Super Choice"
               loading={loading}
               onPress={handleSave}
             />
           </View>
         )}
 
-        {/* ═══════════ ONBOARDING TAB ═══════════ */}
+        {/* ONBOARDING TAB VIEW */}
         {activeStaffTab === 'onboarding' && (
           <View style={s.card}>
-            <SectionLabel>Personal Contact Details</SectionLabel>
-            <Field label="Full name (as per ID)">
-              <AutoFilledInput
-                value={autoFullName}
-                placeholder="Synced from TFN form"
+            <SectionLabel>1. Contact Info</SectionLabel>
+            <Field label="Full Name (As per ID)">
+              <StyledInput
+                value={onboardFullName}
+                onChangeText={setOnboardFullName}
+                placeholder="Full Name"
               />
             </Field>
-
             <View style={s.row2}>
               <View style={{ flex: 1 }}>
-                <Field label="Date of birth">
-                  <AutoFilledInput
-                    value={tfnDob}
-                    placeholder="Synced from TFN form"
-                  />
-                </Field>
-              </View>
-              <View style={{ flex: 1 }}>
-                <Field label="Residential address">
-                  <AutoFilledInput
-                    value={tfnAddress}
-                    placeholder="Synced from TFN form"
-                  />
-                </Field>
-              </View>
-            </View>
-
-            <View style={s.row2}>
-              <View style={{ flex: 1 }}>
-                <Field label="Mobile phone">
+                <Field label="Mobile Number">
                   <StyledInput
                     value={onboardMobile}
                     onChangeText={setOnboardMobile}
-                    placeholder="04xx xxx xxx"
+                    placeholder="0400 000 000"
                     keyboardType="phone-pad"
                   />
                 </Field>
               </View>
               <View style={{ flex: 1 }}>
-                <Field label="Personal email">
+                <Field label="Email Address">
                   <StyledInput
                     value={onboardEmail}
                     onChangeText={setOnboardEmail}
-                    placeholder="jane@email.com"
+                    placeholder="name@domain.com"
                     keyboardType="email-address"
+                    autoCapitalize="none"
                   />
                 </Field>
               </View>
             </View>
 
-            <SectionLabel>Passport & Work Rights</SectionLabel>
+            <SectionLabel>2. Passport & Work Rights</SectionLabel>
             <View style={s.row3}>
               <View style={{ flex: 1 }}>
-                <Field label="Passport no.">
+                <Field label="Passport No.">
                   <StyledInput
                     value={passportNumber}
                     onChangeText={setPassportNumber}
-                    placeholder="PA1234567"
+                    placeholder="N1234567"
                   />
                 </Field>
               </View>
@@ -2245,164 +1640,104 @@ td {
                   />
                 </Field>
               </View>
+              <View style={{ flex: 1 }}>
+                <Field label="Expiry">
+                  <DateButton
+                    value={passportExpiry}
+                    placeholder="dd/mm/yyyy"
+                    onPress={() => openDatePicker('passportExp')}
+                  />
+                </Field>
+              </View>
             </View>
-            <View style={{ flex: 2 }}>
-              <Field label="Expiry">
-                <DateButton
-                  value={passportExpiry}
-                  placeholder="dd/mm/yyyy"
-                  onPress={() => openDatePicker('passportExp')}
-                />
-              </Field>
-            </View>
-
-            <Field label="Work rights status">
+            <Field label="Work Rights Status">
               <RadioGroup
                 options={[
                   { label: 'Australian Citizen / PR', value: 'citizen' },
-                  { label: 'Student Visa (24hr cap)', value: 'student' },
-                  { label: 'Other visa', value: 'other' },
+                  { label: 'Student Visa (24h Cap)', value: 'student' },
+                  { label: 'Other Visa Holder', value: 'other' },
                 ]}
                 value={workRights}
                 onChange={setWorkRights}
               />
             </Field>
 
-            <SectionLabel>100-Point ID Check</SectionLabel>
+            <SectionLabel>3. 100-Point Identification Check</SectionLabel>
             <View style={s.idTable}>
-              <View style={s.idHeader}>
-                <Text style={[s.idHeaderText, { flex: 1 }]}>Document</Text>
-                <Text style={s.idHeaderText}>Pts</Text>
-                <Text
-                  style={[
-                    s.idHeaderText,
-                    { marginLeft: 12, width: 56, textAlign: 'center' },
-                  ]}
-                >
-                  ✓
-                </Text>
-              </View>
-              {(
-                [
-                  {
-                    key: 'primary_id',
-                    label: 'Birth cert / Passport / Citizenship',
-                    points: 70,
-                  },
-                  {
-                    key: 'drivers_license',
-                    label: "Driver's licence / Govt photo ID",
-                    points: 40,
-                  },
-                  {
-                    key: 'security_license',
-                    label: 'Security licence (mandatory)',
-                    points: 40,
-                  },
-                  {
-                    key: 'medicare_or_utility',
-                    label: 'Medicare / Utility bill / Bank stmt',
-                    points: 25,
-                  },
-                ] as {
-                  key: keyof typeof idChecks;
-                  label: string;
-                  points: number;
-                }[]
-              ).map(item => (
-                <View key={item.key} style={s.idRow}>
-                  <Text style={[s.idLabel, { flex: 1 }]}>{item.label}</Text>
-                  <View style={s.idPts}>
-                    <Text style={s.idPtsText}>{item.points}</Text>
-                  </View>
-                  <TouchableOpacity
-                    style={[s.checkbox, idChecks[item.key] && s.checkboxOn]}
-                    onPress={() =>
-                      setIdChecks(p => ({ ...p, [item.key]: !p[item.key] }))
-                    }
-                  >
-                    {idChecks[item.key] && (
-                      <Check size={12} color="#fff" strokeWidth={3} />
-                    )}
-                  </TouchableOpacity>
-                </View>
-              ))}
+              <IdCheckRow
+                label="Primary ID (Passport / Birth Cert) - 70 Pts"
+                checked={idChecks.primary_id}
+                onPress={() =>
+                  setIdChecks(p => ({ ...p, primary_id: !p.primary_id }))
+                }
+              />
+              <IdCheckRow
+                label="Drivers License / Govt Photo ID - 40 Pts"
+                checked={idChecks.drivers_license}
+                onPress={() =>
+                  setIdChecks(p => ({
+                    ...p,
+                    drivers_license: !p.drivers_license,
+                  }))
+                }
+              />
+              <IdCheckRow
+                label="Security License (Mandatory) - 40 Pts"
+                checked={idChecks.security_license}
+                onPress={() =>
+                  setIdChecks(p => ({
+                    ...p,
+                    security_license: !p.security_license,
+                  }))
+                }
+              />
+              <IdCheckRow
+                label="Medicare / Utility / Statement - 25 Pts"
+                checked={idChecks.medicare_or_utility}
+                onPress={() =>
+                  setIdChecks(p => ({
+                    ...p,
+                    medicare_or_utility: !p.medicare_or_utility,
+                  }))
+                }
+              />
             </View>
 
-            <SectionLabel>Banking, Tax & Superannuation</SectionLabel>
-            <View style={s.row3}>
-              <View style={{ flex: 1.2 }}>
-                <Field label="Bank name">
-                  <StyledInput
-                    value={bankName}
-                    onChangeText={setBankName}
-                    placeholder="Commonwealth Bank"
-                  />
-                </Field>
-              </View>
+            <SectionLabel>4. Bank Details</SectionLabel>
+            <Field label="Bank Name">
+              <StyledInput
+                value={bankName}
+                onChangeText={setBankName}
+                placeholder="e.g. CommBank"
+              />
+            </Field>
+            <View style={s.row2}>
               <View style={{ flex: 1 }}>
                 <Field label="BSB">
                   <StyledInput
                     value={bsb}
                     onChangeText={setBsb}
-                    placeholder="062-000"
+                    placeholder="000-000"
                     keyboardType="numeric"
                   />
                 </Field>
               </View>
               <View style={{ flex: 1 }}>
-                <Field label="Account no.">
+                <Field label="Account Number">
                   <StyledInput
                     value={accountNumber}
                     onChangeText={setAccountNumber}
-                    placeholder="12345678"
+                    placeholder="1234 5678"
                     keyboardType="numeric"
                   />
                 </Field>
               </View>
             </View>
 
+            <SectionLabel>5. Licenses & Certs</SectionLabel>
             <View style={s.row2}>
               <View style={{ flex: 1 }}>
-                <Field label="TFN">
-                  <AutoFilledInput
-                    value={tfnNumber}
-                    placeholder="Synced from TFN form"
-                  />
-                </Field>
-              </View>
-              <View style={{ flex: 1 }}>
-                <Field label="Super fund name">
-                  <AutoFilledInput
-                    value={superFundName}
-                    placeholder="Synced from Super form"
-                  />
-                </Field>
-              </View>
-            </View>
-            <View style={s.row2}>
-              <View style={{ flex: 1 }}>
-                <Field label="Super USI">
-                  <AutoFilledInput
-                    value={superFundUsi}
-                    placeholder="Synced from Super form"
-                  />
-                </Field>
-              </View>
-              <View style={{ flex: 1 }}>
-                <Field label="Member number">
-                  <AutoFilledInput
-                    value={superMemberNumber}
-                    placeholder="Synced from Super form"
-                  />
-                </Field>
-              </View>
-            </View>
-
-            <SectionLabel>Professional Licensing</SectionLabel>
-            <View style={s.row2}>
-              <View style={{ flex: 1 }}>
-                <Field label="Security licence no.">
+                <Field label="Security licence No.">
                   <StyledInput
                     value={securityLicence}
                     onChangeText={setSecurityLicence}
@@ -2411,7 +1746,7 @@ td {
                 </Field>
               </View>
               <View style={{ flex: 1 }}>
-                <Field label="Licence expiry">
+                <Field label="Security Licence Expiry">
                   <DateButton
                     value={securityExpiry}
                     placeholder="dd/mm/yyyy"
@@ -2422,7 +1757,7 @@ td {
             </View>
             <View style={s.row2}>
               <View style={{ flex: 1 }}>
-                <Field label="First aid cert no.">
+                <Field label="First Aid Certificate No.">
                   <StyledInput
                     value={firstAidNumber}
                     onChangeText={setFirstAidNumber}
@@ -2431,7 +1766,7 @@ td {
                 </Field>
               </View>
               <View style={{ flex: 1 }}>
-                <Field label="First aid expiry">
+                <Field label="First Aid Expiry">
                   <DateButton
                     value={firstAidExpiry}
                     placeholder="dd/mm/yyyy"
@@ -2463,28 +1798,15 @@ td {
               </View>
             </View>
 
-            {/* Download PDF Button */}
-            {isFormComplete(activeStaffTab) && (
+            {/* {getFormUrl('onboarding') && (
               <TouchableOpacity
                 style={s.downloadBtn}
-                onPress={() => {
-                  if (getFormUrl(activeStaffTab)) {
-                    openPdf(getFormUrl(activeStaffTab));
-                  } else {
-                    generateUploadAndOpenPdf('onboarding');
-                  }
-                }}
+                onPress={() => openPdf(getFormUrl('onboarding'))}
               >
-                <Download size={18} color="#fff" />
-                <Text style={s.downloadBtnText}>
-                  📄{' '}
-                  {getFormUrl(activeStaffTab)
-                    ? 'View Saved PDF'
-                    : 'Generate & Download PDF'}
-                </Text>
+                <Download size={18} color="#001F3F" />
+                <Text style={s.downloadBtnText}>View Saved Onboarding PDF</Text>
               </TouchableOpacity>
-            )}
-
+            )} */}
             <SaveButton
               label="Save Onboarding Form"
               loading={loading}
@@ -2494,7 +1816,7 @@ td {
         )}
       </ScrollView>
 
-      {/* ── Date Picker ── */}
+      {/* Date Picker Overlay */}
       {showDatePicker && (
         <DateTimePicker
           value={new Date()}
@@ -2553,7 +1875,7 @@ td {
         </SafeAreaView>
       </Modal>
 
-      {/* ── Title Modal ── */}
+      {/* Title Options Modal */}
       <Modal visible={showTitleModal} transparent animationType="fade">
         <TouchableOpacity
           style={s.modalOverlay}
@@ -2583,12 +1905,6 @@ td {
                 {tfnTitle === t && <Check size={16} color={BRAND_DARK} />}
               </TouchableOpacity>
             ))}
-            <TouchableOpacity
-              style={s.modalCancelBtn}
-              onPress={() => setShowTitleModal(false)}
-            >
-              <Text style={s.modalCancelText}>Cancel</Text>
-            </TouchableOpacity>
           </View>
         </TouchableOpacity>
       </Modal>
@@ -2596,8 +1912,7 @@ td {
   );
 };
 
-// ══════════════════ Sub-components ══════════════════
-
+// ══════════════════ Reusable Form Components ══════════════════
 const SectionLabel = ({ children }: { children: string }) => (
   <View style={s.sectionLabelWrap}>
     <Text style={s.sectionLabelText}>{children}</Text>
@@ -2606,136 +1921,77 @@ const SectionLabel = ({ children }: { children: string }) => (
 
 const Field = ({
   label,
-  badge,
   children,
 }: {
   label: string;
-  badge?: string;
   children: React.ReactNode;
 }) => (
   <View style={s.fieldWrap}>
-    <View style={s.fieldLabelRow}>
-      <Text style={s.fieldLabel}>{label}</Text>
-      {badge && (
-        <View style={s.fieldBadge}>
-          <Text style={s.fieldBadgeText}>{badge}</Text>
-        </View>
-      )}
-    </View>
+    <Text style={s.fieldLabel}>{label}</Text>
     {children}
   </View>
 );
 
-const StyledInput = ({
-  value,
-  onChangeText,
-  placeholder,
-  keyboardType = 'default',
-  maxLength,
-  editable = true,
-}: any) => (
+const StyledInput = (props: any) => (
   <TextInput
-    style={s.textInput}
-    value={value}
-    onChangeText={onChangeText}
-    placeholder={placeholder}
-    placeholderTextColor="#9CA3AF"
-    keyboardType={keyboardType}
-    maxLength={maxLength}
-    editable={editable}
+    style={s.input}
+    placeholderTextColor="rgba(255,255,255,0.4)"
+    autoCorrect={false}
+    {...props}
   />
 );
 
-const AutoFilledInput = ({
-  value,
-  placeholder,
-}: {
-  value: string;
-  placeholder: string;
-}) => (
-  <View style={[s.textInput, s.autoInput]}>
-    <Text
-      style={[s.autoText, !value && { color: '#9CA3AF' }]}
-      numberOfLines={1}
-    >
+const DateButton = ({ value, placeholder, onPress }: any) => (
+  <TouchableOpacity style={s.dateBtn} onPress={onPress}>
+    <Text style={[s.dateBtnText, !value && { color: 'rgba(255,255,255,0.4)' }]}>
       {value || placeholder}
     </Text>
-  </View>
-);
-
-const DateButton = ({
-  value,
-  placeholder,
-  onPress,
-}: {
-  value: string;
-  placeholder: string;
-  onPress: () => void;
-}) => (
-  <TouchableOpacity
-    style={[s.textInput, s.dateBtn]}
-    onPress={onPress}
-    activeOpacity={0.7}
-  >
-    <Text style={[s.dateBtnText, !value && { color: '#9CA3AF' }]}>
-      {value || placeholder}
-    </Text>
-    <Text style={s.dateIcon}>📅</Text>
   </TouchableOpacity>
 );
 
-const SignatureButton = ({
-  value,
-  onPress,
-  onClear,
-}: {
-  value: string;
-  onPress: () => void;
-  onClear: () => void;
-}) => (
-  <View>
-    <TouchableOpacity
-      style={[s.sigBtn, value && s.sigBtnSigned]}
-      onPress={onPress}
-      activeOpacity={0.8}
-    >
-      {value ? (
-        <>
-          <Text style={s.sigBtnSignedText}>
-            Signature added · tap to change
-          </Text>
-        </>
-      ) : (
-        <>
-          <Text style={s.sigBtnIcon}>✍️</Text>
-          <Text style={s.sigBtnText}>Tap to draw signature</Text>
-        </>
-      )}
-    </TouchableOpacity>
-    {value && (
-      <TouchableOpacity style={s.sigClear} onPress={onClear}>
-        <Text style={s.sigClearText}>Clear signature</Text>
+const SignatureButton = ({ value, onPress, onClear }: any) => (
+  <View style={s.sigContainer}>
+    {value ? (
+      <View style={s.sigUploadedBox}>
+        <Text style={s.sigUploadedText}>✓ Signature Added</Text>
+        <TouchableOpacity onPress={onClear} style={s.sigClearBtn}>
+          <X size={14} color="#EF4444" />
+        </TouchableOpacity>
+      </View>
+    ) : (
+      <TouchableOpacity style={s.sigPlaceholderBtn} onPress={onPress}>
+        <Text style={s.sigPlaceholderText}>Tap to add signature</Text>
       </TouchableOpacity>
     )}
   </View>
 );
 
-const RadioGroup = ({
-  options,
-  value,
-  onChange,
-}: {
-  options: { label: string; value: string }[];
-  value: string | null;
-  onChange: (v: string) => void;
-}) => (
+const SaveButton = ({ label, loading, onPress }: any) => (
+  <TouchableOpacity style={s.saveBtn} onPress={onPress} disabled={loading}>
+    {loading ? (
+      <ActivityIndicator size="small" color={BRAND_DARK} />
+    ) : (
+      <Text style={s.saveBtnText}>{label}</Text>
+    )}
+  </TouchableOpacity>
+);
+
+const IdCheckRow = ({ label, checked, onPress }: any) => (
+  <TouchableOpacity style={s.idRow} onPress={onPress}>
+    <Text style={s.idRowText}>{label}</Text>
+    <View style={[s.idCheckCircle, checked && s.idCheckCircleOn]}>
+      {checked && <Check size={12} color={BRAND_DARK} />}
+    </View>
+  </TouchableOpacity>
+);
+
+const RadioGroup = ({ options, value, onChange }: any) => (
   <View style={s.radioGroup}>
-    {options.map(opt => (
+    {options.map((opt: any) => (
       <TouchableOpacity
         key={opt.value}
         style={s.radioOpt}
         onPress={() => onChange(opt.value)}
-        activeOpacity={0.7}
       >
         <View style={[s.radioCircle, value === opt.value && s.radioCircleOn]}>
           {value === opt.value && <View style={s.radioDot} />}
@@ -2748,481 +2004,339 @@ const RadioGroup = ({
   </View>
 );
 
-const YesNoGroup = ({
-  value,
-  onChange,
-}: {
-  value: string | null;
-  onChange: (v: string) => void;
-}) => (
+const YesNoGroup = ({ value, onChange }: any) => (
   <View style={s.yesNoRow}>
-    {(['yes', 'no'] as const).map(v => (
+    {['yes', 'no'].map(opt => (
       <TouchableOpacity
-        key={v}
-        style={[s.yesNoBtn, value === v && s.yesNoBtnOn]}
-        onPress={() => onChange(v)}
-        activeOpacity={0.8}
+        key={opt}
+        style={[s.yesNoBtn, value === opt && s.yesNoBtnOn]}
+        onPress={() => onChange(opt)}
       >
-        <Text style={[s.yesNoText, value === v && s.yesNoTextOn]}>
-          {v === 'yes' ? 'Yes' : 'No'}
+        <Text style={[s.yesNoText, value === opt && s.yesNoTextOn]}>
+          {opt.toUpperCase()}
         </Text>
       </TouchableOpacity>
     ))}
   </View>
 );
 
-const SaveButton = ({
-  label,
-  loading,
-  onPress,
-}: {
-  label: string;
-  loading: boolean;
-  onPress: () => void;
-}) => (
-  <View style={s.saveRow}>
-    <TouchableOpacity
-      style={[s.saveBtn, loading && { opacity: 0.6 }]}
-      onPress={onPress}
-      disabled={loading}
-      activeOpacity={0.85}
-    >
-      {loading ? (
-        <ActivityIndicator color="#fff" size="small" />
-      ) : (
-        <>
-          <Send size={14} color="#fff" />
-          <Text style={s.saveBtnText}>{label}</Text>
-        </>
-      )}
-    </TouchableOpacity>
-  </View>
-);
-
-// ══════════════════ Styles ══════════════════
+// ═══════════════════════════════════════════════════════════════════════════
+// STYLES
+// ═══════════════════════════════════════════════════════════════════════════
 const s = StyleSheet.create({
-  loadingWrap: {
-    flex: 1,
+  container: { flex: 1, backgroundColor: '#001F3F' },
+  loadingWrap: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  loadingText: { marginTop: 12, color: '#fff', fontSize: 14 },
+  header: {
+    height: 56,
+    backgroundColor: BRAND_DARK,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 12,
+  },
+  headerTitle: { color: '#fff', fontSize: 18, fontWeight: '700' },
+  backBtn: {
+    width: 40,
+    height: 40,
     justifyContent: 'center',
     alignItems: 'center',
-    gap: 12,
   },
-  loadingText: { fontSize: 14, color: '#64748b' },
-
-  tabDot: { width: 4, height: 4, borderRadius: 2, backgroundColor: BRAND },
-
-  emptyState: {
-    backgroundColor: '#fff',
-    borderRadius: 20,
-    padding: 28,
-    alignItems: 'center',
-    marginTop: 12,
-  },
-  emptyIcon: {
-    width: 64,
-    height: 64,
-    borderRadius: 20,
+  tabBar: {
+    flexDirection: 'row',
     backgroundColor: BRAND_LIGHT,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 14,
+    padding: 4,
+    borderRadius: 8,
+    marginHorizontal: 12,
+    marginTop: 8,
   },
-  emptyTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#0f172a',
-    marginBottom: 6,
-  },
-  emptyDesc: {
-    fontSize: 13,
-    color: '#64748b',
-    textAlign: 'center',
-    lineHeight: 19,
-    marginBottom: 20,
-  },
-  downloadBtn: {
-    backgroundColor: '#10b981',
+  tabItem: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
-    paddingVertical: 14,
-    borderRadius: 12,
-    marginBottom: 16,
+    paddingVertical: 8,
+    borderRadius: 6,
+    gap: 6,
   },
-  downloadBtnText: {
-    color: '#fff',
-    fontWeight: '700',
-    fontSize: 15,
+  tabItemActive: { backgroundColor: BRAND },
+  tabText: { fontSize: 11, fontWeight: '600', color: '#94A3B8' },
+  tabTextActive: { color: BRAND_DARK },
+  scrollContent: { padding: 12, paddingBottom: 40 },
+  card: {
+    backgroundColor: CARD_BG,
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(137, 231, 208, 0.1)',
   },
-  emptySteps: { gap: 10, width: '100%' },
-  emptyStep: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  emptyStepNum: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: BRAND_LIGHT,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  emptyStepNumText: { fontSize: 12, fontWeight: '700', color: BRAND_DARK },
-  emptyStepLabel: { fontSize: 13, color: '#334155', fontWeight: '500' },
-
   sectionLabelWrap: {
-    borderBottomWidth: 1,
-    borderBottomColor: '#e9f4fb',
-    marginTop: 14,
-    marginBottom: 12,
-    paddingBottom: 6,
+    marginTop: 16,
+    marginBottom: 8,
+    borderLeftWidth: 3,
+    borderLeftColor: BRAND,
+    paddingLeft: 8,
   },
   sectionLabelText: {
-    fontSize: 10.5,
+    color: BRAND,
+    fontSize: 13,
     fontWeight: '700',
-    color: BRAND_DARK,
-    letterSpacing: 0.9,
     textTransform: 'uppercase',
   },
-  fieldWrap: { marginBottom: 14 },
-  fieldLabelRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    marginBottom: 6,
+  fieldWrap: { marginBottom: 12 },
+  fieldLabel: {
+    color: '#94A3B8',
+    fontSize: 11,
+    fontWeight: '600',
+    marginBottom: 4,
   },
-  fieldLabel: { fontSize: 12, fontWeight: '600', color: '#475569' },
-  fieldBadge: {
-    backgroundColor: '#f0fdf4',
-    borderRadius: 20,
-    paddingHorizontal: 7,
-    paddingVertical: 2,
+  input: {
+    backgroundColor: '#001F3F',
     borderWidth: 1,
-    borderColor: '#bbf7d0',
-  },
-  fieldBadgeText: { fontSize: 9.5, color: SUCCESS, fontWeight: '600' },
-
-  autoInput: {
-    // backgroundColor: AUTO_BG,
-    // borderColor: AUTO_BORDER,
-    justifyContent: 'center',
-  },
-  autoText: { fontSize: 14, color: '#166534', fontWeight: '500' },
-  dateBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  dateBtnText: { fontSize: 14, color: '#1e293b' },
-  dateIcon: { fontSize: 15 },
-  selectBtn: {
-    height: 44,
-    borderWidth: 1,
-    borderColor: '#d1e8f5',
+    borderColor: '#475569',
     borderRadius: 10,
-    paddingHorizontal: 11,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: '#fff',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 14,
+    color: '#fff',
   },
-  selectText: { fontSize: 14, color: '#1e293b', flex: 1 },
   row2: { flexDirection: 'row', gap: 10 },
   row3: { flexDirection: 'row', gap: 8 },
-  sigBtn: {
-    height: 52,
-    borderWidth: 1.5,
-    borderColor: '#d1e8f5',
-    borderStyle: 'dashed',
+  selectBtn: {
+    backgroundColor: '#001F3F',
+    borderWidth: 1,
+    borderColor: '#475569',
     borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
     flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  selectText: { color: '#fff', fontSize: 14 },
+  dateBtn: {
+    backgroundColor: '#001F3F',
+    borderWidth: 1,
+    borderColor: '#475569',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+  },
+  dateBtnText: { color: '#fff', fontSize: 14 },
+  sigContainer: { height: 44, justifyContent: 'center' },
+  sigPlaceholderBtn: {
+    backgroundColor: '#001F3F',
+    borderWidth: 1,
+    borderStyle: 'dashed',
+    borderColor: BRAND,
+    borderRadius: 10,
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  sigPlaceholderText: { color: BRAND, fontSize: 13, fontWeight: '600' },
+  sigUploadedBox: {
+    backgroundColor: '#001F3F',
+    borderWidth: 1,
+    borderColor: BRAND,
+    borderRadius: 10,
+    height: '100%',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+  },
+  sigUploadedText: { color: BRAND, fontSize: 13, fontWeight: '600' },
+  sigClearBtn: { padding: 4 },
+  saveBtn: {
+    backgroundColor: BRAND,
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: 'center',
+    marginTop: 20,
+  },
+  saveBtnText: { color: BRAND_DARK, fontSize: 15, fontWeight: '700' },
+  downloadBtn: {
+    flexDirection: 'row',
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    paddingVertical: 12,
     alignItems: 'center',
     justifyContent: 'center',
+    marginTop: 12,
     gap: 8,
-    backgroundColor: '#fafcff',
   },
-  sigBtnSigned: {
-    borderStyle: 'solid',
-    // backgroundColor: AUTO_BG,
-    // borderColor: AUTO_BORDER,
+  downloadBtnText: { color: '#001F3F', fontSize: 14, fontWeight: '700' },
+  ownFundBox: {
+    backgroundColor: 'rgba(0,0,0,0.15)',
+    padding: 10,
+    borderRadius: 12,
+    marginTop: 4,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#475569',
   },
-  sigBtnText: { fontSize: 13, color: '#94a3b8', fontWeight: '500' },
-  sigBtnIcon: { fontSize: 16 },
-  sigBtnSignedText: {
-    fontSize: 12,
-    color: SUCCESS,
-    fontWeight: '600',
-    paddingLeft: 5,
+  radioGroup: { gap: 8, marginVertical: 4 },
+  radioOpt: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingVertical: 4,
   },
-  sigClear: { marginTop: 4, alignItems: 'flex-end' },
-  sigClearText: { fontSize: 11, color: '#ef4444', fontWeight: '600' },
-  radioGroup: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
-  radioOpt: { flexDirection: 'row', alignItems: 'center', gap: 7 },
   radioCircle: {
-    width: 18,
-    height: 18,
-    borderRadius: 9,
-    borderWidth: 2,
-    borderColor: '#cbd5e1',
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#475569',
     justifyContent: 'center',
     alignItems: 'center',
   },
   radioCircleOn: { borderColor: BRAND },
   radioDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: BRAND },
-  radioLabel: { fontSize: 13, color: '#475569' },
-  radioLabelOn: { color: BRAND_DARK, fontWeight: '600' },
-  yesNoRow: { flexDirection: 'row', gap: 8 },
+  radioLabel: { color: '#94A3B8', fontSize: 13 },
+  radioLabelOn: { color: '#fff' },
+  yesNoRow: { flexDirection: 'row', gap: 10, marginTop: 4 },
   yesNoBtn: {
     flex: 1,
-    height: 38,
-    borderRadius: 8,
+    height: 40,
+    borderRadius: 10,
     borderWidth: 1,
-    borderColor: '#d1d5db',
+    borderColor: '#475569',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: '#0A253F',
   },
-  yesNoBtnOn: { backgroundColor: BRAND_LIGHT, borderColor: BRAND },
-  yesNoText: { fontSize: 13, color: '#64748b', fontWeight: '600' },
-  yesNoTextOn: { color: BRAND_DARK },
+  yesNoBtnOn: {
+    backgroundColor: 'rgba(137, 231, 208, 0.15)',
+    borderColor: BRAND,
+  },
+  yesNoText: { fontSize: 13, color: '#94A3B8', fontWeight: '600' },
+  yesNoTextOn: { color: BRAND },
   idTable: {
     borderWidth: 1,
-    borderColor: '#e2eef6',
+    borderColor: 'rgba(137, 231, 208, 0.2)',
     borderRadius: 12,
     overflow: 'hidden',
     marginBottom: 16,
   },
-  idHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#f1f7fc',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e2eef6',
-  },
-  idHeaderText: { fontSize: 11, fontWeight: '700', color: '#64748b' },
   idRow: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 12,
+    padding: 12,
+    backgroundColor: BRAND_LIGHT,
     borderBottomWidth: 1,
-    borderBottomColor: '#f1f5f9',
+    borderBottomColor: 'rgba(137, 231, 208, 0.1)',
   },
-  idLabel: { fontSize: 12.5, color: '#334155', lineHeight: 17 },
-  idPts: {
-    backgroundColor: '#f0f7ff',
-    borderRadius: 12,
-    paddingHorizontal: 7,
-    paddingVertical: 2,
-    marginHorizontal: 8,
-  },
-  idPtsText: { fontSize: 11, fontWeight: '700', color: BRAND_DARK },
-  checkbox: {
-    width: 22,
-    height: 22,
-    borderRadius: 6,
-    borderWidth: 1.5,
-    borderColor: '#cbd5e1',
+  idRowText: { color: '#94A3B8', fontSize: 12 },
+  idCheckCircle: {
+    width: 18,
+    height: 18,
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: '#475569',
     justifyContent: 'center',
     alignItems: 'center',
   },
-  checkboxOn: { backgroundColor: BRAND, borderColor: BRAND },
-  ownFundBox: {
-    backgroundColor: '#fafcff',
-    borderRadius: 12,
-    padding: 12,
-    borderWidth: 1,
-    borderColor: '#d1e8f5',
-    marginBottom: 12,
-  },
-  employerFundBox: {
-    backgroundColor: '#f8faff',
-    borderRadius: 12,
-    padding: 14,
-    borderWidth: 1,
-    borderColor: '#e2eef6',
-    marginBottom: 16,
-  },
-  employerFundTitle: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#1e293b',
-    marginBottom: 4,
-  },
-  employerFundDesc: { fontSize: 12, color: '#64748b', lineHeight: 17 },
-  saveRow: {
+  idCheckCircleOn: { backgroundColor: BRAND, borderColor: BRAND },
+  sigModalHeader: {
+    height: 56,
     flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    justifyContent: 'flex-end',
-    marginTop: 20,
-    paddingTop: 14,
-    borderTopWidth: 1,
-    borderTopColor: '#e9f4fb',
+    paddingHorizontal: 16,
   },
 
-  saveBtnText: { color: '#fff', fontSize: 13.5, fontWeight: '700' },
-  sigModalHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e2e8f0',
-  },
-  sigCancelBtn: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  sigCancelText: { color: '#ef4444', fontSize: 15, fontWeight: '600' },
-  sigModalTitle: { fontSize: 16, fontWeight: '700', color: '#0f172a' },
-  sigHint: {
-    backgroundColor: '#f8faff',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e2e8f0',
-  },
-  sigHintText: { fontSize: 12, color: '#64748b', textAlign: 'center' },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(15,23,42,0.45)',
+    backgroundColor: 'rgba(0, 31, 63, 0.6)',
     justifyContent: 'flex-end',
   },
   modalSheet: {
-    backgroundColor: '#fff',
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
+    backgroundColor: CARD_BG,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
     padding: 16,
-    paddingBottom: 32,
+    paddingBottom: 30,
   },
   modalHandle: {
-    width: 36,
+    width: 40,
     height: 4,
-    backgroundColor: '#e2e8f0',
+    backgroundColor: '#475569',
     borderRadius: 2,
     alignSelf: 'center',
-    marginBottom: 14,
+    marginBottom: 12,
   },
   modalSheetTitle: {
+    color: '#fff',
     fontSize: 16,
     fontWeight: '700',
-    color: '#0f172a',
-    marginBottom: 10,
+    marginBottom: 12,
     textAlign: 'center',
   },
   modalOption: {
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 14,
-    paddingHorizontal: 12,
-    borderRadius: 10,
-    marginBottom: 4,
-  },
-  modalOptionActive: { backgroundColor: BRAND_LIGHT },
-  modalOptionText: { fontSize: 15, color: '#334155' },
-  modalOptionTextActive: { color: BRAND_DARK, fontWeight: '700' },
-  modalCancelBtn: {
-    marginTop: 8,
-    padding: 14,
     alignItems: 'center',
-    backgroundColor: '#f1f5f9',
-    borderRadius: 12,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255,255,255,0.05)',
   },
-  modalCancelText: { color: '#475569', fontWeight: '600', fontSize: 14 },
-  container: { flex: 1, backgroundColor: '#dfe6f9' },
-  header: {
-    // backgroundColor: BRAND,
-    padding: 16,
+  modalOptionActive: { opacity: 0.8 },
+  modalOptionText: { color: '#94A3B8', fontSize: 15 },
+  modalOptionTextActive: { color: BRAND, fontWeight: '600' },
+  sigCancelBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    backgroundColor: '#0A7C6E',
-
-    marginHorizontal: 16,
-    borderRadius: 16,
-    marginBottom: 10,
+    gap: 4,
   },
-  headerTitle: {
-    fontSize: 18,
+  sigCancelText: {
+    color: ERROR,
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  sigModalTitle: {
+    fontSize: 16,
     fontWeight: '700',
     color: '#fff',
   },
-  backBtn: { padding: 4 },
-
-  tabBar: {
-    flexDirection: 'row',
-    // backgroundColor: '#fff',
-    padding: 8,
-    gap: 6,
+  sigHint: {
+    backgroundColor: BRAND_LIGHT,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
     borderBottomWidth: 1,
-    borderBottomColor: '#E2E8F0',
-    marginRight: 12,
-    marginLeft: 12,
+    borderBottomColor: 'rgba(137, 231, 208, 0.2)',
+  },
+  sigHintText: {
+    fontSize: 12,
+    color: '#94A3B8',
+    textAlign: 'center',
   },
   tabBtn: {
     flex: 1,
     paddingVertical: 12,
     alignItems: 'center',
     borderRadius: 12,
-    backgroundColor: '#F1F5F9',
+    backgroundColor: BRAND_LIGHT,
   },
   tabBtnActive: {
     backgroundColor: BRAND,
     shadowColor: BRAND,
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 5,
+    shadowOpacity: 0.4,
+    shadowRadius: 10,
+    elevation: 8,
   },
   tabLabel: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#64748B',
+    color: '#94A3B8',
     marginTop: 4,
   },
-  tabLabelActive: { color: '#fff' },
-
-  scroll: { padding: 16, paddingBottom: 100 },
-
-  card: {
-    backgroundColor: CARD_BG,
-    borderRadius: 20,
-    padding: 20,
-    marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.08,
-    shadowRadius: 16,
-    elevation: 8,
-  },
-
-  // Add more refined styles for inputs, buttons, etc.
-  textInput: {
-    height: 48,
-    borderWidth: 1.5,
-    borderColor: '#E2E8F0',
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    fontSize: 15,
-    backgroundColor: '#fff',
-  },
-
-  saveBtn: {
-    backgroundColor: BRAND,
-    paddingVertical: 16,
-    borderRadius: 16,
-    alignItems: 'center',
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: 10,
-    shadowColor: BRAND,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 10,
-    elevation: 6,
-    padding: 10,
+  tabLabelActive: {
+    color: BRAND_DARK,
+    fontWeight: '700',
   },
 });
 

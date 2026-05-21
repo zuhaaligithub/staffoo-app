@@ -33,11 +33,38 @@ import axios from 'axios';
 import Toast from 'react-native-toast-message';
 import { getContractorStaff } from '../services/authApi';
 import PDFGenerator from './utils/PDFGenerator';
+import LinearGradient from 'react-native-linear-gradient';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const BASE_URL = 'https://apis.staffoo.com.au/api';
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const COLORS = {
+  // 🌿 Primary Brand
+  primary: '#89E7D0', // mint accent
+  primaryDark: '#4FCBB3',
 
+  // 🌙 Background system (clean dark navy)
+  background: '#070F1E',
+  surface: '#0E1A2B',
+  surface2: '#12243A',
+
+  // ✨ Card / Glass
+  card: 'rgba(255,255,255,0.06)',
+  cardBorder: 'rgba(255,255,255,0.08)',
+
+  // ✍️ Text
+  text: '#FFFFFF',
+  textSecondary: 'rgba(255,255,255,0.7)',
+  textMuted: 'rgba(255,255,255,0.5)',
+
+  // 🔴🟡🟢 Status
+  success: '#17ad4e',
+  warning: '#fca002',
+  danger: '#EF4444',
+
+  // Border
+  border: 'rgba(255,255,255,0.08)',
+};
 interface Shift {
   id: number;
   siteName: string;
@@ -434,17 +461,17 @@ export default function WeeklyRosterScreen({ navigation }: any) {
   const getStatusPill = (status: string) => {
     switch (status.toLowerCase()) {
       case 'pending':
-        return { bg: '#FEE2E2', text: '#DC2626' }; // 🔴 red
+        return { bg: COLORS.danger + '33', text: COLORS.danger };
 
       case 'confirmed':
-        return { bg: '#FEF3C7', text: '#F59E0B' }; // 🟡 yellow
+        return { bg: COLORS.warning + '33', text: COLORS.warning };
 
       case 'completed':
       case 'complete':
-        return { bg: '#D1FAE5', text: '#16A34A' }; // 🟢 green
+        return { bg: COLORS.success + '33', text: COLORS.success };
 
       default:
-        return { bg: '#F3F4F6', text: '#374151' }; // gray
+        return { bg: COLORS.surface2, text: COLORS.textMuted };
     }
   };
 
@@ -511,8 +538,21 @@ export default function WeeklyRosterScreen({ navigation }: any) {
               const pill = getStatusPill(shift.jobStatus);
               const isConfirmed = shift.jobStatus === 'completed';
               return (
-                <View key={shift.id} style={styles.shiftCard}>
+                <LinearGradient
+                  colors={[
+            'rgba(255, 255, 255, 0.42)',
+            'rgba(255, 255, 255, 0.35)',
+            'rgba(255, 255, 255, 0.22)',
+            'rgba(255, 255, 255, 0.12)',
+            'rgba(255, 255, 255, 0.25)',
+          ]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+                  style={styles.shiftCard}
+                >
+                  {/* <View key={shift.id} style={styles.shiftCard}> */}
                   {/* Top row: site name + status badge */}
+                   <View style={styles.siteCardInner}>
                   <View style={styles.cardTop}>
                     <Text style={styles.siteName} numberOfLines={1}>
                       {shift.siteName}
@@ -531,7 +571,7 @@ export default function WeeklyRosterScreen({ navigation }: any) {
                     <View style={styles.addressRow}>
                       <MapPin
                         size={12}
-                        color="#94a3b8"
+                        color="#fff"
                         style={{ marginRight: 4 }}
                       />
                       <Text style={styles.addressText} numberOfLines={1}>
@@ -554,7 +594,7 @@ export default function WeeklyRosterScreen({ navigation }: any) {
                       <View style={styles.timeRow}>
                         <Clock
                           size={13}
-                          color="#475569"
+                          color="#fff"
                           style={{ marginRight: 4 }}
                         />
                         <Text style={styles.cardTime}>
@@ -592,7 +632,8 @@ export default function WeeklyRosterScreen({ navigation }: any) {
                       <Text style={styles.downloadText}>Download PDF</Text>
                     </TouchableOpacity>
                   )}
-                </View>
+                  </View>
+                </LinearGradient>
               );
             })}
           </View>
@@ -824,7 +865,7 @@ export default function WeeklyRosterScreen({ navigation }: any) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#dfe6f9',
+    backgroundColor: COLORS.background,
     paddingTop: 20,
   },
 
@@ -834,16 +875,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 20,
     paddingVertical: 14,
-    backgroundColor: '#0A7C6E',
+    backgroundColor: COLORS.surface,
     marginHorizontal: 16,
     borderRadius: 16,
     marginBottom: 10,
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
 
   screenTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#fff',
+    color: COLORS.text,
   },
   downloadBtn: {
     flexDirection: 'row',
@@ -856,7 +899,9 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   downloadText: { color: '#fff', fontSize: 13, fontWeight: '600' },
-
+siteCardInner: {
+    padding: 12, // 👈 REAL CARD PADDING HERE
+  },
   /* Week nav */
   weekNav: {
     flexDirection: 'row',
@@ -873,26 +918,26 @@ const styles = StyleSheet.create({
     width: 34,
     height: 34,
     borderRadius: 10,
-    backgroundColor: '#F1F5F9',
-    borderWidth: 0.5,
-    borderColor: '#e2e8f0',
+    backgroundColor: COLORS.surface2,
+    borderWidth: 1,
+    borderColor: COLORS.border,
     justifyContent: 'center',
     alignItems: 'center',
   },
   datePill: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#0A7C6E20',
+    backgroundColor: COLORS.surface2,
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 999,
     borderWidth: 1,
-    borderColor: '#0A7C6E',
+    borderColor: COLORS.primary,
   },
   dateText: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#0A7C6E',
+    color: COLORS.primary,
   },
 
   /* Section header */
@@ -930,12 +975,12 @@ const styles = StyleSheet.create({
   },
 
   shiftCard: {
-    backgroundColor: '#fff',
-    borderRadius: 18,
-    padding: 16,
-    marginBottom: 5,
-    borderWidth: 1,
-    borderColor: '#d2d2d7',
+    // backgroundColor: COLORS.card,
+    borderRadius: 14,
+    // padding: 10,
+    marginBottom: 10,
+    // borderWidth: 1,
+    // borderColor: COLORS.cardBorder,
   },
   cardTop: {
     flexDirection: 'row',
@@ -946,7 +991,7 @@ const styles = StyleSheet.create({
   siteName: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#0f172a',
+    color: COLORS.text,
     flex: 1,
     marginRight: 8,
   },
@@ -957,13 +1002,13 @@ const styles = StyleSheet.create({
   },
   addressText: {
     fontSize: 12,
-    color: '#94a3b8',
+    color: '#fff',
     flex: 1,
   },
   hoursText: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#0A7C6E',
+    color: COLORS.primary,
     marginBottom: 10,
   },
   cardDivider: {
@@ -982,7 +1027,7 @@ const styles = StyleSheet.create({
   },
   cardDate: {
     fontSize: 12,
-    color: '#64748b',
+    color: COLORS.textMuted,
   },
   timeRow: {
     flexDirection: 'row',
@@ -991,7 +1036,7 @@ const styles = StyleSheet.create({
   cardTime: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#1e293b',
+    color: COLORS.text,
   },
   cardRight: {
     alignItems: 'flex-end',
@@ -1003,22 +1048,21 @@ const styles = StyleSheet.create({
   },
   guardName: {
     fontSize: 12,
-    color: '#64748b',
+    color: COLORS.textSecondary,
     maxWidth: 120,
   },
   viewBtn: {
-    backgroundColor: '#0A7C6E',
+    backgroundColor: COLORS.primary,
     paddingHorizontal: 16,
     paddingVertical: 6,
     borderRadius: 8,
   },
   viewBtnText: {
-    color: '#fff',
+    color: COLORS.background,
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: '700',
   },
 
-  /* Status pill */
   statusPill: {
     paddingHorizontal: 12,
     paddingVertical: 4,
@@ -1026,7 +1070,7 @@ const styles = StyleSheet.create({
   },
   pillText: {
     fontSize: 11,
-    fontWeight: '600',
+    fontWeight: '800',
   },
 
   /* Date picker modal */

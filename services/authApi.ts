@@ -617,27 +617,74 @@ export const removePayRate = async (payload: { payrate_id: number }) => {
   return res.data;
 };
 
-export interface JobPostPayload {
-  user_id: number | string;
-  title: string;
-  description: string;
-  address: string;
-  coordinates: string;
-  state: string;
+// export interface JobPostPayload {
+//   user_id: number | string;
+//   title: string;
+//   description: string;
+//   address: string;
+//   coordinates: string;
+//   state: string;
+//   numberOfGuards: number;
+//   startTime: string;
+//   endTime: string;
+//   shifts?: Array<{
+//     start: string;
+//     end: string;
+//     numberOfGuards: number;
+//   }>;
+//   is_document: boolean;
+//   document_list: string[];
+//   document_types: string[];
+//   job_instruction?: string;
+//   payment_intent_id?: string | null;
+//   payment_option?: 'full' | 'split';
+// }
+
+export interface JobShift {
+  start: string;
+  end: string;
   numberOfGuards: number;
-  startTime: string;
-  endTime: string;
-  shifts?: Array<{
-    start: string;
-    end: string;
-    numberOfGuards: number;
-  }>;
+}
+
+export interface JobFinancials {
+  base_total_inc_gst: number;
+  discount_applied: number;
+  amount_to_charge_today: number;
+  balance_deferred: number;
+}
+
+export interface JobPostPayload {
+  user_id: number;
+
+  title: string;
+
+  description: string;
+
+  address: string;
+
+  coordinates: string;
+
+  state: string;
+
+  shifts: JobShift[];
+
+  payment_option: 'full' | 'split';
+
+  job_location_state: string;
+
+  financials: JobFinancials;
+
   is_document: boolean;
+
   document_list: string[];
+
   document_types: string[];
-  job_instruction?: string;
-  payment_intent_id?: string | null;
-  payment_option?: 'full' | 'split';
+
+  job_instruction: string;
+
+  tasks: any[];
+
+  payment_intent_id: string | null;
 }
 
 export interface JobPostResponse {

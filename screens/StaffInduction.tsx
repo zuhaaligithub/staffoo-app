@@ -19,16 +19,16 @@ import { getAuthToken } from '../services/authApi';
 const THEME_COLOR = '#0A7C6E';
 const BASE_URL = 'https://apis.staffoo.com.au/api';
 
-const fallbackInductions = [
-  {
-    id: 1,
-    title: 'New Staff Onboarding 2026',
-    subtitle: 'Recently Added',
-    status: 'pending',
-    questions: 10,
-    date: 'Added 2 days ago',
-  },
-];
+// const fallbackInductions = [
+//   {
+//     id: 1,
+//     title: 'New Staff Onboarding 2026',
+//     subtitle: 'Recently Added',
+//     status: 'pending',
+//     questions: 10,
+//     date: 'Added 2 days ago',
+//   },
+// ];
 
 // ✅ GLOBAL HELPER
 const isCompleted = (status: string) =>
@@ -72,7 +72,7 @@ export default function StaffInductionScreen({
       // ✅ Check token
       if (!token) {
         setError('Session expired. Please login again.');
-        setInductions(fallbackInductions);
+        // setInductions(fallbackInductions);
         setLoading(false);
         return;
       }
@@ -126,7 +126,7 @@ export default function StaffInductionScreen({
       // ✅ Final validation
       if (!userId) {
         setError('User ID not found. Please login again.');
-        setInductions(fallbackInductions);
+        // setInductions(fallbackInductions);
         setLoading(false);
         return;
       }
@@ -137,7 +137,7 @@ export default function StaffInductionScreen({
       console.log('LOAD INDUCTION ERROR:', err);
 
       setError('Failed to load data');
-      setInductions(fallbackInductions);
+      // setInductions(fallbackInductions);
       setLoading(false);
     }
   };
@@ -154,37 +154,42 @@ export default function StaffInductionScreen({
 
       const data = await response.json();
 
-      if (data.success && Array.isArray(data.data)) {
-        const formatted = data.data
-          .sort(
-            (a: any, b: any) =>
-              new Date(b.created_at).getTime() -
-              new Date(a.created_at).getTime(),
-          )
-          .map((item: any) => ({
-            id: item.id,
-            title: item.title,
-            subtitle: item.sub_heading?.[0] || 'Mandatory',
-            status: item.status || 'pending',
-            questions: item.questionnaire?.length || 0,
-            date: item.created_at
-              ? new Date(item.created_at).toLocaleDateString('en-AU', {
-                  day: 'numeric',
-                  month: 'short',
-                  year: 'numeric',
-                })
-              : 'Recently Added',
-            questionnaire: item.questionnaire,
-            created_at: item.created_at,
-          }));
-
-        setInductions(formatted);
-      } else {
-        setInductions(fallbackInductions);
+      // ✅ Handle "no data" case safely
+      if (
+        !data.success ||
+        !Array.isArray(data.data) ||
+        data.data.length === 0
+      ) {
+        setInductions([]); // important
+        return;
       }
+
+      const formatted = data.data
+        .sort(
+          (a: any, b: any) =>
+            new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+        )
+        .map((item: any) => ({
+          id: item.id,
+          title: item.title,
+          subtitle: item.sub_heading?.[0] || 'Mandatory',
+          status: item.status || 'pending',
+          questions: item.questionnaire?.length || 0,
+          date: item.created_at
+            ? new Date(item.created_at).toLocaleDateString('en-AU', {
+                day: 'numeric',
+                month: 'short',
+                year: 'numeric',
+              })
+            : 'Recently Added',
+          questionnaire: item.questionnaire,
+          created_at: item.created_at,
+        }));
+
+      setInductions(formatted);
     } catch (err) {
       setError('Failed to load inductions');
-      setInductions(fallbackInductions);
+      setInductions([]);
     } finally {
       setLoading(false);
     }
@@ -339,9 +344,9 @@ export default function StaffInductionScreen({
             </View>
 
             <View style={styles.recentContent}>
-              <Text style={styles.recentSubtitle}>
+              {/* <Text style={styles.recentSubtitle}>
                 {recentInduction.subtitle}
-              </Text>
+              </Text> */}
               <Text style={styles.recentTitle}>{recentInduction.title}</Text>
               <Text style={styles.recentDate}>{recentInduction.date}</Text>
 
@@ -382,7 +387,16 @@ export default function StaffInductionScreen({
         )}
 
         <Text style={styles.sectionTitle}>All Inductions</Text>
-
+        {inductions.length === 0 && !loading && (
+          <View style={{ alignItems: 'center', marginTop: 40 }}>
+            <Text style={{ fontSize: 16, fontWeight: '600', color: '#64748b' }}>
+              No Induction Found
+            </Text>
+            <Text style={{ marginTop: 6, color: '#94a3b8' }}>
+              There are no inductions assigned to you yet.
+            </Text>
+          </View>
+        )}
         <FlatList
           data={inductions}
           renderItem={renderInductionItem}

@@ -178,7 +178,7 @@ export default function SignUpScreen({ navigation }: { navigation: any }) {
       password,
       password_confirmation: confirmPassword,
       user_type: userType,
-      phone: phone.trim() || undefined, 
+      phone: phone.trim() || undefined,
     };
 
     setLoading(true);
@@ -351,8 +351,8 @@ export default function SignUpScreen({ navigation }: { navigation: any }) {
               <Text style={styles.label}>I want to</Text>
               <View style={styles.radioContainer}>
                 <View style={styles.radioRow}>
-                  <UserTypeOption type="staff" />
                   <UserTypeOption type="customer" />
+                  <UserTypeOption type="staff" />
                   <UserTypeOption type="contractor" />
                 </View>
               </View>

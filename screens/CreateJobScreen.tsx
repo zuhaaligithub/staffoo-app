@@ -2824,6 +2824,7 @@ import {
   Trash2,
   ArrowLeft,
   AlertCircle,
+  ChevronRight,
 } from 'lucide-react-native';
 import { Keyboard } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
@@ -2929,13 +2930,20 @@ const datesBetween = (from: Date, to: Date): Date[] => {
   return dates;
 };
 
-const combineDateAndTime = (date: Date, timeSource: Date): Date => {
-  const combined = new Date(date);
-  combined.setHours(
+// Better version - avoid mutating and timezone issues
+const combineDateAndTimeSafe = (date: Date, timeSource: Date): Date => {
+  const year = date.getFullYear();
+  const month = date.getMonth();
+  const day = date.getDate();
+
+  const combined = new Date(
+    year,
+    month,
+    day,
     timeSource.getHours(),
     timeSource.getMinutes(),
-    timeSource.getSeconds(),
-    timeSource.getMilliseconds(),
+    0,
+    0,
   );
   return combined;
 };
@@ -3276,8 +3284,8 @@ export default function CreateJobScreen() {
     if (!start || !end) return;
 
     const buildShifts = (existing: Shift[], date: Date) => {
-      const dayStart = combineDateAndTime(date, start);
-      const dayEnd = combineDateAndTime(date, end);
+      const dayStart = combineDateAndTimeSafe(date, start);
+      const dayEnd = combineDateAndTimeSafe(date, end);
       const hours = shiftDurationHours(dayStart, dayEnd);
       const splits = hours > 13 ? splitShift(dayStart, dayEnd) : null;
 
@@ -3297,8 +3305,8 @@ export default function CreateJobScreen() {
       }
 
       return existing.map(shift => {
-        const startTime = combineDateAndTime(date, start);
-        let endTime = combineDateAndTime(date, end);
+        const startTime = combineDateAndTimeSafe(date, start);
+        let endTime = combineDateAndTimeSafe(date, end);
         if (endTime <= startTime) endTime.setDate(endTime.getDate() + 1);
         return {
           ...shift,
@@ -3490,15 +3498,16 @@ export default function CreateJobScreen() {
 
     let newStart =
       field === 'startTime'
-        ? combineDateAndTime(currentShift.startTime, selectedDate)
+        ? combineDateAndTimeSafe(currentShift.startTime, selectedDate)
         : currentShift.startTime;
 
     let newEnd =
       field === 'endTime'
-        ? combineDateAndTime(currentShift.endTime, selectedDate)
+        ? combineDateAndTimeSafe(currentShift.endTime, selectedDate)
         : currentShift.endTime;
 
-    if (newEnd <= newStart) {
+    // Force correct day if needed
+    if (newEnd.getTime() < newStart.getTime()) {
       newEnd = new Date(newEnd.getTime() + 24 * 60 * 60 * 1000);
     }
 
@@ -3777,15 +3786,20 @@ export default function CreateJobScreen() {
 
     navigation.navigate('ReviewConfirm', {
       jobData: {
-        category: form.category,
+        category:
+          form.category === 'others' ? otherCategory.trim() : form.category,
         location: form.location || 'Not specified',
-        lat: form.lat ?? 0,
-        lng: form.lng ?? 0,
+        lat: form.lat ?? DEFAULT_LOCATION.lat,
+        lng: form.lng ?? DEFAULT_LOCATION.lng,
         description: form.description || '',
+
+        // ← THESE ARE REQUIRED BY THE TYPE
         startDate: first.date,
         startTime: first.shifts[0]?.startTime ?? new Date(),
         endDate: last.date,
-        endTime: last.shifts.at(-1)?.endTime ?? new Date(),
+        endTime: last.shifts[last.shifts.length - 1]?.endTime ?? new Date(),
+
+        // Shifts array
         shifts: activeSchedules.flatMap(day =>
           day.shifts.map(s => ({
             date: day.date,
@@ -3794,6 +3808,20 @@ export default function CreateJobScreen() {
             guardsCount: Number(s.guardsCount ?? 1),
           })),
         ),
+
+        tasks: tasks.map(t => ({
+          title: t.title || 'Untitled Task',
+          startTime: t.startTime,
+          endTime: t.endTime,
+        })),
+
+        // Optional but recommended
+        title: `${
+          form.category === 'others'
+            ? otherCategory
+            : categoryOptions.find(c => c.value === form.category)?.label
+        }`,
+        job_location_state: 'NSW', // or detect dynamically
       },
       uploadedFileUrls: uploadedFilePaths,
       selectedDocuments: documentTypes,
@@ -3812,6 +3840,74 @@ export default function CreateJobScreen() {
     setForm({ ...form, documents: updated });
   };
 
+  // ── Tasks Management ─────────────────────────────────────────────────────
+  // ── Tasks Management ─────────────────────────────────────────────────────
+  interface JobTask {
+    id: string;
+    startTime: Date;
+    endTime: Date;
+    title: string;
+  }
+
+  const [tasks, setTasks] = useState<JobTask[]>([
+    {
+      id: 'task-1',
+      startTime: new Date(
+        new Date().getFullYear(),
+        new Date().getMonth(),
+        new Date().getDate(),
+        9,
+        0,
+      ), // 09:00 today
+      endTime: new Date(
+        new Date().getFullYear(),
+        new Date().getMonth(),
+        new Date().getDate(),
+        17,
+        0,
+      ), // 17:00 today
+      title: '',
+    },
+  ]);
+
+  const addTask = () => {
+    const newTask: JobTask = {
+      id: Math.random().toString(36).slice(2),
+      startTime: new Date(),
+      endTime: new Date(new Date().getTime() + 8 * 60 * 60 * 1000), // +8 hours
+      title: '',
+    };
+    setTasks(prev => [...prev, newTask]);
+  };
+
+  const removeTask = (id: string) => {
+    if (tasks.length === 1) return; // Keep at least one
+    setTasks(prev => prev.filter(t => t.id !== id));
+  };
+
+  const updateTask = (id: string, field: keyof JobTask, value: any) => {
+    setTasks(prev =>
+      prev.map(task => (task.id === id ? { ...task, [field]: value } : task)),
+    );
+  };
+
+  const openTaskTimePicker = (
+    taskId: string,
+    field: 'startTime' | 'endTime',
+  ) => {
+    const task = tasks.find(t => t.id === taskId);
+    if (!task) return;
+
+    setPickerValue(field === 'startTime' ? task.startTime : task.endTime);
+    setPickerTarget({
+      mode: 'task',
+      dayIndex: -1,
+      shiftIndex: -1,
+      field,
+      taskId,
+    } as any);
+    setPickerVisible(true);
+  };
   // ── Render bulk apply UI ──────────────────────────────────────────────────
   const renderBulkApply = () => (
     <View style={styles.bulkConfigurationContainer}>
@@ -4143,7 +4239,7 @@ export default function CreateJobScreen() {
         {/* Top Corporate Branding Header */}
         <View style={styles.headerRow}>
           <TouchableOpacity
-            onPress={() => navigation.goBack()}
+            onPress={() => navigation.navigate('Profile')}
             style={styles.backBtn}
           >
             <ArrowLeft size={20} color={ACCENT_TEAL} />
@@ -4339,6 +4435,58 @@ export default function CreateJobScreen() {
               </View>
             </LinearGradient>
 
+            {/* ── Manage Tasks Section ── */}
+            {/* <Text style={styles.inputLabel}>Manage Tasks</Text>
+
+            <View style={styles.tasksContainer}>
+              {tasks.map((task, index) => (
+                <View key={task.id} style={styles.taskCard}>
+              
+                  <View style={styles.taskTimeRow}>
+                    <TouchableOpacity
+                      style={styles.taskTimeBox}
+                      onPress={() => openTaskTimePicker(task.id, 'startTime')}
+                    >
+                      <Text style={styles.taskTimeText}>
+                        {formatTime(task.startTime)}
+                      </Text>
+                    </TouchableOpacity>
+
+                    <Text style={styles.taskTimeSeparator}>–</Text>
+
+                    <TouchableOpacity
+                      style={styles.taskTimeBox}
+                      onPress={() => openTaskTimePicker(task.id, 'endTime')}
+                    >
+                      <Text style={styles.taskTimeText}>
+                        {formatTime(task.endTime)}
+                      </Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      onPress={() => removeTask(task.id)}
+                      style={styles.taskDeleteBtn}
+                    >
+                      <Trash2 size={20} color={ERROR_RED} />
+                    </TouchableOpacity>
+                  </View>
+
+                 
+                  <TextInput
+                    style={styles.taskInput}
+                    placeholder="Enter task description..."
+                    placeholderTextColor={TEXT_MUTED}
+                    value={task.title}
+                    onChangeText={text => updateTask(task.id, 'title', text)}
+                  />
+                </View>
+              ))}
+
+              <TouchableOpacity style={styles.addTaskButton} onPress={addTask}>
+                <Plus size={20} color="#fff" />
+                <Text style={styles.addTaskText}>Add Task</Text>
+              </TouchableOpacity>
+            </View> */}
             {/* Category Field */}
             <Text style={styles.inputLabel}>Job Category *</Text>
 
@@ -4444,57 +4592,55 @@ export default function CreateJobScreen() {
 
             {/* Required Documents - Toggle Style */}
             <Text style={styles.inputLabel}>Required Documents</Text>
-          <View style={styles.toggleContainer}>
-  {documentOptions.slice(0, 3).map(doc => {
-    const isActive = form.documents.includes(doc.value);
+            <View style={styles.toggleContainer}>
+              {documentOptions.slice(0, 3).map(doc => {
+                const isActive = form.documents.includes(doc.value);
 
-    return (
-      <LinearGradient
-        key={doc.value}
-        colors={[
-          'rgba(255,255,255,0.25)',
-          'rgba(255,255,255,0.08)',
-        ]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={styles.toggleCard}
-      >
-        <View style={styles.toggleRow}>
-          <View style={styles.toggleContent}>
-            <Text style={styles.toggleLabel}>{doc.label}</Text>
+                return (
+                  <LinearGradient
+                    key={doc.value}
+                    colors={[
+                      'rgba(255,255,255,0.25)',
+                      'rgba(255,255,255,0.08)',
+                    ]}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={styles.toggleCard}
+                  >
+                    <View style={styles.toggleRow}>
+                      <View style={styles.toggleContent}>
+                        <Text style={styles.toggleLabel}>{doc.label}</Text>
+                      </View>
 
-           
-          </View>
+                      <TouchableOpacity
+                        activeOpacity={0.8}
+                        style={[
+                          styles.toggleSwitch,
+                          isActive && styles.toggleSwitchActive,
+                        ]}
+                        onPress={() => toggleDocument(doc.value)}
+                      >
+                        <View
+                          style={[
+                            styles.toggleKnob,
+                            isActive && styles.toggleKnobActive,
+                          ]}
+                        />
 
-          <TouchableOpacity
-            activeOpacity={0.8}
-            style={[
-              styles.toggleSwitch,
-              isActive && styles.toggleSwitchActive,
-            ]}
-            onPress={() => toggleDocument(doc.value)}
-          >
-            <View
-              style={[
-                styles.toggleKnob,
-                isActive && styles.toggleKnobActive,
-              ]}
-            />
-
-            <Text
-              style={[
-                styles.toggleText,
-                isActive && styles.toggleTextActive,
-              ]}
-            >
-              {isActive ? 'YES' : 'NO'}
-            </Text>
-          </TouchableOpacity>
-        </View>
-      </LinearGradient>
-    );
-  })}
-</View>
+                        <Text
+                          style={[
+                            styles.toggleText,
+                            isActive && styles.toggleTextActive,
+                          ]}
+                        >
+                          {isActive ? 'YES' : 'NO'}
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+                  </LinearGradient>
+                );
+              })}
+            </View>
 
             {/* Document Upload */}
             <Text style={styles.inputLabel}>Compliance Documents</Text>
@@ -4728,11 +4874,7 @@ export default function CreateJobScreen() {
                   )
                 }
               >
-                <ChevronDown
-                  size={24}
-                  color={ACCENT_TEAL}
-                  style={{ transform: [{ rotate: '270deg' }] }}
-                />
+                <ChevronRight size={24} color={ACCENT_TEAL} />
               </TouchableOpacity>
             </View>
 
@@ -4806,7 +4948,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    // paddingVertical: 12,
   },
   backBtn: {
     width: 40,
@@ -4824,7 +4966,7 @@ const styles = StyleSheet.create({
   },
   formContainer: {
     paddingHorizontal: 16,
-    paddingTop: 10,
+    paddingTop: 5,
   },
   inputLabel: {
     fontSize: 14,
@@ -4893,6 +5035,66 @@ const styles = StyleSheet.create({
   },
   searchIcon: {
     marginRight: 10,
+  },
+  tasksContainer: {
+    marginBottom: 20,
+  },
+  taskCard: {
+    backgroundColor: CARD_BG,
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+  },
+  taskTimeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  taskTimeBox: {
+    backgroundColor: CHIP_DARK,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 10,
+    flex: 1,
+    alignItems: 'center',
+  },
+  taskTimeText: {
+    color: '#FFFFFF',
+    fontWeight: '600',
+    fontSize: 15,
+  },
+  taskTimeSeparator: {
+    fontSize: 20,
+    color: TEXT_MUTED,
+    marginHorizontal: 12,
+  },
+  taskDeleteBtn: {
+    marginLeft: 12,
+    padding: 8,
+  },
+  taskInput: {
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    borderRadius: 12,
+    padding: 14,
+    color: '#FFFFFF',
+    fontSize: 15,
+  },
+  addTaskButton: {
+    backgroundColor: ACCENT_TEAL,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 14,
+    borderRadius: 50,
+    gap: 8,
+    marginTop: 8,
+  },
+  addTaskText: {
+    color: BRAND_BG,
+    fontWeight: '700',
+    fontSize: 16,
   },
   searchBarInput: {
     flex: 1,
@@ -5257,82 +5459,82 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   multiSummary: { fontSize: 13, color: '#64748b', marginBottom: 10 },
- toggleContainer: {
-  flexDirection: 'row',
-  flexWrap: 'wrap',
-  justifyContent: 'space-between',
-  // marginTop: 10,
-},
+  toggleContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    // marginTop: 10,
+  },
 
-toggleCard: {
-  width: '48%',
-  borderRadius: 14,
-  overflow: 'hidden',
-  marginBottom: 10,
-  borderWidth: 1,
-  borderColor: 'rgba(255,255,255,0.12)',
-},
+  toggleCard: {
+    width: '48%',
+    borderRadius: 14,
+    overflow: 'hidden',
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.12)',
+  },
 
-toggleRow: {
-  padding: 13,
-  minHeight: 90,
-  justifyContent: 'space-between',
-  backgroundColor: 'rgba(0,31,63,0.88)',
-},
+  toggleRow: {
+    padding: 13,
+    minHeight: 90,
+    justifyContent: 'space-between',
+    backgroundColor: 'rgba(0,31,63,0.88)',
+  },
 
-toggleContent: {
-  gap: 6,
-},
+  toggleContent: {
+    gap: 6,
+  },
 
-toggleLabel: {
-  fontSize: 13,
-  color: '#fff',
-  fontWeight: '700',
-  lineHeight: 20,
-},
+  toggleLabel: {
+    fontSize: 13,
+    color: '#fff',
+    fontWeight: '700',
+    lineHeight: 20,
+  },
 
-toggleDescription: {
-  fontSize: 12,
-  color: 'rgba(255,255,255,0.65)',
-  lineHeight: 18,
-},
+  toggleDescription: {
+    fontSize: 12,
+    color: 'rgba(255,255,255,0.65)',
+    lineHeight: 18,
+  },
 
-toggleSwitch: {
-  height: 36,
-  borderRadius: 20,
-  backgroundColor: 'rgba(255,255,255,0.12)',
-  flexDirection: 'row',
-  alignItems: 'center',
-  paddingHorizontal: 6,
-  alignSelf: 'flex-start',
-  minWidth: 78,
-},
+  toggleSwitch: {
+    height: 36,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255,255,255,0.12)',
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 6,
+    alignSelf: 'flex-start',
+    minWidth: 78,
+  },
 
-toggleSwitchActive: {
-  backgroundColor: '#001F3F',
-},
+  toggleSwitchActive: {
+    backgroundColor: '#001F3F',
+  },
 
-toggleKnob: {
-  width: 24,
-  height: 24,
-  borderRadius: 12,
-  backgroundColor: 'rgba(255,255,255,0.5)',
-  marginRight: 8,
-},
+  toggleKnob: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: 'rgba(255,255,255,0.5)',
+    marginRight: 8,
+  },
 
-toggleKnobActive: {
-  backgroundColor: '#fff',
-},
+  toggleKnobActive: {
+    backgroundColor: '#fff',
+  },
 
-toggleText: {
-  fontSize: 12,
-  fontWeight: '700',
-  color: 'rgba(255,255,255,0.7)',
-},
+  toggleText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: 'rgba(255,255,255,0.7)',
+  },
 
-toggleTextActive: {
-  color: '#fff',
-},
+  toggleTextActive: {
+    color: '#fff',
+  },
   uploadAreaContainer: {
     backgroundColor: CARD_BG,
     borderRadius: 16,

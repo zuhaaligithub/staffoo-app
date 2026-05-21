@@ -33,17 +33,26 @@ import {
 import { Image } from 'react-native';
 import { launchImageLibrary } from 'react-native-image-picker';
 import ImageResizer from 'react-native-image-resizer';
+import LinearGradient from 'react-native-linear-gradient';
 
 const GOOGLE_API_KEY = 'AIzaSyCS-DB39Kk-Z25C5GWymVGshXIALbjXPGY';
 const COLORS = {
-  background: '#0B1220', // main dark background
-  surface: '#111A2E', // cards / inputs background
-  surfaceLight: '#16213A', // hover / elevated
-  primary: '#2c9c78', // main action (blue-purple)
-  secondary: '#7C3AED', // accent
-  success: '#22C55E',
-  warning: '#F59E0B',
-  danger: '#EF4444',
+  // 🎨 Brand Palette (NEW)
+  brand: '#89E7D0', // Mint accent
+  brandDark: '#001F3F', // Deep Navy
+  brandLight: '#021d37', // Darker navy
+  accent: '#89E7D0', // Bright blue
+  success: '#89E7D0',
+  error: '#EF4444',
+  grayBg: '#001F3F',
+  cardBg: '#021d37',
+
+  // 🔵 Existing system colors (keep for consistency)
+  background: '#0B1220',
+  surface: '#111A2E',
+  surfaceLight: '#16213A',
+  primary: '#89E7D0', // updated to brand mint (optional)
+  secondary: '#0047FF', // optional align with accent
 
   textPrimary: '#E5E7EB',
   textSecondary: '#94A3B8',
@@ -107,29 +116,115 @@ export default function ProfileSetupScreen({ navigation }: Props) {
   ];
 
   // ==================== IMPROVED PHONE HANDLER ====================
+  // const handlePhoneChange = (text: string) => {
+  //   // Remove everything except digits and optional leading +
+  //   let cleaned = text.replace(/[^\d+]/g, '');
+
+  //   // Allow +61 international format OR domestic 0...
+  //   if (cleaned.startsWith('+')) {
+  //     if (cleaned.startsWith('+61')) {
+  //       // +61 followed by 9 digits = total 12 chars
+  //       if (cleaned.length > 12) {
+  //         cleaned = cleaned.slice(0, 12);
+  //       }
+  //     } else {
+  //       // Block other country codes
+  //       cleaned = cleaned.replace(/^\+\d*/, '+61');
+  //     }
+  //   } else {
+  //     // Domestic Australian format (must start with 0)
+  //     if (cleaned.length > 0 && !cleaned.startsWith('0')) {
+  //       cleaned = '0' + cleaned;
+  //     }
+  //     // Max 10 digits for Australian numbers
+  //     if (cleaned.length > 10) {
+  //       cleaned = cleaned.slice(0, 10);
+  //     }
+  //   }
+
+  //   setPhoneNumber(cleaned);
+  // };
   const handlePhoneChange = (text: string) => {
-    // Remove everything except digits and optional leading +
+    // keep only digits and one +
     let cleaned = text.replace(/[^\d+]/g, '');
 
-    // Allow +61 international format OR domestic 0...
-    if (cleaned.startsWith('+')) {
-      if (cleaned.startsWith('+61')) {
-        // +61 followed by 9 digits = total 12 chars
-        if (cleaned.length > 12) {
-          cleaned = cleaned.slice(0, 12);
-        }
-      } else {
-        // Block other country codes
-        cleaned = cleaned.replace(/^\+\d*/, '+61');
+    // allow only one + at beginning
+    if (cleaned.includes('+')) {
+      cleaned = '+' + cleaned.replace(/\+/g, '').replace(/^\+/, '');
+    }
+
+    // =========================
+    // PAKISTAN
+    // =========================
+
+    // +92xxxxxxxxxx
+    if (cleaned.startsWith('+92')) {
+      cleaned = '+92' + cleaned.slice(3).replace(/\D/g, '');
+
+      // total length = 13
+      if (cleaned.length > 13) {
+        cleaned = cleaned.slice(0, 13);
       }
-    } else {
-      // Domestic Australian format (must start with 0)
-      if (cleaned.length > 0 && !cleaned.startsWith('0')) {
-        cleaned = '0' + cleaned;
+    }
+
+    // 03xxxxxxxxx
+    else if (cleaned.startsWith('03')) {
+      cleaned = cleaned.replace(/\D/g, '');
+
+      // total length = 11
+      if (cleaned.length > 11) {
+        cleaned = cleaned.slice(0, 11);
       }
-      // Max 10 digits for Australian numbers
+    } else if (cleaned.startsWith('+1')) {
+      cleaned = '+1' + cleaned.slice(2).replace(/\D/g, '');
+
+      // +1 + 10 digits = 12 chars total
+      if (cleaned.length > 12) {
+        cleaned = cleaned.slice(0, 12);
+      }
+    }
+
+    // US/Canada local (10 digits)
+    else if (!cleaned.startsWith('+') && cleaned.length > 0) {
+      const digits = cleaned.replace(/\D/g, '');
+
+      // if 10 digits, assume US/Canada format
+      if (digits.length <= 10) {
+        cleaned = digits.slice(0, 10);
+      }
+    }
+
+    // =========================
+    // AUSTRALIA
+    // =========================
+
+    // +61xxxxxxxxx
+    else if (cleaned.startsWith('+61')) {
+      cleaned = '+61' + cleaned.slice(3).replace(/\D/g, '');
+
+      // total length = 12
+      if (cleaned.length > 12) {
+        cleaned = cleaned.slice(0, 12);
+      }
+    }
+
+    // 04xxxxxxxx
+    else if (cleaned.startsWith('0')) {
+      cleaned = cleaned.replace(/\D/g, '');
+
+      // total length = 10
       if (cleaned.length > 10) {
         cleaned = cleaned.slice(0, 10);
+      }
+    }
+
+    // OTHER COUNTRIES
+    else {
+      // allow max 15 digits international standard
+      cleaned = cleaned.replace(/[^\d+]/g, '');
+
+      if (cleaned.length > 15) {
+        cleaned = cleaned.slice(0, 15);
       }
     }
 
@@ -139,13 +234,28 @@ export default function ProfileSetupScreen({ navigation }: Props) {
   // Optional: Add this for better UX (formatting with spaces)
   const formatPhoneForDisplay = (num: string): string => {
     if (!num) return '';
+
+    // Australia +61
     if (num.startsWith('+61')) {
-      return num
-        .replace(/(\+61)(\d{1,4})(\d{1,4})(\d{1,4})/, '$1 $2 $3 $4')
-        .trim();
+      return num.replace(/(\+61)(\d{3})(\d{3})(\d{3})/, '$1 $2 $3 $4').trim();
     }
-    // Domestic: 04xx xxx xxx or 02xx xxxx xx
-    return num.replace(/(\d{4})(\d{3})(\d{3})/, '$1 $2 $3').trim();
+
+    // Australia local
+    if (num.startsWith('0') && num.length <= 10) {
+      return num.replace(/(\d{4})(\d{3})(\d{3})/, '$1 $2 $3').trim();
+    }
+
+    // Pakistan +92
+    if (num.startsWith('+92')) {
+      return num.replace(/(\+92)(\d{3})(\d{7})/, '$1 $2 $3').trim();
+    }
+
+    // Pakistan local
+    if (num.startsWith('03')) {
+      return num.replace(/(\d{4})(\d{7})/, '$1 $2').trim();
+    }
+
+    return num;
   };
 
   // useEffect must also be at top level
@@ -337,12 +447,17 @@ export default function ProfileSetupScreen({ navigation }: Props) {
       return false;
     }
 
-    // Basic Australian validation
-    const isValidAU =
+    const isValidPhone =
+      // Australia
       (phoneNumber.startsWith('0') && phoneNumber.length === 10) ||
-      (phoneNumber.startsWith('+61') && phoneNumber.length === 12);
-
-    if (!isValidAU) {
+      (phoneNumber.startsWith('+61') && phoneNumber.length === 12) ||
+      // Pakistan
+      (phoneNumber.startsWith('03') && phoneNumber.length === 11) ||
+      (phoneNumber.startsWith('+92') && phoneNumber.length === 13) ||
+      // US / Canada
+      (phoneNumber.startsWith('+1') && phoneNumber.length === 12) ||
+      (!phoneNumber.startsWith('+') && phoneNumber.length === 10);
+    if (!isValidPhone) {
       Toast.show({
         type: 'error',
         text1: 'Please enter a valid Australian phone number',
@@ -556,7 +671,7 @@ export default function ProfileSetupScreen({ navigation }: Props) {
           )}
 
           <View style={styles.editIcon}>
-            <Edit2 size={16} color="#fff" />
+            <Edit2 size={16} color="#04103b" />
           </View>
         </TouchableOpacity>
 
@@ -579,11 +694,11 @@ export default function ProfileSetupScreen({ navigation }: Props) {
               Phone Number <Text style={styles.required}>*</Text>
             </>
           }
-          value={formatPhoneForDisplay(phoneNumber)} // Nice formatting
+          value={phoneNumber}
           onChange={handlePhoneChange}
           placeholder="0412 345 678"
-          keyboardType="phone-pad"
-          maxLength={12} // +61xxxxxxxxx
+          keyboardType="default"
+          maxLength={15}
         />
 
         {/* Email */}
@@ -591,19 +706,34 @@ export default function ProfileSetupScreen({ navigation }: Props) {
           <Text style={styles.label}>
             Email <Text style={styles.required}>*</Text>
           </Text>
-          <View style={styles.inputContainer}>
-            <Mail size={20} color="#666" style={styles.inputIcon} />
+
+          <LinearGradient
+            colors={[
+              'rgba(255, 255, 255, 0.41)',
+
+              // 'rgba(255,255,255,0.35)',
+              'rgba(255,255,255,0.35)',
+
+              'rgba(255, 255, 255, 0.2)',
+              'rgba(255,255,255,0.10)',
+              'rgba(255, 255, 255, 0.22)',
+            ]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.inputContainer}
+          >
+            <Mail size={20} color="#fff" style={styles.inputIcon} />
             <TextInput
               style={styles.input}
               value={gmail}
               onChangeText={setGmail}
               placeholder="yourname@gmail.com"
-              placeholderTextColor="#9CA3AF"
+              placeholderTextColor="#fff"
               keyboardType="email-address"
               autoCapitalize="none"
               autoCorrect={false}
             />
-          </View>
+          </LinearGradient>
         </View>
 
         {userType === 'contractor' && (
@@ -661,15 +791,32 @@ export default function ProfileSetupScreen({ navigation }: Props) {
               <Text style={styles.label}>
                 Gender <Text style={styles.required}>*</Text>
               </Text>
-              <View style={styles.inputContainer}>
-                <User size={20} color="#666" style={styles.inputIcon} />
-                <Text style={[styles.input, !gender && { color: '#9CA3AF' }]}>
+
+              <LinearGradient
+                colors={[
+                  'rgba(255,255,255,0.18)',
+                  'rgba(255,255,255,0.10)',
+                  'rgba(255,255,255,0.05)',
+                ]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.gradientInput}
+              >
+                <User size={20} color="#fff" style={styles.inputIcon} />
+
+                <Text
+                  style={[
+                    styles.input,
+                    !gender && { color: 'rgba(255,255,255,0.6)' },
+                  ]}
+                >
                   {gender
                     ? genderOptions.find(o => o.value === gender)?.label
                     : 'Select Gender'}
                 </Text>
-                <ChevronDown size={20} color="#9CA3AF" />
-              </View>
+
+                <ChevronDown size={20} color="#fff" />
+              </LinearGradient>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -679,12 +826,23 @@ export default function ProfileSetupScreen({ navigation }: Props) {
               <Text style={styles.label}>
                 Residential Status <Text style={styles.required}>*</Text>
               </Text>
-              <View style={styles.inputContainer}>
-                <Globe size={20} color="#666" style={styles.inputIcon} />
+
+              <LinearGradient
+                colors={[
+                  'rgba(255,255,255,0.18)',
+                  'rgba(255,255,255,0.10)',
+                  'rgba(255,255,255,0.05)',
+                ]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.gradientInput}
+              >
+                <Globe size={20} color="#fff" style={styles.inputIcon} />
+
                 <Text
                   style={[
                     styles.input,
-                    !residentialStatus && { color: '#9CA3AF' },
+                    !residentialStatus && { color: 'rgba(255,255,255,0.6)' },
                   ]}
                 >
                   {residentialStatus
@@ -693,8 +851,9 @@ export default function ProfileSetupScreen({ navigation }: Props) {
                       )?.label
                     : 'Select Residential Status'}
                 </Text>
-                <ChevronDown size={20} color="#9CA3AF" />
-              </View>
+
+                <ChevronDown size={20} color="#fff" />
+              </LinearGradient>
             </TouchableOpacity>
           </>
         )}
@@ -767,21 +926,32 @@ export default function ProfileSetupScreen({ navigation }: Props) {
           <Text style={styles.label}>
             Address <Text style={styles.required}>*</Text>
           </Text>
-          <View style={styles.inputContainer}>
-            <MapPin size={20} color="#666" style={styles.inputIcon} />
+
+          <LinearGradient
+            colors={[
+              'rgba(255,255,255,0.18)',
+              'rgba(255,255,255,0.10)',
+              'rgba(255,255,255,0.05)',
+            ]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.gradientInput}
+          >
+            <MapPin size={20} color="#fff" style={styles.inputIcon} />
+
             <TextInput
               ref={addressInputRef}
               style={styles.input}
               value={address}
               placeholder="Start typing your address..."
-              placeholderTextColor="#9CA3AF"
+              placeholderTextColor="rgba(255,255,255,0.6)"
               onChangeText={text => {
                 setAddress(text);
-
                 fetchPlaces(text);
               }}
               autoCorrect={false}
             />
+
             {address.length > 0 && (
               <TouchableOpacity
                 onPress={() => {
@@ -790,12 +960,12 @@ export default function ProfileSetupScreen({ navigation }: Props) {
                   setShowSuggestions(false);
                   addressInputRef.current?.focus();
                 }}
-                style={{ marginLeft: 8 }}
+                style={{ marginLeft: 10 ,marginRight:10}}
               >
-                <X size={20} color="#999" />
+                <X size={20} color="#fff" />
               </TouchableOpacity>
             )}
-          </View>
+          </LinearGradient>
         </View>
 
         <InputField
@@ -944,7 +1114,6 @@ export default function ProfileSetupScreen({ navigation }: Props) {
   );
 }
 
-// Reusable InputField Component with Dynamic Icon
 const InputField = ({
   icon: Icon,
   label,
@@ -953,35 +1122,53 @@ const InputField = ({
   editable = true,
   placeholder = '',
   keyboardType = 'default',
+  gradient = true,
 }: any) => (
   <View style={styles.field}>
     <Text style={styles.label}>{label}</Text>
-    <View style={[styles.inputContainer, !editable && styles.disabledInput]}>
-      <Icon size={20} color="#666" style={styles.inputIcon} />
+
+    <LinearGradient
+      colors={[
+        'rgba(255,255,255,0.18)',
+        'rgba(255,255,255,0.10)',
+        'rgba(255,255,255,0.05)',
+      ]}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+      style={styles.gradientInput}
+    >
+      <Icon size={20} color="#fff" style={styles.inputIcon} />
+
       <TextInput
         style={styles.input}
         value={value}
         onChangeText={onChange}
         placeholder={placeholder}
-        placeholderTextColor="#9CA3AF"
+        placeholderTextColor="rgba(255,255,255,0.6)"
         editable={editable}
         keyboardType={keyboardType}
         autoCapitalize="sentences"
       />
-    </View>
+    </LinearGradient>
   </View>
 );
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#dfe6f9',
+    backgroundColor: COLORS.brandDark,
     width: '100%',
-    position: 'relative',
+    // position: 'relative',
   },
   scrollContent: {
     paddingHorizontal: 15,
     paddingBottom: 50,
+  },
+  gradientInput: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 14,
+    height: 47,
   },
   header: {
     flexDirection: 'row',
@@ -989,7 +1176,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 15,
     paddingVertical: 14,
-    backgroundColor: '#0A7C6E',
+    backgroundColor: COLORS.brandDark,
     marginHorizontal: 16,
     borderRadius: 16,
     marginBottom: 10,
@@ -1012,7 +1199,7 @@ const styles = StyleSheet.create({
     height: 110,
     borderRadius: 55,
     borderWidth: 2,
-    borderColor: COLORS.primary,
+    borderColor: COLORS.brand,
   },
   placeholderImage: {
     width: 110,
@@ -1029,7 +1216,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 5,
     right: 5,
-    backgroundColor: '#0A7C6E',
+    backgroundColor: COLORS.accent,
     width: 32,
     height: 32,
     borderRadius: 16,
@@ -1053,14 +1240,16 @@ const styles = StyleSheet.create({
     marginBottom: 5,
   },
   inputContainer: {
+    // backgroundColor: '#fff',
+    borderColor: COLORS.brandDark,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#ffffff',
+
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#aeb2c5',
-    paddingHorizontal: 14,
-    height: 45,
+
+    // paddingHorizontal: 14,
+    height: 47,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
@@ -1072,12 +1261,13 @@ const styles = StyleSheet.create({
     opacity: 0.85,
   },
   inputIcon: {
-    marginRight: 12,
+    marginRight: 9,
+    marginLeft: 8,
   },
   input: {
     flex: 1,
     fontSize: 15,
-    color: '#1e293b',
+    color: '#fff',
   },
   required: {
     color: '#EF4444',
@@ -1103,7 +1293,7 @@ const styles = StyleSheet.create({
     fontSize: 15,
   },
   continueButton: {
-    backgroundColor: '#0A7C6E',
+    backgroundColor: COLORS.brand,
     paddingVertical: 16,
     borderRadius: 14,
     alignItems: 'center',
@@ -1113,7 +1303,7 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   buttonText: {
-    color: '#fff',
+    color: '#09266c',
     fontSize: 16,
     fontWeight: '700',
   },
@@ -1178,7 +1368,7 @@ const styles = StyleSheet.create({
     marginTop: 12,
     padding: 14,
     alignItems: 'center',
-    backgroundColor: '#f1f5f9',
+    backgroundColor: COLORS.brandLight,
     borderRadius: 12,
   },
   cancelText: {
@@ -1238,7 +1428,7 @@ const styles = StyleSheet.create({
   verifyModalBtn: {
     flex: 1,
     paddingVertical: 14,
-    backgroundColor: '#0A7C6E',
+    backgroundColor: COLORS.brand,
     borderRadius: 12,
     alignItems: 'center',
   },

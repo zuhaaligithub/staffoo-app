@@ -108,18 +108,85 @@ export default function InductionQuestionsScreen() {
     }
   };
 
+  // const fetchInductionQuestions = async () => {
+  //   try {
+  //     setLoading(true);
+  //     const token = await AsyncStorage.getItem('@auth_token');
+
+  //     if (!token) {
+  //       Alert.alert('Session Expired', 'Please login again');
+  //       return;
+  //     }
+
+  //     const response = await fetch(
+  //       `${BASE_URL}/get-questionnaire/${inductionId}`,
+  //       {
+  //         method: 'GET',
+  //         headers: {
+  //           Authorization: `Bearer ${token}`,
+  //           Accept: 'application/json',
+  //         },
+  //       },
+  //     );
+
+  //     const data = await response.json();
+  //     console.log('📦 API Response:', data);
+
+  //     if (data.success && data.data && data.data.length > 0) {
+  //       const inductionData =
+  //         Array.isArray(data.data) && data.data.length > 0
+  //           ? data.data[0]
+  //           : null;
+  //       if (!inductionData) {
+  //         setError('Selected induction not found');
+  //         return;
+  //       }
+
+  //       setInduction(inductionData);
+  //       setQuestions(inductionData.questionnaire || []);
+
+  //       // Initialize answers
+  //       const initialAnswers = (inductionData.questionnaire || []).map(() => ({
+  //         selectedOption: null,
+  //         shortAnswer: '',
+  //       }));
+
+  //       setUserAnswers(initialAnswers);
+  //     } else {
+  //       setError('No questions found');
+  //     }
+  //   } catch (err) {
+  //     console.error('❌ Fetch Error:', err);
+  //     setError('Failed to load questions');
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
   const fetchInductionQuestions = async () => {
     try {
       setLoading(true);
+      setError(null);
+
       const token = await AsyncStorage.getItem('@auth_token');
+
+      const cachedUser = await AsyncStorage.getItem('user');
+      const parsedUser = cachedUser ? JSON.parse(cachedUser) : null;
+
+      const userId =
+        parsedUser?.id || parsedUser?.user?.id || parsedUser?.guard_id;
 
       if (!token) {
         Alert.alert('Session Expired', 'Please login again');
         return;
       }
 
+      if (!userId) {
+        setError('User ID not found');
+        return;
+      }
+
       const response = await fetch(
-        `${BASE_URL}/get-questionnaire/${inductionId}`,
+        `${BASE_URL}/get-questionnaire/${userId}`, // ✅ FIX HERE
         {
           method: 'GET',
           headers: {
@@ -130,33 +197,35 @@ export default function InductionQuestionsScreen() {
       );
 
       const data = await response.json();
-      console.log('📦 API Response:', data);
+      console.log('📦 API Response:', JSON.stringify(data, null, 2));
 
-     if (data.success && data.data && data.data.length > 0) {
+      if (
+        !data.success ||
+        !Array.isArray(data.data) ||
+        data.data.length === 0
+      ) {
+        setError('No questions found');
+        setLoading(false);
+        return;
+      }
 
-  const inductionData = data.data.find(
-    (item: any) => item.id.toString() === inductionId.toString(),
-  );
+      const inductionData = data.data[0];
 
-  if (!inductionData) {
-    setError('Selected induction not found');
-    return;
-  }
+      if (!inductionData?.questionnaire?.length) {
+        setError('No questionnaire found in this induction');
+        setLoading(false);
+        return;
+      }
 
-  setInduction(inductionData);
-  setQuestions(inductionData.questionnaire || []);
+      setInduction(inductionData);
+      setQuestions(inductionData.questionnaire);
 
-  // Initialize answers
-  const initialAnswers = (inductionData.questionnaire || []).map(() => ({
-    selectedOption: null,
-    shortAnswer: '',
-  }));
+      const initialAnswers = inductionData.questionnaire.map(() => ({
+        selectedOption: null,
+        shortAnswer: '',
+      }));
 
-  setUserAnswers(initialAnswers);
-
-} else {
-  setError('No questions found');
-}
+      setUserAnswers(initialAnswers);
     } catch (err) {
       console.error('❌ Fetch Error:', err);
       setError('Failed to load questions');
@@ -164,7 +233,6 @@ export default function InductionQuestionsScreen() {
       setLoading(false);
     }
   };
-
   const getOptions = (q: Question) => {
     if (
       q.type?.toLowerCase().includes('true') ||
@@ -496,7 +564,7 @@ export default function InductionQuestionsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#dfe6f9', },
+  container: { flex: 1, backgroundColor: '#dfe6f9' },
 
   header: {
     paddingBottom: 20,
