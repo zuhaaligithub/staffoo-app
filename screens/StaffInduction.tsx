@@ -19,16 +19,25 @@ import { getAuthToken } from '../services/authApi';
 const THEME_COLOR = '#0A7C6E';
 const BASE_URL = 'https://apis.staffoo.com.au/api';
 
-// const fallbackInductions = [
-//   {
-//     id: 1,
-//     title: 'New Staff Onboarding 2026',
-//     subtitle: 'Recently Added',
-//     status: 'pending',
-//     questions: 10,
-//     date: 'Added 2 days ago',
-//   },
-// ];
+const COLORS = {
+  primary: '#89E7D0',
+  primaryDark: '#4FCBB3',
+
+  background: '#001F3F',
+  surface: '#0B1F3A',
+  surface2: '#12243A',
+
+  card: 'rgba(255,255,255,0.06)',
+  border: 'rgba(255,255,255,0.08)',
+
+  text: '#FFFFFF',
+  textSecondary: 'rgba(255,255,255,0.7)',
+  textMuted: 'rgba(255,255,255,0.5)',
+
+  success: '#22C55E',
+  warning: '#F59E0B',
+  danger: '#EF4444',
+};
 
 // ✅ GLOBAL HELPER
 const isCompleted = (status: string) =>
@@ -72,7 +81,6 @@ export default function StaffInductionScreen({
       // ✅ Check token
       if (!token) {
         setError('Session expired. Please login again.');
-        // setInductions(fallbackInductions);
         setLoading(false);
         return;
       }
@@ -126,7 +134,6 @@ export default function StaffInductionScreen({
       // ✅ Final validation
       if (!userId) {
         setError('User ID not found. Please login again.');
-        // setInductions(fallbackInductions);
         setLoading(false);
         return;
       }
@@ -137,7 +144,6 @@ export default function StaffInductionScreen({
       console.log('LOAD INDUCTION ERROR:', err);
 
       setError('Failed to load data');
-      // setInductions(fallbackInductions);
       setLoading(false);
     }
   };
@@ -410,19 +416,27 @@ export default function StaffInductionScreen({
 
 /* Styles remain the same as your original */
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#dfe6f9' },
-  headerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    backgroundColor: '#0A7C6E',
+ container: {
+  flex: 1,
+  backgroundColor: COLORS.background,
+},
+ headerRow: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  justifyContent: 'space-between',
 
-    marginHorizontal: 16,
-    borderRadius: 16,
-    marginBottom: 10,
-  },
+  paddingHorizontal: 16,
+  paddingVertical: 14,
+
+  marginHorizontal: 16,
+  marginTop: 10,
+
+  borderRadius: 18,
+
+  backgroundColor: COLORS.surface2,
+  borderWidth: 1,
+  borderColor: COLORS.border,
+},
   backBox: {
     width: 42,
     height: 42,
@@ -432,9 +446,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   headerTitleContainer: { flex: 1, marginLeft: 14 },
-  greeting: { fontSize: 18, fontWeight: '700', color: '#fff' },
-  staffName: { fontSize: 14, color: '#fff', marginTop: 2 },
+  greeting: {
+  fontSize: 18,
+  fontWeight: '700',
+  color: COLORS.text,
+},
 
+staffName: {
+  fontSize: 13,
+  color: COLORS.textSecondary,
+  marginTop: 2,
+},
   rightProfile: { width: 44, height: 44, borderRadius: 22 },
   avatarSmall: { width: 44, height: 44, borderRadius: 22 },
   initialsAvatarSmall: {
@@ -445,82 +467,92 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  initialsTextSmall: { color: '#0F172A', fontSize: 16, fontWeight: '700' },
+  initialsTextSmall: { color: '#fff', fontSize: 16, fontWeight: '700' },
 
   scrollContent: { padding: 20 },
   sectionTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#1e2937',
+    color: '#fff',
     marginBottom: 12,
+    marginTop:10
   },
   completedCardBorder: {
     borderWidth: 2,
     borderColor: '#22c55e',
   },
 
-  recentCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: 22,
-    padding: 16,
-    flexDirection: 'row',
-    marginBottom: 20,
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 5 },
-    shadowOpacity: 0.12,
-    shadowRadius: 8,
-    elevation: 10,
-    borderWidth: 1.5,
-    borderColor: '#d0e8f5',
-  },
-  recentIcon: {
-    width: 70,
-    height: 70,
-    borderRadius: 16,
-    backgroundColor: '#f0f9ff',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 20,
-  },
+ recentCard: {
+  backgroundColor: COLORS.surface,
+  borderRadius: 22,
+  padding: 18,
+  flexDirection: 'row',
+
+  borderWidth: 1,
+  borderColor: COLORS.border,
+
+  shadowColor: '#000',
+  shadowOpacity: 0.25,
+  shadowRadius: 12,
+  elevation: 8,
+},
+recentIcon: {
+  width: 70,
+  height: 70,
+  borderRadius: 18,
+
+  backgroundColor: 'rgba(137, 231, 208, 0.08)',
+  borderWidth: 1,
+  borderColor: COLORS.border,
+
+  alignItems: 'center',
+  justifyContent: 'center',
+  marginRight: 16,
+},
   recentContent: { flex: 1 },
   recentSubtitle: { color: THEME_COLOR, fontSize: 15, fontWeight: '600' },
   recentTitle: {
     fontSize: 17,
     fontWeight: '700',
-    color: '#1e2937',
+    color: '#fff',
     marginVertical: 6,
   },
   recentDate: { color: '#64748b', fontSize: 12 },
   questionsCount: {
-    color: '#0F172A',
+    color: '#fff',
     fontSize: 13,
     fontWeight: '600',
     marginTop: 4,
   },
+startButton: {
+  backgroundColor: COLORS.primary,
+  paddingVertical: 12,
+  paddingHorizontal: 20,
+  borderRadius: 14,
+  marginTop: 12,
+  alignSelf: 'flex-start',
+},
 
-  startButton: {
-    backgroundColor: '#0A7C6E',
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 14,
-    alignSelf: 'flex-start',
-    marginTop: 12,
-  },
-  startButtonText: { color: '#fff', fontWeight: '700', fontSize: 16 },
+startButtonText: {
+  color: '#001F3F',
+  fontWeight: '800',
+  fontSize: 14,
+},
 
-  listCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#fff',
-    padding: 14,
-    borderRadius: 18,
-    marginBottom: 14,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.08,
-    shadowRadius: 10,
-    elevation: 5,
-  },
+ listCard: {
+  flexDirection: 'row',
+  alignItems: 'center',
+
+  backgroundColor: COLORS.card,
+
+  padding: 14,
+  borderRadius: 18,
+
+  marginBottom: 14,
+
+  borderWidth: 1,
+  borderColor: COLORS.border,
+},
   completedBorder: {
     borderWidth: 2,
     borderColor: '#22c55e',
@@ -537,28 +569,58 @@ const styles = StyleSheet.create({
     right: 10,
     zIndex: 10,
   },
-  iconContainer: {
-    width: 52,
-    height: 52,
-    borderRadius: 16,
-    backgroundColor: '#f0f9ff',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 16,
-  },
+ iconContainer: {
+  width: 52,
+  height: 52,
+  borderRadius: 16,
+
+  backgroundColor: 'rgba(137, 231, 208, 0.08)',
+  borderWidth: 1,
+  borderColor: COLORS.border,
+
+  alignItems: 'center',
+  justifyContent: 'center',
+  marginRight: 14,
+},
   listContent: { flex: 1 },
-  listTitle: { fontSize: 16, fontWeight: '700', color: '#1e2937' },
+  listTitle: { fontSize: 16, fontWeight: '700', color: '#fff' },
   listSubtitle: { fontSize: 13, color: '#64748b', marginTop: 4 },
   questionsText: {
     fontSize: 13,
-    color: '#0F172A',
+    color: '#fff',
     fontWeight: '600',
     marginTop: 6,
   },
 
-  completedBadge: { flexDirection: 'row', alignItems: 'center', marginTop: 8 },
-  completedText: { color: '#22c55e', fontWeight: '600', marginLeft: 6 },
+completedBadge: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  marginTop: 8,
 
-  pendingBadge: { flexDirection: 'row', alignItems: 'center', marginTop: 8 },
-  pendingText: { color: '#f59e0b', fontWeight: '600', marginLeft: 6 },
+  backgroundColor: 'rgba(34,197,94,0.1)',
+  paddingHorizontal: 10,
+  paddingVertical: 4,
+  borderRadius: 12,
+},
+completedText: {
+  color: COLORS.success,
+  fontWeight: '700',
+  marginLeft: 6,
+},
+
+pendingBadge: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  marginTop: 8,
+
+  backgroundColor: 'rgba(245,158,11,0.1)',
+  paddingHorizontal: 10,
+  paddingVertical: 4,
+  borderRadius: 12,
+},
+pendingText: {
+  color: COLORS.warning,
+  fontWeight: '700',
+  marginLeft: 6,
+},
 });

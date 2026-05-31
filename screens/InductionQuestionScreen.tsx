@@ -36,7 +36,33 @@ type InductionData = {
   questionnaire: Question[];
   status?: string;
 };
+const COLORS = {
+  // 🌿 Primary Brand
+  primary: '#89E7D0', // mint accent
+  primaryDark: '#4FCBB3',
 
+  // 🌙 Background system (clean dark navy)
+  background: '#001F3F',
+  surface: '#20b72c',
+  surface2: '#12243A',
+
+  // ✨ Card / Glass
+  card: 'rgba(255,255,255,0.06)',
+  cardBorder: 'rgba(255,255,255,0.08)',
+
+  // ✍️ Text
+  text: '#FFFFFF',
+  textSecondary: 'rgba(255,255,255,0.7)',
+  textMuted: 'rgba(255,255,255,0.5)',
+
+  // 🔴🟡🟢 Status
+  success: '#22C55E',
+  warning: '#F59E0B',
+  danger: '#EF4444',
+
+  // Border
+  border: 'rgba(255,255,255,0.08)',
+};
 type RouteParams = {
   inductionId: number | string;
 };
@@ -108,60 +134,7 @@ export default function InductionQuestionsScreen() {
     }
   };
 
-  // const fetchInductionQuestions = async () => {
-  //   try {
-  //     setLoading(true);
-  //     const token = await AsyncStorage.getItem('@auth_token');
-
-  //     if (!token) {
-  //       Alert.alert('Session Expired', 'Please login again');
-  //       return;
-  //     }
-
-  //     const response = await fetch(
-  //       `${BASE_URL}/get-questionnaire/${inductionId}`,
-  //       {
-  //         method: 'GET',
-  //         headers: {
-  //           Authorization: `Bearer ${token}`,
-  //           Accept: 'application/json',
-  //         },
-  //       },
-  //     );
-
-  //     const data = await response.json();
-  //     console.log('📦 API Response:', data);
-
-  //     if (data.success && data.data && data.data.length > 0) {
-  //       const inductionData =
-  //         Array.isArray(data.data) && data.data.length > 0
-  //           ? data.data[0]
-  //           : null;
-  //       if (!inductionData) {
-  //         setError('Selected induction not found');
-  //         return;
-  //       }
-
-  //       setInduction(inductionData);
-  //       setQuestions(inductionData.questionnaire || []);
-
-  //       // Initialize answers
-  //       const initialAnswers = (inductionData.questionnaire || []).map(() => ({
-  //         selectedOption: null,
-  //         shortAnswer: '',
-  //       }));
-
-  //       setUserAnswers(initialAnswers);
-  //     } else {
-  //       setError('No questions found');
-  //     }
-  //   } catch (err) {
-  //     console.error('❌ Fetch Error:', err);
-  //     setError('Failed to load questions');
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
+ 
   const fetchInductionQuestions = async () => {
     try {
       setLoading(true);
@@ -410,8 +383,10 @@ export default function InductionQuestionsScreen() {
         <View
           style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}
         >
-          <ActivityIndicator size="large" color="#0F172A" />
-          <Text style={{ marginTop: 12 }}>Loading Questions...</Text>
+         <ActivityIndicator size="large" color={COLORS.primary} />
+    <Text style={{ marginTop: 12, color: COLORS.text }}>
+  Loading Questions...
+</Text>
         </View>
       </SafeAreaView>
     );
@@ -447,7 +422,10 @@ export default function InductionQuestionsScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#fff" />
+     <StatusBar
+  barStyle="light-content"
+  backgroundColor={COLORS.background}
+/>
 
       {/* Header */}
       <View style={styles.header}>
@@ -456,7 +434,7 @@ export default function InductionQuestionsScreen() {
             onPress={() => navigation.goBack()}
             style={styles.iconButton}
           >
-            <ChevronLeft size={28} color="#1e2937" />
+    <ChevronLeft size={28} color={COLORS.text} />
           </TouchableOpacity>
 
           <Text style={styles.questionCounter}>
@@ -467,7 +445,8 @@ export default function InductionQuestionsScreen() {
             onPress={() => navigation.goBack()}
             style={styles.iconButton}
           >
-            <X size={28} color="#1e2937" />
+      
+<X size={28} color={COLORS.text} />
           </TouchableOpacity>
         </View>
 
@@ -564,19 +543,23 @@ export default function InductionQuestionsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#dfe6f9' },
+  container: {
+    flex: 1,
+    backgroundColor: COLORS.background,
+  },
 
   header: {
     paddingBottom: 20,
     paddingHorizontal: 20,
-    backgroundColor: '#cbe1e8',
+    backgroundColor: COLORS.surface2,
     borderBottomLeftRadius: 30,
     borderBottomRightRadius: 30,
     borderTopLeftRadius: 30,
     borderTopRightRadius: 30,
-    marginRight: 10,
-    marginLeft: 10,
+    marginHorizontal: 10,
     paddingTop: 10,
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
 
   headerRow: {
@@ -585,28 +568,34 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginBottom: 15,
   },
-  iconButton: { padding: 4 },
+
+  iconButton: {
+    padding: 4,
+  },
+
   questionCounter: {
-    color: '#1e2937',
+    color: COLORS.text,
     fontSize: 18,
     fontWeight: '700',
   },
+
   progressContainer: {
     height: 8,
-    backgroundColor: '#e2e8f0',
+    backgroundColor: 'rgba(255,255,255,0.08)',
     borderRadius: 4,
     overflow: 'hidden',
   },
+
   progressBar: {
     height: '100%',
-    backgroundColor: '#0F172A',
+    backgroundColor: COLORS.primary,
     borderRadius: 4,
   },
 
   inductionTitle: {
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: '700',
-    color: '#1e2937',
+    color: COLORS.text,
     textAlign: 'center',
     marginVertical: 15,
   },
@@ -614,95 +603,111 @@ const styles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
     padding: 20,
-    paddingBottom: 100,
+    paddingBottom: 120,
   },
+
   questionCard: {
-    backgroundColor: '#fff',
-    borderRadius: 20,
+    backgroundColor: COLORS.card,
+    borderRadius: 24,
     padding: 24,
     marginBottom: 24,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    elevation: 8,
+    borderWidth: 1,
+    borderColor: COLORS.cardBorder,
   },
+
   questionText: {
     fontSize: 18,
-    lineHeight: 28,
-    color: '#1e2937',
+    lineHeight: 30,
+    color: COLORS.text,
     fontWeight: '600',
   },
+
   questionTypeBadge: {
-    backgroundColor: '#e0f2fe',
+    backgroundColor: 'rgba(137,231,208,0.15)',
     paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: 8,
+    borderRadius: 10,
     alignSelf: 'flex-start',
-    marginTop: 12,
+    marginTop: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(137,231,208,0.25)',
   },
+
   questionTypeText: {
-    color: '#0284c7',
+    color: COLORS.primary,
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: '700',
   },
 
   shortAnswerContainer: {
     marginBottom: 20,
   },
+
   shortAnswerInput: {
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 16,
+    backgroundColor: COLORS.card,
+    borderRadius: 18,
+    padding: 18,
     fontSize: 16,
-    color: '#1e2937',
-    borderWidth: 2,
-    borderColor: '#e2e8f0',
-    minHeight: 120,
+    color: COLORS.text,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    minHeight: 140,
     textAlignVertical: 'top',
   },
 
-  optionsContainer: { gap: 14 },
+  optionsContainer: {
+    gap: 14,
+  },
+
   optionButton: {
-    backgroundColor: '#fff',
-    borderRadius: 16,
+    backgroundColor: COLORS.card,
+    borderRadius: 18,
     padding: 18,
-    borderWidth: 2,
-    borderColor: '#e2e8f0',
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
+
   selectedOption: {
-    borderColor: '#0F172A',
-    backgroundColor: '#f0f9ff',
+    borderColor: COLORS.primary,
+    backgroundColor: 'rgba(137,231,208,0.12)',
   },
+
   optionContent: {
     flexDirection: 'row',
     alignItems: 'center',
   },
-  checkbox: { marginRight: 16 },
+
+  checkbox: {
+    marginRight: 16,
+  },
+
   emptyCheckbox: {
     width: 26,
     height: 26,
     borderRadius: 13,
     borderWidth: 2,
-    borderColor: '#94a3b8',
+    borderColor: COLORS.textMuted,
   },
+
   checkedBox: {
     width: 26,
     height: 26,
     borderRadius: 13,
-    backgroundColor: '#0F172A',
+    backgroundColor: COLORS.primary,
     alignItems: 'center',
     justifyContent: 'center',
   },
+
   optionText: {
     fontSize: 16.5,
-    color: '#334155',
+    color: COLORS.textSecondary,
     flex: 1,
     lineHeight: 24,
   },
+
   selectedOptionText: {
-    color: '#1e40af',
-    fontWeight: '600',
+    color: COLORS.text,
+    fontWeight: '700',
   },
 
   footer: {
@@ -710,22 +715,25 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.surface2,
     padding: 20,
     borderTopWidth: 1,
-    borderTopColor: '#e2e8f0',
+    borderTopColor: COLORS.border,
   },
+
   nextButton: {
-    backgroundColor: '#0F172A',
+    backgroundColor: COLORS.primary,
     paddingVertical: 18,
-    borderRadius: 16,
+    borderRadius: 18,
     alignItems: 'center',
   },
+
   disabledButton: {
-    backgroundColor: '#94a3b8',
+    backgroundColor: 'rgba(255,255,255,0.2)',
   },
+
   nextButtonText: {
-    color: '#fff',
+    color: COLORS.background,
     fontSize: 18,
     fontWeight: '700',
   },

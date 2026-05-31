@@ -80,9 +80,7 @@ type JobTask = {
 type RouteParams = {
   jobData?: {
     title?: string;
-
     category?: string;
-
     shifts?: Array<{
       date: Date;
       startTime: Date;
@@ -92,29 +90,30 @@ type RouteParams = {
 
     startDate?: Date;
     startTime?: Date;
-
     endDate?: Date;
     endTime?: Date;
 
     location?: string;
-
     description?: string;
-
     lat?: number;
     lng?: number;
-
     guardsCount?: number;
-
-    // ADD THESE
     job_location_state?: string;
-
     tasks?: JobTask[];
+
+    // ✅ Financial values coming from CreateJobScreen
+    totalManHours?: number;
+    subtotal?: number;
+    gstAmount?: number;
+    totalQuotation?: number;
+    discountAmount?: number;
+    payableNow?: number;
+    splitAmount?: number;
+    totalAmount?: number;
   };
 
   uploadedFileUrls?: string[];
-
   uploadedFileNames?: string[];
-
   selectedDocuments?: string[];
 };
 const COLORS = {
@@ -139,12 +138,21 @@ const COLORS = {
 export default function ReviewConfirmScreen() {
   const navigation = useNavigation();
   const route = useRoute();
+
   const {
     jobData = {},
     uploadedFileUrls = [],
     uploadedFileNames = [],
     selectedDocuments = [],
   } = (route.params || {}) as RouteParams;
+
+  // Extract financial values with fallbacks
+  const subtotalFromCreate = Number(jobData.subtotal || 0);
+  const gstFromCreate = Number(jobData.gstAmount || 0);
+  const totalQuotationFromCreate = Number(jobData.totalQuotation || 0);
+  const discountFromCreate = Number(jobData.discountAmount || 0);
+  const payableNowFromCreate = Number(jobData.payableNow || 0);
+  const splitAmountFromCreate = Number(jobData.splitAmount || 0);
 
   const PRIVACY_POLICY_TEXT = `Staffoo: Terms of Service & Privacy Policy
 Effective Date: March 14, 2026
@@ -214,7 +222,7 @@ Phone: [0478916034]`;
   const [processing, setProcessing] = useState(false);
   const [cardComplete, setCardComplete] = useState(false);
   // const [cardHolder, setCardHolder] = useState('');
-
+  const extractedState = jobData.location?.split(',').pop()?.trim() || '';
   const LOGO = require('../assets/staffoo.png');
   const SEGMENT_LABELS: Record<string, string> = {
     weekday_day: 'Mon–Fri Day (06:00–18:00)',
@@ -395,6 +403,11 @@ Phone: [0478916034]`;
       return new Date(value);
     };
 
+    const formatTime = (dateStr: string) => {
+      const d = new Date(dateStr);
+      return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    };
+
     // Format shifts exactly like backend expects (FIXED)
     const formattedShifts = (jobData.shifts || []).map((shift: any) => {
       const start = parseLocalDate(shift.startTime);
@@ -428,7 +441,8 @@ Phone: [0478916034]`;
 
       payment_option: selectedPlan,
 
-      job_location_state: jobData.job_location_state || 'punjab',
+      // job_location_state: jobData.job_location_state || 'punjab',
+      job_location_state: extractedState,
 
       financials: {
         base_total_inc_gst: parseFloat(totalIncGST.toFixed(2)),
@@ -454,7 +468,11 @@ Phone: [0478916034]`;
 
       job_instruction: jobData.description || '',
 
-      tasks: jobData.tasks || [],
+      tasks: (jobData.tasks || []).map((t: any) => ({
+        task: t.task || t.title || '',
+        task_start: t.task_start || formatTime(t.startTime),
+        task_end: t.task_end || formatTime(t.endTime),
+      })),
 
       payment_intent_id: intentId,
     };
@@ -804,11 +822,24 @@ Phone: [0478916034]`;
       </View>
     );
 
-  const ctaAmount = selectedPlan === 'full' ? fullPayAmount : splitUpfront;
+  // === Use values from CreateJobScreen (preferred) with fallback ===
+  const displaySubtotal =
+    subtotalFromCreate > 0 ? subtotalFromCreate : subtotal;
+  const displayGST = gstFromCreate > 0 ? gstFromCreate : gst;
+  const displayTotal = totalIncGST;
+  const displayDiscount =
+    discountFromCreate > 0 ? discountFromCreate : displayTotal * 0.05;
+  const displayPayableNow =
+    payableNowFromCreate > 0 ? payableNowFromCreate : fullPayAmount;
+  const displaySplit =
+    splitAmountFromCreate > 0 ? splitAmountFromCreate : splitUpfront;
+
+  // Final CTA values for payment
+  const ctaAmount = selectedPlan === 'full' ? displayPayableNow : displaySplit;
   const ctaLabel =
     selectedPlan === 'full'
-      ? `Pay $${fullPayAmount.toFixed(2)} (5% Off)`
-      : `Pay $${splitUpfront.toFixed(2)} Upfront`;
+      ? `Pay $${displayPayableNow.toFixed(2)} (5% Off)`
+      : `Pay $${displaySplit.toFixed(2)} Upfront`;
 
   return (
     <View style={styles.container}>
@@ -1001,11 +1032,56 @@ Phone: [0478916034]`;
                   <Text style={styles.gstValue}>${gst.toFixed(2)}</Text>
                 </View>
                 <View style={styles.finalTotalLine}>
-                  <Text style={styles.finalTotalLabel}>Total (inc. GST)</Text>
+                  <Text style={styles.finalTotalLabel}>Total Qutation</Text>
                   <Text style={styles.finalTotalValue}>
                     ${totalIncGST.toFixed(2)}
                   </Text>
                 </View>
+
+                {/* Dynamic Discount - Only show when Full Pay selected */}
+                {selectedPlan === 'full' && (
+                  <View style={styles.totalLine}>
+                    <Text style={styles.totalLabel}>
+                      5% Pay-in-Full Discount Applied
+                    </Text>
+
+                    <Text style={{ color: '#16A34A', fontWeight: '700' }}>
+                      -${(displayTotal * 0.05).toFixed(2)}
+                    </Text>
+                  </View>
+                )}
+
+                {selectedPlan === 'split' && (
+                  <View style={styles.totalLine}>
+                    <Text style={styles.totalLabel}>Balance Remaining</Text>
+                    <Text style={{ color: '#64748B', fontWeight: '600' }}>
+                      ${splitUpfront.toFixed(2)}
+                    </Text>
+                  </View>
+                )}
+
+                {/* FINAL PAYABLE AMOUNT */}
+                <View
+                  style={[
+                    styles.finalTotalLine,
+                    {
+                      borderTopWidth: 1,
+                      borderTopColor: '#89E7D0',
+                      paddingTop: 12,
+                    },
+                  ]}
+                >
+                  <Text style={styles.finalTotalLabel}>
+                    {selectedPlan === 'full' ? 'Payable Now' : 'Payable Now'}
+                  </Text>
+                  <Text style={[styles.finalTotalValue, { color: '#0A7C6E' }]}>
+                    {selectedPlan === 'full'
+                      ? `$${fullPayAmount.toFixed(2)}`
+                      : `$${splitUpfront.toFixed(2)}`}
+                  </Text>
+                </View>
+
+                {/* Remaining Balance - Only show when 50/50 Split is selected */}
               </View>
             </>
           )}
@@ -1101,39 +1177,6 @@ Phone: [0478916034]`;
           </View>
         </View>
 
-        {/* <View style={styles.card}>
-          <View style={styles.cardSectionHeader}>
-            <ShieldCheck size={22} color="#0A7C6E" />
-            <Text style={styles.sectionTitle}>Terms & Conditions</Text>
-          </View>
-          <TouchableOpacity
-            style={styles.policyContainer}
-            onPress={() => setAcceptedPolicy(!acceptedPolicy)}
-            activeOpacity={0.8}
-          >
-            <View
-              style={[
-                styles.checkbox,
-                acceptedPolicy && styles.checkboxChecked,
-              ]}
-            >
-              {acceptedPolicy && <Check size={16} color="#fff" />}
-            </View>
-            <Text style={styles.policyText}>
-              I agree to the{' '}
-              <Text
-                style={styles.policyLink}
-                onPress={e => {
-                  e.stopPropagation();
-                  setShowPolicyModal(true);
-                }}
-              >
-                Terms & Conditions
-              </Text>
-            </Text>
-          </TouchableOpacity>
-        </View> */}
-
         <TouchableOpacity
           style={styles.policyContainer}
           onPress={() => setAcceptedPolicy(!acceptedPolicy)}
@@ -1157,7 +1200,7 @@ Phone: [0478916034]`;
           </Text>
         </TouchableOpacity>
 
-        <TouchableOpacity
+        {/* <TouchableOpacity
           style={[
             styles.payNowButton,
             (!acceptedPolicy || isSubmitting) && styles.disabledButton,
@@ -1167,7 +1210,25 @@ Phone: [0478916034]`;
         >
           <Lock size={20} color="#fff" style={{ marginRight: 10 }} />
           <Text style={styles.payNowText}>{ctaLabel} & Post Job</Text>
+        </TouchableOpacity> */}
+
+        <TouchableOpacity
+          style={[
+            styles.payNowButton,
+            (!acceptedPolicy || isSubmitting) && styles.disabledButton,
+          ]}
+          onPress={openPaymentModal}
+          disabled={!acceptedPolicy || isSubmitting}
+        >
+          <Lock size={20} color="#fff" style={{ marginRight: 10 }} />
+
+          <Text style={styles.payNowText}>
+            {selectedPlan === 'full'
+              ? `Pay $${fullPayAmount.toFixed(2)} & Post Job`
+              : `Pay $${splitUpfront.toFixed(2)} & Post Job`}
+          </Text>
         </TouchableOpacity>
+
         <TouchableOpacity
           style={styles.editButton}
           onPress={() => navigation.goBack()}
@@ -1273,23 +1334,25 @@ Phone: [0478916034]`;
                 >
                   <Text style={styles.closeText}>×</Text>
                 </TouchableOpacity>
-
                 <Text style={styles.pmTitle}>Stripe Payment</Text>
-
                 <Text style={styles.pmSubtitle}>
                   {selectedPlan === 'full'
                     ? 'Pay in full with a 5% discount applied.'
                     : '50% now to secure guards. Balance due after completion.'}
                 </Text>
-
                 <View style={styles.amountBar}>
                   <Text style={styles.jobTitleText}>
                     {jobData.title || 'Job posting'}
                   </Text>
 
-                  <Text style={styles.amountText}>${ctaAmount.toFixed(2)}</Text>
+                  <Text style={styles.amountText}>
+                    $
+                    {(selectedPlan === 'full'
+                      ? fullPayAmount
+                      : splitUpfront
+                    ).toFixed(2)}
+                  </Text>
                 </View>
-
                 {/* SAVED CARDS */}
                 {paymentTab === 'saved' && savedCards.length > 0 && (
                   <FlatList
@@ -1325,7 +1388,6 @@ Phone: [0478916034]`;
                     )}
                   />
                 )}
-
                 {/* NEW CARD */}
                 {paymentTab === 'new' && (
                   <View style={styles.newCardForm}>
@@ -1387,12 +1449,10 @@ Phone: [0478916034]`;
                     />
                   </View>
                 )}
-
                 {/* ERROR */}
                 {cardError ? (
                   <Text style={styles.errorTextSmall}>{cardError}</Text>
                 ) : null}
-
                 {/* PAY BUTTON */}
                 <TouchableOpacity
                   style={[
@@ -1410,7 +1470,6 @@ Phone: [0478916034]`;
                     </Text>
                   )}
                 </TouchableOpacity>
-
                 {/* CANCEL BUTTON */}
                 <TouchableOpacity
                   style={styles.cancelButton}
@@ -1479,22 +1538,23 @@ const styles = StyleSheet.create({
   },
   detailRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingVertical: 5,
     alignItems: 'flex-start',
+    marginBottom: 12,
   },
   label: {
     color: '#89E7D0',
     fontWeight: '700',
     fontSize: 13,
     marginBottom: 6,
+    width: 90,
   },
+
   inputCard: {
     flex: 2,
     backgroundColor: '#e4f1f9',
     borderRadius: 10,
     paddingVertical: 8,
-    paddingHorizontal: 10,
+    paddingHorizontal: 20,
     // borderWidth: 1,
     // borderColor: '#ccd0e0',
     // shadowColor: '#506776',
@@ -1691,8 +1751,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#0047FF',
 
     borderRadius: 20,
-    paddingVertical: 18,
-
+    paddingVertical: 14,
+    marginBottom: 20,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -2007,7 +2067,7 @@ const styles = StyleSheet.create({
 
   planAmount: {
     color: '#89E7D0',
-    fontSize: 26,
+    fontSize: 20,
     fontWeight: '900',
   },
 

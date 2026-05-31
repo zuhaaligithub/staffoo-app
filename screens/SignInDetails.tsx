@@ -13,6 +13,7 @@ import {
   PermissionsAndroid,
   ActivityIndicator,
 } from 'react-native';
+import LinearGradient from 'react-native-linear-gradient';
 import RNFS from 'react-native-fs';
 import Toast from 'react-native-toast-message';
 import {
@@ -31,6 +32,27 @@ import Geolocation from 'react-native-geolocation-service';
 // Import your API function (adjust path if needed)
 import { signInShift } from '../services/authApi';
 import ImageResizer from 'react-native-image-resizer';
+
+const COLORS = {
+  primary: '#89E7D0',
+  primaryDark: '#4FCBB3',
+
+  background: '#001F3F',
+  surface: '#12243A',
+
+  card: 'rgba(255,255,255,0.06)',
+  cardBorder: 'rgba(255,255,255,0.08)',
+
+  text: '#FFFFFF',
+  textSecondary: 'rgba(255,255,255,0.7)',
+  textMuted: 'rgba(255,255,255,0.5)',
+
+  success: '#22C55E',
+  warning: '#F59E0B',
+  danger: '#EF4444',
+
+  border: 'rgba(255,255,255,0.08)',
+};
 
 interface SignInDetailsProps {
   navigation: any;
@@ -72,6 +94,7 @@ export default function SignInDetails({
   //   tasks: rawShift.tasks || 'No task is available',
   //   notes: rawShift.shift_instructions || rawShift.notes || '',
   // };
+
   const shift = {
     startTime: formatTime(rawShift.start) || '09:00',
     endTime: formatTime(rawShift.end) || '17:00',
@@ -397,86 +420,152 @@ export default function SignInDetails({
         <View style={styles.mainCard}>
           {/* Time Row */}
           <View style={styles.timeRow}>
-            <View style={styles.timeCard}>
-              <View style={styles.iconCircle}>
-                <Clock size={20} color="#3b82f6" />
+            <LinearGradient
+              colors={[
+                'rgba(255, 255, 255, 0.42)',
+                'rgba(255, 255, 255, 0.35)',
+                'rgba(255, 255, 255, 0.22)',
+                'rgba(255, 255, 255, 0.12)',
+                'rgba(255, 255, 255, 0.25)',
+              ]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.timeCard}
+            >
+              <View style={styles.siteCardInner}>
+                <View style={styles.iconCircle}>
+                  <Clock size={20} color="#3b82f6" />
+                </View>
+                <Text style={styles.timeLabel}>Start Time</Text>
+                <Text style={styles.timeValue}>{shift.startTime}</Text>
               </View>
-              <Text style={styles.timeLabel}>Start Time</Text>
-              <Text style={styles.timeValue}>{shift.startTime}</Text>
-            </View>
-            <View style={styles.timeCard}>
-              <View style={styles.iconCircle}>
-                <Clock size={20} color="#3b82f6" />
+            </LinearGradient>
+            <LinearGradient
+              colors={[
+                'rgba(255, 255, 255, 0.42)',
+                'rgba(255, 255, 255, 0.35)',
+                'rgba(255, 255, 255, 0.22)',
+                'rgba(255, 255, 255, 0.12)',
+                'rgba(255, 255, 255, 0.25)',
+              ]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.timeCard}
+            >
+              <View style={styles.siteCardInner}>
+                <View style={styles.iconCircle}>
+                  <Clock size={20} color="#3b82f6" />
+                </View>
+                <Text style={styles.timeLabel}>End Time</Text>
+                <Text style={styles.timeValue}>{shift.endTime}</Text>
               </View>
-              <Text style={styles.timeLabel}>End Time</Text>
-              <Text style={styles.timeValue}>{shift.endTime}</Text>
-            </View>
+            </LinearGradient>
           </View>
 
           {/* Break + Notes + Selfie */}
           <View style={styles.combinedRow}>
             <View style={styles.leftColumn}>
-              <View style={styles.halfCard}>
-                <View style={styles.smallIconCircle}>
-                  <X size={18} color="#64748b" />
+              <LinearGradient
+                colors={[
+                  'rgba(255, 255, 255, 0.42)',
+                  'rgba(255, 255, 255, 0.35)',
+                  'rgba(255, 255, 255, 0.22)',
+                  'rgba(255, 255, 255, 0.12)',
+                  'rgba(255, 255, 255, 0.25)',
+                ]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.halfCardcontainer}
+              >
+                <View style={styles.halfCard}>
+                  <View style={styles.smallIconCircle}>
+                    <X size={18} color="#3b82f6" />
+                  </View>
+                  <View>
+                    <Text style={styles.smallTitle}>Shift Status</Text>
+                    <Text style={styles.smallValue}>Sign In</Text>
+                  </View>
                 </View>
-                <View>
-                  <Text style={styles.smallTitle}>Shift Status</Text>
-                  <Text style={styles.smallValue}>Sign In</Text>
-                </View>
-              </View>
+              </LinearGradient>
 
-              <View style={[styles.halfCard, { marginTop: 10 }]}>
-                <View style={styles.smallIconCircle}>
-                  <FileText size={18} color="#64748b" />
+              <LinearGradient
+                colors={[
+                  'rgba(255, 255, 255, 0.42)',
+                  'rgba(255, 255, 255, 0.35)',
+                  'rgba(255, 255, 255, 0.22)',
+                  'rgba(255, 255, 255, 0.12)',
+                  'rgba(255, 255, 255, 0.25)',
+                ]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.Cardcontainer}
+              >
+                <View style={[styles.halfCard]}>
+                  <View style={styles.smallIconCircle}>
+                    <FileText size={18} color="#3b82f6" />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.smallTitle}>Sign in Notes</Text>
+                    <Text style={[styles.smallValue, { marginTop: 4 }]}>
+                      {shift.notes || 'Not added yet'}
+                    </Text>
+                  </View>
                 </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.smallTitle}>Sign in Notes</Text>
-                  <Text style={[styles.smallValue, { marginTop: 4 }]}>
-                    {shift.notes || 'Not added yet'}
-                  </Text>
-                </View>
-              </View>
+              </LinearGradient>
             </View>
 
             {/* Selfie Card */}
-            <View style={styles.selfieCard}>
-              <TouchableOpacity
-                activeOpacity={0.8}
-                onPress={openCamera}
-                style={{
-                  alignItems: 'center',
-                  flex: 1,
-                  justifyContent: 'center',
-                }}
-              >
-                {selfieUri ? (
-                  <Image
-                    source={{ uri: selfieUri }}
-                    style={styles.selfieImage}
-                    resizeMode="cover"
-                  />
-                ) : (
-                  <>
-                    <View style={styles.selfieIconCircle}>
-                      <Camera size={20} color="#64748b" />
-                    </View>
-                    <Text style={styles.smallTitle}>SignIn Selfie</Text>
-                    <Text
-                      style={{ fontSize: 12, color: '#64748b', marginTop: 4 }}
-                    >
-                      Tap to take photo
-                    </Text>
-                  </>
-                )}
-              </TouchableOpacity>
-            </View>
+            <LinearGradient
+              colors={[
+                'rgba(255, 255, 255, 0.42)',
+                'rgba(255, 255, 255, 0.35)',
+                'rgba(255, 255, 255, 0.22)',
+                'rgba(255, 255, 255, 0.12)',
+                'rgba(255, 255, 255, 0.25)',
+              ]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.halfCardcontainer}
+            >
+              <View style={styles.selfieCard}>
+                <TouchableOpacity
+                  activeOpacity={0.8}
+                  onPress={openCamera}
+                  style={{
+                    alignItems: 'center',
+                    flex: 1,
+                    justifyContent: 'center',
+                  }}
+                >
+                  {selfieUri ? (
+                    <Image
+                      source={{ uri: selfieUri }}
+                      style={styles.selfieImage}
+                      resizeMode="cover"
+                    />
+                  ) : (
+                    <>
+                      <View style={styles.selfieIconCircle}>
+                        <Camera size={20} color="#3b82f6" />
+                      </View>
+                      <Text style={styles.smallTitle}>SignIn Selfie</Text>
+                      <Text
+                        style={{ fontSize: 12, color: '#3b82f6', marginTop: 4 }}
+                      >
+                        Tap to take photo
+                      </Text>
+                    </>
+                  )}
+                </TouchableOpacity>
+              </View>
+            </LinearGradient>
           </View>
           <View style={styles.statusBadge}>
             <View style={styles.dot} />
             <Text style={styles.statusText}>Ready to Sign In</Text>
           </View>
           {/* Location Status */}
+
           <View style={styles.locationBanner}>
             {locationLoading ? (
               <ActivityIndicator size="small" color="#3b82f6" />
@@ -579,7 +668,7 @@ export default function SignInDetails({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#dfe6f9',
+    backgroundColor: COLORS.background,
     paddingTop: 20,
   },
   header: {
@@ -588,10 +677,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 15,
     paddingVertical: 14,
-    backgroundColor: '#0A7C6E',
+    backgroundColor: COLORS.surface,
     marginHorizontal: 16,
     borderRadius: 16,
     marginBottom: 10,
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: COLORS.text,
   },
 
   screenTitle: {
@@ -608,6 +702,9 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 999,
     marginBottom: 14,
+  },
+  siteCardInner: {
+    padding: 12, // 👈 REAL CARD PADDING HERE
   },
 
   dot: {
@@ -631,23 +728,15 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#fff',
-  },
+
   scrollContent: {
     padding: 14,
     paddingBottom: 140,
   },
   mainCard: {
-    backgroundColor: '#ffffff',
+    // backgroundColor: COLORS.surface,
     borderRadius: 28,
-    padding: 18,
-    shadowColor: '#000',
-    shadowOpacity: 0.06,
-    shadowRadius: 20,
-    elevation: 5,
+    // padding: 18,
   },
   timeRow: {
     flexDirection: 'row',
@@ -655,13 +744,23 @@ const styles = StyleSheet.create({
   },
   timeCard: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: COLORS.card,
     borderRadius: 24,
-    paddingVertical: 18,
+    // paddingVertical: 18,
     alignItems: 'center',
     marginHorizontal: 5,
-    borderWidth: 1,
-    borderColor: '#e2e8f0',
+    // borderWidth: 1,
+    // borderColor: COLORS.cardBorder,
+  },
+  timeLabel: {
+    fontSize: 11,
+    color: COLORS.textSecondary,
+    marginBottom: 2,
+  },
+  timeValue: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: COLORS.text,
   },
   iconCircle: {
     width: 52,
@@ -672,16 +771,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 10,
   },
-  timeLabel: {
-    fontSize: 11,
-    color: '#64748b',
-    marginBottom: 2,
+  halfCardcontainer: {
+    borderRadius: 18,
   },
-  timeValue: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#0f172a',
-  },
+  Cardcontainer: { borderRadius: 18, marginTop: 10 },
+
   combinedRow: {
     flexDirection: 'row',
     marginBottom: 14,
@@ -693,7 +787,7 @@ const styles = StyleSheet.create({
   halfCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f1f5f9',
+    backgroundColor: COLORS.card,
     borderRadius: 18,
     padding: 12,
   },
@@ -701,7 +795,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 22,
-    backgroundColor: '#e2e8f0',
+    backgroundColor: '#dbeafe',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 9,
@@ -709,16 +803,16 @@ const styles = StyleSheet.create({
   smallTitle: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#334155',
+    color: '#fff',
   },
   smallValue: {
     fontSize: 11,
     fontWeight: '600',
-    color: '#0f172a',
+    color: '#fff',
   },
   selfieCard: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: COLORS.card,
     borderRadius: 22,
     borderWidth: 2,
     borderColor: '#dbeafe',
@@ -744,29 +838,36 @@ const styles = StyleSheet.create({
   locationBanner: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#eff6ff',
+    backgroundColor: COLORS.card,
     borderRadius: 18,
     padding: 14,
     marginBottom: 18,
     borderWidth: 1,
-    borderColor: '#bfdbfe',
+    borderColor: COLORS.cardBorder,
   },
   locationText: {
     fontSize: 13,
     flex: 1,
+    color: COLORS.textSecondary,
   },
   fieldCard: {
     flexDirection: 'row',
-    backgroundColor: '#ffffff',
+    backgroundColor: COLORS.card,
     borderRadius: 22,
     padding: 16,
     marginBottom: 14,
     alignItems: 'flex-start',
-
-    shadowColor: '#000',
-    shadowOpacity: 0.04,
-    shadowRadius: 10,
-    elevation: 2,
+  },
+  fieldLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    marginBottom: 4,
+    color: COLORS.text,
+  },
+  fieldValue: {
+    fontSize: 11,
+    color: COLORS.textSecondary,
+    lineHeight: 22,
   },
   fieldIcon: {
     width: 40,
@@ -780,17 +881,7 @@ const styles = StyleSheet.create({
   fieldContent: {
     flex: 1,
   },
-  fieldLabel: {
-    fontSize: 12,
-    fontWeight: '600',
-    marginBottom: 4,
-    color: '#0f172a',
-  },
-  fieldValue: {
-    fontSize: 11,
-    color: '#475569',
-    lineHeight: 22,
-  },
+
   addressText: {
     fontSize: 12,
     color: '#0ea5a4',
@@ -805,11 +896,7 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     borderRadius: 16,
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 5,
+    backgroundColor: COLORS.primaryDark,
   },
   startButtonText: {
     color: '#ffffff',

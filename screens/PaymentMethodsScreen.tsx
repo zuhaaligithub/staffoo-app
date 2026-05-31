@@ -14,7 +14,24 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 
 const BASE_URL = 'https://apis.staffoo.com.au/api';
+const COLORS = {
+  primary: '#89E7D0',
+  primaryDark: '#4FCBB3',
 
+  background: '#001F3F',
+  surface: '#12243A',
+
+  card: 'rgba(255,255,255,0.06)',
+  cardBorder: 'rgba(255,255,255,0.08)',
+
+  text: '#FFFFFF',
+  textSecondary: 'rgba(255,255,255,0.7)',
+  textMuted: 'rgba(255,255,255,0.5)',
+
+  success: '#22C55E',
+  danger: '#EF4444',
+  border: 'rgba(255,255,255,0.08)',
+};
 type Card = {
   card_holder_name: string;
   card_number: string; // clean digits from backend
@@ -103,7 +120,7 @@ export default function PaymentMethodsScreen({ navigation }: Props) {
 
     return (
       <View style={styles.cardItem}>
-        <CreditCard size={28} color="#2EB1E2" />
+       <CreditCard size={28} color={COLORS.primary} />
         <View style={styles.cardInfo}>
           <Text style={styles.cardName}>
             {item.card_holder_name.toUpperCase()}
@@ -122,7 +139,7 @@ export default function PaymentMethodsScreen({ navigation }: Props) {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <ChevronLeft size={28} color="#111827" />
+          <ChevronLeft size={28} color="#fff" />
         </TouchableOpacity>
         <Text style={styles.title}>Payment Methods</Text>
         <View style={{ width: 28 }} />
@@ -141,7 +158,7 @@ export default function PaymentMethodsScreen({ navigation }: Props) {
         )}
 
         <TouchableOpacity style={styles.addButton} onPress={handleAddNew}>
-          <Plus size={20} color="#ffffff" />
+        <Plus size={20} color={COLORS.text} />
           <Text style={styles.addButtonText}>Add Payment Method</Text>
         </TouchableOpacity>
       </View>
@@ -150,70 +167,98 @@ export default function PaymentMethodsScreen({ navigation }: Props) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f8f9fa' },
+  container: {
+    flex: 1,
+    backgroundColor: COLORS.background,
+  },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+
     paddingHorizontal: 16,
     paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
-    backgroundColor: '#ffffff',
+
+    marginHorizontal: 16,
+    marginTop: 10,
+
+    backgroundColor: COLORS.surface,
+    borderRadius: 16,
+
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
-  title: { fontSize: 20, fontWeight: '700', color: '#111827' },
-  content: { flex: 1, padding: 16 },
+  title: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: COLORS.text,
+  },
+  content: {
+    flex: 1,
+    padding: 16,
+  },
   emptyText: {
     textAlign: 'center',
     marginTop: 80,
     fontSize: 16,
-    color: '#6b7280',
+    color: COLORS.textSecondary,
   },
   cardItem: {
     flexDirection: 'row',
-    backgroundColor: '#ffffff',
-    borderRadius: 16,
+
+    backgroundColor: COLORS.card,
+    borderRadius: 18,
+
     padding: 16,
     marginBottom: 12,
+
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: COLORS.cardBorder,
+
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 3,
+
+    overflow: 'hidden',
   },
   cardInfo: { marginLeft: 16, flex: 1 },
-  cardName: { fontSize: 17, fontWeight: '600', color: '#111827' },
-  cardNumber: {
-    fontSize: 16,
-    color: '#4b5563',
-    marginTop: 4,
-    letterSpacing: 0.5,
+  cardName: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: COLORS.text,
   },
-  expiry: { fontSize: 14, color: '#6b7280', marginTop: 4 },
+  cardNumber: {
+    fontSize: 15,
+    color: COLORS.textSecondary,
+    marginTop: 4,
+    letterSpacing: 1,
+  },
+  expiry: {
+    fontSize: 13,
+    color: COLORS.textMuted,
+    marginTop: 4,
+  },
   addButton: {
     position: 'absolute',
     bottom: 32,
     left: 24,
     right: 24,
-    backgroundColor: '#2EB1E2',
+
+    backgroundColor: COLORS.primaryDark,
+
     borderRadius: 16,
     paddingVertical: 16,
+
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 10,
-    shadowColor: '#2EB1E2',
-    shadowOffset: { width: 0, height: 4 },
+
+    shadowColor: COLORS.primaryDark,
     shadowOpacity: 0.3,
-    shadowRadius: 8,
+    shadowRadius: 10,
     elevation: 6,
   },
   addButtonText: {
-    color: '#ffffff',
+    color: COLORS.text,
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '700',
   },
 });

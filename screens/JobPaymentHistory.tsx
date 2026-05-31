@@ -14,7 +14,33 @@ import LinearGradient from 'react-native-linear-gradient';
 
 import { getUserTransactions } from '../services/authApi';
 import { ArrowLeft } from 'lucide-react-native';
+const COLORS = {
+  // 🌿 Primary Brand
+  primary: '#89E7D0', // mint accent
+  primaryDark: '#4FCBB3',
 
+  // 🌙 Background system (clean dark navy)
+  background: '#070F1E',
+  surface: '#0E1A2B',
+  surface2: '#12243A',
+
+  // ✨ Card / Glass
+  card: 'rgba(255,255,255,0.06)',
+  cardBorder: 'rgba(255,255,255,0.08)',
+
+  // ✍️ Text
+  text: '#FFFFFF',
+  textSecondary: 'rgba(255,255,255,0.7)',
+  textMuted: 'rgba(255,255,255,0.5)',
+
+  // 🔴🟡🟢 Status
+  success: '#22C55E',
+  warning: '#F59E0B',
+  danger: '#EF4444',
+
+  // Border
+  border: 'rgba(255,255,255,0.08)',
+};
 interface Transaction {
   id: number;
   amount: string;
@@ -103,13 +129,21 @@ export default function JobPaymentHistory({ navigation, route }: Props) {
   const getStatusColor = (status: string): string => {
     switch (status.toLowerCase()) {
       case 'paid':
-        return '#16a34a';
+      case 'succeeded':
+      case 'captured':
+        return COLORS.success;
+
       case 'held':
-        return '#f59e0b';
+      case 'processing':
+      case 'requires_capture':
+        return COLORS.warning;
+
       case 'failed':
-        return '#ef4444';
+      case 'canceled':
+        return COLORS.danger;
+
       default:
-        return '#555';
+        return COLORS.textSecondary;
     }
   };
 
@@ -129,31 +163,46 @@ export default function JobPaymentHistory({ navigation, route }: Props) {
     const rosterIds = parseRosterIds(item.job_roster_id);
 
     return (
-      <View style={styles.card}>
-        <View style={styles.rowBetween}>
-          <Text style={styles.amount}>
-            ${parseFloat(item.amount || '0').toFixed(2)} {item.currency}
+      <LinearGradient
+        colors={[
+          'rgba(255, 255, 255, 0.42)',
+          'rgba(255, 255, 255, 0.35)',
+          'rgba(255, 255, 255, 0.22)',
+          'rgba(255, 255, 255, 0.12)',
+          'rgba(255, 255, 255, 0.25)',
+        ]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.card}
+      >
+        <View style={styles.siteCardInner}>
+          <View style={styles.rowBetween}>
+            <Text style={styles.amount}>
+              ${parseFloat(item.amount || '0').toFixed(2)} {item.currency}
+            </Text>
+
+            <Text
+              style={[styles.status, { color: getStatusColor(item.status) }]}
+            >
+              {item.status.toUpperCase()}
+            </Text>
+          </View>
+
+          <Text style={styles.label}>
+            Service Fee: ${parseFloat(item.service_fee || '0').toFixed(2)}
           </Text>
 
-          <Text style={[styles.status, { color: getStatusColor(item.status) }]}>
-            {item.status.toUpperCase()}
+          <Text style={styles.label}>
+            Total: ${parseFloat(item.total_amount || '0').toFixed(2)}
           </Text>
-        </View>
 
-        <Text style={styles.label}>
-          Service Fee: ${parseFloat(item.service_fee || '0').toFixed(2)}
-        </Text>
-
-        <Text style={styles.label}>
-          Total: ${parseFloat(item.total_amount || '0').toFixed(2)}
-        </Text>
-
-        {/* {rosterIds.length > 0 && (
+          {/* {rosterIds.length > 0 && (
           <Text style={styles.label}>Jobs: {rosterIds.join(', ')}</Text>
         )} */}
 
-        <Text style={styles.date}>{formatDateTime(item.created_at)}</Text>
-      </View>
+          <Text style={styles.date}>{formatDateTime(item.created_at)}</Text>
+        </View>
+      </LinearGradient>
     );
   };
 
@@ -175,10 +224,7 @@ export default function JobPaymentHistory({ navigation, route }: Props) {
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#fff" />
       <View style={styles.header}>
-        <TouchableOpacity
-          onPress={() => navigation.goBack()}
-         
-        >
+        <TouchableOpacity onPress={() => navigation.goBack()}>
           <ArrowLeft size={24} color="#fff" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Payment History</Text>
@@ -205,50 +251,50 @@ export default function JobPaymentHistory({ navigation, route }: Props) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#dfe6f9',
+    backgroundColor: COLORS.background,
     paddingTop: 45,
-    marginTop: 15,
+    // marginTop: 15,
   },
-header: {
-  flexDirection: 'row',
-  alignItems: 'center',
-  paddingHorizontal: 16,
-  paddingVertical: 10,
-  backgroundColor: '#0A7C6E',
-  marginHorizontal: 16,
-  borderRadius: 16,
-  marginBottom: 10,
-},
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: COLORS.surface,
+    marginHorizontal: 16,
+    borderRadius: 16,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
   headerTitle: {
     fontSize: 20,
     fontWeight: '600',
-    color: '#fff',
+    color: COLORS.text,
     marginLeft: '15%',
     marginTop: 5,
   },
-
-
-card: {
-  backgroundColor: '#fff',
-  padding: 16,
-  borderRadius: 18,
-  marginBottom: 14,
-  borderWidth: 1,
-  borderColor: '#2A3152',
-  shadowColor: '#2EB1E2',
-  shadowOpacity: 0.08,
-  shadowRadius: 10,
-},
+  siteCardInner: {
+    padding: 12, // 👈 REAL CARD PADDING HERE
+  },
+  card: {
+    // backgroundColor: COLORS.card,
+    // padding: 16,
+    borderRadius: 18,
+    marginBottom: 14,
+    // borderWidth: 1,
+    // borderColor: COLORS.cardBorder,
+  },
   rowBetween: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-amount: {
-  fontSize: 18,
-  fontWeight: '700',
-  color: '#2EB1E2',
-},
+  amount: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: COLORS.primary,
+  },
   status: {
     fontSize: 12,
     fontWeight: 'bold',
@@ -261,12 +307,18 @@ amount: {
   label: {
     marginTop: 6,
     fontSize: 13,
-    color: '#333',
+    color: COLORS.textSecondary,
   },
   date: {
     marginTop: 10,
     fontSize: 12,
-    color: '#777',
+    color: COLORS.textMuted,
+  },
+  emptyText: {
+    textAlign: 'center',
+    marginTop: 80,
+    fontSize: 16,
+    color: COLORS.textMuted,
   },
   center: {
     flex: 1,
@@ -274,12 +326,7 @@ amount: {
     alignItems: 'center',
     backgroundColor: '#f5f7fb',
   },
-  emptyText: {
-    textAlign: 'center',
-    marginTop: 80,
-    fontSize: 16,
-    color: '#999',
-  },
+
   listContent: {
     padding: 16,
     paddingTop: 5,

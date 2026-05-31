@@ -49,6 +49,11 @@
 		<true/>
 	</dict>
 
+	<key>LSApplicationQueriesSchemes</key>
+<array>
+  <string>googlegmail</string>
+</array>
+
 	<key>NSCameraUsageDescription</key>
 	<string>STAFFO uses the camera so you can capture photos for shift sign-in and incident reports.</string>
 	

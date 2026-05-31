@@ -18,9 +18,36 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import BottomTab from './BottomTab';
 import { getConversations } from '../services/authApi';
+import LinearGradient from 'react-native-linear-gradient';
 
 const BASE_URL = 'https://apis.staffoo.com.au/api';
+const COLORS = {
+  // 🌿 Primary Brand
+  primary: '#89E7D0', // mint accent
+  primaryDark: '#4FCBB3',
 
+  // 🌙 Background system (clean dark navy)
+  background: '#001F3F',
+  surface: '#20b72c',
+  surface2: '#12243A',
+
+  // ✨ Card / Glass
+  card: 'rgba(255,255,255,0.06)',
+  cardBorder: 'rgba(255,255,255,0.08)',
+
+  // ✍️ Text
+  text: '#FFFFFF',
+  textSecondary: 'rgba(255,255,255,0.7)',
+  textMuted: 'rgba(255,255,255,0.5)',
+
+  // 🔴🟡🟢 Status
+  success: '#22C55E',
+  warning: '#F59E0B',
+  danger: '#EF4444',
+
+  // Border
+  border: 'rgba(255,255,255,0.08)',
+};
 type ChatUser = {
   id: string | number;
   name: string;
@@ -239,7 +266,6 @@ export default function MessageScreen({ navigation }: Props) {
           filteredChats.map(chat => (
             <TouchableOpacity
               key={chat.id}
-              style={styles.chatItem}
               onPress={() => {
                 navigation.navigate('MessageDetail', {
                   chatId: chat.id,
@@ -247,44 +273,65 @@ export default function MessageScreen({ navigation }: Props) {
                 });
               }}
             >
-              <View style={styles.avatarContainer}>
-                {chat.avatar ? (
-                  <Image source={chat.avatar} style={styles.avatar} />
-                ) : (
-                  <View style={styles.avatarInitial}>
-                    <Text style={styles.avatarInitialText}>
-                      {chat.name?.charAt(0)?.toUpperCase() || 'A'}
+              <LinearGradient
+                colors={[
+                  'rgba(255, 255, 255, 0.42)',
+                  'rgba(255, 255, 255, 0.35)',
+                  'rgba(255, 255, 255, 0.22)',
+                  'rgba(255, 255, 255, 0.12)',
+                  'rgba(255, 255, 255, 0.25)',
+                ]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.chatItem}
+              >
+                <View style={styles.chatItems}>
+                  <View style={styles.avatarContainer}>
+                    {chat.avatar ? (
+                      <Image source={chat.avatar} style={styles.avatar} />
+                    ) : (
+                      <View style={styles.avatarInitial}>
+                        <Text style={styles.avatarInitialText}>
+                          {chat.name?.charAt(0)?.toUpperCase() || 'A'}
+                        </Text>
+                      </View>
+                    )}
+                  </View>
+
+                  <View style={styles.chatInfo}>
+                    <View
+                      style={{ flexDirection: 'row', alignItems: 'center' }}
+                    >
+                      <Text style={styles.chatName}>{chat.name}</Text>
+                      <Text
+                        style={{
+                          color: '#0A7C6E',
+                          fontSize: 13,
+                          marginLeft: 4,
+                        }}
+                      >
+                        (Admin)
+                      </Text>
+                    </View>
+                    <Text style={styles.lastMessage} numberOfLines={1}>
+                      {chat.lastMessage || 'No messages yet'}
                     </Text>
                   </View>
-                )}
-              </View>
 
-              <View style={styles.chatInfo}>
-                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                  <Text style={styles.chatName}>{chat.name}</Text>
-                  <Text
-                    style={{ color: '#0A7C6E', fontSize: 13, marginLeft: 4 }}
-                  >
-                    (Admin)
-                  </Text>
+                  <View style={styles.rightColumn}>
+                    <Text style={styles.timeText}>
+                      {formatMessageRuntime(chat.timeRaw)}
+                    </Text>
+                    {Number(chat.unread) > 0 ? (
+                      <View style={styles.unreadBadge}>
+                        <Text style={styles.unreadCount}>
+                          {String(chat.unread)}
+                        </Text>
+                      </View>
+                    ) : null}
+                  </View>
                 </View>
-                <Text style={styles.lastMessage} numberOfLines={1}>
-                  {chat.lastMessage || 'No messages yet'}
-                </Text>
-              </View>
-
-              <View style={styles.rightColumn}>
-                <Text style={styles.timeText}>
-                  {formatMessageRuntime(chat.timeRaw)}
-                </Text>
-                {Number(chat.unread) > 0 ? (
-                  <View style={styles.unreadBadge}>
-                    <Text style={styles.unreadCount}>
-                      {String(chat.unread)}
-                    </Text>
-                  </View>
-                ) : null}
-              </View>
+              </LinearGradient>
             </TouchableOpacity>
           ))
         )}
@@ -297,91 +344,152 @@ export default function MessageScreen({ navigation }: Props) {
 
 // ==================== STYLES ====================
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#dfe6f9' },
+  container: {
+    flex: 1,
+    backgroundColor: COLORS.background,
+  },
+
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 20,
     paddingVertical: 14,
-    backgroundColor: '#0A7C6E',
+    backgroundColor: COLORS.surface2,
     marginHorizontal: 16,
     borderRadius: 16,
     marginBottom: 10,
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
 
   screenTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#fff',
+    color: COLORS.text,
   },
-  backBox: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    backgroundColor: '#fff',
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#111827',
-    marginLeft: 16,
-  },
+  // siteCardInner:{padding:16},
+
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F3F4F6',
+    backgroundColor: COLORS.surface2,
     margin: 16,
     borderRadius: 12,
     paddingHorizontal: 14,
     paddingVertical: 10,
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
-  searchInput: { flex: 1, fontSize: 16, color: '#111827' },
 
-  scrollView: { flex: 1 },
+  searchInput: {
+    flex: 1,
+    fontSize: 16,
+    color: COLORS.text,
+  },
+
+  scrollView: {
+    flex: 1,
+  },
+
   center: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     paddingTop: 100,
   },
-  loadingText: { marginTop: 12, color: '#6B7280' },
-  emptyText: { color: '#6B7280', fontSize: 16 },
+
+  loadingText: {
+    marginTop: 12,
+    color: COLORS.textSecondary,
+  },
+
+  emptyText: {
+    color: COLORS.textSecondary,
+    fontSize: 16,
+  },
+  chatItems: {
+  flexDirection: 'row',
+  alignItems: 'center',
+
+  paddingHorizontal: 16,
+  paddingVertical: 16,
+
+  width: '100%',
+},
 
   chatItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 14,
+
+    // paddingHorizontal: 14,
+    // paddingVertical: 14,
+
     marginHorizontal: 16,
-    marginBottom: 12,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    elevation: 2,
+    marginBottom: 15,
+
+    borderRadius: 20,
+
+    // borderWidth: 1,
+    // borderColor: 'rgba(255,255,255,0.15)',
+
+    overflow: 'hidden',
   },
-  avatarContainer: { position: 'relative' },
-  avatar: { width: 54, height: 54, borderRadius: 27 },
+
+  avatarContainer: {
+    position: 'relative',
+  },
+
+  avatar: {
+    width: 54,
+    height: 54,
+    borderRadius: 27,
+  },
+
   avatarInitial: {
     width: 54,
     height: 54,
     borderRadius: 27,
-    backgroundColor: '#0A7C6E',
+    backgroundColor: COLORS.primaryDark,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  avatarInitialText: { color: '#fff', fontSize: 20, fontWeight: '700' },
 
-  chatInfo: { flex: 1, marginLeft: 14 },
-  chatName: { fontSize: 16, fontWeight: '700', color: '#111827' },
-  lastMessage: { fontSize: 14, color: '#6B7280', marginTop: 2 },
+  avatarInitialText: {
+    color: COLORS.text,
+    fontSize: 20,
+    fontWeight: '700',
+  },
 
-  rightColumn: { alignItems: 'flex-end', minWidth: 70 },
-  timeText: { fontSize: 12, color: '#6B7280' },
+  chatInfo: {
+    flex: 1,
+    marginLeft: 14,
+  },
+
+  chatName: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: COLORS.text,
+  },
+
+  lastMessage: {
+    fontSize: 14,
+    color: COLORS.textSecondary,
+    marginTop: 2,
+  },
+
+  rightColumn: {
+    alignItems: 'flex-end',
+    minWidth: 70,
+  },
+
+  timeText: {
+    fontSize: 12,
+    color: COLORS.textMuted,
+  },
+
   unreadBadge: {
-    backgroundColor: '#DC2626',
+    backgroundColor: COLORS.danger,
     borderRadius: 12,
     minWidth: 22,
     height: 22,
@@ -390,5 +498,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6,
     marginTop: 4,
   },
-  unreadCount: { color: '#fff', fontSize: 12, fontWeight: '600' },
+
+  unreadCount: {
+    color: COLORS.text,
+    fontSize: 12,
+    fontWeight: '600',
+  },
 });

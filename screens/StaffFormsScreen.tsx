@@ -1,5 +1,3 @@
-
-
 import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
@@ -83,12 +81,12 @@ type FormUrls = {
 };
 
 const StaffFormsScreen = ({ navigation }: any) => {
-  const [activeStaffTab, setActiveStaffTab] = useState<StaffTab>('tfn');
+  const [activeStaffTab, setActiveStaffTab] = useState<StaffTab>('onboarding');
   const [userId, setUserId] = useState<number | string | null>(null);
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
   const tabAnim = useRef(new Animated.Value(0)).current;
-
+  const [tabLoading, setTabLoading] = useState(false);
   // ── TFN Fields ──────────────────────────────────────────────────────────────
   const [tfnNumber, setTfnNumber] = useState('');
   const [tfnTitle, setTfnTitle] = useState('');
@@ -252,11 +250,11 @@ const StaffFormsScreen = ({ navigation }: any) => {
 
   useEffect(() => {
     if (userId && activeStaffTab) {
-      resetAllFields();
-      fetchFormData(userId);
+      resetAllFields(); // Clear old data
+      fetchFormData(userId); // Fetch fresh data
     }
   }, [activeStaffTab, userId]);
-
+  
   const getFormUrl = (tab: StaffTab | null): string | undefined => {
     if (!tab) return undefined;
     if (tab === 'super') return formUrls.super_form;
@@ -920,6 +918,8 @@ const StaffFormsScreen = ({ navigation }: any) => {
   const fetchFormData = async (id: number | string) => {
     if (!id) return;
 
+    setTabLoading(true); // ← Loader On
+
     try {
       const token = await getToken();
       if (!token) return;
@@ -971,7 +971,7 @@ const StaffFormsScreen = ({ navigation }: any) => {
         }
 
         if (type === 'superannuation' && data.full_name) {
-          setSuperFullName(data.full_name || ''); // ← Added
+          setSuperFullName(data.full_name || '');
           setSuperEmployeeNumber(data.employee_number || '');
           setFundChoice(data.fund_choice || 'employer');
           setSuperFundName(data.fund_name || '');
@@ -993,7 +993,7 @@ const StaffFormsScreen = ({ navigation }: any) => {
         }
 
         if (type === 'onboarding' && data.full_name) {
-          setOnboardFullName(data.full_name || ''); // ← Added
+          setOnboardFullName(data.full_name || '');
           setOnboardMobile(data.mobile || '');
           setOnboardEmail(data.email || '');
           setPassportNumber(data.passport_number || '');
@@ -1030,7 +1030,6 @@ const StaffFormsScreen = ({ navigation }: any) => {
           }
         }
 
-        // Store PDF URLs
         setFormUrls(prev => ({
           ...prev,
           [type === 'superannuation' ? 'super_form' : type]:
@@ -1039,6 +1038,8 @@ const StaffFormsScreen = ({ navigation }: any) => {
       }
     } catch (err) {
       console.log('Failed to fetch form data:', err);
+    } finally {
+      setTabLoading(false); // ← Loader Off
     }
   };
 
@@ -1280,10 +1281,11 @@ const StaffFormsScreen = ({ navigation }: any) => {
     );
   }
 
+  // Old tabs array ko replace kar do
   const tabs: { key: StaffTab; label: string; Icon: any }[] = [
+    { key: 'onboarding', label: 'Employee Onboarding', Icon: BadgeCheck },
     { key: 'tfn', label: 'TFN Declaration', Icon: FileText },
     { key: 'super', label: 'Superannuation', Icon: Building2 },
-    { key: 'onboarding', label: 'Employee Onboarding', Icon: BadgeCheck },
   ];
 
   return (
@@ -1303,9 +1305,9 @@ const StaffFormsScreen = ({ navigation }: any) => {
       {/* ── Tab Bar ── */}
       <View style={s.tabBar}>
         {[
+          { key: 'onboarding', label: 'Employee Onboarding', Icon: BadgeCheck },
           { key: 'tfn', label: 'TFN Declaration', Icon: FileText },
           { key: 'super', label: 'Superannuation', Icon: Building2 },
-          { key: 'onboarding', label: 'Onboarding', Icon: BadgeCheck },
         ].map(tab => {
           const active = activeStaffTab === tab.key;
           return (
@@ -1821,6 +1823,7 @@ const StaffFormsScreen = ({ navigation }: any) => {
         <DateTimePicker
           value={new Date()}
           mode="date"
+          textColor="#fff"
           display={Platform.OS === 'ios' ? 'spinner' : 'default'}
           onChange={handleDateChange}
         />
@@ -2047,7 +2050,7 @@ const s = StyleSheet.create({
     backgroundColor: BRAND_LIGHT,
     padding: 4,
     borderRadius: 8,
-    marginHorizontal: 12,
+    marginHorizontal: 10,
     marginTop: 8,
   },
   tabItem: {
@@ -2315,9 +2318,10 @@ const s = StyleSheet.create({
   },
   tabBtn: {
     flex: 1,
-    paddingVertical: 12,
+    // paddingVertical: 12,
     alignItems: 'center',
-    borderRadius: 12,
+    padding: 7,
+    borderRadius: 8,
     backgroundColor: BRAND_LIGHT,
   },
   tabBtnActive: {
@@ -2329,8 +2333,8 @@ const s = StyleSheet.create({
     elevation: 8,
   },
   tabLabel: {
-    fontSize: 12,
-    fontWeight: '600',
+    fontSize: 10,
+    fontWeight: '700',
     color: '#94A3B8',
     marginTop: 4,
   },

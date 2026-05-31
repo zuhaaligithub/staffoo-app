@@ -13,6 +13,7 @@ import {
   Keyboard,
   Modal,
 } from 'react-native';
+
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Toast from 'react-native-toast-message';
 import { getUserProfile, updateUserProfile } from '../services/authApi';
@@ -460,7 +461,7 @@ export default function ProfileSetupScreen({ navigation }: Props) {
     if (!isValidPhone) {
       Toast.show({
         type: 'error',
-        text1: 'Please enter a valid Australian phone number',
+        text1: 'Please enter a valid phone number',
       });
       return false;
     }
@@ -470,10 +471,10 @@ export default function ProfileSetupScreen({ navigation }: Props) {
         Toast.show({ type: 'error', text1: 'Company Name is required' });
         return false;
       }
-      if (!registrationNumber.trim()) {
-        Toast.show({ type: 'error', text1: 'Registration Number is required' });
-        return false;
-      }
+      // if (!registrationNumber.trim()) {
+      //   Toast.show({ type: 'error', text1: 'Registration Number is required' });
+      //   return false;
+      // }
     } else if (userType === 'staff') {
       if (!gender) {
         Toast.show({ type: 'error', text1: 'Gender is required' });
@@ -516,6 +517,7 @@ export default function ProfileSetupScreen({ navigation }: Props) {
     }
   };
   const handleContinue = async () => {
+    Keyboard.dismiss();
     if (!validateForm() || !userId) return;
 
     const emailChanged =
@@ -648,7 +650,7 @@ export default function ProfileSetupScreen({ navigation }: Props) {
       <ScrollView
         ref={scrollRef}
         contentContainerStyle={styles.scrollContent}
-        keyboardShouldPersistTaps="always"
+        keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
         onScroll={e => setScrollY(e.nativeEvent.contentOffset.y)}
         scrollEventThrottle={16}
@@ -683,7 +685,11 @@ export default function ProfileSetupScreen({ navigation }: Props) {
             </>
           }
           value={fullName}
-          onChange={setFullName}
+          onChange={(text: string) => {
+            if (text.length <= 40) {
+              setFullName(text);
+            }
+          }}
           placeholder="Enter your full name"
         />
 
@@ -723,10 +729,20 @@ export default function ProfileSetupScreen({ navigation }: Props) {
             style={styles.inputContainer}
           >
             <Mail size={20} color="#fff" style={styles.inputIcon} />
-            <TextInput
+            {/* <TextInput
               style={styles.input}
               value={gmail}
               onChangeText={setGmail}
+              placeholder="yourname@gmail.com"
+              placeholderTextColor="#fff"
+              keyboardType="email-address"
+              autoCapitalize="none"
+              autoCorrect={false}
+            /> */}
+            <TextInput
+              style={styles.input}
+              value={gmail}
+              editable={false}
               placeholder="yourname@gmail.com"
               placeholderTextColor="#fff"
               keyboardType="email-address"
@@ -750,7 +766,7 @@ export default function ProfileSetupScreen({ navigation }: Props) {
               onChange={setCompanyName}
               placeholder="Enter company name"
             />
-            <InputField
+            {/* <InputField
               icon={FileText}
               label={
                 <>
@@ -760,13 +776,18 @@ export default function ProfileSetupScreen({ navigation }: Props) {
               value={registrationNumber}
               onChange={setRegistrationNumber}
               placeholder="Enter registration number"
-            />
+            /> */}
 
             <InputField
               icon={FileText}
               label="ACN (Australian Company Number)"
               value={acn}
-              onChange={setAcn}
+              onChange={(text: string) => {
+                const cleaned = text.replace(/\D/g, ''); // only digits
+                if (cleaned.length <= 9) {
+                  setAcn(cleaned);
+                }
+              }}
               placeholder="Enter ACN (9 digits)"
               keyboardType="numeric"
             />
@@ -775,7 +796,12 @@ export default function ProfileSetupScreen({ navigation }: Props) {
               icon={FileText}
               label="ABN (Australian Business Number)"
               value={abn}
-              onChange={setAbn}
+              onChange={(text: string) => {
+                const cleaned = text.replace(/\D/g, ''); // only digits
+                if (cleaned.length <= 11) {
+                  setAbn(cleaned);
+                }
+              }}
               placeholder="Enter ABN (11 digits)"
               keyboardType="numeric"
             />
@@ -819,7 +845,7 @@ export default function ProfileSetupScreen({ navigation }: Props) {
               </LinearGradient>
             </TouchableOpacity>
 
-            <TouchableOpacity
+            {/* <TouchableOpacity
               style={styles.field}
               onPress={() => setShowResidentialModal(true)}
             >
@@ -854,7 +880,7 @@ export default function ProfileSetupScreen({ navigation }: Props) {
 
                 <ChevronDown size={20} color="#fff" />
               </LinearGradient>
-            </TouchableOpacity>
+            </TouchableOpacity> */}
           </>
         )}
 
@@ -960,7 +986,7 @@ export default function ProfileSetupScreen({ navigation }: Props) {
                   setShowSuggestions(false);
                   addressInputRef.current?.focus();
                 }}
-                style={{ marginLeft: 10 ,marginRight:10}}
+                style={{ marginLeft: 10, marginRight: 10 }}
               >
                 <X size={20} color="#fff" />
               </TouchableOpacity>
@@ -1028,7 +1054,7 @@ export default function ProfileSetupScreen({ navigation }: Props) {
         <FlatList
           data={predictions}
           keyExtractor={item => item.place_id}
-          keyboardShouldPersistTaps="always"
+          keyboardShouldPersistTaps="handled"
           style={[
             styles.suggestionsList,
             {
@@ -1148,6 +1174,8 @@ const InputField = ({
         editable={editable}
         keyboardType={keyboardType}
         autoCapitalize="sentences"
+        returnKeyType="done" // 👈 Adds a "Done" button to keyboard
+        onSubmitEditing={Keyboard.dismiss}
       />
     </LinearGradient>
   </View>

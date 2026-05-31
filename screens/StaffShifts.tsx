@@ -40,6 +40,27 @@ import { useFocusEffect } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Picker } from '@react-native-picker/picker';
 import LinearGradient from 'react-native-linear-gradient';
+const COLORS = {
+  primary: '#89E7D0',
+  primaryDark: '#4FCBB3',
+
+  background: '#001F3F',
+  surface: '#0A2A4D',
+  surface2: '#12243A',
+
+  card: '#FFFFFF',
+  cardBorder: '#DCE6F2',
+
+  text: '#001F3F',
+  textSecondary: '#475569',
+  textMuted: '#64748B',
+
+  success: '#22C55E',
+  warning: '#F59E0B',
+  danger: '#EF4444',
+
+  border: '#E2E8F0',
+};
 
 export default function StaffShifts({ navigation, route }: any) {
   const bottomSheetRef = useRef<BottomSheet>(null);
@@ -510,7 +531,7 @@ export default function StaffShifts({ navigation, route }: any) {
         showsVerticalScrollIndicator={false}
       >
         <LinearGradient
-          colors={['#0A7C6E', '#2A2F4F']}
+          colors={[COLORS.primaryDark, COLORS.background]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={styles.cardTop}
@@ -780,23 +801,23 @@ export default function StaffShifts({ navigation, route }: any) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#dfe6f9',
+    backgroundColor: COLORS.background,
     paddingTop: 20,
   },
   scrollContainer: {
     flex: 1,
   },
   pendingButton: {
-    backgroundColor: '#ffedd5',
+    backgroundColor: COLORS.background,
   },
   signInButton: {
-    backgroundColor: '#fef3c7',
+    backgroundColor: '#FEF3C7',
   },
   signedInButton: {
     backgroundColor: '#dcfce7',
   },
   viewButton: {
-    backgroundColor: '#e5e7eb',
+    backgroundColor: '#E2E8F0',
   },
   scrollContent: {
     paddingHorizontal: 16,
@@ -889,17 +910,18 @@ const styles = StyleSheet.create({
     marginTop: 10,
     marginBottom: 9,
     paddingHorizontal: 4,
-    color: '#0A7C6E',
+    color: COLORS.primaryDark,
   },
   btn: { paddingRight: 25 },
   shiftCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: COLORS.card,
+    borderColor: COLORS.cardBorder,
+
     borderRadius: 18,
     padding: 16,
     marginBottom: 14,
 
     borderWidth: 1,
-    borderColor: '#E5E7EB',
 
     shadowColor: '#0A7C6E',
     shadowOffset: { width: 0, height: 6 },
@@ -921,7 +943,7 @@ const styles = StyleSheet.create({
   },
   rowText: {
     fontSize: 13,
-    color: '#1e293b',
+    color: COLORS.text,
     fontWeight: '500',
     alignItems: 'center',
     marginTop: 10,
@@ -951,7 +973,7 @@ const styles = StyleSheet.create({
   },
   addressText: {
     fontSize: 13,
-    color: '#475569',
+    color: COLORS.textSecondary,
     flex: 1,
     flexWrap: 'wrap',
     marginTop: 10,
@@ -974,7 +996,7 @@ const styles = StyleSheet.create({
   },
   detailsValue: {
     fontSize: 13,
-    color: '#0f172a',
+    color: COLORS.text,
     marginTop: 5,
   },
   actionButton: {
@@ -985,7 +1007,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   ongoingButton: {
-    backgroundColor: '#dcfce7',
+    backgroundColor: '#DCFCE7',
   },
   actionButtonText: {
     fontSize: 11,
@@ -1076,19 +1098,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: 50,
   },
   acceptButton: {
-    backgroundColor: '#10B981',
+    backgroundColor: COLORS.success,
     paddingVertical: 14,
     borderRadius: 14,
     alignItems: 'center',
   },
   declineButton: {
-    backgroundColor: '#EF4444',
+    backgroundColor: COLORS.danger,
     paddingVertical: 14,
     borderRadius: 14,
     alignItems: 'center',
   },
   cancelButton: {
-    backgroundColor: '#6B7280',
+    backgroundColor: COLORS.textMuted,
     paddingVertical: 14,
     borderRadius: 14,
     alignItems: 'center',

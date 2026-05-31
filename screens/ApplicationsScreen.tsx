@@ -44,7 +44,7 @@ const COLORS = {
   primaryDark: '#4FCBB3',
 
   // 🌙 Background system (clean dark navy)
-  background: '#070F1E',
+  background: '#001F3F',
   surface: '#0E1A2B',
   surface2: '#12243A',
 
@@ -539,99 +539,103 @@ export default function WeeklyRosterScreen({ navigation }: any) {
               const isConfirmed = shift.jobStatus === 'completed';
               return (
                 <LinearGradient
+                key={shift.id}
                   colors={[
-            'rgba(255, 255, 255, 0.42)',
-            'rgba(255, 255, 255, 0.35)',
-            'rgba(255, 255, 255, 0.22)',
-            'rgba(255, 255, 255, 0.12)',
-            'rgba(255, 255, 255, 0.25)',
-          ]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
+                    'rgba(255, 255, 255, 0.42)',
+                    'rgba(255, 255, 255, 0.35)',
+                    'rgba(255, 255, 255, 0.22)',
+                    'rgba(255, 255, 255, 0.12)',
+                    'rgba(255, 255, 255, 0.25)',
+                  ]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
                   style={styles.shiftCard}
                 >
                   {/* <View key={shift.id} style={styles.shiftCard}> */}
                   {/* Top row: site name + status badge */}
-                   <View style={styles.siteCardInner}>
-                  <View style={styles.cardTop}>
-                    <Text style={styles.siteName} numberOfLines={1}>
-                      {shift.siteName}
-                    </Text>
-                    <View
-                      style={[styles.statusPill, { backgroundColor: pill.bg }]}
-                    >
-                      <Text style={[styles.pillText, { color: pill.text }]}>
-                        {shift.tag}
+                  <View style={styles.siteCardInner}>
+                    <View style={styles.cardTop}>
+                      <Text style={styles.siteName} numberOfLines={1}>
+                        {shift.siteName}
                       </Text>
+                      <View
+                        style={[
+                          styles.statusPill,
+                          { backgroundColor: pill.bg },
+                        ]}
+                      >
+                        <Text style={[styles.pillText, { color: pill.text }]}>
+                          {shift.tag}
+                        </Text>
+                      </View>
                     </View>
-                  </View>
 
-                  {/* Address */}
-                  {shift.address ? (
-                    <View style={styles.addressRow}>
-                      <MapPin
-                        size={12}
-                        color="#fff"
-                        style={{ marginRight: 4 }}
-                      />
-                      <Text style={styles.addressText} numberOfLines={1}>
-                        {shift.address}
-                      </Text>
-                    </View>
-                  ) : null}
-
-                  {/* Hours */}
-                  <Text style={styles.hoursText}>
-                    Total Hours: {shift.hours.toFixed(1)} hrs
-                  </Text>
-
-                  <View style={styles.cardDivider} />
-
-                  {/* Bottom row */}
-                  <View style={styles.cardBottom}>
-                    <View style={styles.cardMeta}>
-                      <Text style={styles.cardDate}>{shift.dateStr}</Text>
-                      <View style={styles.timeRow}>
-                        <Clock
-                          size={13}
+                    {/* Address */}
+                    {shift.address ? (
+                      <View style={styles.addressRow}>
+                        <MapPin
+                          size={12}
                           color="#fff"
                           style={{ marginRight: 4 }}
                         />
-                        <Text style={styles.cardTime}>
-                          {shift.startTime} – {shift.endTime}
+                        <Text style={styles.addressText} numberOfLines={1}>
+                          {shift.address}
                         </Text>
                       </View>
-                    </View>
+                    ) : null}
 
-                    <View style={styles.cardRight}>
-                      <View style={styles.guardRow}>
-                        <User
-                          size={12}
-                          color="#94a3b8"
-                          style={{ marginRight: 4 }}
-                        />
-                        <Text style={styles.guardName} numberOfLines={1}>
-                          {shift.guard}
-                        </Text>
+                    {/* Hours */}
+                    <Text style={styles.hoursText}>
+                      Total Hours: {shift.hours.toFixed(1)} hrs
+                    </Text>
+
+                    <View style={styles.cardDivider} />
+
+                    {/* Bottom row */}
+                    <View style={styles.cardBottom}>
+                      <View style={styles.cardMeta}>
+                        <Text style={styles.cardDate}>{shift.dateStr}</Text>
+                        <View style={styles.timeRow}>
+                          <Clock
+                            size={13}
+                            color="#fff"
+                            style={{ marginRight: 4 }}
+                          />
+                          <Text style={styles.cardTime}>
+                            {shift.startTime} – {shift.endTime}
+                          </Text>
+                        </View>
                       </View>
-                      <TouchableOpacity
-                        style={styles.viewBtn}
-                        onPress={() => openShiftModal(shift)}
-                        activeOpacity={0.8}
-                      >
-                        <Text style={styles.viewBtnText}>View</Text>
-                      </TouchableOpacity>
+
+                      <View style={styles.cardRight}>
+                        <View style={styles.guardRow}>
+                          <User
+                            size={12}
+                            color="#94a3b8"
+                            style={{ marginRight: 4 }}
+                          />
+                          <Text style={styles.guardName} numberOfLines={1}>
+                            {shift.guard}
+                          </Text>
+                        </View>
+                        <TouchableOpacity
+                          style={styles.viewBtn}
+                          onPress={() => openShiftModal(shift)}
+                          activeOpacity={0.8}
+                        >
+                          <Text style={styles.viewBtnText}>View</Text>
+                        </TouchableOpacity>
+                      </View>
                     </View>
-                  </View>
-                  {isConfirmed && (
-                    <TouchableOpacity
-                      style={styles.downloadBtn}
-                      onPress={() => generateShiftPDF(shift)}
-                    >
-                      <FileText size={18} color="#fff" />
-                      <Text style={styles.downloadText}>Download PDF</Text>
-                    </TouchableOpacity>
-                  )}
+                    {isConfirmed && (
+                      <TouchableOpacity
+                        style={styles.downloadBtn}
+                        onPress={() => generateShiftPDF(shift)}
+                      >
+                        <FileText size={18} color="#fff" />
+                        <Text style={styles.downloadText}>Download PDF</Text>
+                      </TouchableOpacity>
+                    )}
                   </View>
                 </LinearGradient>
               );
@@ -899,7 +903,7 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   downloadText: { color: '#fff', fontSize: 13, fontWeight: '600' },
-siteCardInner: {
+  siteCardInner: {
     padding: 12, // 👈 REAL CARD PADDING HERE
   },
   /* Week nav */

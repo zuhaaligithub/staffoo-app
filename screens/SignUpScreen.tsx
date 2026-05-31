@@ -16,7 +16,7 @@ import {
   Modal,
   StatusBar,
 } from 'react-native';
-
+import { Linking, Modal as RNModal } from 'react-native';
 import {
   Phone,
   Building2,
@@ -36,8 +36,36 @@ import Toast from 'react-native-toast-message';
 import { registerUser } from '../services/authApi';
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import LinearGradient from 'react-native-linear-gradient';
 
 const LOGO = require('../assets/staffoo.png');
+
+const COLORS = {
+  // 🌿 Primary Brand
+  primary: '#89E7D0',
+  primaryDark: '#4FCBB3',
+
+  // 🌙 Background system
+  background: '#001F3F',
+  surface: '#0B2A4A',
+  surface2: '#12243A',
+
+  // ✨ Glass Cards
+  card: 'rgba(255,255,255,0.06)',
+  cardBorder: 'rgba(255,255,255,0.08)',
+
+  // ✍️ Text
+  text: '#FFFFFF',
+  textSecondary: 'rgba(255,255,255,0.75)',
+  textMuted: 'rgba(255,255,255,0.45)',
+
+  // Status
+  success: '#22C55E',
+  warning: '#F59E0B',
+  danger: '#EF4444',
+
+  border: 'rgba(255,255,255,0.08)',
+};
 
 const PRIVACY_POLICY_TEXT = `Staffoo: Terms of Service & Privacy Policy
 Effective Date: March 14, 2026
@@ -92,7 +120,7 @@ Phone: [0478916034]`;
 
 export default function SignUpScreen({ navigation }: { navigation: any }) {
   const [userType, setUserType] = useState<'staff' | 'customer' | 'contractor'>(
-    'staff',
+    'customer',
   );
   const [acceptedPolicy, setAcceptedPolicy] = useState(false);
   const [showPolicyModal, setShowPolicyModal] = useState(false);
@@ -100,7 +128,8 @@ export default function SignUpScreen({ navigation }: { navigation: any }) {
   const fadeAnim = useRef(new Animated.Value(1)).current;
   const { width } = useWindowDimensions();
   const isTablet = width >= 768;
-
+  const [showVerifyModal, setShowVerifyModal] = useState(false);
+  const [registeredEmail, setRegisteredEmail] = useState('');
   // Form fields
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -119,6 +148,27 @@ export default function SignUpScreen({ navigation }: { navigation: any }) {
       });
     }
   }, []);
+
+  const validatePassword = (password: string) => {
+    // Minimum 8 chars, 1 letter, 1 special character
+    const passwordRegex = /^(?=.*[A-Za-z])(?=.*[\W_]).{8,}$/;
+
+    if (!passwordRegex.test(password)) {
+      return {
+        valid: false,
+        message:
+          'Password must contain at least 8 characters, 1 letter & 1 special character',
+      };
+    }
+
+    return {
+      valid: true,
+      message: '',
+    };
+  };
+
+  // ✅ ADD THIS HERE
+  const passwordValidation = validatePassword(password);
 
   const handleUserTypeChange = (
     newType: 'staff' | 'customer' | 'contractor',
@@ -164,11 +214,16 @@ export default function SignUpScreen({ navigation }: { navigation: any }) {
       return Toast.show({ type: 'error', text1: 'Name is required' });
     if (!email.trim() || !email.includes('@'))
       return Toast.show({ type: 'error', text1: 'Valid email is required' });
-    if (password.length < 6)
+
+    const passwordRegex = /^(?=.*[A-Za-z])(?=.*[\W_]).{8,}$/;
+    if (!passwordRegex.test(password)) {
       return Toast.show({
         type: 'error',
-        text1: 'Password must be at least 6 characters',
+        text1: 'Weak Password',
+        text2:
+          'Password must contain at least 8 characters, 1 letter and 1 special character',
       });
+    }
     if (password !== confirmPassword)
       return Toast.show({ type: 'error', text1: 'Passwords do not match' });
 
@@ -185,11 +240,14 @@ export default function SignUpScreen({ navigation }: { navigation: any }) {
     try {
       const response = await registerUser(payload);
 
+      // ✅ Show verification modal
+      setRegisteredEmail(email.trim().toLowerCase());
+      setShowVerifyModal(true);
+
       Toast.show({
         type: 'success',
         text1: 'Account created successfully!',
-        text2: 'Please login to continue',
-        onHide: () => navigation.navigate('Login'),
+        text2: 'Please verify your email',
       });
     } catch (error: any) {
       Toast.show({
@@ -201,6 +259,23 @@ export default function SignUpScreen({ navigation }: { navigation: any }) {
       setLoading(false);
     }
   };
+
+const handleOpenGmail = async () => {
+  try {
+    const gmailUrl = 'googlegmail://co';
+
+    const supported = await Linking.canOpenURL(gmailUrl);
+
+    if (supported) {
+      await Linking.openURL(gmailUrl);
+    } else {
+      // fallback if Gmail app not installed
+      await Linking.openURL('https://mail.google.com');
+    }
+  } catch (error) {
+    await Linking.openURL('https://mail.google.com');
+  }
+};
 
   const UserTypeOption = ({
     type,
@@ -215,9 +290,9 @@ export default function SignUpScreen({ navigation }: { navigation: any }) {
       onPress={() => handleUserTypeChange(type)}
     >
       {userType === type ? (
-        <CheckCircle size={18} color="#0A7C6E" />
+        <CheckCircle size={16} color={COLORS.primary} />
       ) : (
-        <Circle size={18} color="#94A3B8" />
+        <Circle size={16} color={COLORS.textMuted} />
       )}
       <Text
         style={[
@@ -252,103 +327,163 @@ export default function SignUpScreen({ navigation }: { navigation: any }) {
             <Animated.View style={{ opacity: fadeAnim }}>
               {/* Name */}
               <Text style={styles.label}>Full Name *</Text>
-              <View style={styles.inputWrapper}>
-                <UserRound size={22} color="#666" />
-                <TextInput
-                  style={styles.input}
-                  placeholder="Full name"
-                  value={name}
-                  onChangeText={text => setName(text)}
-                  autoCapitalize="words"
-                  maxLength={25}
-                />
+              <LinearGradient
+                colors={[
+                  'rgba(255, 255, 255, 0.42)',
+                  'rgba(255, 255, 255, 0.35)',
+                  'rgba(255, 255, 255, 0.22)',
+                  'rgba(255, 255, 255, 0.12)',
+                  'rgba(255, 255, 255, 0.25)',
+                ]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.gradientInput}
+              >
+                <View style={styles.inputInner}>
+                  <UserRound size={22} color={COLORS.textMuted} />
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Full name"
+                    placeholderTextColor={COLORS.textMuted}
+                    value={name}
+                    onChangeText={setName}
+                  />
+                </View>
+              </LinearGradient>
 
-                {/* <TextInput
-  style={styles.input}
-  placeholder="Full name"
-  value={name}
-  onChangeText={text => {
-    const cleaned = text.replace(/[^a-zA-Z\s]/g, '');
-    setName(cleaned);
-  }}
-  autoCapitalize="words"
-  maxLength={25}
-/> */}
-              </View>
-
-              {/* Email */}
               <Text style={styles.label}>Email Address *</Text>
-              <View style={styles.inputWrapper}>
-                <Mail size={22} color="#666" />
-                <TextInput
-                  style={styles.input}
-                  placeholder="your@email.com"
-                  value={email}
-                  onChangeText={setEmail}
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                />
-              </View>
-
+              <LinearGradient
+                colors={[
+                  'rgba(255, 255, 255, 0.42)',
+                  'rgba(255, 255, 255, 0.35)',
+                  'rgba(255, 255, 255, 0.22)',
+                  'rgba(255, 255, 255, 0.12)',
+                  'rgba(255, 255, 255, 0.25)',
+                ]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.gradientInput}
+              >
+                <View style={styles.inputInner}>
+                  <Mail size={22} color={COLORS.textMuted} />
+                  <TextInput
+                    style={styles.input}
+                    placeholder="your@email.com"
+                    placeholderTextColor={COLORS.textMuted}
+                    value={email}
+                    onChangeText={setEmail}
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                  />
+                </View>
+              </LinearGradient>
               {/* Password */}
               <Text style={styles.label}>Password *</Text>
-              <View style={styles.inputWrapper}>
-                <LockIcon size={22} color="#666" />
-                <TextInput
-                  style={styles.input}
-                  placeholder="At least 6 characters"
-                  value={password}
-                  onChangeText={setPassword}
-                  secureTextEntry={!showPassword}
-                />
-                <TouchableOpacity
-                  onPress={() => setShowPassword(!showPassword)}
-                >
-                  {showPassword ? (
-                    <Eye size={22} color="#666" />
-                  ) : (
-                    <EyeOff size={22} color="#666" />
-                  )}
-                </TouchableOpacity>
-              </View>
+              <LinearGradient
+                colors={[
+                  'rgba(255, 255, 255, 0.42)',
+                  'rgba(255, 255, 255, 0.35)',
+                  'rgba(255, 255, 255, 0.22)',
+                  'rgba(255, 255, 255, 0.12)',
+                  'rgba(255, 255, 255, 0.25)',
+                ]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.gradientInput}
+              >
+                <View style={styles.inputInner}>
+                  <LockIcon size={22} color={COLORS.textMuted} />
+                  <TextInput
+                    style={styles.input}
+                    placeholder="At least 8 characters"
+                    placeholderTextColor={COLORS.textMuted}
+                    value={password}
+                    onChangeText={setPassword}
+                    secureTextEntry={!showPassword}
+                  />
+                  <TouchableOpacity
+                    onPress={() => setShowPassword(!showPassword)}
+                  >
+                    {showPassword ? (
+                      <Eye size={22} color={COLORS.textMuted} />
+                    ) : (
+                      <EyeOff size={22} color={COLORS.textMuted} />
+                    )}
+                  </TouchableOpacity>
+                </View>
+              </LinearGradient>
+
+              {password.length > 0 && !passwordValidation.valid && (
+                <Text style={styles.passwordError}>
+                  {passwordValidation.message}
+                </Text>
+              )}
 
               {/* Confirm Password */}
               <Text style={styles.label}>Confirm Password *</Text>
-              <View style={styles.inputWrapper}>
-                <LockIcon size={22} color="#666" />
-                <TextInput
-                  style={styles.input}
-                  placeholder="Confirm password"
-                  value={confirmPassword}
-                  onChangeText={setConfirmPassword}
-                  secureTextEntry={!showConfirmPassword}
-                />
-                <TouchableOpacity
-                  onPress={() => setShowConfirmPassword(!showConfirmPassword)}
-                >
-                  {showConfirmPassword ? (
-                    <Eye size={22} color="#666" />
-                  ) : (
-                    <EyeOff size={22} color="#666" />
-                  )}
-                </TouchableOpacity>
-              </View>
+              <LinearGradient
+                colors={[
+                  'rgba(255, 255, 255, 0.42)',
+                  'rgba(255, 255, 255, 0.35)',
+                  'rgba(255, 255, 255, 0.22)',
+                  'rgba(255, 255, 255, 0.12)',
+                  'rgba(255, 255, 255, 0.25)',
+                ]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.gradientInput}
+              >
+                <View style={styles.inputInner}>
+                  <LockIcon size={22} color={COLORS.textMuted} />
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Confirm password"
+                    placeholderTextColor={COLORS.textMuted}
+                    value={confirmPassword}
+                    onChangeText={setConfirmPassword}
+                    secureTextEntry={!showConfirmPassword}
+                  />
+                  <TouchableOpacity
+                    onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+                  >
+                    {showConfirmPassword ? (
+                      <Eye size={22} color={COLORS.textMuted} />
+                    ) : (
+                      <EyeOff size={22} color={COLORS.textMuted} />
+                    )}
+                  </TouchableOpacity>
+                </View>
+              </LinearGradient>
 
-              {/* Phone - Optional */}
+              {/* Phone Number */}
               <Text style={styles.label}>Phone Number (Optional)</Text>
-              <View style={styles.inputWrapper}>
-                <Phone size={22} color="#666" />
-                <TextInput
-                  style={styles.input}
-                  placeholder="Phone number"
-                  value={phone}
-                  onChangeText={setPhone}
-                  keyboardType="phone-pad"
-                />
-              </View>
+              <LinearGradient
+                colors={[
+                  'rgba(255, 255, 255, 0.42)',
+                  'rgba(255, 255, 255, 0.35)',
+                  'rgba(255, 255, 255, 0.22)',
+                  'rgba(255, 255, 255, 0.12)',
+                  'rgba(255, 255, 255, 0.25)',
+                ]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.gradientInput}
+              >
+                <View style={styles.inputInner}>
+                  <Phone size={22} color={COLORS.textMuted} />
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Phone number"
+                    placeholderTextColor={COLORS.textMuted}
+                    value={phone}
+                    onChangeText={setPhone}
+                    keyboardType="phone-pad"
+                  />
+                </View>
+              </LinearGradient>
 
               {/* User Type Selection */}
-              <Text style={styles.label}>I want to</Text>
+              <Text style={styles.label}>Select Account Type</Text>
               <View style={styles.radioContainer}>
                 <View style={styles.radioRow}>
                   <UserTypeOption type="customer" />
@@ -394,7 +529,7 @@ export default function SignUpScreen({ navigation }: { navigation: any }) {
               disabled={loading || !acceptedPolicy}
             >
               {loading ? (
-                <ActivityIndicator color="#fff" />
+                <ActivityIndicator color={COLORS.background} />
               ) : (
                 <Text style={styles.signUpText}>Create Account</Text>
               )}
@@ -437,7 +572,7 @@ export default function SignUpScreen({ navigation }: { navigation: any }) {
               onPress={() => setShowPolicyModal(false)}
               style={styles.closeBtn}
             >
-              <X size={18} color="#b72f0d" />
+              <X size={18} color={COLORS.primary} />
             </TouchableOpacity>
           </View>
 
@@ -484,6 +619,50 @@ export default function SignUpScreen({ navigation }: { navigation: any }) {
           </View>
         </SafeAreaView>
       </Modal>
+      {/* Email Verification Modal */}
+      <RNModal
+        visible={showVerifyModal}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowVerifyModal(false)}
+      >
+        <View style={styles.verifyModalOverlay}>
+          <View style={styles.verifyModalContent}>
+            {/* Icon */}
+            <View style={styles.verifyIconContainer}>
+              <Mail size={48} color="#4FCBB3" strokeWidth={1.5} />
+            </View>
+
+            <Text style={styles.verifyTitle}>Verify your email</Text>
+
+            <Text style={styles.verifySubtitle}>
+              We've sent a verification link to{' '}
+              <Text style={styles.emailHighlight}>{registeredEmail}</Text>.
+            </Text>
+
+            <Text style={styles.verifyDescription}>
+              Please check your inbox to activate your account.
+            </Text>
+
+            <TouchableOpacity
+              style={styles.openGmailButton}
+              onPress={handleOpenGmail}
+            >
+              <Text style={styles.openGmailText}>📧 Open Email App</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.goToLoginButton}
+              onPress={() => {
+                setShowVerifyModal(false);
+                navigation.navigate('Login');
+              }}
+            >
+              <Text style={styles.goToLoginText}>Go to Login Page</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </RNModal>
     </SafeAreaView>
   );
 }
@@ -491,185 +670,415 @@ export default function SignUpScreen({ navigation }: { navigation: any }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#eceff9',
+    backgroundColor: COLORS.background,
     paddingTop: StatusBar.currentHeight || 15,
   },
 
-  content: { paddingHorizontal: 2 },
+  passwordError: {
+    color: COLORS.danger,
+    fontSize: 12,
+    marginTop: -10,
+    marginBottom: 12,
+    marginLeft: 4,
+  },
 
-  logoContainer: { marginVertical: 20, alignItems: 'center' },
-  logo: { width: 160, height: 52 },
-  subtitle: { color: '#666', fontSize: 14, marginTop: 8, textAlign: 'center' },
+  content: {
+    paddingHorizontal: 2,
+    paddingBottom: 40,
+  },
 
-  // Radio Selection Styles
-  radioContainer: { marginBottom: 2 },
+  logoContainer: {
+    marginVertical: 24,
+    alignItems: 'center',
+  },
+
+  logo: {
+    width: 170,
+    height: 58,
+  },
+
+  subtitle: {
+    color: COLORS.textSecondary,
+    fontSize: 14,
+    marginTop: 10,
+    textAlign: 'center',
+  },
+
+  // ================= RADIO =================
+
+  radioContainer: {
+    marginBottom: 0,
+  },
+
   radioRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 10,
+    marginBottom: 14,
+    gap: 5,
   },
-  radioRowSingle: {
-    justifyContent: 'flex-start',
-    alignItems: 'flex-start',
+  gradientInput: {
+    width: '100%',
+    borderRadius: 12,
+    marginBottom: 16,
   },
 
-  radioOption: {
-    flexDirection: 'row', // 👈 makes them inline
+  inputInner: {
+    flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 5,
-    paddingHorizontal: 6,
-    backgroundColor: '#f8fafc',
-    borderWidth: 1,
-    borderColor: '#e2e8f0',
-    borderRadius: 30,
-    gap: 0,
+    paddingHorizontal: 16,
+    height: 45,
+    width: '100%',
+  },
 
-    // marginHorizontal: 5,
+  input: {
+    flex: 1,
+    fontSize: 16,
+    color: COLORS.text,
+    marginLeft: 12,
   },
+  radioOption: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 2,
+    backgroundColor: COLORS.card,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: 14,
+    gap: 6,
+  },
+
   radioOptionSelected: {
-    borderColor: '#0A7C6E',
-    backgroundColor: '#f0f9ff',
+    borderColor: COLORS.primary,
+    backgroundColor: 'rgba(137,231,208,0.12)',
   },
-  radioCircle: {
-    marginBottom: 12,
+  passwordHint: {
+    color: COLORS.textMuted,
+    fontSize: 12,
+    marginTop: -8,
+    marginBottom: 14,
+    marginLeft: 4,
+    lineHeight: 18,
   },
   radioText: {
-    fontSize: 11.5,
+    fontSize: 10,
     fontWeight: '600',
-    color: '#475569',
+    color: COLORS.textSecondary,
     textAlign: 'center',
-    lineHeight: 20,
   },
+
   radioTextSelected: {
-    color: '#0A7C6E',
+    color: COLORS.primary,
     fontWeight: '700',
   },
 
-  label: { fontSize: 14, color: '#444', marginBottom: 5, fontWeight: '500' },
-  inputWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#e0e0e0',
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    height: 48,
-    backgroundColor: '#fcf9f9',
-    marginBottom: 14,
+  // ================= LABEL =================
+
+  label: {
+    fontSize: 14,
+    color: COLORS.text,
+    marginBottom: 7,
+    fontWeight: '600',
+    marginLeft: 2,
   },
-  input: { flex: 1, fontSize: 16, color: '#000', marginLeft: 10 },
+
+  // ================= POLICY =================
 
   policyContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 18,
+    marginBottom: 22,
     paddingHorizontal: 4,
-    marginTop: 16,
+    marginTop: 14,
   },
+
   checkbox: {
-    width: 20,
-    height: 20,
-    borderRadius: 6,
+    width: 22,
+    height: 22,
+    borderRadius: 7,
     borderWidth: 2,
-    borderColor: '#0A7C6E',
+    borderColor: COLORS.primary,
     marginRight: 12,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  checkboxChecked: { backgroundColor: '#0A7C6E' },
 
-  policyText: { fontSize: 14.5, color: '#444', flex: 1 },
-  policyLink: { color: '#0A7C6E', fontWeight: '700' },
+  checkboxChecked: {
+    backgroundColor: COLORS.primary,
+  },
+
+  policyText: {
+    fontSize: 14.5,
+    color: COLORS.textSecondary,
+    flex: 1,
+    lineHeight: 22,
+  },
+
+  policyLink: {
+    color: COLORS.primary,
+    fontWeight: '700',
+  },
+
+  // ================= BUTTON =================
 
   signUpButton: {
-    backgroundColor: '#0A7C6E',
-    borderRadius: 14,
-    height: 52,
+    backgroundColor: COLORS.primary,
+    borderRadius: 18,
+    height: 58,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: 24,
+    shadowColor: COLORS.primary,
+    shadowOffset: {
+      width: 0,
+      height: 10,
+    },
+    shadowOpacity: 0.35,
+    shadowRadius: 14,
+    elevation: 10,
   },
-  buttonDisabled: { opacity: 0.6 },
-  signUpText: { color: '#fff', fontSize: 17, fontWeight: '700' },
 
-  footer: { flexDirection: 'row', justifyContent: 'center', marginBottom: 30 },
-  footerText: { color: '#666', fontSize: 14 },
-  loginLink: { color: '#0A7C6E', fontWeight: '700', fontSize: 14 },
+  buttonDisabled: {
+    opacity: 0.45,
+  },
 
-  // Modal Styles
-  modalContainer: { flex: 1, backgroundColor: '#f8fafc' },
+  signUpText: {
+    color: COLORS.background,
+    fontSize: 17,
+    fontWeight: '800',
+  },
+
+  // ================= FOOTER =================
+
+  footer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginBottom: 30,
+  },
+
+  footerText: {
+    color: COLORS.textSecondary,
+    fontSize: 14,
+  },
+
+  loginLink: {
+    color: COLORS.primary,
+    fontWeight: '700',
+    fontSize: 14,
+  },
+
+  // ================= MODAL =================
+
+  modalContainer: {
+    flex: 1,
+    backgroundColor: COLORS.background,
+  },
+
   modalHeader: {
-    backgroundColor: '#ffffff',
+    backgroundColor: COLORS.surface2,
     paddingHorizontal: 20,
     paddingVertical: 18,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     borderBottomWidth: 1,
-    borderBottomColor: '#e2e8f0',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 5,
+    borderBottomColor: COLORS.border,
   },
-  headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 14 },
-  modalLogo: { width: 70, height: 30 },
-  modalTitle: { fontSize: 14, fontWeight: '700', color: '#0f172a' },
-  modalSubtitle: { fontSize: 10, color: '#64748b', marginTop: 2 },
-  closeBtn: { padding: 5, borderRadius: 30, backgroundColor: '#f1f5f9' },
 
-  modalScroll: { flex: 1 },
-  modalScrollContent: { padding: 20, paddingBottom: 40 },
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+  },
 
-  policyCard: {},
+  modalLogo: {
+    width: 70,
+    height: 30,
+  },
+
+  modalTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: COLORS.text,
+  },
+
+  modalSubtitle: {
+    fontSize: 11,
+    color: COLORS.textMuted,
+    marginTop: 2,
+  },
+
+  closeBtn: {
+    padding: 8,
+    borderRadius: 40,
+    backgroundColor: COLORS.card,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+
+  modalScroll: {
+    flex: 1,
+  },
+
+  modalScrollContent: {
+    padding: 20,
+    paddingBottom: 40,
+  },
+
+  policyCard: {
+    backgroundColor: COLORS.card,
+    borderRadius: 24,
+    padding: 20,
+    borderWidth: 1,
+    borderColor: COLORS.cardBorder,
+  },
+
   highlightedInfo: {
-    backgroundColor: '#e0f2fe',
+    backgroundColor: 'rgba(137,231,208,0.12)',
     padding: 18,
-    borderRadius: 16,
+    borderRadius: 18,
     marginBottom: 24,
-    borderLeftWidth: 5,
-    borderLeftColor: '#3b82f6',
+    borderWidth: 1,
+    borderColor: 'rgba(137,231,208,0.18)',
   },
+
   highlightText: {
-    fontSize: 15.5,
-    color: '#1e40af',
+    fontSize: 15,
+    color: COLORS.primary,
     fontWeight: '600',
     lineHeight: 24,
     marginBottom: 6,
   },
+
   policyBodyText: {
-    fontSize: 16,
-    color: '#1e2937',
-    lineHeight: 26,
+    fontSize: 15.5,
+    color: COLORS.textSecondary,
+    lineHeight: 28,
     letterSpacing: 0.15,
   },
+
   lastUpdated: {
     textAlign: 'center',
     marginTop: 28,
     fontSize: 13.5,
-    color: '#94a3b8',
+    color: COLORS.textMuted,
     fontWeight: '500',
   },
+
   modalFooter: {
     paddingHorizontal: 20,
     paddingVertical: 20,
-    backgroundColor: '#ffffff',
+    backgroundColor: COLORS.surface2,
     borderTopWidth: 1,
-    borderTopColor: '#e2e8f0',
+    borderTopColor: COLORS.border,
   },
+
   acceptBtn: {
-    backgroundColor: '#0A7C6E',
+    backgroundColor: COLORS.primary,
     paddingVertical: 18,
-    borderRadius: 16,
+    borderRadius: 18,
     alignItems: 'center',
     flexDirection: 'row',
     justifyContent: 'center',
-    shadowColor: '#0A7C6E',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.35,
-    shadowRadius: 12,
-    elevation: 10,
   },
-  acceptBtnText: { color: '#fff', fontSize: 17.5, fontWeight: '700' },
+
+  acceptBtnText: {
+    color: COLORS.background,
+    fontSize: 17,
+    fontWeight: '800',
+  },
+
+  // Email Verification Modal Styles
+  verifyModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.85)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+
+  verifyModalContent: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 24,
+    padding: 32,
+    width: '100%',
+    maxWidth: 380,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.3,
+    shadowRadius: 20,
+    elevation: 20,
+  },
+
+  verifyIconContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: 'rgba(79, 203, 179, 0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+
+  verifyTitle: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#001F3F',
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+
+  verifySubtitle: {
+    fontSize: 16,
+    color: '#334155',
+    textAlign: 'center',
+    marginBottom: 8,
+    lineHeight: 22,
+  },
+
+  verifyDescription: {
+    fontSize: 15,
+    color: '#64748B',
+    textAlign: 'center',
+    marginBottom: 32,
+    lineHeight: 22,
+  },
+
+  emailHighlight: {
+    color: '#4FCBB3',
+    fontWeight: '600',
+  },
+
+  openGmailButton: {
+    backgroundColor: '#4FCBB3',
+    width: '100%',
+    paddingVertical: 16,
+    borderRadius: 14,
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+
+  openGmailText: {
+    color: '#001F3F',
+    fontSize: 17,
+    fontWeight: '700',
+  },
+
+  goToLoginButton: {
+    width: '100%',
+    paddingVertical: 16,
+    borderRadius: 14,
+    alignItems: 'center',
+    borderWidth: 1.5,
+    borderColor: '#E2E8F0',
+  },
+
+  goToLoginText: {
+    color: '#475569',
+    fontSize: 16,
+    fontWeight: '600',
+  },
 });

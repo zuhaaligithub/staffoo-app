@@ -2030,7 +2030,7 @@ PODS:
     - ReactCommon/turbomodule/core
     - SocketRocket
     - Yoga
-  - react-native-blob-util (0.24.7):
+  - react-native-blob-util (0.24.9):
     - boost
     - DoubleConversion
     - fast_float
@@ -2241,6 +2241,34 @@ PODS:
     - glog
     - hermes-engine
     - OneSignalXCFramework (= 5.5.1)
+    - RCT-Folly
+    - RCT-Folly/Fabric
+    - RCTRequired
+    - RCTTypeSafety
+    - React-Core
+    - React-debug
+    - React-Fabric
+    - React-featureflags
+    - React-graphics
+    - React-ImageManager
+    - React-jsi
+    - React-NativeModulesApple
+    - React-RCTFabric
+    - React-renderercss
+    - React-rendererdebug
+    - React-utils
+    - ReactCodegen
+    - ReactCommon/turbomodule/bridging
+    - ReactCommon/turbomodule/core
+    - SocketRocket
+    - Yoga
+  - react-native-pdf (7.0.4):
+    - boost
+    - DoubleConversion
+    - fast_float
+    - fmt
+    - glog
+    - hermes-engine
     - RCT-Folly
     - RCT-Folly/Fabric
     - RCTRequired
@@ -3688,6 +3716,7 @@ DEPENDENCIES:
   - react-native-maps (from `../node_modules/react-native-maps`)
   - "react-native-netinfo (from `../node_modules/@react-native-community/netinfo`)"
   - react-native-onesignal (from `../node_modules/react-native-onesignal`)
+  - react-native-pdf (from `../node_modules/react-native-pdf`)
   - react-native-safe-area-context (from `../node_modules/react-native-safe-area-context`)
   - react-native-signature-capture (from `../node_modules/react-native-signature-capture`)
   - "react-native-slider (from `../node_modules/@react-native-community/slider`)"
@@ -3881,6 +3910,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/@react-native-community/netinfo"
   react-native-onesignal:
     :path: "../node_modules/react-native-onesignal"
+  react-native-pdf:
+    :path: "../node_modules/react-native-pdf"
   react-native-safe-area-context:
     :path: "../node_modules/react-native-safe-area-context"
   react-native-signature-capture:
@@ -4050,7 +4081,7 @@ SPEC CHECKSUMS:
   React-Mapbuffer: 7b72a669e94662359dad4f42b5af005eb24b4e83
   React-microtasksnativemodule: cdc02da075f2857803ed63f24f5f72fc40e094c0
   react-native-agora: 9e0697ab57debeb6bfdde5ffb35784651b4f6112
-  react-native-blob-util: 6dec9023ecc3ee5ac8ad377598e943f9ca63f741
+  react-native-blob-util: 679671d22b2d8b76ecc2a8c202793eea46aef735
   react-native-document-picker: dc2d83366e47e89e7c51e8a41eab99c1d54e941c
   react-native-geolocation-service: 32b2c2a3b91e70ce2a8d0c684801aaeb0a07e0ec
   react-native-get-random-values: e2acf4070fe4b7325705a05af047449637a27a21
@@ -4059,6 +4090,7 @@ SPEC CHECKSUMS:
   react-native-maps: b5af575a371e57847c6d8490e726c08036f7c80f
   react-native-netinfo: a0be8c77f8420a60ddf07eb87be1a36f02a1bd65
   react-native-onesignal: aa45cf81169d64f7c65a5f908713f7aeb7f2487f
+  react-native-pdf: 2886351f9ea698a820f53056afdabd6fa0ab726d
   react-native-safe-area-context: befb5404eb8a16fdc07fa2bebab3568ecabcbb8a
   react-native-signature-capture: 181e11f5559b4e4a6da893775e78b5d600f66d66
   react-native-slider: 4faf1b2266c73f1afb7b30cc6ebb3df238a37c0b

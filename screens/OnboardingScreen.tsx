@@ -10,6 +10,7 @@ import {
   ViewToken,
   Animated,
 } from 'react-native';
+import LinearGradient from 'react-native-linear-gradient';
 
 const { width, height } = Dimensions.get('window');
 
@@ -31,9 +32,18 @@ const slides = [
   },
 ];
 
-type Props = {
-  navigation: any;
+const COLORS = {
+  brand: '#89E7D0',
+  brandDark: '#001F3F',
+  brandLight: '#021d37',
+  background: '#001F3F',
+  surface: '#0B2A4A',
+  text: '#FFFFFF',
+  textSecondary: 'rgba(255,255,255,0.75)',
+  textMuted: 'rgba(255,255,255,0.55)',
 };
+
+type Props = { navigation: any };
 
 export default function OnboardingScreen({ navigation }: Props) {
   const scrollX = useRef(new Animated.Value(0)).current;
@@ -49,7 +59,7 @@ export default function OnboardingScreen({ navigation }: Props) {
       if (viewableItems.length > 0) {
         setCurrentIndex(viewableItems[0].index ?? 0);
       }
-    }
+    },
   ).current;
 
   const viewConfig = useRef({ viewAreaCoveragePercentThreshold: 50 }).current;
@@ -58,7 +68,7 @@ export default function OnboardingScreen({ navigation }: Props) {
     item,
     index,
   }: {
-    item: typeof slides[0];
+    item: (typeof slides)[0];
     index: number;
   }) => {
     const inputRange = [
@@ -90,11 +100,16 @@ export default function OnboardingScreen({ navigation }: Props) {
             { transform: [{ translateX }, { scale }] },
           ]}
         >
-          <Image
-            source={item.image}
-            style={styles.boardingImg}
-            resizeMode="contain"
-          />
+          <LinearGradient
+            colors={['rgba(137,231,208,0.15)', 'rgba(137,231,208,0.05)']}
+            style={styles.imageGradient}
+          >
+            <Image
+              source={item.image}
+              style={styles.boardingImg}
+              resizeMode="contain"
+            />
+          </LinearGradient>
         </Animated.View>
 
         <Animated.View
@@ -102,6 +117,7 @@ export default function OnboardingScreen({ navigation }: Props) {
             alignItems: 'center',
             transform: [{ translateX }],
             opacity,
+            paddingHorizontal: 20,
           }}
         >
           <Text style={styles.title}>{item.title}</Text>
@@ -126,11 +142,11 @@ export default function OnboardingScreen({ navigation }: Props) {
         decelerationRate="fast"
         onScroll={Animated.event(
           [{ nativeEvent: { contentOffset: { x: scrollX } } }],
-          { useNativeDriver: false }
+          { useNativeDriver: false },
         )}
       />
 
-      {/* Pagination */}
+      {/* Pagination Dots */}
       <View style={styles.paginationContainer}>
         {slides.map((_, index) => {
           const inputRange = [
@@ -141,13 +157,13 @@ export default function OnboardingScreen({ navigation }: Props) {
 
           const dotWidth = scrollX.interpolate({
             inputRange,
-            outputRange: [8, 24, 8],
+            outputRange: [8, 28, 8],
             extrapolate: 'clamp',
           });
 
           const opacity = scrollX.interpolate({
             inputRange,
-            outputRange: [0.3, 1, 0.3],
+            outputRange: [0.4, 1, 0.4],
             extrapolate: 'clamp',
           });
 
@@ -159,6 +175,7 @@ export default function OnboardingScreen({ navigation }: Props) {
                 {
                   width: dotWidth,
                   opacity,
+                  backgroundColor: COLORS.brand,
                 },
               ]}
             />
@@ -166,13 +183,21 @@ export default function OnboardingScreen({ navigation }: Props) {
         })}
       </View>
 
-      {/* Button */}
+      {/* Get Started Button */}
       <View style={styles.buttonContainer}>
         <TouchableOpacity
           style={styles.getStartedButton}
           onPress={handleGetStarted}
+          activeOpacity={0.85}
         >
-          <Text style={styles.buttonText}>Get Started</Text>
+          <LinearGradient
+            colors={[COLORS.brand, '#4FCBB3']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.gradientButton}
+          >
+            <Text style={styles.buttonText}>Get Started</Text>
+          </LinearGradient>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -180,87 +205,98 @@ export default function OnboardingScreen({ navigation }: Props) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff',paddingTop:40 },
+  container: {
+    flex: 1,
+    backgroundColor: COLORS.background,
+  },
 
   slide: {
     width,
     flex: 1,
-    // alignItems: 'center',
     // justifyContent: 'center',
+    alignItems: 'center',
     paddingHorizontal: 24,
+    marginTop:50
   },
 
   imageContainer: {
-    // flex: 0.4,
-    width: '100%',
-    justifyContent: 'flex-end',
-    alignItems: 'center',
+    width: width * 0.75,
+    height: height * 0.32,
     borderRadius: 30,
-    borderWidth: 20,
-    borderColor: '#0A7C6E',
+    overflow: 'hidden',
+    marginBottom: 40,
+    borderWidth: 2,
+    borderColor: 'rgba(137,231,208,0.3)',
+  },
+
+  imageGradient: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 
   boardingImg: {
-    width: width * 0.98,
-    height: height * 0.38,
+    width: '92%',
+    height: '92%',
   },
 
   title: {
-    fontSize: 26,
+    fontSize: 28,
     fontWeight: '700',
-    color: '#000',
+    color: COLORS.text,
     textAlign: 'center',
-    marginBottom: 12,
-    lineHeight: 34,
-    marginTop: 30,
+    lineHeight: 36,
+    marginBottom: 16,
   },
 
   desc: {
-    fontSize: 15,
-    color: '#555',
+    fontSize: 16,
+    color: COLORS.textSecondary,
     textAlign: 'center',
-    lineHeight: 25,
-    paddingHorizontal: 12,
+    lineHeight: 26,
   },
 
   paginationContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
     position: 'absolute',
-    bottom: 200,
+    bottom: 180,
     width: '100%',
   },
 
   dot: {
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#0A7C6E',
     marginHorizontal: 6,
   },
 
   buttonContainer: {
     position: 'absolute',
-    bottom: 80,
+    bottom: 60,
     left: 24,
     right: 24,
   },
 
   getStartedButton: {
-    backgroundColor: '#0A7C6E',
-    height: 56,
-    borderRadius: 14,
+    borderRadius: 16,
+    overflow: 'hidden',
+    shadowColor: COLORS.brand,
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.4,
+    shadowRadius: 20,
+    elevation: 12,
+  },
+
+  gradientButton: {
+    height: 58,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 5,
   },
 
   buttonText: {
-    color: '#fff',
+    color: '#001F3F',
     fontSize: 18,
     fontWeight: '700',
+    letterSpacing: 0.5,
   },
 });

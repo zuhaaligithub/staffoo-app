@@ -55,7 +55,6 @@ export type RootStackParamList = {
   // Create Job Flow
   CreateJob: undefined;
 
-  // ── Create Job Flow ─────────────────────────────────────────────────────
   ReviewConfirm: {
     jobData: {
       category: string;
@@ -64,13 +63,11 @@ export type RootStackParamList = {
       lng: number;
       description: string;
 
-      // Legacy fields (still required by your type)
       startDate: Date;
       startTime: Date;
       endDate: Date;
       endTime: Date;
 
-      // Main shifts array
       shifts: {
         date: Date;
         startTime: Date;
@@ -78,11 +75,25 @@ export type RootStackParamList = {
         guardsCount: number;
       }[];
 
-      // Optional extra fields (good to have)
-      title?: string;
-      job_location_state?: string;
-      tasks?: Array<{ id?: number; title?: string; completed?: boolean }>;
+      totalManHours: number;
+
+      subtotal: number;
+      gstAmount: number;
+      totalQuotation: number;
+      discountAmount: number;
+      payableNow: number;
+      splitAmount: number;
+
+      totalAmount: number;
+      paymentOption?: 'full' | 'split';
+
+      tasks?: {
+        title?: string;
+        startTime?: Date;
+        endTime?: Date;
+      }[];
     };
+
     uploadedFileUrls?: string[];
     selectedDocuments?: string[];
   };
@@ -132,12 +143,4 @@ export interface ChargeRate {
 
 export type ChargeRateFormData = Omit<ChargeRate, 'id'>;
 
-export type RootParamList = {
-  Home: undefined;
-  Applications: undefined;
-  Messages: undefined;
-  Profile: undefined;
-  CreateJob: undefined;
-};
 
-const Stack = createNativeStackNavigator<RootParamList>();

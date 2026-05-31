@@ -1,6 +1,3 @@
-
-
-
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import {
   View,
@@ -305,6 +302,12 @@ export default function ProfileScreen({ navigation }: Props) {
         bgColor: '#8B5CF6',
         route: 'PaymentMethod',
       },
+      // {
+      //   title: 'Policies',
+      //   icon: <FileText size={20} color="#fff" />,
+      //   bgColor: '#3B82F6',
+      //   route: 'Policies',
+      // },
       {
         title: 'Log Out',
         icon: <LogOut size={20} color="#fff" />,
@@ -329,6 +332,7 @@ export default function ProfileScreen({ navigation }: Props) {
           'Staff Forms',
           // 'Test',
           'Induction',
+          // 'Policies',
           'Log Out',
           'Delete Profile',
         ].includes(s.title),
@@ -337,9 +341,13 @@ export default function ProfileScreen({ navigation }: Props) {
 
     if (type === 'contractor') {
       return allSections.filter(s =>
-        ['Personal Info', 'Documents', 'Log Out', 'Delete Profile'].includes(
-          s.title,
-        ),
+        [
+          'Personal Info',
+          'Documents',
+          // 'Policies',
+          'Log Out',
+          'Delete Profile',
+        ].includes(s.title),
       );
     }
 
@@ -349,6 +357,7 @@ export default function ProfileScreen({ navigation }: Props) {
           'Personal Info',
           'Payment History',
           'Bank Details',
+          // 'Policies',
           'Log Out',
           'Delete Profile',
         ].includes(s.title),
@@ -542,13 +551,25 @@ export default function ProfileScreen({ navigation }: Props) {
               {/* Status Chips */}
               <View style={styles.statusRow}>
                 <View style={styles.statusChip}>
-                  <CheckCircle size={14} color="#34C88A" />
-                  <Text style={styles.statusChipTextActive}>Active</Text>
+                  <CheckCircle
+                    size={14}
+                    color={user?.is_active ? '#34C88A' : '#EF4444'}
+                  />
+                  <Text
+                    style={[
+                      styles.statusChipTextActive,
+                      { color: user?.is_active ? '#34C88A' : '#EF4444' },
+                    ]}
+                  >
+                    {user?.is_active ? 'Active' : 'Inactive'}
+                  </Text>
                 </View>
 
                 <View style={styles.statusChip}>
                   <CheckCircle size={14} color="#34C88A" />
-                  <Text style={styles.statusChipTextActive}>100% Complete</Text>
+                  <Text style={styles.statusChipTextActive}>
+                    {user?.profile_completion_percentage ?? 0}% Complete
+                  </Text>
                 </View>
               </View>
             </View>

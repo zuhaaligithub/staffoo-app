@@ -54,7 +54,7 @@ export type RootStackParamList = {
   Login: undefined;
   SignUp: undefined;
   ForgotPassword: undefined;
-
+  Policies: undefined;
   Filter: undefined;
   ProfileSetup: undefined;
   LeaveManagement: undefined;
@@ -199,6 +199,7 @@ export default function AppNavigator() {
       <Stack.Screen name="JobPayment" component={JobPaymentHistory} />
       <Stack.Screen name="Induction" component={StaffInduction} />
       <Stack.Screen name="StaffForms" component={StaffFormsScreen} />
+      <Stack.Screen name="Policies" component={StaffFormsScreen} />
       <Stack.Screen name="Test" component={TestScreen} />
       <Stack.Screen
         name="InductionQuestions"

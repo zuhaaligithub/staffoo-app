@@ -29,8 +29,8 @@ const COLORS = {
   primaryDark: '#4FCBB3',
 
   // 🌙 Background system (clean dark navy)
-  background: '#070F1E',
-  surface: '#0E1A2B',
+  background: '#001F3F',
+  surface: '#20b72c',
   surface2: '#12243A',
 
   // ✨ Card / Glass
@@ -384,6 +384,7 @@ export default function HomeScreen({ navigation }: any) {
 
               return (
                 <LinearGradient
+                key={site.id}
                   colors={[
                     'rgba(255,255,255,0.20)',
                     'rgba(255,255,255,0.10)',
@@ -647,7 +648,7 @@ const styles = StyleSheet.create({
   categoryItem: {
     // backgroundColor: COLORS.card,
     // borderColor: COLORS.cardBorder,
-    borderWidth: 1,
+    // borderWidth: 1,
     width: 90,
     height: 78,
     borderRadius: 12,

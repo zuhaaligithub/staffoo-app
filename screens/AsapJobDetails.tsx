@@ -1,5 +1,3 @@
-
-
 import React, { useState } from 'react';
 import {
   View,
@@ -27,6 +25,27 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import Toast from 'react-native-toast-message';
 
 const API_BASE = 'https://apis.staffoo.com.au/api';
+const COLORS = {
+  primary: '#89E7D0',
+  primaryDark: '#4FCBB3',
+
+  background: '#001F3F',
+  surface: '#0A2A4D',
+  surface2: '#12243A',
+
+  card: '#FFFFFF',
+  cardBorder: '#DCE6F2',
+
+  text: '#001F3F',
+  textSecondary: '#64748B',
+  textMuted: '#94A3B8',
+
+  success: '#22C55E',
+  warning: '#F59E0B',
+  danger: '#EF4444',
+
+  border: '#E2E8F0',
+};
 
 export default function AsapJobDetails({ route, navigation }: any) {
   const job = route?.params?.job;
@@ -39,8 +58,14 @@ export default function AsapJobDetails({ route, navigation }: any) {
     job ||
     {};
   const rosterId = roster?.roster?.id || roster?.id || null;
-  console.log('[AsapJobDetails] Full job from route:', JSON.stringify(job, null, 2));
-  console.log('[AsapJobDetails] Selected staff_id (if contractor):', selectedStaffId);
+  console.log(
+    '[AsapJobDetails] Full job from route:',
+    JSON.stringify(job, null, 2),
+  );
+  console.log(
+    '[AsapJobDetails] Selected staff_id (if contractor):',
+    selectedStaffId,
+  );
   console.log('[AsapJobDetails] rosterId:', rosterId);
   const distance =
     job?.distance ||
@@ -105,7 +130,10 @@ export default function AsapJobDetails({ route, navigation }: any) {
               let acceptUrl = `${API_BASE}/asap-jobs/accept/${userId}`;
               if (selectedStaffId) {
                 acceptUrl = `${API_BASE}/asap-jobs/accept/${selectedStaffId}`;
-                console.log('[ACCEPT] Using staff ID in URL path:', selectedStaffId);
+                console.log(
+                  '[ACCEPT] Using staff ID in URL path:',
+                  selectedStaffId,
+                );
               }
               console.log('[ACCEPT API FULL REQUEST]');
               console.log('URL:', acceptUrl);
@@ -115,24 +143,22 @@ export default function AsapJobDetails({ route, navigation }: any) {
               });
               console.log('Payload:', JSON.stringify(payload, null, 2));
 
-              const response = await axios.post(
-                acceptUrl,
-                payload,
-                {
-                  headers: {
-                    Authorization: `Bearer ${token}`,
-                    'Content-Type': 'application/json',
-                  },
-                  timeout: 15000,
-                }
-              );
+              const response = await axios.post(acceptUrl, payload, {
+                headers: {
+                  Authorization: `Bearer ${token}`,
+                  'Content-Type': 'application/json',
+                },
+                timeout: 15000,
+              });
               const data = response.data;
 
               if (data?.success === true) {
                 Toast.show({
                   type: 'success',
                   text1: 'Success!',
-                  text2: 'Job accepted' + (selectedStaffId ? ' (assigned to staff)' : ''),
+                  text2:
+                    'Job accepted' +
+                    (selectedStaffId ? ' (assigned to staff)' : ''),
                   position: 'bottom',
                 });
 
@@ -157,7 +183,7 @@ export default function AsapJobDetails({ route, navigation }: any) {
             }
           },
         },
-      ]
+      ],
     );
   };
 
@@ -165,8 +191,11 @@ export default function AsapJobDetails({ route, navigation }: any) {
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#fff" />
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBox}>
-          <ArrowLeft size={22} color="black" />
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          style={styles.backBox}
+        >
+          <ArrowLeft size={22} color={COLORS.primary} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Job Details</Text>
       </View>
@@ -185,39 +214,65 @@ export default function AsapJobDetails({ route, navigation }: any) {
         </MapView>
         <View style={styles.mapToggle}>
           <TouchableOpacity
-            style={[styles.toggleBtn, mapType === 'standard' && styles.activeToggle]}
+            style={[
+              styles.toggleBtn,
+              mapType === 'standard' && styles.activeToggle,
+            ]}
             onPress={() => setMapType('standard')}
           >
-            <Text>Map</Text>
+            <Text
+              style={{
+                color: mapType === 'standard' ? '#fff' : COLORS.text,
+                fontWeight: '600',
+              }}
+            >
+              Map
+            </Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.toggleBtn, mapType === 'satellite' && styles.activeToggle]}
+            style={[
+              styles.toggleBtn,
+              mapType === 'satellite' && styles.activeToggle,
+            ]}
             onPress={() => setMapType('satellite')}
           >
-            <Text>Satellite</Text>
+            <Text
+              style={{
+                color: mapType === 'satellite' ? '#fff' : COLORS.text,
+                fontWeight: '600',
+              }}
+            >
+              Satellite
+            </Text>
           </TouchableOpacity>
         </View>
       </View>
 
       <View style={styles.detailsContainer}>
         <View style={styles.row}>
-          <Calendar size={20} color="#0f766e" />
+          <Calendar size={20} color={COLORS.primaryDark} />
           <Text style={styles.text}>{formatDate(roster?.start)}</Text>
         </View>
         <View style={styles.row}>
-          <Clock size={20} color="#0f766e" />
-          <Text style={styles.text}>{formatTime(roster?.start, roster?.end)}</Text>
+          <Clock size={20} color={COLORS.primaryDark} />
+          <Text style={styles.text}>
+            {formatTime(roster?.start, roster?.end)}
+          </Text>
         </View>
         <View style={styles.row}>
-          <Briefcase size={20} color="#0f766e" />
-          <Text style={styles.text}>{roster?.job_title || 'ASAP Security'}</Text>
+          <Briefcase size={20} color={COLORS.primaryDark} />
+          <Text style={styles.text}>
+            {roster?.job_title || 'ASAP Security'}
+          </Text>
         </View>
         <View style={styles.row}>
-          <Building2 size={20} color="#0f766e" />
-          <Text style={styles.text}>{roster?.site?.site_name || 'Unknown Site'}</Text>
+          <Building2 size={20} color={COLORS.primaryDark} />
+          <Text style={styles.text}>
+            {roster?.site?.site_name || 'Unknown Site'}
+          </Text>
         </View>
         <View style={styles.row}>
-          <MapPin size={20} color="#0f766e" />
+          <MapPin size={20} color={COLORS.primaryDark} />
           <Text style={styles.address}>
             {roster?.site?.address || roster?.address || 'No address available'}
           </Text>
@@ -227,7 +282,7 @@ export default function AsapJobDetails({ route, navigation }: any) {
         )}
         {selectedStaffId && (
           <View style={styles.row}>
-            <User size={20} color="#0f766e" />
+            <User size={20} color={COLORS.primaryDark} />
             <Text style={styles.text}>
               Assigned to staff ID: {selectedStaffId}
             </Text>
@@ -255,37 +310,38 @@ export default function AsapJobDetails({ route, navigation }: any) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f3f3f3',
+    backgroundColor: COLORS.background,
     paddingTop: 20,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     padding: 16,
-
   },
   headerTitle: {
     fontSize: 17,
     fontWeight: '700',
-    marginLeft: 50,
+    marginLeft: '24%',
+    color: COLORS.card,
   },
   backBox: {
     width: 40,
     height: 40,
     borderRadius: 12,
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.surface2,
     borderWidth: 1,
-    borderColor: '#e0e0e0',
+    borderColor: COLORS.border,
     justifyContent: 'center',
     alignItems: 'center',
   },
 
-
   detailsContainer: {
-    padding: 12,
+    padding: 16,
     marginHorizontal: 18,
-    borderRadius: 10,
-    backgroundColor: '#fff',
+    borderRadius: 18,
+    backgroundColor: COLORS.card,
+    borderWidth: 1,
+    borderColor: COLORS.cardBorder,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.08,
@@ -300,26 +356,28 @@ const styles = StyleSheet.create({
   },
   text: {
     fontSize: 15,
-    fontWeight: '500'
+    fontWeight: '500',
+    color: COLORS.text,
   },
   address: {
-    fontSize: 15,
     flex: 1,
+    fontSize: 15,
     fontWeight: '600',
+    color: COLORS.text,
   },
   distance: {
-    fontWeight: '600',
+    fontWeight: '700',
     marginBottom: 20,
-    color: '#0f766e',
+    color: COLORS.primaryDark,
     fontSize: 15,
   },
   acceptBtn: {
-    backgroundColor: '#10B981',
+    backgroundColor: COLORS.success,
     paddingVertical: 16,
-    borderRadius: 12,
+    borderRadius: 14,
     alignItems: 'center',
     marginTop: 16,
-    shadowColor: '#10B981',
+    shadowColor: COLORS.success,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 6,
@@ -334,17 +392,19 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   mapCard: {
-    height: 200,
+    height: 220,
     marginHorizontal: 18,
-    borderRadius: 10,
+    borderRadius: 18,
     overflow: 'hidden',
+    backgroundColor: COLORS.card,
+    borderWidth: 1,
+    borderColor: COLORS.cardBorder,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.15,
     shadowRadius: 10,
     elevation: 6,
-    marginBottom: 15,
-    backgroundColor: '#fff',
+    marginBottom: 18,
   },
   map: {
     ...StyleSheet.absoluteFillObject,
@@ -355,21 +415,15 @@ const styles = StyleSheet.create({
     top: 15,
     left: 15,
     flexDirection: 'row',
-    backgroundColor: '#fff',
-    borderRadius: 8,
+    backgroundColor: COLORS.card,
+    borderRadius: 10,
     overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
   },
   toggleBtn: {
     paddingVertical: 6,
     paddingHorizontal: 14,
   },
   activeToggle: {
-    backgroundColor: '#10B981',
-    color: '#fff',
+    backgroundColor: COLORS.primaryDark,
   },
 });

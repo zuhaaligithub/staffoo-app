@@ -25,6 +25,24 @@ type Props = {
   route: any;
 };
 
+const COLORS = {
+  primary: '#89E7D0',
+  primaryDark: '#4FCBB3',
+
+  background: '#001F3F',
+  surface2: '#12243A',
+
+  card: 'rgba(255,255,255,0.06)',
+  border: 'rgba(255,255,255,0.08)',
+
+  text: '#FFFFFF',
+  textSecondary: 'rgba(255,255,255,0.7)',
+  textMuted: 'rgba(255,255,255,0.5)',
+
+  danger: '#EF4444',
+  success: '#22C55E',
+};
+
 export default function PaymentHistoryScreen({ navigation, route }: Props) {
   const { onCardAdded } = route.params || {};
 
@@ -156,7 +174,7 @@ export default function PaymentHistoryScreen({ navigation, route }: Props) {
           style={styles.backBox}
           onPress={() => navigation.goBack()}
         >
-          <ChevronLeft size={28} color="#111827" />
+          <ChevronLeft size={28} color="#fff" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Add Payment Method</Text>
         <View style={{ width: 28 }} />
@@ -305,43 +323,38 @@ export default function PaymentHistoryScreen({ navigation, route }: Props) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f3f6fb',
+    backgroundColor: COLORS.background,
   },
 
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 18,
-    paddingTop: 12,
-    paddingBottom: 8,
-  },
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    marginHorizontal: 16,
+    marginTop: 10,
+    borderRadius: 16,
 
+    backgroundColor: COLORS.surface2,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
   headerTitle: {
-    fontSize: 22,
-    fontWeight: '800',
-    color: '#111827',
-    letterSpacing: 0.3,
+    fontSize: 18,
+    fontWeight: '700',
+    color: COLORS.text,
   },
 
   backBox: {
     width: 42,
     height: 42,
     borderRadius: 14,
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.card,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: COLORS.border,
     justifyContent: 'center',
     alignItems: 'center',
-
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.06,
-    shadowRadius: 6,
-    elevation: 3,
   },
 
   scrollContent: {
@@ -363,7 +376,7 @@ const styles = StyleSheet.create({
     maxWidth: 390,
     height: 240,
 
-    borderRadius: 15,
+    borderRadius: 18,
 
     paddingHorizontal: 5,
     paddingVertical: 15,
@@ -372,13 +385,9 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
 
     shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 5,
-    },
-    shadowOpacity: 0.2,
-    shadowRadius: 18,
-    elevation: 2,
+    shadowOpacity: 0.3,
+    shadowRadius: 20,
+    elevation: 6,
   },
 
   topRow: {
@@ -496,21 +505,15 @@ const styles = StyleSheet.create({
   // =========================
 
   form: {
-    backgroundColor: '#fff',
-
+    backgroundColor: COLORS.surface2,
     borderTopLeftRadius: 30,
     borderTopRightRadius: 30,
-
     paddingHorizontal: 22,
     paddingTop: 26,
     paddingBottom: 34,
-
-    shadowColor: '#000',
-    shadowOpacity: 0.06,
-    shadowRadius: 10,
-    elevation: 5,
+    borderTopWidth: 1,
+    borderColor: COLORS.border,
   },
-
   field: {
     marginBottom: 22,
   },
@@ -518,31 +521,22 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#374151',
+    color: COLORS.text,
     marginBottom: 9,
   },
 
   input: {
     borderWidth: 1,
-    borderColor: '#E5E7EB',
-
+    borderColor: COLORS.border,
     borderRadius: 14,
 
     paddingHorizontal: 16,
     paddingVertical: 15,
 
     fontSize: 16,
-    color: '#111827',
+    color: COLORS.text,
 
-    backgroundColor: '#F9FAFB',
-
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 1,
-    },
-    shadowOpacity: 0.02,
-    shadowRadius: 2,
+    backgroundColor: COLORS.card,
   },
 
   row: {
@@ -554,28 +548,16 @@ const styles = StyleSheet.create({
     flex: 1,
   },
 
-  // =========================
-  // BUTTON
-  // =========================
-
   saveButton: {
     marginTop: 24,
-
-    backgroundColor: '#2EB1E2',
-
+    backgroundColor: COLORS.primaryDark,
     paddingVertical: 17,
-
     borderRadius: 16,
-
     alignItems: 'center',
     justifyContent: 'center',
 
-    shadowColor: '#2EB1E2',
-    shadowOffset: {
-      width: 0,
-      height: 8,
-    },
-    shadowOpacity: 0.25,
+    shadowColor: COLORS.primaryDark,
+    shadowOpacity: 0.3,
     shadowRadius: 12,
     elevation: 8,
   },
@@ -587,15 +569,10 @@ const styles = StyleSheet.create({
   },
 
   saveText: {
-    color: '#fff',
+    color: COLORS.text,
     fontSize: 17,
     fontWeight: '700',
-    letterSpacing: 0.4,
   },
-
-  // =========================
-  // OLD PREVIEW (OPTIONAL)
-  // =========================
 
   previewNumber: {
     fontSize: 24,
