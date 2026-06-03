@@ -480,10 +480,10 @@ export default function ProfileSetupScreen({ navigation }: Props) {
         Toast.show({ type: 'error', text1: 'Gender is required' });
         return false;
       }
-      if (!residentialStatus) {
-        Toast.show({ type: 'error', text1: 'Residential Status is required' });
-        return false;
-      }
+      // if (!residentialStatus) {
+      //   Toast.show({ type: 'error', text1: 'Residential Status is required' });
+      //   return false;
+      // }
     }
     return true;
   };

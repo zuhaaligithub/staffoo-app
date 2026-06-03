@@ -83,6 +83,7 @@ export type RootStackParamList = {
       discountAmount: number;
       payableNow: number;
       splitAmount: number;
+      jobLevel: string;
 
       totalAmount: number;
       paymentOption?: 'full' | 'split';
@@ -142,5 +143,3 @@ export interface ChargeRate {
 }
 
 export type ChargeRateFormData = Omit<ChargeRate, 'id'>;
-
-
