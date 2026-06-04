@@ -539,7 +539,7 @@ export default function WeeklyRosterScreen({ navigation }: any) {
               const isConfirmed = shift.jobStatus === 'completed';
               return (
                 <LinearGradient
-                key={shift.id}
+                  key={shift.id}
                   colors={[
                     'rgba(255, 255, 255, 0.42)',
                     'rgba(255, 255, 255, 0.35)',
@@ -869,7 +869,8 @@ export default function WeeklyRosterScreen({ navigation }: any) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
+    // backgroundColor: COLORS.background,
+    backgroundColor: '#111111',
     paddingTop: 20,
   },
 

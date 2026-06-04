@@ -38,22 +38,17 @@ import LinearGradient from 'react-native-linear-gradient';
 
 const GOOGLE_API_KEY = 'AIzaSyCS-DB39Kk-Z25C5GWymVGshXIALbjXPGY';
 const COLORS = {
-  // 🎨 Brand Palette (NEW)
-  brand: '#89E7D0', // Mint accent
-  brandDark: '#001F3F', // Deep Navy
-  brandLight: '#021d37', // Darker navy
-  accent: '#89E7D0', // Bright blue
+  brand: '#0A7C6E',
+  brandDark: '#111111',
+  brandLight: '#021d37',
+  accent: '#89E7D0',
+
   success: '#89E7D0',
   error: '#EF4444',
-  grayBg: '#001F3F',
-  cardBg: '#021d37',
 
-  // 🔵 Existing system colors (keep for consistency)
   background: '#0B1220',
-  surface: '#111A2E',
+  surface: '#121722',
   surfaceLight: '#16213A',
-  primary: '#89E7D0', // updated to brand mint (optional)
-  secondary: '#0047FF', // optional align with accent
 
   textPrimary: '#E5E7EB',
   textSecondary: '#94A3B8',
@@ -715,14 +710,9 @@ export default function ProfileSetupScreen({ navigation }: Props) {
 
           <LinearGradient
             colors={[
-              'rgba(255, 255, 255, 0.41)',
+              'rgba(250, 246, 246, 0.92)',
 
               // 'rgba(255,255,255,0.35)',
-              'rgba(255,255,255,0.35)',
-
-              'rgba(255, 255, 255, 0.2)',
-              'rgba(255,255,255,0.10)',
-              'rgba(255, 255, 255, 0.22)',
             ]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
@@ -819,14 +809,10 @@ export default function ProfileSetupScreen({ navigation }: Props) {
               </Text>
 
               <LinearGradient
-                colors={[
-                  'rgba(255,255,255,0.18)',
-                  'rgba(255,255,255,0.10)',
-                  'rgba(255,255,255,0.05)',
-                ]}
+                colors={['rgba(250, 246, 246, 0.92)']}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
-                style={styles.gradientInput}
+                style={styles.inputContainer}
               >
                 <User size={20} color="#fff" style={styles.inputIcon} />
 
@@ -954,14 +940,10 @@ export default function ProfileSetupScreen({ navigation }: Props) {
           </Text>
 
           <LinearGradient
-            colors={[
-              'rgba(255,255,255,0.18)',
-              'rgba(255,255,255,0.10)',
-              'rgba(255,255,255,0.05)',
-            ]}
+            colors={['rgba(250, 246, 246, 0.92)']}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
-            style={styles.gradientInput}
+            style={styles.inputContainer}
           >
             <MapPin size={20} color="#fff" style={styles.inputIcon} />
 
@@ -1154,14 +1136,10 @@ const InputField = ({
     <Text style={styles.label}>{label}</Text>
 
     <LinearGradient
-      colors={[
-        'rgba(255,255,255,0.18)',
-        'rgba(255,255,255,0.10)',
-        'rgba(255,255,255,0.05)',
-      ]}
+      colors={['rgba(250, 246, 246, 0.92)']}
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}
-      style={styles.gradientInput}
+      style={styles.inputContainer}
     >
       <Icon size={20} color="#fff" style={styles.inputIcon} />
 
@@ -1182,44 +1160,59 @@ const InputField = ({
 );
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: COLORS.brandDark,
+  },
+
   container: {
     flex: 1,
     backgroundColor: COLORS.brandDark,
     width: '100%',
-    // position: 'relative',
   },
+
   scrollContent: {
     paddingHorizontal: 15,
     paddingBottom: 50,
   },
+
   gradientInput: {
     flexDirection: 'row',
     alignItems: 'center',
     borderRadius: 14,
     height: 47,
   },
+
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 15,
     paddingVertical: 14,
-    backgroundColor: COLORS.brandDark,
-    marginHorizontal: 16,
+    // backgroundColor: COLORS.surface,
+    marginHorizontal: 20,
     borderRadius: 16,
     marginBottom: 10,
+    // borderWidth: 1,
+    // borderColor: COLORS.border,
   },
 
   screenTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#fff',
+    color: COLORS.textPrimary,
+  },
+
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: COLORS.textPrimary,
   },
 
   imageContainer: {
     alignSelf: 'center',
     marginBottom: 5,
-    position: 'relative', // IMPORTANT
+    position: 'relative',
   },
 
   profileImage: {
@@ -1229,6 +1222,7 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: COLORS.brand,
   },
+
   placeholderImage: {
     width: 110,
     height: 110,
@@ -1244,7 +1238,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 5,
     right: 5,
-    backgroundColor: COLORS.accent,
+    backgroundColor: COLORS.brand,
     width: 32,
     height: 32,
     borderRadius: 16,
@@ -1253,206 +1247,189 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
 
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#fff',
-  },
   field: {
     marginBottom: 10,
   },
+
   label: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#475569',
+    color: COLORS.textSecondary,
     marginBottom: 5,
   },
+
   inputContainer: {
-    // backgroundColor: '#fff',
-    borderColor: COLORS.brandDark,
     flexDirection: 'row',
     alignItems: 'center',
-
     borderRadius: 12,
     borderWidth: 1,
-
-    // paddingHorizontal: 14,
+    // borderColor: COLORS.border,
+    borderColor: '#5d5c5ccc',
     height: 47,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
-    elevation: 3,
   },
-  disabledInput: {
-    backgroundColor: '#f1f5f9',
-    opacity: 0.85,
-  },
+
   inputIcon: {
     marginRight: 9,
     marginLeft: 8,
   },
+
   input: {
     flex: 1,
     fontSize: 15,
-    color: '#fff',
+    color: COLORS.textPrimary,
   },
+
   required: {
-    color: '#EF4444',
+    color: COLORS.error,
     fontWeight: '700',
   },
-  pickerContainer: {
-    backgroundColor: '#ffffff',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#e2e8f0',
-    height: 52,
-    justifyContent: 'center',
-    paddingHorizontal: 14,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  picker: {
-    height: 52,
-    color: '#1e293b',
-    fontSize: 15,
-  },
+
   continueButton: {
-    backgroundColor: COLORS.brand,
+    backgroundColor: '#0A7C6E',
     paddingVertical: 16,
     borderRadius: 14,
     alignItems: 'center',
     marginTop: 15,
   },
+
   buttonDisabled: {
     opacity: 0.6,
   },
+
   buttonText: {
-    color: '#09266c',
+    color: COLORS.brandDark,
     fontSize: 16,
     fontWeight: '700',
   },
 
-  // Suggestions
   suggestionsList: {
     position: 'absolute',
     top: 380,
     left: 24,
     right: 24,
     maxHeight: 240,
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.surface,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: COLORS.border,
     zIndex: 1000,
   },
+
   suggestionItem: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 14,
     paddingHorizontal: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#f1f5f9',
+    borderBottomColor: COLORS.border,
   },
+
   suggestionText: {
     fontSize: 15,
-    color: '#334155',
+    color: COLORS.textPrimary,
   },
 
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.55)',
+    backgroundColor: 'rgba(0,0,0,0.7)',
     justifyContent: 'center',
     alignItems: 'center',
   },
+
   customModal: {
     width: '85%',
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.surface,
     borderRadius: 16,
     padding: 16,
     maxHeight: '50%',
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
+
   modalTitle: {
     fontSize: 18,
     fontWeight: '700',
     textAlign: 'center',
     marginBottom: 16,
-    color: '#1e293b',
+    color: COLORS.textPrimary,
   },
+
   modalItem: {
     paddingVertical: 14,
     paddingHorizontal: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#f1f5f9',
+    borderBottomColor: COLORS.border,
   },
+
   modalItemText: {
     fontSize: 16,
-    color: '#1e293b',
+    color: COLORS.textPrimary,
   },
+
   cancelBtn: {
     marginTop: 12,
     padding: 14,
     alignItems: 'center',
-    backgroundColor: COLORS.brandLight,
+    backgroundColor: COLORS.surfaceLight,
     borderRadius: 12,
   },
+
   cancelText: {
-    color: '#475569',
+    color: COLORS.textSecondary,
     fontWeight: '600',
   },
 
-  // OTP Modal Styles
   otpModalContainer: {
     width: '88%',
-    backgroundColor: '#ffffff',
+    backgroundColor: COLORS.surface,
     borderRadius: 20,
     padding: 22,
     alignItems: 'center',
-    elevation: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.3,
-    shadowRadius: 12,
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
+
   modalSubtitle: {
     fontSize: 12,
-    color: '#64748b',
+    color: COLORS.textSecondary,
     textAlign: 'center',
     marginBottom: 18,
-    lineHeight: 22,
   },
+
   otpInput: {
     width: '100%',
     height: 50,
-    borderWidth: 1.5,
-    borderColor: '#cbd5e1',
+    borderWidth: 1,
+    borderColor: COLORS.border,
     borderRadius: 12,
     fontSize: 14,
     textAlign: 'center',
     marginBottom: 20,
-    backgroundColor: '#f8fafc',
+    backgroundColor: COLORS.brandDark,
+    color: COLORS.textPrimary,
     letterSpacing: 5,
   },
+
   modalButtonRow: {
     flexDirection: 'row',
     width: '100%',
     gap: 12,
   },
+
   cancelModalBtn: {
     flex: 1,
     paddingVertical: 14,
-    backgroundColor: '#e2e8f0',
+    backgroundColor: COLORS.surfaceLight,
     borderRadius: 12,
     alignItems: 'center',
   },
+
   cancelModalText: {
-    color: '#475569',
+    color: COLORS.textSecondary,
     fontSize: 12,
     fontWeight: '600',
   },
+
   verifyModalBtn: {
     flex: 1,
     paddingVertical: 14,
@@ -1460,11 +1437,13 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     alignItems: 'center',
   },
+
   verifyModalText: {
-    color: '#fff',
+    color: COLORS.brandDark,
     fontSize: 12,
     fontWeight: '700',
   },
+
   btnDisabled: {
     opacity: 0.6,
   },

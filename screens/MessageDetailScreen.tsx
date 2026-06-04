@@ -381,7 +381,8 @@ export default function MessageDetailScreen() {
 const styles = StyleSheet.create({
   safeArea: {
   flex: 1,
-  backgroundColor: COLORS.background,
+  // backgroundColor: COLORS.background,
+   backgroundColor: '#111111',
 },
   keyboardAvoid: { flex: 1 },
 

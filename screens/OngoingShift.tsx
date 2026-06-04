@@ -1358,7 +1358,10 @@ export default function OngoingShift({
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#dfe6f9' },
+  container: { flex: 1,
+     backgroundColor: '#dfe6f9'
+      // backgroundColor: '#111111'
+     },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',

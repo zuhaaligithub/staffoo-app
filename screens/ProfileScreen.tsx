@@ -944,6 +944,7 @@ import {
   BookOpen,
   ChevronRight,
   Settings,
+  Shield,
 } from 'lucide-react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { launchImageLibrary } from 'react-native-image-picker';
@@ -1213,6 +1214,12 @@ export default function ProfileScreen({ navigation }: Props) {
         route: 'StaffForms',
       },
       {
+        title: 'Privacy Policy',
+        icon: <Shield size={20} color="#10B981" />,
+        iconBg: 'rgba(16,185,129,0.15)',
+        route: 'Policies',
+      },
+      {
         title: 'Induction',
         icon: <BookOpen size={20} color="#63B6DD" />,
         iconBg: 'rgba(99,182,221,0.15)',
@@ -1265,6 +1272,7 @@ export default function ProfileScreen({ navigation }: Props) {
           'Documents',
           'Staff Forms',
           'Induction',
+          'Privacy Policy',
           'Log Out',
           'Delete Profile',
         ].includes(s.title),
@@ -1276,6 +1284,7 @@ export default function ProfileScreen({ navigation }: Props) {
           'Personal Info',
           'Documents',
           'Staff Management',
+          'Privacy Policy',
           'Log Out',
           'Delete Profile',
         ].includes(s.title),
@@ -1287,6 +1296,7 @@ export default function ProfileScreen({ navigation }: Props) {
           'Personal Info',
           'Payment History',
           'Bank Details',
+          'Privacy Policy',
           'Log Out',
           'Delete Profile',
         ].includes(s.title),

@@ -677,7 +677,7 @@
 //   container: {
 //     flex: 1,
 //     backgroundColor: COLORS.background,
-    
+
 //     paddingTop: StatusBar.currentHeight || 15,
 //   },
 
@@ -1090,8 +1090,6 @@
 //   },
 // });
 
-
-
 import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
@@ -1287,7 +1285,7 @@ export default function SignUpScreen({ navigation }: { navigation: any }) {
   const getDisplayName = (type: 'staff' | 'customer' | 'contractor') => {
     if (type === 'customer') return 'Customer';
     if (type === 'staff') return 'Staff';
-    return 'Contractor';
+    return 'Resource partner';
   };
 
   const handleSignUp = async () => {
@@ -1377,33 +1375,38 @@ export default function SignUpScreen({ navigation }: { navigation: any }) {
     }
   };
 
+  // Replace your existing UserTypeOption with this:
   const UserTypeOption = ({
     type,
   }: {
     type: 'staff' | 'customer' | 'contractor';
-  }) => (
-    <TouchableOpacity
-      style={[
-        styles.radioOption,
-        userType === type && styles.radioOptionSelected,
-      ]}
-      onPress={() => handleUserTypeChange(type)}
-    >
-      {userType === type ? (
-        <CheckCircle size={16} color={COLORS.primary} />
-      ) : (
-        <Circle size={16} color={COLORS.textMuted} />
-      )}
-      <Text
-        style={[
-          styles.radioText,
-          userType === type && styles.radioTextSelected,
-        ]}
+  }) => {
+    const isSelected = userType === type;
+    const label = getDisplayName(type);
+
+    return (
+      <TouchableOpacity
+        style={[styles.radioOption, isSelected && styles.radioOptionSelected]}
+        onPress={() => handleUserTypeChange(type)}
       >
-        {getDisplayName(type)}
-      </Text>
-    </TouchableOpacity>
-  );
+        {/* Icon on LEFT only */}
+        <View style={styles.radioIconWrapper}>
+          {isSelected ? (
+            <CheckCircle size={20} color={COLORS.primary} />
+          ) : (
+            <Circle size={20} color={COLORS.textMuted} />
+          )}
+        </View>
+
+        {/* Text in center */}
+        <Text
+          style={[styles.radioText, isSelected && styles.radioTextSelected]}
+        >
+          {label}
+        </Text>
+      </TouchableOpacity>
+    );
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -1475,7 +1478,7 @@ export default function SignUpScreen({ navigation }: { navigation: any }) {
               </LinearGradient>
               {/* Password */}
               <Text style={styles.label}>Password *</Text>
-             <LinearGradient
+              <LinearGradient
                 colors={[
                   'rgba(233, 231, 231, 0.87)',
                   'rgba(233, 231, 231, 0.87)',
@@ -1549,7 +1552,7 @@ export default function SignUpScreen({ navigation }: { navigation: any }) {
 
               {/* Phone Number */}
               <Text style={styles.label}>Phone Number (Optional)</Text>
-             <LinearGradient
+              <LinearGradient
                 colors={[
                   'rgba(233, 231, 231, 0.87)',
                   'rgba(233, 231, 231, 0.87)',
@@ -1572,6 +1575,7 @@ export default function SignUpScreen({ navigation }: { navigation: any }) {
                 </View>
               </LinearGradient>
 
+              {/* User Type Selection */}
               {/* User Type Selection */}
               <Text style={styles.label}>Select Account Type</Text>
               <View style={styles.radioContainer}>
@@ -1795,18 +1799,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
 
-  // ================= RADIO =================
-
-  radioContainer: {
-    marginBottom: 0,
-  },
-
-  radioRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 14,
-    gap: 5,
-  },
   gradientInput: {
     width: '100%',
     borderRadius: 12,
@@ -1824,27 +1816,10 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     fontSize: 16,
-    color: COLORS.text,
+    color: '#111111',
     marginLeft: 12,
   },
-  radioOption: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 10,
-    paddingHorizontal: 2,
-    backgroundColor: COLORS.card,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: 14,
-    gap: 6,
-  },
 
-  radioOptionSelected: {
-    borderColor: COLORS.primary,
-    backgroundColor: 'rgba(137,231,208,0.12)',
-  },
   passwordHint: {
     color: COLORS.textMuted,
     fontSize: 12,
@@ -1852,17 +1827,6 @@ const styles = StyleSheet.create({
     marginBottom: 14,
     marginLeft: 4,
     lineHeight: 18,
-  },
-  radioText: {
-    fontSize: 10,
-    fontWeight: '600',
-    color: COLORS.textSecondary,
-    textAlign: 'center',
-  },
-
-  radioTextSelected: {
-    color: COLORS.primary,
-    fontWeight: '700',
   },
 
   // ================= LABEL =================
@@ -2171,5 +2135,53 @@ const styles = StyleSheet.create({
     color: '#475569',
     fontSize: 16,
     fontWeight: '600',
+  },
+
+  // ================= RADIO =================
+  radioContainer: {
+    marginBottom: 5,
+  },
+
+  radioRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 14,
+  },
+
+  radioOption: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.card,
+    borderWidth: 1.5,
+    borderColor: COLORS.border,
+    borderRadius: 10,
+    paddingVertical: 3,
+    paddingHorizontal: 5,
+    // minHeight: 20,
+  },
+
+  radioOptionSelected: {
+    borderColor: COLORS.primary,
+    backgroundColor: 'rgba(137,231,208,0.12)',
+  },
+
+  radioIconWrapper: {
+    marginRight: 0,
+    width: 20,
+    alignItems: 'center',
+  },
+
+  radioText: {
+    fontSize: 13, // ← Increased text size
+    fontWeight: '300',
+    color: COLORS.text,
+    flex: 1,
+    textAlign: 'center', // Text centered
+  },
+
+  radioTextSelected: {
+    color: COLORS.primary,
+    fontWeight: '700',
   },
 });

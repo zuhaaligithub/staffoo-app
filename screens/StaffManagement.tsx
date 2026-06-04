@@ -107,12 +107,41 @@ const residentialOptions = [
   'Other',
 ];
 
+// ── FormField OUTSIDE component to prevent keyboard dismiss on re-render ──────
+const FormField = ({
+  placeholder,
+  value,
+  onChangeText,
+  secureTextEntry = false,
+}: {
+  placeholder: string;
+  value: string;
+  onChangeText: (text: string) => void;
+  secureTextEntry?: boolean;
+}) => (
+  <TextInput
+    style={styles.input}
+    placeholder={placeholder}
+    placeholderTextColor={COLORS.textMuted}
+    value={value}
+    onChangeText={onChangeText}
+    secureTextEntry={secureTextEntry}
+    autoCorrect={false}
+    autoCapitalize="none"
+    blurOnSubmit={false}
+  />
+);
+
 type Props = { navigation: any };
 
 export default function StaffManagement({ navigation }: Props) {
+  const [editErrors, setEditErrors] = useState<any>({});
   const [staff, setStaff] = useState<StaffMember[]>([]);
+  const [rawStaff, setRawStaff] = useState<any[]>([]); // Store raw API data for edit pre-population
   const [loading, setLoading] = useState(false);
-
+  const [activeModalTab, setActiveModalTab] = useState<
+    'personal' | 'documents' | 'onboarding'
+  >('personal');
   // Add Modal
   const [showAddModal, setShowAddModal] = useState(false);
   const [addForm, setAddForm] = useState<AddStaffForm>(EMPTY_ADD_FORM);
@@ -121,9 +150,7 @@ export default function StaffManagement({ navigation }: Props) {
   const [showAddSuggestions, setShowAddSuggestions] = useState(false);
   const [showAddResidentialDropdown, setShowAddResidentialDropdown] =
     useState(false);
-
-  const [showEditResidentialDropdown, setShowEditResidentialDropdown] =
-    useState(false);
+  const [addErrors, setAddErrors] = useState<any>({});
   // Edit Modal
   const [showEditModal, setShowEditModal] = useState(false);
   const [editForm, setEditForm] = useState<EditStaffForm>(EMPTY_EDIT_FORM);
@@ -131,13 +158,8 @@ export default function StaffManagement({ navigation }: Props) {
   const [editLoading, setEditLoading] = useState(false);
   const [editPredictions, setEditPredictions] = useState<any[]>([]);
   const [showEditSuggestions, setShowEditSuggestions] = useState(false);
-
-  // Residential status picker — lives OUTSIDE all other modals to avoid nesting
-  const [residentialPickerVisible, setResidentialPickerVisible] =
+  const [showEditResidentialDropdown, setShowEditResidentialDropdown] =
     useState(false);
-  const [residentialPickerTarget, setResidentialPickerTarget] = useState<
-    'add' | 'edit'
-  >('add');
 
   useEffect(() => {
     getStaff();
@@ -166,17 +188,17 @@ export default function StaffManagement({ navigation }: Props) {
         { headers },
       );
       const apiData = response.data?.guards || [];
+
+      // Save raw data for edit pre-population
+      setRawStaff(apiData);
+
       const formatted: StaffMember[] = apiData.map((item: any) => ({
         id: item.id.toString(),
         name: item.name || 'N/A',
         email: item.email || 'N/A',
-
-        // FIX HERE (phone is inside staff OR root fallback)
         phone: item.staff?.phone || item.phone || 'N/A',
-
-        // FIX HERE (use address instead of city/state)
         location: item.address || 'N/A',
-
+        gender: item.staff?.gender || item.gender || 'N/A',
         status: item.is_active ? 'Active' : 'Pending',
       }));
       setStaff(formatted);
@@ -230,33 +252,49 @@ export default function StaffManagement({ navigation }: Props) {
     }
   };
 
-  const openResidentialPicker = (target: 'add' | 'edit') => {
-    setResidentialPickerTarget(target);
-    setResidentialPickerVisible(true);
-  };
+  const validateAddForm = () => {
+    const errors: any = {};
 
-  const selectResidentialStatus = (status: string) => {
-    if (residentialPickerTarget === 'add') {
-      setAddForm(p => ({ ...p, residential_status: status }));
-    } else {
-      setEditForm(p => ({ ...p, residential_status: status }));
-    }
-    setResidentialPickerVisible(false);
+    if (!addForm.name.trim()) errors.name = 'Full name is required';
+    if (!addForm.email.trim()) errors.email = 'Email is required';
+    else if (!/^\S+@\S+\.\S+$/.test(addForm.email))
+      errors.email = 'Invalid email format';
+
+    if (!addForm.password.trim()) errors.password = 'Password is required';
+    else if (addForm.password.length < 6)
+      errors.password = 'Password must be at least 6 characters';
+
+    if (!addForm.phone.trim()) errors.phone = 'Phone is required';
+
+    // ✅ SECURITY LICENSE REQUIRED (your request)
+    if (!addForm.security_license_no.trim())
+      errors.security_license_no = 'Security license number is required';
+
+    if (!addForm.residential_status)
+      errors.residential_status = 'Residential status is required';
+
+    if (!addForm.address.trim()) errors.address = 'Address is required';
+
+    setAddErrors(errors);
+
+    return Object.keys(errors).length === 0;
   };
 
   const addStaff = async () => {
-    if (!addForm.name || !addForm.email || !addForm.password) {
-      Alert.alert('Validation', 'Name, Email and Password are required.');
-      return;
-    }
+    if (!validateAddForm()) return;
+
     try {
       setAddLoading(true);
       const headers = await getAuthHeaders();
       const userId = await getUserId();
+
       const payload = { ...addForm, user_id: userId };
+
       await axios.post(`${BASE_URL}/admin/create-staff`, payload, { headers });
+
       setShowAddModal(false);
       setAddForm(EMPTY_ADD_FORM);
+      setAddErrors({});
       getStaff();
     } catch (error: any) {
       console.log('addStaff error:', error?.response?.data || error.message);
@@ -269,41 +307,68 @@ export default function StaffManagement({ navigation }: Props) {
     }
   };
 
-  // const openEditModal = (item: StaffMember) => {
-  //   setEditingStaffId(item.id);
-  //   setEditForm({
-  //     name: item.name,
-  //     email: item.email !== 'N/A' ? item.email : '',
-  //     phone: item.phone !== 'N/A' ? item.phone : '',
-  //     security_license_no: '',
-  //     gender: item.phone !== 'N/A' ? item.phone : '',
-  //     residential_status: '',
-  //     address: item.location !== 'N/A' ? item.location : '',
-  //   });
-  //   setShowEditModal(true);
-  // };
+  const validateEditForm = () => {
+    const errors: any = {};
 
-  const openEditModal = (item: any) => {
+    if (!editForm.name.trim()) errors.name = 'Full name is required';
+
+    if (!editForm.email.trim()) {
+      errors.email = 'Email is required';
+    } else if (!/^\S+@\S+\.\S+$/.test(editForm.email)) {
+      errors.email = 'Invalid email format';
+    }
+
+    if (!editForm.phone.trim()) {
+      errors.phone = 'Phone is required';
+    }
+
+    if (!editForm.security_license_no.trim()) {
+      errors.security_license_no = 'Security license number is required';
+    }
+
+    if (!editForm.residential_status) {
+      errors.residential_status = 'Residential status is required';
+    }
+
+    if (!editForm.address.trim()) {
+      errors.address = 'Address is required';
+    }
+
+    setEditErrors(errors);
+
+    return Object.keys(errors).length === 0;
+  };
+  const normalizeGender = (g?: string) => {
+    if (!g) return '';
+    return g.charAt(0).toUpperCase() + g.slice(1).toLowerCase();
+  };
+  // Uses rawStaff to find nested staff data for pre-population
+  const openEditModal = (item: StaffMember) => {
+    const raw = rawStaff.find(g => g.id.toString() === item.id);
+    if (!raw) return;
+
     setEditingStaffId(item.id);
-
-    const staff = item.staff || {};
-
     setEditForm({
-      name: item.name || '',
-      email: item.email || '',
-      phone: staff.phone || '',
-      security_license_no: staff.security_license_no || '',
-      gender: staff.gender || '',
-      residential_status: staff.staff_document_type || '',
-      address: item.address || '',
-    });
+      name: raw.name || '',
+      email: raw.email || '',
+      phone: raw.staff?.phone || raw.phone || '',
+      security_license_no: raw.staff?.security_license_no || '',
+      gender: normalizeGender(raw.staff?.gender || raw.gender),
 
+      residential_status: raw.staff?.staff_document_type || '',
+      address: raw.address || '',
+    });
     setShowEditModal(true);
   };
+
   const updateStaff = async () => {
     if (!editingStaffId) return;
+
+    if (!validateEditForm()) return; // ✅ ADD THIS
+
     try {
       setEditLoading(true);
+
       const headers = await getAuthHeaders();
       const userId = await getUserId();
 
@@ -313,7 +378,7 @@ export default function StaffManagement({ navigation }: Props) {
         phone: editForm.phone,
         security_license_no: editForm.security_license_no,
         gender: editForm.gender,
-        staff_document_type: editForm.residential_status, // Send as API expects
+        staff_document_type: editForm.residential_status,
         address: editForm.address,
         user_id: userId,
       };
@@ -323,8 +388,10 @@ export default function StaffManagement({ navigation }: Props) {
         payload,
         { headers },
       );
+
       setShowEditModal(false);
-      getStaff(); // Refresh the list
+      setEditErrors({}); // ✅ clear errors
+      getStaff();
     } catch (error: any) {
       Alert.alert('Error', 'Failed to update staff.');
     } finally {
@@ -352,30 +419,6 @@ export default function StaffManagement({ navigation }: Props) {
       },
     ]);
   };
-
-  const FormField = ({
-    placeholder,
-    value,
-    onChangeText,
-    secureTextEntry = false,
-  }: {
-    placeholder: string;
-    value: string;
-    onChangeText: (text: string) => void;
-    secureTextEntry?: boolean;
-  }) => (
-    <TextInput
-      style={styles.input}
-      placeholder={placeholder}
-      placeholderTextColor={COLORS.textMuted}
-      value={value}
-      onChangeText={onChangeText}
-      secureTextEntry={secureTextEntry}
-      autoCorrect={false}
-      autoCapitalize="none"
-      blurOnSubmit={false}
-    />
-  );
 
   const renderItem = ({ item }: { item: StaffMember }) => (
     <View style={styles.card}>
@@ -434,44 +477,6 @@ export default function StaffManagement({ navigation }: Props) {
     </View>
   );
 
-  // ─── Shared residential status picker (outside all modals) ──────────────────
-  const ResidentialPickerModal = () => (
-    <Modal
-      visible={residentialPickerVisible}
-      transparent
-      animationType="fade"
-      onRequestClose={() => setResidentialPickerVisible(false)}
-    >
-      <TouchableOpacity
-        style={styles.modalOverlay}
-        activeOpacity={1}
-        onPress={() => setResidentialPickerVisible(false)}
-      >
-        <View style={styles.residentialModalContent}>
-          <Text style={styles.modalTitle}>Select Residential Status</Text>
-          {residentialOptions.map(status => {
-            const currentValue =
-              residentialPickerTarget === 'add'
-                ? addForm.residential_status
-                : editForm.residential_status;
-            return (
-              <TouchableOpacity
-                key={status}
-                style={styles.optionRow}
-                onPress={() => selectResidentialStatus(status)}
-              >
-                <Text style={styles.optionText}>{status}</Text>
-                {currentValue === status && (
-                  <Check size={20} color={COLORS.primary} />
-                )}
-              </TouchableOpacity>
-            );
-          })}
-        </View>
-      </TouchableOpacity>
-    </Modal>
-  );
-
   return (
     <SafeAreaView style={styles.container}>
       {/* ─── Header ─────────────────────────────────────────────────────────── */}
@@ -523,15 +528,54 @@ export default function StaffManagement({ navigation }: Props) {
         <View style={styles.modalOverlay}>
           <View style={styles.modalCard}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Add New Staff</Text>
-              <TouchableOpacity onPress={() => setShowAddModal(false)}>
-                <Text style={styles.closeIcon}>✕</Text>
-              </TouchableOpacity>
+              <View style={styles.modalHeader}>
+                <View style={styles.headerTabs}>
+                  <TouchableOpacity
+                    style={[
+                      styles.tab,
+                      activeModalTab === 'personal' && styles.tabActive,
+                    ]}
+                    onPress={() => setActiveModalTab('personal')}
+                  >
+                    <Text
+                      style={[
+                        styles.tabText,
+                        activeModalTab === 'personal' && styles.tabTextActive,
+                      ]}
+                    >
+                      Personal Info
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.tabButton}
+                    onPress={() => {
+                      setShowAddModal(false);
+                      navigation.navigate('Documents');
+                    }}
+                  >
+                    <Text style={styles.tabText}>Documents</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={styles.tabButton}
+                    onPress={() => {
+                      setShowAddModal(false);
+                      navigation.navigate('StaffForms');
+                    }}
+                  >
+                    <Text style={styles.tabText}>Onboarding</Text>
+                  </TouchableOpacity>
+                </View>
+
+                <TouchableOpacity onPress={() => setShowAddModal(false)}>
+                  <Text style={styles.closeIcon}>✕</Text>
+                </TouchableOpacity>
+              </View>
             </View>
 
             <ScrollView
               contentContainerStyle={styles.modalBody}
-              keyboardShouldPersistTaps="handled"
+              keyboardShouldPersistTaps="never"
               showsVerticalScrollIndicator={false}
             >
               <FormField
@@ -539,19 +583,54 @@ export default function StaffManagement({ navigation }: Props) {
                 value={addForm.name}
                 onChangeText={t => setAddForm(p => ({ ...p, name: t }))}
               />
+              {addErrors.name && (
+                <Text style={styles.errorText}>{addErrors.name}</Text>
+              )}
               <FormField
                 placeholder="Email *"
                 value={addForm.email}
                 onChangeText={t => setAddForm(p => ({ ...p, email: t }))}
               />
+              {addErrors.email && (
+                <Text style={styles.errorText}>{addErrors.email}</Text>
+              )}
+              <FormField
+                placeholder="Password *"
+                value={addForm.password}
+                onChangeText={t => setAddForm(p => ({ ...p, password: t }))}
+                secureTextEntry
+              />
+              {addErrors.password && (
+                <Text style={styles.errorText}>{addErrors.password}</Text>
+              )}
+              <FormField
+                placeholder="Phone *"
+                value={addForm.phone}
+                onChangeText={t => setAddForm(p => ({ ...p, phone: t }))}
+              />
+              {addErrors.phone && (
+                <Text style={styles.errorText}>{addErrors.phone}</Text>
+              )}
+              <FormField
+                placeholder="Security License No *"
+                value={addForm.security_license_no}
+                onChangeText={t =>
+                  setAddForm(p => ({ ...p, security_license_no: t }))
+                }
+              />
+              {addErrors.security_license_no && (
+                <Text style={styles.errorText}>
+                  {addErrors.security_license_no}
+                </Text>
+              )}
+
+              {/* Residential Status Dropdown */}
               <View
                 style={[
                   styles.dropdownContainer,
                   { zIndex: showAddResidentialDropdown ? 9999 : 1 },
                 ]}
               >
-                {/* <Text style={styles.label}>Residential Status</Text> */}
-
                 <TouchableOpacity
                   style={styles.selectBox}
                   activeOpacity={0.8}
@@ -568,9 +647,11 @@ export default function StaffManagement({ navigation }: Props) {
                   >
                     {addForm.residential_status || 'Residential Status'}
                   </Text>
-
                   <ChevronDown size={20} color={COLORS.textSecondary} />
                 </TouchableOpacity>
+                {addErrors.gender && (
+                  <Text style={styles.errorText}>{addErrors.gender}</Text>
+                )}
 
                 {showAddResidentialDropdown && (
                   <View style={styles.customDropdown}>
@@ -588,7 +669,6 @@ export default function StaffManagement({ navigation }: Props) {
                           }}
                         >
                           <Text style={styles.dropdownItemText}>{item}</Text>
-
                           {addForm.residential_status === item && (
                             <Check size={18} color={COLORS.primary} />
                           )}
@@ -597,11 +677,15 @@ export default function StaffManagement({ navigation }: Props) {
                     </ScrollView>
                   </View>
                 )}
+                {addErrors.residential_status && (
+                  <Text style={styles.errorText}>
+                    {addErrors.residential_status}
+                  </Text>
+                )}
               </View>
 
               {/* Address Autocomplete */}
               <View style={styles.addressContainer}>
-                {/* <Text style={styles.label}>Address</Text> */}
                 <TextInput
                   style={styles.input}
                   placeholder="Start typing address..."
@@ -613,6 +697,9 @@ export default function StaffManagement({ navigation }: Props) {
                   }}
                   autoCorrect={false}
                 />
+                {addErrors.address && (
+                  <Text style={styles.errorText}>{addErrors.address}</Text>
+                )}
                 {showAddSuggestions && addPredictions.length > 0 && (
                   <View style={styles.suggestionsContainer}>
                     {addPredictions.map((pred: any) => (
@@ -630,24 +717,6 @@ export default function StaffManagement({ navigation }: Props) {
                   </View>
                 )}
               </View>
-              <FormField
-                placeholder="Password *"
-                value={addForm.password}
-                onChangeText={t => setAddForm(p => ({ ...p, password: t }))}
-                secureTextEntry
-              />
-              <FormField
-                placeholder="Phone"
-                value={addForm.phone}
-                onChangeText={t => setAddForm(p => ({ ...p, phone: t }))}
-              />
-              <FormField
-                placeholder="Security License No"
-                value={addForm.security_license_no}
-                onChangeText={t =>
-                  setAddForm(p => ({ ...p, security_license_no: t }))
-                }
-              />
 
               {/* Gender */}
               <View style={styles.dropdownContainer}>
@@ -710,15 +779,54 @@ export default function StaffManagement({ navigation }: Props) {
         <View style={styles.modalOverlay}>
           <View style={styles.modalCard}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Edit Staff</Text>
-              <TouchableOpacity onPress={() => setShowEditModal(false)}>
-                <Text style={styles.closeIcon}>✕</Text>
-              </TouchableOpacity>
+              <View style={styles.modalHeader}>
+                <View style={styles.headerTabs}>
+                  <TouchableOpacity
+                    style={[
+                      styles.tab,
+                      activeModalTab === 'personal' && styles.tabActive,
+                    ]}
+                    onPress={() => setActiveModalTab('personal')}
+                  >
+                    <Text
+                      style={[
+                        styles.tabText,
+                        activeModalTab === 'personal' && styles.tabTextActive,
+                      ]}
+                    >
+                      Personal Info
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.tabButton}
+                    onPress={() => {
+                      setShowEditModal(false); // ✅ correct
+                      navigation.navigate('Documents');
+                    }}
+                  >
+                    <Text style={styles.tabText}>Documents</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={styles.tabButton}
+                    onPress={() => {
+                      setShowEditModal(false); // ✅ correct
+                      navigation.navigate('StaffForms');
+                    }}
+                  >
+                    <Text style={styles.tabText}>Onboarding</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity onPress={() => setShowEditModal(false)}>
+                    <Text style={styles.closeIcon}>✕</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
             </View>
 
             <ScrollView
               contentContainerStyle={styles.modalBody}
-              keyboardShouldPersistTaps="handled"
+              keyboardShouldPersistTaps="never"
               showsVerticalScrollIndicator={false}
             >
               <FormField
@@ -726,17 +834,39 @@ export default function StaffManagement({ navigation }: Props) {
                 value={editForm.name}
                 onChangeText={t => setEditForm(p => ({ ...p, name: t }))}
               />
+              {editErrors.name && (
+                <Text style={styles.errorText}>{editErrors.name}</Text>
+              )}
               <FormField
                 placeholder="Email *"
                 value={editForm.email}
                 onChangeText={t => setEditForm(p => ({ ...p, email: t }))}
               />
-              {/* <FormField
-                placeholder="Password *"
-                value={addForm.password}
-                onChangeText={t => setAddForm(p => ({ ...p, password: t }))}
-                secureTextEntry
-              /> */}
+              {editErrors.email && (
+                <Text style={styles.errorText}>{editErrors.email}</Text>
+              )}
+              <FormField
+                placeholder="Phone"
+                value={editForm.phone}
+                onChangeText={t => setEditForm(p => ({ ...p, phone: t }))}
+              />
+              {editErrors.phone && (
+                <Text style={styles.errorText}>{editErrors.phone}</Text>
+              )}
+              <FormField
+                placeholder="Security License No"
+                value={editForm.security_license_no}
+                onChangeText={t =>
+                  setEditForm(p => ({ ...p, security_license_no: t }))
+                }
+              />
+              {editErrors.security_license_no && (
+                <Text style={styles.errorText}>
+                  {editErrors.security_license_no}
+                </Text>
+              )}
+
+              {/* Residential Status Dropdown */}
               <View
                 style={[
                   styles.dropdownContainer,
@@ -759,28 +889,31 @@ export default function StaffManagement({ navigation }: Props) {
                   >
                     {editForm.residential_status || 'Residential Status'}
                   </Text>
-
                   <ChevronDown size={20} color={COLORS.textSecondary} />
                 </TouchableOpacity>
+                {editErrors.residential_status && (
+                  <Text style={styles.errorText}>
+                    {editErrors.residential_status}
+                  </Text>
+                )}
 
                 {showEditResidentialDropdown && (
                   <View style={styles.customDropdown}>
                     <ScrollView nestedScrollEnabled>
-                      {residentialOptions.map(item => (
+                      {residentialOptions.map(opt => (
                         <TouchableOpacity
-                          key={item}
+                          key={opt}
                           style={styles.dropdownItem}
                           onPress={() => {
-                            setEditForm(prev => ({
-                              ...prev,
-                              residential_status: item,
+                            setEditForm(p => ({
+                              ...p,
+                              residential_status: opt,
                             }));
                             setShowEditResidentialDropdown(false);
                           }}
                         >
-                          <Text style={styles.dropdownItemText}>{item}</Text>
-
-                          {editForm.residential_status === item && (
+                          <Text style={styles.dropdownItemText}>{opt}</Text>
+                          {editForm.residential_status === opt && (
                             <Check size={18} color={COLORS.primary} />
                           )}
                         </TouchableOpacity>
@@ -790,8 +923,8 @@ export default function StaffManagement({ navigation }: Props) {
                 )}
               </View>
 
+              {/* Address Autocomplete */}
               <View style={styles.addressContainer}>
-                {/* <Text style={styles.label}>Address</Text> */}
                 <TextInput
                   style={styles.input}
                   placeholder="Start typing address..."
@@ -802,7 +935,13 @@ export default function StaffManagement({ navigation }: Props) {
                     fetchPlaces(t, false);
                   }}
                   autoCorrect={false}
+
+
+                  ``
                 />
+                {editErrors.address && (
+                  <Text style={styles.errorText}>{editErrors.address}</Text>
+                )}
                 {showEditSuggestions && editPredictions.length > 0 && (
                   <View style={styles.suggestionsContainer}>
                     {editPredictions.map((pred: any) => (
@@ -820,19 +959,8 @@ export default function StaffManagement({ navigation }: Props) {
                   </View>
                 )}
               </View>
-              <FormField
-                placeholder="Phone"
-                value={editForm.phone}
-                onChangeText={t => setEditForm(p => ({ ...p, phone: t }))}
-              />
-              <FormField
-                placeholder="Security License No"
-                value={editForm.security_license_no}
-                onChangeText={t =>
-                  setEditForm(p => ({ ...p, security_license_no: t }))
-                }
-              />
 
+              {/* Gender */}
               <View style={styles.dropdownContainer}>
                 <Text style={styles.label}>Gender</Text>
                 <View style={styles.genderOptions}>
@@ -885,8 +1013,6 @@ export default function StaffManagement({ navigation }: Props) {
           </View>
         </View>
       </Modal>
-
-      <ResidentialPickerModal />
     </SafeAreaView>
   );
 }
@@ -958,6 +1084,13 @@ const styles = StyleSheet.create({
     borderColor: COLORS.primaryBorder,
     marginRight: 14,
   },
+  errorText: {
+    color: '#F87171',
+    fontSize: 10,
+    width: '100%',
+    marginLeft: 4,
+    marginTop: 4,
+  },
   userInfo: { flex: 1 },
   name: { color: COLORS.text, fontSize: 17, fontWeight: '700' },
   email: { color: COLORS.textSecondary, fontSize: 13, marginTop: 4 },
@@ -967,6 +1100,15 @@ const styles = StyleSheet.create({
     marginLeft: 10,
     fontSize: 14,
     flex: 1,
+  },
+  tab: {
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    borderRadius: 20,
+  },
+
+  tabActive: {
+    backgroundColor: COLORS.primary,
   },
   statusBadge: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 30 },
   pendingBadge: {
@@ -993,6 +1135,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginRight: 8,
   },
+
   deleteButton: {
     flex: 1,
     backgroundColor: COLORS.dangerBg,
@@ -1006,12 +1149,21 @@ const styles = StyleSheet.create({
   },
   actionText: { color: COLORS.text, fontWeight: '600', marginLeft: 6 },
 
+  // ── Modal ─────────────────────────────────────────────────────────────────
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.75)',
+    justifyContent: 'center',
+    // alignItems: 'center',
+  },
   modalCard: {
     width: '100%',
-    maxHeight: '85%',
+    maxHeight: '100%',
     backgroundColor: COLORS.card,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
     borderWidth: 1,
     borderColor: COLORS.cardBorder,
     overflow: 'hidden',
@@ -1020,13 +1172,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.cardBorder,
+    padding: 10,
+    // borderBottomWidth: 1,
+    // borderBottomColor: COLORS.cardBorder,
   },
   modalTitle: { color: COLORS.text, fontSize: 18, fontWeight: '700' },
   closeIcon: { color: COLORS.textSecondary, fontSize: 18, padding: 4 },
-  modalBody: { padding: 20, gap: 12 },
+  modalBody: { padding: 15, gap: 12 },
   input: {
     backgroundColor: COLORS.surface,
     borderWidth: 1,
@@ -1089,36 +1241,6 @@ const styles = StyleSheet.create({
   },
   suggestionText: { color: COLORS.text, flex: 1 },
 
-  // ── Residential picker (top-level modal) ──────────────────────────────────
-  residentialModalContent: {
-    backgroundColor: COLORS.card,
-    margin: 20,
-    borderRadius: 20,
-    padding: 16,
-    maxHeight: '70%',
-    borderWidth: 1,
-    borderColor: COLORS.cardBorder,
-    // ADD THIS
-    elevation: 100,
-    zIndex: 100,
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.75)',
-    justifyContent: 'center', // Changed to center to make it look like a floating dialog
-    zIndex: 99,
-  },
-  optionRow: {
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.cardBorder,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  optionText: { color: COLORS.text, fontSize: 16 },
-
   // ── Footer ────────────────────────────────────────────────────────────────
   footer: {
     flexDirection: 'row',
@@ -1145,11 +1267,10 @@ const styles = StyleSheet.create({
   },
   saveText: { color: COLORS.text, fontWeight: '700' },
   buttonDisabled: { opacity: 0.6 },
+
   dropdownContainer: {
-    // marginBottom: 16,
     position: 'relative',
   },
-
   customDropdown: {
     position: 'absolute',
     top: 52,
@@ -1160,19 +1281,13 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: COLORS.cardBorder,
     maxHeight: 220,
-
     zIndex: 99999,
     elevation: 30,
-
     shadowColor: '#000',
     shadowOpacity: 0.25,
     shadowRadius: 8,
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
+    shadowOffset: { width: 0, height: 4 },
   },
-
   dropdownItem: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -1182,9 +1297,35 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: COLORS.cardBorder,
   },
-
   dropdownItemText: {
     color: COLORS.text,
     fontSize: 15,
+  },
+  headerTabs: {
+    flexDirection: 'row',
+    flex: 1,
+    justifyContent: 'center',
+    gap: 10,
+  },
+
+  tabButton: {
+    paddingVertical: 6,
+    paddingHorizontal: 14,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255,255,255,0.08)',
+  },
+
+  tabButtonActive: {
+    backgroundColor: COLORS.primary,
+  },
+
+  tabText: {
+    fontSize: 13,
+    color: COLORS.textMuted,
+    fontWeight: '600',
+  },
+
+  tabTextActive: {
+    color: '#fff',
   },
 });

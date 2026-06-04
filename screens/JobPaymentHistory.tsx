@@ -251,7 +251,8 @@ export default function JobPaymentHistory({ navigation, route }: Props) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
+    // backgroundColor: COLORS.background,
+     backgroundColor: '#111111',
     paddingTop: 45,
     // marginTop: 15,
   },
@@ -260,7 +261,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: COLORS.surface,
+    // backgroundColor: COLORS.surface,
+    
     marginHorizontal: 16,
     borderRadius: 16,
     marginBottom: 10,

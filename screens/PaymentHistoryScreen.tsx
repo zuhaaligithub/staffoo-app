@@ -323,7 +323,8 @@ export default function PaymentHistoryScreen({ navigation, route }: Props) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
+    backgroundColor: '#111111',
+    // backgroundColor: COLORS.background,
   },
 
   header: {
@@ -336,7 +337,7 @@ const styles = StyleSheet.create({
     marginTop: 10,
     borderRadius: 16,
 
-    backgroundColor: COLORS.surface2,
+    // backgroundColor: COLORS.surface2,
     borderWidth: 1,
     borderColor: COLORS.border,
   },
@@ -505,7 +506,7 @@ const styles = StyleSheet.create({
   // =========================
 
   form: {
-    backgroundColor: COLORS.surface2,
+    // backgroundColor: COLORS.surface2,
     borderTopLeftRadius: 30,
     borderTopRightRadius: 30,
     paddingHorizontal: 22,
@@ -550,7 +551,7 @@ const styles = StyleSheet.create({
 
   saveButton: {
     marginTop: 24,
-    backgroundColor: COLORS.primaryDark,
+    backgroundColor: '#0A7C6E',
     paddingVertical: 17,
     borderRadius: 16,
     alignItems: 'center',
@@ -563,7 +564,7 @@ const styles = StyleSheet.create({
   },
 
   disabled: {
-    backgroundColor: '#9bd8ef',
+    backgroundColor: '#0A7C6E',
     shadowOpacity: 0,
     elevation: 0,
   },

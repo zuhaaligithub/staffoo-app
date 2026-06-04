@@ -169,7 +169,8 @@ export default function PaymentMethodsScreen({ navigation }: Props) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
+    // backgroundColor: COLORS.background,
+     backgroundColor: '#111111',
   },
   header: {
     flexDirection: 'row',
@@ -182,7 +183,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 16,
     marginTop: 10,
 
-    backgroundColor: COLORS.surface,
+    // backgroundColor: COLORS.surface,
     borderRadius: 16,
 
     borderWidth: 1,
@@ -242,7 +243,7 @@ const styles = StyleSheet.create({
     left: 24,
     right: 24,
 
-    backgroundColor: COLORS.primaryDark,
+    backgroundColor: '#0A7C6E',
 
     borderRadius: 16,
     paddingVertical: 16,

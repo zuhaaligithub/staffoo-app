@@ -515,50 +515,56 @@ export default function SignInDetails({
             </View>
 
             {/* Selfie Card */}
-            <LinearGradient
-              colors={[
-                'rgba(255, 255, 255, 0.42)',
-                'rgba(255, 255, 255, 0.35)',
-                'rgba(255, 255, 255, 0.22)',
-                'rgba(255, 255, 255, 0.12)',
-                'rgba(255, 255, 255, 0.25)',
-              ]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.halfCardcontainer}
-            >
-              <View style={styles.selfieCard}>
-                <TouchableOpacity
-                  activeOpacity={0.8}
-                  onPress={openCamera}
-                  style={{
-                    alignItems: 'center',
-                    flex: 1,
-                    justifyContent: 'center',
-                  }}
-                >
-                  {selfieUri ? (
-                    <Image
-                      source={{ uri: selfieUri }}
-                      style={styles.selfieImage}
-                      resizeMode="cover"
-                    />
-                  ) : (
-                    <>
-                      <View style={styles.selfieIconCircle}>
-                        <Camera size={20} color="#3b82f6" />
-                      </View>
-                      <Text style={styles.smallTitle}>SignIn Selfie</Text>
-                      <Text
-                        style={{ fontSize: 12, color: '#3b82f6', marginTop: 4 }}
-                      >
-                        Tap to take photo
-                      </Text>
-                    </>
-                  )}
-                </TouchableOpacity>
-              </View>
-            </LinearGradient>
+            <View style={styles.rightColumn}>
+              <LinearGradient
+                colors={[
+                  'rgba(255, 255, 255, 0.42)',
+                  'rgba(255, 255, 255, 0.35)',
+                  'rgba(255, 255, 255, 0.22)',
+                  'rgba(255, 255, 255, 0.12)',
+                  'rgba(255, 255, 255, 0.25)',
+                ]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.halfCardcontainer}
+              >
+                <View style={styles.selfieCard}>
+                  <TouchableOpacity
+                    activeOpacity={0.8}
+                    onPress={openCamera}
+                    style={{
+                      alignItems: 'center',
+                      flex: 1,
+                      justifyContent: 'center',
+                    }}
+                  >
+                    {selfieUri ? (
+                      <Image
+                        source={{ uri: selfieUri }}
+                        style={styles.selfieImage}
+                        resizeMode="cover"
+                      />
+                    ) : (
+                      <>
+                        <View style={styles.selfieIconCircle}>
+                          <Camera size={20} color="#3b82f6" />
+                        </View>
+                        <Text style={styles.smallTitle}>SignIn Selfie</Text>
+                        <Text
+                          style={{
+                            fontSize: 12,
+                            color: '#3b82f6',
+                            marginTop: 4,
+                          }}
+                        >
+                          Tap to take photo
+                        </Text>
+                      </>
+                    )}
+                  </TouchableOpacity>
+                </View>
+              </LinearGradient>
+            </View>
           </View>
           <View style={styles.statusBadge}>
             <View style={styles.dot} />
@@ -668,7 +674,8 @@ export default function SignInDetails({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
+    // backgroundColor: COLORS.background,
+    backgroundColor: '#111111',
     paddingTop: 20,
   },
   header: {
@@ -677,7 +684,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 15,
     paddingVertical: 14,
-    backgroundColor: COLORS.surface,
+    // backgroundColor: COLORS.surface,
     marginHorizontal: 16,
     borderRadius: 16,
     marginBottom: 10,
@@ -779,10 +786,15 @@ const styles = StyleSheet.create({
   combinedRow: {
     flexDirection: 'row',
     marginBottom: 14,
+    gap: 10, // better spacing
   },
+
   leftColumn: {
     flex: 1,
-    marginRight: 8,
+  },
+
+  rightColumn: {
+    width: 140, // 👈 FIX WIDTH
   },
   halfCard: {
     flexDirection: 'row',

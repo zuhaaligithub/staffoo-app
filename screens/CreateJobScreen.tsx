@@ -1560,7 +1560,7 @@ export default function CreateJobScreen() {
           style={styles.container}
           keyboardShouldPersistTaps="handled"
         >
-          <View style={styles.sectionCard}>
+          {/* <View style={styles.sectionCard}>
             <Text style={styles.inputLabel}>
               Select Security Service Level *
             </Text>
@@ -1586,7 +1586,7 @@ export default function CreateJobScreen() {
                 </TouchableOpacity>
               ))}
             </View>
-          </View>
+          </View> */}
 
           {/* Location & Map Selection */}
           <View style={styles.sectionCard}>

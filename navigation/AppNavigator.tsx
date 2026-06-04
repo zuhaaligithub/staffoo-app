@@ -46,6 +46,7 @@ import InductionQuestionsScreen from '../screens/InductionQuestionScreen';
 import StaffFormsScreen from '../screens/StaffFormsScreen';
 import TestScreen from '../screens/TestScreen';
 import StaffManagement from '../screens/StaffManagement';
+import PoliciesScreen from '../screens/PoliciesScreen';
 
 // import InductionQuestionScreen from '../screens/InductionQuestionScreen';
 
@@ -96,7 +97,7 @@ export type RootStackParamList = {
   };
   Success: undefined;
   StaffShifts: undefined;
-  StaffManagement:undefined
+  StaffManagement: undefined;
   SignIn: undefined;
   Ongoing: undefined;
   CreateIncidentReport: undefined;
@@ -201,10 +202,10 @@ export default function AppNavigator() {
       <Stack.Screen name="JobPayment" component={JobPaymentHistory} />
       <Stack.Screen name="Induction" component={StaffInduction} />
       <Stack.Screen name="StaffForms" component={StaffFormsScreen} />
-      <Stack.Screen name="Policies" component={StaffFormsScreen} />
+      <Stack.Screen name="Policies" component={PoliciesScreen} />
       <Stack.Screen name="Test" component={TestScreen} />
-       <Stack.Screen name="StaffManagement" component={StaffManagement} />
-      
+      <Stack.Screen name="StaffManagement" component={StaffManagement} />
+
       <Stack.Screen
         name="InductionQuestions"
         component={InductionQuestionsScreen}

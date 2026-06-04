@@ -384,7 +384,7 @@ export default function HomeScreen({ navigation }: any) {
 
               return (
                 <LinearGradient
-                key={site.id}
+                  key={site.id}
                   colors={[
                     'rgba(255,255,255,0.20)',
                     'rgba(255,255,255,0.10)',
@@ -479,7 +479,8 @@ export default function HomeScreen({ navigation }: any) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
+    // backgroundColor: COLORS.background,
+    backgroundColor: '#111111',
     paddingTop: 20,
   },
   header: {

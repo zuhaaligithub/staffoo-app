@@ -418,7 +418,8 @@ export default function StaffInductionScreen({
 const styles = StyleSheet.create({
  container: {
   flex: 1,
-  backgroundColor: COLORS.background,
+  // backgroundColor: COLORS.background,
+   backgroundColor: '#111111',
 },
  headerRow: {
   flexDirection: 'row',
@@ -433,7 +434,7 @@ const styles = StyleSheet.create({
 
   borderRadius: 18,
 
-  backgroundColor: COLORS.surface2,
+  // backgroundColor: COLORS.surface2,
   borderWidth: 1,
   borderColor: COLORS.border,
 },
@@ -478,12 +479,12 @@ staffName: {
     marginTop:10
   },
   completedCardBorder: {
-    borderWidth: 2,
+    borderWidth: 1,
     borderColor: '#22c55e',
   },
 
  recentCard: {
-  backgroundColor: COLORS.surface,
+  // backgroundColor: COLORS.surface,
   borderRadius: 22,
   padding: 18,
   flexDirection: 'row',
@@ -554,7 +555,7 @@ startButtonText: {
   borderColor: COLORS.border,
 },
   completedBorder: {
-    borderWidth: 2,
+    borderWidth: 1,
     borderColor: '#22c55e',
   },
 

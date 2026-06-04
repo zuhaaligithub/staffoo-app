@@ -2406,13 +2406,13 @@ import { generatePDF as pdfConvert } from 'react-native-html-to-pdf';
 const BASE_URL = 'https://apis.staffoo.com.au';
 const GOOGLE_API_KEY = 'AIzaSyCS-DB39Kk-Z25C5GWymVGshXIALbjXPGY';
 const BRAND = '#89E7D0'; // Mint accent
-const BRAND_DARK = '#001F3F'; // Deep Navy
-const BRAND_LIGHT = '#021d37'; // Darker navy
+const BRAND_DARK = '#111111'; // Deep Navy
+const BRAND_LIGHT = '#111111'; // Darker navy
 const ACCENT = '#0047FF'; // Bright blue
 const SUCCESS = '#89E7D0';
 const ERROR = '#EF4444';
 const GRAY_BG = '#001F3F';
-const CARD_BG = '#021d37';
+const CARD_BG = '#111111';
 
 type StaffTab = 'tfn' | 'super' | 'onboarding';
 
@@ -2490,6 +2490,10 @@ const StaffFormsScreen = ({ navigation }: any) => {
   const [formUrls, setFormUrls] = useState<FormUrls>({});
 
   // ── Onboarding Fields ───────────────────────────────────────────────────────
+  const [onboardTfn, setOnboardTfn] = useState('');
+  const [onboardSuperFundName, setOnboardSuperFundName] = useState('');
+  const [onboardSuperUsi, setOnboardSuperUsi] = useState('');
+  const [onboardMemberNumber, setOnboardMemberNumber] = useState('');
   const [onboardFullName, setOnboardFullName] = useState('');
   const [onboardMobile, setOnboardMobile] = useState('');
   const [onboardEmail, setOnboardEmail] = useState('');
@@ -3235,7 +3239,25 @@ const StaffFormsScreen = ({ navigation }: any) => {
         data.account_number || ''
       }</div></div>
     </div>
-
+<div class="section-title">4. TAX & SUPERANNUATION</div>
+<div class="row">
+  <div class="field"><div class="field-label">Tax File Number:</div>
+    <div class="field-input">${data.tfn || ''}</div>
+  </div>
+</div>
+<div class="row">
+  <div class="field"><div class="field-label">Super Fund Name:</div>
+    <div class="field-input">${data.super_fund || ''}</div>
+  </div>
+  <div class="field"><div class="field-label">Super USI:</div>
+    <div class="field-input">${data.super_usi || ''}</div>
+  </div>
+</div>
+<div class="row">
+  <div class="field"><div class="field-label">Member Number:</div>
+    <div class="field-input">${data.super_member || ''}</div>
+  </div>
+</div>
     <div class="section-title">5. LICENCES & CERTIFICATIONS</div>
     <div class="row">
       <div class="field"><div class="field-label">Security licence No:</div><div class="field-input">${
@@ -3469,6 +3491,10 @@ const StaffFormsScreen = ({ navigation }: any) => {
           setWorkRights(data.work_rights || null);
           setBankName(data.bank_name || '');
           setBsb(data.bsb || '');
+          setOnboardTfn(data.tfn || '');
+          setOnboardSuperFundName(data.super_fund || '');
+          setOnboardSuperUsi(data.super_usi || '');
+          setOnboardMemberNumber(data.super_member || '');
           setAccountNumber(data.account_number || '');
           setSecurityLicence(data.security_license || '');
           setSecurityExpiry(data.security_license_expiry || '');
@@ -3545,6 +3571,10 @@ const StaffFormsScreen = ({ navigation }: any) => {
     setClaimTaxFree(null);
     setHasDebt(null);
     setSignatureTfn('');
+    setOnboardTfn('');
+    setOnboardSuperFundName('');
+    setOnboardSuperUsi('');
+    setOnboardMemberNumber('');
     setDateTfn('');
     setDateTfnBackend('');
     setSuperEmployeeNumber('');
@@ -3645,6 +3675,11 @@ const StaffFormsScreen = ({ navigation }: any) => {
           passport_country: passportCountry,
           passport_expiry: passportExpiry,
           work_rights: workRights,
+
+          tfn: onboardTfn, // ← NEW
+          super_fund: onboardSuperFundName, // ← NEW
+          super_usi: onboardSuperUsi, // ← NEW
+          super_member: onboardMemberNumber,
 
           // 1. Pass the id_checks object structure intact
           id_checks: {
@@ -4264,7 +4299,49 @@ const StaffFormsScreen = ({ navigation }: any) => {
               </View>
             </View>
 
-            <SectionLabel>5. Licenses & Certs</SectionLabel>
+            {/* NEW: Tax & Super Details */}
+            <SectionLabel>5. Tax & Superannuation Details</SectionLabel>
+
+            <Field label="Tax File Number (TFN)">
+              <StyledInput
+                value={onboardTfn}
+                onChangeText={setOnboardTfn}
+                placeholder="000 000 000"
+                keyboardType="numeric"
+                maxLength={11}
+              />
+            </Field>
+
+            <View style={s.row2}>
+              <View style={{ flex: 1 }}>
+                <Field label="Super Fund Name">
+                  <StyledInput
+                    value={onboardSuperFundName}
+                    onChangeText={setOnboardSuperFundName}
+                    placeholder="e.g. AustralianSuper"
+                  />
+                </Field>
+              </View>
+              <View style={{ flex: 1 }}>
+                <Field label="Super USI">
+                  <StyledInput
+                    value={onboardSuperUsi}
+                    onChangeText={setOnboardSuperUsi}
+                    placeholder="123456789012345"
+                  />
+                </Field>
+              </View>
+            </View>
+
+            <Field label="Member Number">
+              <StyledInput
+                value={onboardMemberNumber}
+                onChangeText={setOnboardMemberNumber}
+                placeholder="Member Account Number"
+              />
+            </Field>
+
+            <SectionLabel>6. Licenses & Certs</SectionLabel>
             <View style={s.row2}>
               <View style={{ flex: 1 }}>
                 <Field label="Security licence No.">
@@ -4555,7 +4632,11 @@ const YesNoGroup = ({ value, onChange }: any) => (
 // STYLES
 // ═══════════════════════════════════════════════════════════════════════════
 const s = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#001F3F' },
+  container: {
+    flex: 1,
+    // backgroundColor: '#001F3F'
+    backgroundColor: '#111111',
+  },
   loadingWrap: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   loadingText: { marginTop: 12, color: '#fff', fontSize: 14 },
   header: {
@@ -4643,7 +4724,7 @@ const s = StyleSheet.create({
     marginBottom: 4,
   },
   input: {
-    backgroundColor: '#001F3F',
+    // backgroundColor: '#001F3F',
     borderWidth: 1,
     borderColor: '#475569',
     borderRadius: 10,
@@ -4655,7 +4736,7 @@ const s = StyleSheet.create({
   row2: { flexDirection: 'row', gap: 10 },
   row3: { flexDirection: 'row', gap: 8 },
   selectBtn: {
-    backgroundColor: '#001F3F',
+    // backgroundColor: '#001F3F',
     borderWidth: 1,
     borderColor: '#475569',
     borderRadius: 10,
@@ -4667,7 +4748,7 @@ const s = StyleSheet.create({
   },
   selectText: { color: '#fff', fontSize: 14 },
   dateBtn: {
-    backgroundColor: '#001F3F',
+    // backgroundColor: '#001F3F',
     borderWidth: 1,
     borderColor: '#475569',
     borderRadius: 10,
@@ -4677,7 +4758,7 @@ const s = StyleSheet.create({
   dateBtnText: { color: '#fff', fontSize: 14 },
   sigContainer: { height: 44, justifyContent: 'center' },
   sigPlaceholderBtn: {
-    backgroundColor: '#001F3F',
+    // backgroundColor: '#001F3F',
     borderWidth: 1,
     borderStyle: 'dashed',
     borderColor: BRAND,
@@ -4688,7 +4769,7 @@ const s = StyleSheet.create({
   },
   sigPlaceholderText: { color: BRAND, fontSize: 13, fontWeight: '600' },
   sigUploadedBox: {
-    backgroundColor: '#001F3F',
+    // backgroundColor: '#001F3F',
     borderWidth: 1,
     borderColor: BRAND,
     borderRadius: 10,
@@ -4718,7 +4799,11 @@ const s = StyleSheet.create({
     marginTop: 12,
     gap: 8,
   },
-  downloadBtnText: { color: '#001F3F', fontSize: 14, fontWeight: '700' },
+  downloadBtnText: {
+    //  color: '#001F3F',
+    fontSize: 14,
+    fontWeight: '700',
+  },
   ownFundBox: {
     backgroundColor: 'rgba(0,0,0,0.15)',
     padding: 10,
@@ -4757,7 +4842,7 @@ const s = StyleSheet.create({
     borderColor: '#475569',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#0A253F',
+    // backgroundColor: '#0A253F',
   },
   yesNoBtnOn: {
     backgroundColor: 'rgba(137, 231, 208, 0.15)',
