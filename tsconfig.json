@@ -1,0 +1,12 @@
+{
+  "extends": "@react-native/typescript-config",
+  "compilerOptions": {
+    "skipLibCheck": true,
+    "types": ["node"],
+    "lib": ["esnext", "dom"],
+    // "types": ["jest"],
+    "typeRoots": ["./types", "./node_modules/@types"]
+  },
+  "include": ["**/*.ts", "**/*.tsx", "types"],
+  "exclude": ["**/node_modules", "**/Pods"]
+}

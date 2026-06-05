@@ -1,0 +1,60 @@
+{
+  "name": "react-native-agora",
+  "version": "4.6.2",
+  "summary": "Agora RTC SDK For React Native",
+  "homepage": "https://github.com/AgoraIO-Extensions/react-native-agora#readme",
+  "license": "MIT",
+  "authors": "HUI <luxuhui@agora.io> (https://github.com/LichKing-2234)",
+  "platforms": {
+    "ios": "12.4"
+  },
+  "source": {
+    "git": "https://github.com/AgoraIO-Extensions/react-native-agora.git",
+    "tag": "4.6.2"
+  },
+  "source_files": "ios/**/*.{h,m,mm}",
+  "compiler_flags": "-DRCT_NEW_ARCH_ENABLED=1",
+  "dependencies": {
+    "React-Core": [],
+    "React-RCTFabric": [],
+    "ReactCodegen": [],
+    "RCTRequired": [],
+    "RCTTypeSafety": [],
+    "ReactCommon/turbomodule/bridging": [],
+    "ReactCommon/turbomodule/core": [],
+    "React-NativeModulesApple": [],
+    "Yoga": [],
+    "React-Fabric": [],
+    "React-graphics": [],
+    "React-utils": [],
+    "React-featureflags": [],
+    "React-debug": [],
+    "React-ImageManager": [],
+    "React-rendererdebug": [],
+    "React-jsi": [],
+    "React-renderercss": [],
+    "hermes-engine": [],
+    "glog": [],
+    "boost": [],
+    "DoubleConversion": [],
+    "fast_float": [],
+    "fmt": [],
+    "RCT-Folly": [],
+    "SocketRocket": [],
+    "RCT-Folly/Fabric": [],
+    "AgoraVideo_Special_iOS": [
+      "4.6.2.70"
+    ],
+    "AgoraIrisRTC_iOS2": [
+      "4.6.2-build.1"
+    ]
+  },
+  "pod_target_xcconfig": {
+    "HEADER_SEARCH_PATHS": "\"$(PODS_ROOT)/Headers/Private/Yoga\"",
+    "CLANG_CXX_LANGUAGE_STANDARD": "c++20",
+    "OTHER_CPLUSPLUSFLAGS": "$(inherited) -DRCT_NEW_ARCH_ENABLED=1 ",
+    "OTHER_SWIFT_FLAGS": "$(inherited) -DRCT_NEW_ARCH_ENABLED"
+  },
+  "libraries": "stdc++",
+  "frameworks": "ReplayKit"
+}

@@ -1,0 +1,688 @@
+{
+	"configurations" : 
+	[
+		{
+			"directories" : 
+			[
+				{
+					"build" : ".",
+					"childIndexes" : 
+					[
+						1,
+						2,
+						3,
+						4,
+						5,
+						6,
+						7,
+						8,
+						9,
+						10,
+						11,
+						12,
+						13,
+						14,
+						15,
+						16,
+						17,
+						18,
+						19,
+						20,
+						21,
+						22,
+						23,
+						24,
+						25
+					],
+					"jsonFile" : "directory-.-Debug-f5ebdc15457944623624.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.13"
+					},
+					"projectIndex" : 0,
+					"source" : ".",
+					"targetIndexes" : 
+					[
+						0
+					]
+				},
+				{
+					"build" : "rnasyncstorage_autolinked_build",
+					"jsonFile" : "directory-rnasyncstorage_autolinked_build-Debug-d80af2cd6c2664bb596b.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.13"
+					},
+					"parentIndex" : 0,
+					"projectIndex" : 0,
+					"source" : "/Users/mc/Documents/GitHub/staffo/node_modules/@react-native-async-storage/async-storage/android/build/generated/source/codegen/jni",
+					"targetIndexes" : 
+					[
+						15
+					]
+				},
+				{
+					"build" : "RNDateTimePickerCGen_autolinked_build",
+					"jsonFile" : "directory-RNDateTimePickerCGen_autolinked_build-Debug-986fddc55f66183574bd.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.13"
+					},
+					"parentIndex" : 0,
+					"projectIndex" : 0,
+					"source" : "/Users/mc/Documents/GitHub/staffo/node_modules/@react-native-community/datetimepicker/android/build/generated/source/codegen/jni",
+					"targetIndexes" : 
+					[
+						6
+					]
+				},
+				{
+					"build" : "RNCNetInfoSpec_autolinked_build",
+					"jsonFile" : "directory-RNCNetInfoSpec_autolinked_build-Debug-6c74a9d7ba705ec454d9.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.13"
+					},
+					"parentIndex" : 0,
+					"projectIndex" : 0,
+					"source" : "/Users/mc/Documents/GitHub/staffo/node_modules/@react-native-community/netinfo/android/build/generated/source/codegen/jni",
+					"targetIndexes" : 
+					[
+						3
+					]
+				},
+				{
+					"build" : "RNCSlider_autolinked_build",
+					"jsonFile" : "directory-RNCSlider_autolinked_build-Debug-206fa7568eacb8637d8f.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.13"
+					},
+					"parentIndex" : 0,
+					"projectIndex" : 0,
+					"source" : "/Users/mc/Documents/GitHub/staffo/node_modules/@react-native-community/slider/android/src/main/jni",
+					"targetIndexes" : 
+					[
+						4
+					]
+				},
+				{
+					"build" : "rndocumentpickerCGen_autolinked_build",
+					"jsonFile" : "directory-rndocumentpickerCGen_autolinked_build-Debug-dc9dd4a366cf083d3223.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.13"
+					},
+					"parentIndex" : 0,
+					"projectIndex" : 0,
+					"source" : "/Users/mc/Documents/GitHub/staffo/node_modules/@react-native-documents/picker/android/build/generated/source/codegen/jni",
+					"targetIndexes" : 
+					[
+						16
+					]
+				},
+				{
+					"build" : "RNGoogleSignInCGen_autolinked_build",
+					"jsonFile" : "directory-RNGoogleSignInCGen_autolinked_build-Debug-a97afd09b8df22243f56.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.13"
+					},
+					"parentIndex" : 0,
+					"projectIndex" : 0,
+					"source" : "/Users/mc/Documents/GitHub/staffo/node_modules/@react-native-google-signin/google-signin/android/build/generated/source/codegen/jni",
+					"targetIndexes" : 
+					[
+						8
+					]
+				},
+				{
+					"build" : "rnpicker_autolinked_build",
+					"jsonFile" : "directory-rnpicker_autolinked_build-Debug-f1dda8464f89805c7c11.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.13"
+					},
+					"parentIndex" : 0,
+					"projectIndex" : 0,
+					"source" : "/Users/mc/Documents/GitHub/staffo/node_modules/@react-native-picker/picker/android/src/main/jni",
+					"targetIndexes" : 
+					[
+						19
+					]
+				},
+				{
+					"build" : "rnstripe_autolinked_build",
+					"jsonFile" : "directory-rnstripe_autolinked_build-Debug-115837b870b0669077f6.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.13"
+					},
+					"parentIndex" : 0,
+					"projectIndex" : 0,
+					"source" : "/Users/mc/Documents/GitHub/staffo/node_modules/@stripe/stripe-react-native/android/build/generated/source/codegen/jni",
+					"targetIndexes" : 
+					[
+						22
+					]
+				},
+				{
+					"build" : "AgoraRtcNgSpec_autolinked_build",
+					"jsonFile" : "directory-AgoraRtcNgSpec_autolinked_build-Debug-0cd21b7c918fa92604da.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.13"
+					},
+					"parentIndex" : 0,
+					"projectIndex" : 0,
+					"source" : "/Users/mc/Documents/GitHub/staffo/node_modules/react-native-agora/android/build/generated/source/codegen/jni",
+					"targetIndexes" : 
+					[
+						1
+					]
+				},
+				{
+					"build" : "ReactNativeBlobUtilSpec_autolinked_build",
+					"jsonFile" : "directory-ReactNativeBlobUtilSpec_autolinked_build-Debug-53a324731805cca93a56.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.13"
+					},
+					"parentIndex" : 0,
+					"projectIndex" : 0,
+					"source" : "/Users/mc/Documents/GitHub/staffo/node_modules/react-native-blob-util/android/build/generated/source/codegen/jni",
+					"targetIndexes" : 
+					[
+						14
+					]
+				},
+				{
+					"build" : "rngesturehandler_codegen_autolinked_build",
+					"jsonFile" : "directory-rngesturehandler_codegen_autolinked_build-Debug-f38924049a8d3f6e3654.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.13"
+					},
+					"parentIndex" : 0,
+					"projectIndex" : 0,
+					"source" : "/Users/mc/Documents/GitHub/staffo/node_modules/react-native-gesture-handler/android/build/generated/source/codegen/jni",
+					"targetIndexes" : 
+					[
+						17
+					]
+				},
+				{
+					"build" : "RNGetRandomValuesSpec_autolinked_build",
+					"jsonFile" : "directory-RNGetRandomValuesSpec_autolinked_build-Debug-ea07bf8de329d96d3695.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.13"
+					},
+					"parentIndex" : 0,
+					"projectIndex" : 0,
+					"source" : "/Users/mc/Documents/GitHub/staffo/node_modules/react-native-get-random-values/android/build/generated/source/codegen/jni",
+					"targetIndexes" : 
+					[
+						7
+					]
+				},
+				{
+					"build" : "HtmlToPdfSpec_autolinked_build",
+					"jsonFile" : "directory-HtmlToPdfSpec_autolinked_build-Debug-217b40c50d79d558e705.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.13"
+					},
+					"parentIndex" : 0,
+					"projectIndex" : 0,
+					"source" : "/Users/mc/Documents/GitHub/staffo/node_modules/react-native-html-to-pdf/android/build/generated/source/codegen/jni",
+					"targetIndexes" : 
+					[
+						2
+					]
+				},
+				{
+					"build" : "RNImagePickerSpec_autolinked_build",
+					"jsonFile" : "directory-RNImagePickerSpec_autolinked_build-Debug-ea2b0b9224bff3c120e6.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.13"
+					},
+					"parentIndex" : 0,
+					"projectIndex" : 0,
+					"source" : "/Users/mc/Documents/GitHub/staffo/node_modules/react-native-image-picker/android/build/generated/source/codegen/jni",
+					"targetIndexes" : 
+					[
+						9
+					]
+				},
+				{
+					"build" : "RNMapsSpecs_autolinked_build",
+					"jsonFile" : "directory-RNMapsSpecs_autolinked_build-Debug-b1408205d787b40bb156.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.13"
+					},
+					"parentIndex" : 0,
+					"projectIndex" : 0,
+					"source" : "/Users/mc/Documents/GitHub/staffo/node_modules/react-native-maps/android/src/main/jni",
+					"targetIndexes" : 
+					[
+						10
+					]
+				},
+				{
+					"build" : "RNOneSignalSpec_autolinked_build",
+					"jsonFile" : "directory-RNOneSignalSpec_autolinked_build-Debug-af11d1360d3ee5acc405.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.13"
+					},
+					"parentIndex" : 0,
+					"projectIndex" : 0,
+					"source" : "/Users/mc/Documents/GitHub/staffo/node_modules/react-native-onesignal/android/build/generated/source/codegen/jni",
+					"targetIndexes" : 
+					[
+						11
+					]
+				},
+				{
+					"build" : "rnpdf_autolinked_build",
+					"jsonFile" : "directory-rnpdf_autolinked_build-Debug-c1ac7faddbbec7a6c47f.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.13"
+					},
+					"parentIndex" : 0,
+					"projectIndex" : 0,
+					"source" : "/Users/mc/Documents/GitHub/staffo/node_modules/react-native-pdf/android/build/generated/source/codegen/jni",
+					"targetIndexes" : 
+					[
+						18
+					]
+				},
+				{
+					"build" : "RNPermissionsSpec_autolinked_build",
+					"jsonFile" : "directory-RNPermissionsSpec_autolinked_build-Debug-5623b1b0d5fc79b2333c.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.13"
+					},
+					"parentIndex" : 0,
+					"projectIndex" : 0,
+					"source" : "/Users/mc/Documents/GitHub/staffo/node_modules/react-native-permissions/android/build/generated/source/codegen/jni",
+					"targetIndexes" : 
+					[
+						12
+					]
+				},
+				{
+					"build" : "rnreanimated_autolinked_build",
+					"jsonFile" : "directory-rnreanimated_autolinked_build-Debug-7a4e88c4eea88b2b6844.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.13"
+					},
+					"parentIndex" : 0,
+					"projectIndex" : 0,
+					"source" : "/Users/mc/Documents/GitHub/staffo/node_modules/react-native-reanimated/android/build/generated/source/codegen/jni",
+					"targetIndexes" : 
+					[
+						20
+					]
+				},
+				{
+					"build" : "safeareacontext_autolinked_build",
+					"jsonFile" : "directory-safeareacontext_autolinked_build-Debug-dd1b5ea24febad11ea2f.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.13"
+					},
+					"parentIndex" : 0,
+					"projectIndex" : 0,
+					"source" : "/Users/mc/Documents/GitHub/staffo/node_modules/react-native-safe-area-context/android/src/main/jni",
+					"targetIndexes" : 
+					[
+						25
+					]
+				},
+				{
+					"build" : "rnscreens_autolinked_build",
+					"jsonFile" : "directory-rnscreens_autolinked_build-Debug-80c71c3701a103dcdce2.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.13"
+					},
+					"parentIndex" : 0,
+					"projectIndex" : 0,
+					"source" : "/Users/mc/Documents/GitHub/staffo/node_modules/react-native-screens/android/src/main/jni",
+					"targetIndexes" : 
+					[
+						21
+					]
+				},
+				{
+					"build" : "rnsvg_autolinked_build",
+					"jsonFile" : "directory-rnsvg_autolinked_build-Debug-be9ec2a5c2396fd37242.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.13"
+					},
+					"parentIndex" : 0,
+					"projectIndex" : 0,
+					"source" : "/Users/mc/Documents/GitHub/staffo/node_modules/react-native-svg/android/src/main/jni",
+					"targetIndexes" : 
+					[
+						23
+					]
+				},
+				{
+					"build" : "RNVectorIconsSpec_autolinked_build",
+					"jsonFile" : "directory-RNVectorIconsSpec_autolinked_build-Debug-d1db7c5a6c268c8e17fc.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.13"
+					},
+					"parentIndex" : 0,
+					"projectIndex" : 0,
+					"source" : "/Users/mc/Documents/GitHub/staffo/node_modules/react-native-vector-icons/android/build/generated/source/codegen/jni",
+					"targetIndexes" : 
+					[
+						13
+					]
+				},
+				{
+					"build" : "RNCWebViewSpec_autolinked_build",
+					"jsonFile" : "directory-RNCWebViewSpec_autolinked_build-Debug-655d8451ae6ba851e153.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.13"
+					},
+					"parentIndex" : 0,
+					"projectIndex" : 0,
+					"source" : "/Users/mc/Documents/GitHub/staffo/node_modules/react-native-webview/android/build/generated/source/codegen/jni",
+					"targetIndexes" : 
+					[
+						5
+					]
+				},
+				{
+					"build" : "rnworklets_autolinked_build",
+					"jsonFile" : "directory-rnworklets_autolinked_build-Debug-0e73a44d164607459462.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.13"
+					},
+					"parentIndex" : 0,
+					"projectIndex" : 0,
+					"source" : "/Users/mc/Documents/GitHub/staffo/node_modules/react-native-worklets/android/build/generated/source/codegen/jni",
+					"targetIndexes" : 
+					[
+						24
+					]
+				}
+			],
+			"name" : "Debug",
+			"projects" : 
+			[
+				{
+					"directoryIndexes" : 
+					[
+						0,
+						1,
+						2,
+						3,
+						4,
+						5,
+						6,
+						7,
+						8,
+						9,
+						10,
+						11,
+						12,
+						13,
+						14,
+						15,
+						16,
+						17,
+						18,
+						19,
+						20,
+						21,
+						22,
+						23,
+						24,
+						25
+					],
+					"name" : "appmodules",
+					"targetIndexes" : 
+					[
+						0,
+						1,
+						2,
+						3,
+						4,
+						5,
+						6,
+						7,
+						8,
+						9,
+						10,
+						11,
+						12,
+						13,
+						14,
+						15,
+						16,
+						17,
+						18,
+						19,
+						20,
+						21,
+						22,
+						23,
+						24,
+						25
+					]
+				}
+			],
+			"targets" : 
+			[
+				{
+					"directoryIndex" : 0,
+					"id" : "appmodules::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-appmodules-Debug-84faae4251ffe17190be.json",
+					"name" : "appmodules",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 9,
+					"id" : "react_codegen_AgoraRtcNgSpec::@b3e2fa00649b55f06a11",
+					"jsonFile" : "target-react_codegen_AgoraRtcNgSpec-Debug-8e8438744af21fbe1667.json",
+					"name" : "react_codegen_AgoraRtcNgSpec",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 13,
+					"id" : "react_codegen_HtmlToPdfSpec::@b8e1cdd07144a1c1daf8",
+					"jsonFile" : "target-react_codegen_HtmlToPdfSpec-Debug-4d33a63b6d03570f3b18.json",
+					"name" : "react_codegen_HtmlToPdfSpec",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 3,
+					"id" : "react_codegen_RNCNetInfoSpec::@c36c96bfd5b5770618a5",
+					"jsonFile" : "target-react_codegen_RNCNetInfoSpec-Debug-b97e4e7a9a6a5073d9db.json",
+					"name" : "react_codegen_RNCNetInfoSpec",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 4,
+					"id" : "react_codegen_RNCSlider::@4898bc4726ecf1751b6a",
+					"jsonFile" : "target-react_codegen_RNCSlider-Debug-f46030c5e113fba35766.json",
+					"name" : "react_codegen_RNCSlider",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 24,
+					"id" : "react_codegen_RNCWebViewSpec::@eb48929f9f7453740a6c",
+					"jsonFile" : "target-react_codegen_RNCWebViewSpec-Debug-5f9d88f9e03c7fcc75b2.json",
+					"name" : "react_codegen_RNCWebViewSpec",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 2,
+					"id" : "react_codegen_RNDateTimePickerCGen::@59b70ddc31ba2f8ef1d2",
+					"jsonFile" : "target-react_codegen_RNDateTimePickerCGen-Debug-752087f72fdfd022fa65.json",
+					"name" : "react_codegen_RNDateTimePickerCGen",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 12,
+					"id" : "react_codegen_RNGetRandomValuesSpec::@6e1160200c59ddcfca1e",
+					"jsonFile" : "target-react_codegen_RNGetRandomValuesSpec-Debug-52be1b110e7b47e90d20.json",
+					"name" : "react_codegen_RNGetRandomValuesSpec",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 6,
+					"id" : "react_codegen_RNGoogleSignInCGen::@337b7b353bd94a4215c0",
+					"jsonFile" : "target-react_codegen_RNGoogleSignInCGen-Debug-c364af44c15d00b70320.json",
+					"name" : "react_codegen_RNGoogleSignInCGen",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 14,
+					"id" : "react_codegen_RNImagePickerSpec::@f66ee9a2efecfb28bee4",
+					"jsonFile" : "target-react_codegen_RNImagePickerSpec-Debug-c081a8a53dfa6305b0ca.json",
+					"name" : "react_codegen_RNImagePickerSpec",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 15,
+					"id" : "react_codegen_RNMapsSpecs::@5748abef1962d24942ec",
+					"jsonFile" : "target-react_codegen_RNMapsSpecs-Debug-2b27ea504b9c111602c0.json",
+					"name" : "react_codegen_RNMapsSpecs",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 16,
+					"id" : "react_codegen_RNOneSignalSpec::@c8beb593ba2a9b201f0b",
+					"jsonFile" : "target-react_codegen_RNOneSignalSpec-Debug-9326e89515d4f3dac5af.json",
+					"name" : "react_codegen_RNOneSignalSpec",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 18,
+					"id" : "react_codegen_RNPermissionsSpec::@7ad697819b753921c957",
+					"jsonFile" : "target-react_codegen_RNPermissionsSpec-Debug-dd11841b54807555b0de.json",
+					"name" : "react_codegen_RNPermissionsSpec",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 23,
+					"id" : "react_codegen_RNVectorIconsSpec::@479809fae146501fd34d",
+					"jsonFile" : "target-react_codegen_RNVectorIconsSpec-Debug-8135d3e3803293067340.json",
+					"name" : "react_codegen_RNVectorIconsSpec",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 10,
+					"id" : "react_codegen_ReactNativeBlobUtilSpec::@7d3cc6108106e04bb830",
+					"jsonFile" : "target-react_codegen_ReactNativeBlobUtilSpec-Debug-3b01c8ec57ce2ed75938.json",
+					"name" : "react_codegen_ReactNativeBlobUtilSpec",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 1,
+					"id" : "react_codegen_rnasyncstorage::@1596841e19ec5b9eeffe",
+					"jsonFile" : "target-react_codegen_rnasyncstorage-Debug-30adb803512b034a207c.json",
+					"name" : "react_codegen_rnasyncstorage",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 5,
+					"id" : "react_codegen_rndocumentpickerCGen::@aac1846a245ca418eb66",
+					"jsonFile" : "target-react_codegen_rndocumentpickerCGen-Debug-547b6bcae94ab5f9379f.json",
+					"name" : "react_codegen_rndocumentpickerCGen",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 11,
+					"id" : "react_codegen_rngesturehandler_codegen::@39f233abcd2c728bc6ec",
+					"jsonFile" : "target-react_codegen_rngesturehandler_codegen-Debug-89e68c87005e64547676.json",
+					"name" : "react_codegen_rngesturehandler_codegen",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 17,
+					"id" : "react_codegen_rnpdf::@7ef4ba29a735fbf48be7",
+					"jsonFile" : "target-react_codegen_rnpdf-Debug-f8681173ef473239f3f8.json",
+					"name" : "react_codegen_rnpdf",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 7,
+					"id" : "react_codegen_rnpicker::@e8bb2e9e833f47d0d516",
+					"jsonFile" : "target-react_codegen_rnpicker-Debug-479d58c6b2fd96b05c9b.json",
+					"name" : "react_codegen_rnpicker",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 19,
+					"id" : "react_codegen_rnreanimated::@8afabad14bfffa3f8b9a",
+					"jsonFile" : "target-react_codegen_rnreanimated-Debug-288de69f246d9709a3b2.json",
+					"name" : "react_codegen_rnreanimated",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 21,
+					"id" : "react_codegen_rnscreens::@25bcbd507e98d3a854ad",
+					"jsonFile" : "target-react_codegen_rnscreens-Debug-b209467130407376eefd.json",
+					"name" : "react_codegen_rnscreens",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 8,
+					"id" : "react_codegen_rnstripe::@65863f00eb0279fa1385",
+					"jsonFile" : "target-react_codegen_rnstripe-Debug-93a9224f7c4e5e211072.json",
+					"name" : "react_codegen_rnstripe",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 22,
+					"id" : "react_codegen_rnsvg::@4f40eb209d0c0b4a3b65",
+					"jsonFile" : "target-react_codegen_rnsvg-Debug-34969d4a7cbf4199ad02.json",
+					"name" : "react_codegen_rnsvg",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 25,
+					"id" : "react_codegen_rnworklets::@68f58d84d4754f193387",
+					"jsonFile" : "target-react_codegen_rnworklets-Debug-29489129796393e16a1a.json",
+					"name" : "react_codegen_rnworklets",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 20,
+					"id" : "react_codegen_safeareacontext::@7984cd80db47aa7b952a",
+					"jsonFile" : "target-react_codegen_safeareacontext-Debug-19de807afa917619f6bd.json",
+					"name" : "react_codegen_safeareacontext",
+					"projectIndex" : 0
+				}
+			]
+		}
+	],
+	"kind" : "codemodel",
+	"paths" : 
+	{
+		"build" : "/Users/mc/Documents/GitHub/staffo/android/app/.cxx/Debug/3r3l2v4s/arm64-v8a",
+		"source" : "/Users/mc/Documents/GitHub/staffo/node_modules/react-native/ReactAndroid/cmake-utils/default-app-setup"
+	},
+	"version" : 
+	{
+		"major" : 2,
+		"minor" : 3
+	}
+}

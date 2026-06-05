@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "1019446395337",
+    "project_id": "staffo-e11d2",
+    "storage_bucket": "staffo-e11d2.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1019446395337:android:afb111ee3556cc6d062818",
+        "android_client_info": {
+          "package_name": "com.staffo"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDefYkXnRkTiWc7Xqld6_GFtIZOhmACsUo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1019446395337:android:a2b6c3c427544af7062818",
+        "android_client_info": {
+          "package_name": "com.staffoo.newapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDefYkXnRkTiWc7Xqld6_GFtIZOhmACsUo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
