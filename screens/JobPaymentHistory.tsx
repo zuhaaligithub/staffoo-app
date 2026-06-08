@@ -70,14 +70,14 @@ export default function JobPaymentHistory({ navigation, route }: Props) {
   const formatDateTime = (dateString: string) => {
     const d = new Date(dateString);
 
-    const year = d.getFullYear();
-    const month = String(d.getMonth() + 1).padStart(2, '0');
     const day = String(d.getDate()).padStart(2, '0');
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const year = d.getFullYear();
 
     const hours = String(d.getHours()).padStart(2, '0');
     const minutes = String(d.getMinutes()).padStart(2, '0');
 
-    return `${year}/${month}/${day} ${hours}:${minutes}`;
+    return `${day}/${month}/${year} ${hours}:${minutes}`;
   };
   const loadUserId = async () => {
     try {
@@ -252,7 +252,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     // backgroundColor: COLORS.background,
-     backgroundColor: '#111111',
+    backgroundColor: '#111111',
     paddingTop: 45,
     // marginTop: 15,
   },
@@ -262,7 +262,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     // backgroundColor: COLORS.surface,
-    
+
     marginHorizontal: 16,
     borderRadius: 16,
     marginBottom: 10,

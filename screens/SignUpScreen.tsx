@@ -42,7 +42,7 @@
 
 // const COLORS = {
 //   // 🌿 Primary Brand
-//   primary: '#89E7D0',
+//   primary: '#0A7C6E',
 //   primaryDark: '#4FCBB3',
 
 //   // 🌙 Background system
@@ -1134,7 +1134,9 @@ const LOGO = require('../assets/staffoo.png');
 
 const COLORS = {
   // 🌿 Primary Brand
-  primary: '#89E7D0',
+  primary: '#0A7C6E',
+  // 0A7C6E
+
   primaryDark: '#4FCBB3',
 
   // 🌙 Background system
@@ -1283,7 +1285,7 @@ export default function SignUpScreen({ navigation }: { navigation: any }) {
   };
 
   const getDisplayName = (type: 'staff' | 'customer' | 'contractor') => {
-    if (type === 'customer') return 'Customer';
+    if (type === 'customer') return 'Client';
     if (type === 'staff') return 'Staff';
     return 'Resource partner';
   };
@@ -1333,7 +1335,7 @@ export default function SignUpScreen({ navigation }: { navigation: any }) {
       Toast.show({
         type: 'success',
         text1: 'Account created successfully!',
-        text2: 'Please verify your email',
+        text2: 'Please verify your Email',
       });
     } catch (error: any) {
       Toast.show({
@@ -1738,7 +1740,7 @@ export default function SignUpScreen({ navigation }: { navigation: any }) {
               style={styles.openGmailButton}
               onPress={handleOpenGmail}
             >
-              <Text style={styles.openGmailText}>📧 Open Email App</Text>
+              <Text style={styles.openGmailText}>📧 Open Email</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -1957,7 +1959,7 @@ const styles = StyleSheet.create({
 
   modalSubtitle: {
     fontSize: 11,
-    color: COLORS.textMuted,
+    color: '#565656',
     marginTop: 2,
   },
 
@@ -2014,7 +2016,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 28,
     fontSize: 13.5,
-    color: COLORS.textMuted,
+    color: '#565656',
     fontWeight: '500',
   },
 
@@ -2036,7 +2038,7 @@ const styles = StyleSheet.create({
   },
 
   acceptBtnText: {
-    color: COLORS.background,
+    color: '#fff',
     fontSize: 17,
     fontWeight: '800',
   },

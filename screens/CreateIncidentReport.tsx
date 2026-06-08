@@ -42,6 +42,7 @@ import SignatureScreen from 'react-native-signature-canvas';
 import { getAuthToken } from '../services/authApi';
 import RNFS from 'react-native-fs';
 import ImageResizer from 'react-native-image-resizer';
+import Toast from 'react-native-toast-message';
 // import { OPENAI_API_KEY } from './config/aiConfig';
 
 const { width } = Dimensions.get('window');
@@ -483,7 +484,7 @@ export default function CreateIncidentReport({ navigation, route }: { navigation
         {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity onPress={() => navigation.goBack()}>
-            <ChevronLeft size={28} color="#0f172a" />
+            <ChevronLeft size={28} color="#fff" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Create Incident Report</Text>
           <View style={{ width: 28 }} />
@@ -551,6 +552,7 @@ export default function CreateIncidentReport({ navigation, route }: { navigation
                 <TextInput
                   style={styles.input}
                   placeholder="Specify other type..."
+                  placeholderTextColor="#9CA3AF"
                   value={otherIncidentType}
                   onChangeText={setOtherIncidentType}
                 />
@@ -578,6 +580,7 @@ export default function CreateIncidentReport({ navigation, route }: { navigation
                 style={styles.textArea}
                 multiline
                 placeholder="Enter details here..."
+                placeholderTextColor="#9CA3AF"
                 value={incidentDetails}
                 onChangeText={setIncidentDetails}
               />
@@ -967,8 +970,8 @@ export default function CreateIncidentReport({ navigation, route }: { navigation
               </View>
 
               <TouchableOpacity style={styles.uploadArea} onPress={pickImage}>
-                <UploadCloud size={40} color="#64748b" />
-                <Text style={{ marginTop: 8 }}>
+                <UploadCloud size={40} color="#eeeff0" />
+                <Text style={{ marginTop: 8, color: "#eeeff0" }}>
                   Click here to upload {photos.length}/6
                 </Text>
               </TouchableOpacity>
@@ -1001,12 +1004,14 @@ export default function CreateIncidentReport({ navigation, route }: { navigation
                 <SignatureScreen
                   ref={signatureRef}
                   onOK={(signature: string) => {
-                    // Compress signature before saving
-                    const compressedSignature = signature.length > 30000
-                      ? signature.substring(0, 30000)
-                      : signature;
-                    setSignatureData(compressedSignature);
-                    console.log('Signature saved – length:', compressedSignature.length);
+                    // 1. Ensure you are getting the base64 string
+                    const base64Data = signature.replace("data:image/png;base64,", "");
+                    const finalUri = `data:image/png;base64,${base64Data}`;
+
+                    // 2. Update state
+                    setSignatureData(finalUri);
+
+                    Toast.show({ type: 'success', text1: 'Signature Captured' });
                   }}
                   autoClear={false}
                   androidLayerType="software"
@@ -1026,9 +1031,9 @@ export default function CreateIncidentReport({ navigation, route }: { navigation
                 </TouchableOpacity>
               </View>
 
-              {signatureData && (
+              {/* {signatureData && (
                 <Image source={{ uri: signatureData }} style={styles.signaturePreview} resizeMode="contain" />
-              )}
+              )} */}
             </View>
           )}
         </ScrollView>
@@ -1101,7 +1106,7 @@ const styles = StyleSheet.create({
 
   input: {
     backgroundColor: COLORS.surface,
-    color: COLORS.text, // Added for dark mode readability
+    color: '#fff', // Added for dark mode readability
     borderRadius: 10,
     borderWidth: 1,
     borderColor: COLORS.cardBorder,
@@ -1112,13 +1117,13 @@ const styles = StyleSheet.create({
   },
   readonly: {
     backgroundColor: COLORS.background,
-    color: COLORS.textMuted
+    color: '#888' // Added for dark mode readability
   },
   textArea: {
     minHeight: 100,
     textAlignVertical: 'top',
     backgroundColor: COLORS.surface,
-    color: COLORS.text, // Added for dark mode readability
+    color: '#fff', // Added for dark mode readability
     borderRadius: 10,
     borderWidth: 1,
     borderColor: COLORS.cardBorder,
@@ -1282,12 +1287,13 @@ const styles = StyleSheet.create({
   },
 
   bottomButtons: {
-    position: 'absolute',
-    bottom: 24,
-    left: 16,
-    right: 16,
+    paddingVertical: 16, // Added padding to separate buttons from edge
+    paddingHorizontal: 16,
+    backgroundColor: COLORS.background, // Ensure background matches
     flexDirection: 'row',
-    gap: 12
+    gap: 12,
+    borderTopWidth: 1, // Optional: add a subtle border to separate from body
+    borderColor: COLORS.cardBorder,
   },
   submitButton: {
     flex: 1,
@@ -1304,7 +1310,8 @@ const styles = StyleSheet.create({
   cancelButton: {
     flex: 1,
     borderWidth: 1.5,
-    borderColor: COLORS.textMuted,
+    backgroundColor: '#5a1606',
+    borderColor: '#5a1606',
     paddingVertical: 16,
     borderRadius: 12,
     alignItems: 'center'

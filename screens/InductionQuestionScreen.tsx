@@ -115,6 +115,15 @@ export default function InductionQuestionsScreen() {
     );
   }
 
+  const capitalizeText = (text: string = '') => {
+    return text
+      .toLowerCase()
+      .split(' ')
+      .filter(Boolean)
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
+  };
+
   useEffect(() => {
     loadUserAndFetchQuestions();
   }, [inductionId]);
@@ -134,7 +143,7 @@ export default function InductionQuestionsScreen() {
     }
   };
 
- 
+
   const fetchInductionQuestions = async () => {
     try {
       setLoading(true);
@@ -383,10 +392,10 @@ export default function InductionQuestionsScreen() {
         <View
           style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}
         >
-         <ActivityIndicator size="large" color={COLORS.primary} />
-    <Text style={{ marginTop: 12, color: COLORS.text }}>
-  Loading Questions...
-</Text>
+          <ActivityIndicator size="large" color={COLORS.primary} />
+          <Text style={{ marginTop: 12, color: COLORS.text }}>
+            Loading Questions...
+          </Text>
         </View>
       </SafeAreaView>
     );
@@ -422,10 +431,10 @@ export default function InductionQuestionsScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-     <StatusBar
-  barStyle="light-content"
-  backgroundColor={COLORS.background}
-/>
+      <StatusBar
+        barStyle="light-content"
+        backgroundColor={COLORS.background}
+      />
 
       {/* Header */}
       <View style={styles.header}>
@@ -434,7 +443,7 @@ export default function InductionQuestionsScreen() {
             onPress={() => navigation.goBack()}
             style={styles.iconButton}
           >
-    <ChevronLeft size={28} color={COLORS.text} />
+            <ChevronLeft size={28} color={COLORS.text} />
           </TouchableOpacity>
 
           <Text style={styles.questionCounter}>
@@ -445,8 +454,8 @@ export default function InductionQuestionsScreen() {
             onPress={() => navigation.goBack()}
             style={styles.iconButton}
           >
-      
-<X size={28} color={COLORS.text} />
+
+            <X size={28} color={COLORS.text} />
           </TouchableOpacity>
         </View>
 
@@ -456,12 +465,14 @@ export default function InductionQuestionsScreen() {
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        <Text style={styles.inductionTitle}>{induction?.title}</Text>
+        <Text style={styles.inductionTitle}>
+          {capitalizeText(induction?.title || '')}
+        </Text>
 
         <View style={styles.questionCard}>
-          <Text style={styles.questionText}>{currentQuestion.question}</Text>
+          <Text style={styles.questionText}>{capitalizeText(currentQuestion.question)}</Text>
           <View style={styles.questionTypeBadge}>
-            <Text style={styles.questionTypeText}>{currentQuestion.type}</Text>
+            <Text style={styles.questionTypeText}>  {capitalizeText(currentQuestion.type)}</Text>
           </View>
         </View>
 
@@ -504,7 +515,7 @@ export default function InductionQuestionsScreen() {
                       selectedOption === index && styles.selectedOptionText,
                     ]}
                   >
-                    {option.label}
+                    {capitalizeText(option.label)}
                   </Text>
                 </View>
               </TouchableOpacity>
@@ -519,7 +530,7 @@ export default function InductionQuestionsScreen() {
           style={[
             styles.nextButton,
             (isShortQuestion ? !shortAnswer.trim() : selectedOption === null) &&
-              styles.disabledButton,
+            styles.disabledButton,
           ]}
           onPress={handleNext}
           disabled={
@@ -546,7 +557,8 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     // backgroundColor: COLORS.background,
-     backgroundColor: '#111111',
+    backgroundColor: '#111111',
+    paddingTop: 25,
   },
 
   header: {

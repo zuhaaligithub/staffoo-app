@@ -33,6 +33,7 @@ import RNFS from 'react-native-fs';
 import ImageResizer from 'react-native-image-resizer';
 import { getAuthToken } from '../services/authApi';
 import axios from 'axios';
+import Toast from 'react-native-toast-message';
 // import { OPENAI_API_KEY } from './config/aiConfig';
 
 interface PhotoItem {
@@ -461,7 +462,7 @@ export default function CreateFootPatrol({
 
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <ChevronLeft size={28} color="#0f172a" />
+          <ChevronLeft size={28} color="#fff" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Create Foot Patrolling</Text>
         <View style={{ width: 28 }} />
@@ -497,7 +498,9 @@ export default function CreateFootPatrol({
             <FileText size={22} color="#3b82f6" />
           </View>
           <View style={styles.fieldContent}>
-            <Text style={styles.fieldLabel}>Foot Patrolling Details</Text>
+            <Text style={styles.fieldLabel}>
+              Foot Patrolling Details <Text style={styles.required}>*</Text>
+            </Text>
             <Text style={styles.fieldValuePlaceholder}>
               {patrollingDetails || 'Tap to write'}
             </Text>
@@ -610,6 +613,12 @@ export default function CreateFootPatrol({
                 ref={signatureRef}
                 onOK={(sig: string) => {
                   setSignatureData(sig);
+                  // Add the toast here:
+                  Toast.show({
+                    type: 'success',
+                    text1: 'Signature Saved',
+                    text2: 'Your signature has been captured.',
+                  });
                   console.log('Signature OK - length:', sig.length);
                 }}
                 autoClear={false}
@@ -637,13 +646,13 @@ export default function CreateFootPatrol({
               </TouchableOpacity>
             </View>
 
-            {signatureData && (
+            {/* {signatureData && (
               <Image
                 source={{ uri: signatureData }}
                 style={styles.signaturePreview}
                 resizeMode="contain"
               />
-            )}
+            )} */}
           </View>
         )}
       </ScrollView>
@@ -872,12 +881,13 @@ const styles = StyleSheet.create({
   },
 
   bottomButtons: {
-    position: 'absolute',
-    bottom: 24,
-    left: 16,
-    right: 16,
+    paddingVertical: 16, // Added padding to separate buttons from edge
+    paddingHorizontal: 16,
+    backgroundColor: COLORS.background, // Ensure background matches
     flexDirection: 'row',
     gap: 12,
+    borderTopWidth: 1, // Optional: add a subtle border to separate from body
+    borderColor: COLORS.cardBorder,
   },
   submitButton: {
     flex: 1,

@@ -70,6 +70,7 @@ export default function ProfileSetupScreen({ navigation }: Props) {
   const [residentialStatus, setResidentialStatus] = useState<string | null>(
     null,
   );
+  const [securityLicenseNo, setSecurityLicenseNo] = useState('');
   const [scrollY, setScrollY] = useState(0);
   const [companyName, setCompanyName] = useState('');
   const [registrationNumber, setRegistrationNumber] = useState('');
@@ -349,6 +350,13 @@ export default function ProfileSetupScreen({ navigation }: Props) {
           setPhoneNumber(profile?.staff?.phone ?? '');
           setGender(profile?.staff?.gender ?? null);
           setResidentialStatus(profile?.staff?.staff_document_type ?? null);
+          setSecurityLicenseNo(
+            profile?.staff?.security_license_no ??
+            // profile?.documents?.find(
+            //   (doc: any) => doc.document_name === 'Security License',
+            // )?.document_no ??
+            '',
+          );
         } else {
           setPhoneNumber(profile?.customer?.phone ?? '');
           setGender(profile?.customer?.gender ?? null);
@@ -441,6 +449,14 @@ export default function ProfileSetupScreen({ navigation }: Props) {
     }
     if (!phoneNumber) {
       Toast.show({ type: 'error', text1: 'Phone Number is required' });
+      return false;
+    }
+
+    if (!securityLicenseNo.trim()) {
+      Toast.show({
+        type: 'error',
+        text1: 'Security License No is required',
+      });
       return false;
     }
 
@@ -663,8 +679,8 @@ export default function ProfileSetupScreen({ navigation }: Props) {
             <Image source={{ uri: profileImage }} style={styles.profileImage} />
           ) : (
             <View style={styles.placeholderImage}>
-              <User size={30} color="#999" />
-              <Text style={{ fontSize: 12 }}>Upload Photo</Text>
+              <User size={30} color="#fff" />
+              <Text style={{ fontSize: 12, color: '#fff' }}>Upload Photo</Text>
             </View>
           )}
 
@@ -868,6 +884,19 @@ export default function ProfileSetupScreen({ navigation }: Props) {
                 <ChevronDown size={20} color="#fff" />
               </LinearGradient>
             </TouchableOpacity>
+
+            <InputField
+              icon={FileText}
+              label={
+                <>
+                  Security License No. <Text style={styles.required}>*</Text>
+                </>
+              }
+              value={securityLicenseNo}
+              onChange={setSecurityLicenseNo}
+              placeholder="Enter Security License No."
+            />
+
           </>
         )}
 
@@ -1299,14 +1328,14 @@ const styles = StyleSheet.create({
   },
 
   buttonText: {
-    color: COLORS.brandDark,
+    color: '#fff',
     fontSize: 16,
     fontWeight: '700',
   },
 
   suggestionsList: {
     position: 'absolute',
-    top: 100,
+    top: 50,
     left: 24,
     right: 24,
     maxHeight: 340,
@@ -1314,7 +1343,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 1,
     borderColor: COLORS.border,
-    zIndex: 1000,
+    // zIndex: 1000,
   },
 
   suggestionItem: {

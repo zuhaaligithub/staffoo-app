@@ -65,7 +65,7 @@ const COLORS = {
 export default function StaffShifts({ navigation, route }: any) {
   const bottomSheetRef = useRef<BottomSheet>(null);
   // FIX 1: snapPoints must be memoized and stable
-  const snapPoints = useMemo(() => ['60%', '70%'], []);
+  const snapPoints = useMemo(() => ['75%', '80%'], []);
 
   const [notificationJob, setNotificationJob] = useState<any>(null);
   const [activeTab, setActiveTab] = useState('Accepted');
@@ -504,6 +504,14 @@ export default function StaffShifts({ navigation, route }: any) {
       </View>
     );
   };
+  const capitalizeName = (name: string = '') => {
+    return name
+      .toLowerCase()
+      .split(' ')
+      .filter(Boolean)
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
+  };
 
   const jobData = extractJobData(notificationJob);
 
@@ -553,7 +561,8 @@ export default function StaffShifts({ navigation, route }: any) {
               <View>
                 <View style={styles.nameRow}>
                   <Text style={styles.greeting}>
-                    {user?.name || 'User Name'} 👋
+                    {/* {user?.name || 'User Name'} */}
+                    {capitalizeName(user?.name || 'User Name')} 👋
                   </Text>
                 </View>
                 <Text style={styles.staffName}>Welcome to Staffoo</Text>
@@ -1093,31 +1102,31 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   buttonContainer: {
-    gap: 12,
-    marginTop: 20,
-    paddingHorizontal: 50,
+    gap: 5,
+    marginTop: 5,
+    paddingHorizontal: 10,
   },
   acceptButton: {
     backgroundColor: COLORS.success,
-    paddingVertical: 14,
+    paddingVertical: 12,
     borderRadius: 14,
     alignItems: 'center',
   },
   declineButton: {
     backgroundColor: COLORS.danger,
-    paddingVertical: 14,
+    paddingVertical: 12,
     borderRadius: 14,
     alignItems: 'center',
   },
   cancelButton: {
     backgroundColor: COLORS.textMuted,
-    paddingVertical: 14,
+    paddingVertical: 12,
     borderRadius: 14,
     alignItems: 'center',
   },
   buttonText: {
     color: 'white',
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: 'bold',
   },
   pickerContainer: {

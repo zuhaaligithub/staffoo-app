@@ -565,9 +565,10 @@ export const sendNotificationTokenToServer = async (
 
 export default function LoginScreen({ navigation }: Props) {
   const { width } = useWindowDimensions();
+
   const isTablet = width >= 768;
   const scale = (size: number) => (width / 375) * size;
-
+  const [forgotLoading, setForgotLoading] = useState(false);
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -692,6 +693,49 @@ export default function LoginScreen({ navigation }: Props) {
     }
   };
 
+  const handleForgotPassword = async () => {
+    if (!email.trim()) {
+      return Toast.show({
+        type: 'error',
+        text1: 'Enter your email first',
+      });
+    }
+
+    setForgotLoading(true);
+
+    try {
+      const response = await fetch(`${BASE_URL}/auth/password-reset-email`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+        },
+        body: JSON.stringify({
+          email: email.trim(),
+        }),
+      });
+
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(errData?.message || 'Request failed');
+      }
+
+      Toast.show({
+        type: 'success',
+        text1: 'Reset link sent',
+        text2: 'Check your email inbox',
+      });
+    } catch (error: any) {
+      Toast.show({
+        type: 'error',
+        text1: 'Failed',
+        text2: error.message || 'Try again later',
+      });
+    } finally {
+      setForgotLoading(false);
+    }
+  };
+
   const redirectAfterLogin = (user: any) => {
     const type = (user.user_type || '').toLowerCase();
     if (type === 'customer') {
@@ -807,8 +851,15 @@ export default function LoginScreen({ navigation }: Props) {
               </TouchableOpacity>
             </View>
           </View>
-
           <TouchableOpacity
+            onPress={() => navigation.navigate('ForgotPassword', { email })}
+            style={{ alignSelf: 'flex-end', marginBottom: 10 }}
+          >
+            <Text style={{ color: '#89E7D0', fontSize: 13, fontWeight: '600' }}>
+              Forgot password?
+            </Text>
+          </TouchableOpacity>
+          {/* <TouchableOpacity
             style={{
               flexDirection: 'row',
               alignItems: 'center',
@@ -824,7 +875,7 @@ export default function LoginScreen({ navigation }: Props) {
             <Text style={{ fontSize: 14, marginLeft: 8, color: '#fff' }}>
               Remember Me
             </Text>
-          </TouchableOpacity>
+          </TouchableOpacity> */}
 
           <TouchableOpacity
             style={[styles.signInButton, loading && { opacity: 0.7 }]}

@@ -227,6 +227,14 @@ export default function HomeScreen({ navigation }: any) {
 
     loadProfileAndLocation();
   }, []);
+  const capitalizeName = (name: string = '') => {
+    return name
+      .toLowerCase()
+      .split(' ')
+      .filter(Boolean)
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
+  };
 
   const sortedSites = [...sites].sort((siteA, siteB) => {
     const latestA = siteA.job_roster?.length
@@ -267,7 +275,9 @@ export default function HomeScreen({ navigation }: any) {
           <View style={styles.welcomeContent}>
             <Text style={styles.welcomeText}>Welcome back!</Text>
             <View style={styles.nameRow}>
-              <Text style={styles.name}>{user?.name || 'User Name'}</Text>
+              <Text style={styles.name}>
+                {capitalizeName(user?.name || 'User Name')}
+              </Text>
               <Image
                 source={require('../assets/hello.png')}
                 style={styles.helloIcon}
@@ -502,9 +512,9 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
     marginTop: 2,
   },
-  avatarBox: { 
-    flexDirection: 'row', 
-    alignItems: 'center' 
+  avatarBox: {
+    flexDirection: 'row',
+    alignItems: 'center'
   },
   avatar: {
     width: 48,
@@ -526,32 +536,32 @@ const styles = StyleSheet.create({
   siteCardInner: {
     padding: 12,
   },
-  welcomeContent: { 
-    marginLeft: 12 
+  welcomeContent: {
+    marginLeft: 12
   },
-  welcomeText: { 
-    fontSize: 13, 
-    color: COLORS.textSecondary 
+  welcomeText: {
+    fontSize: 13,
+    color: COLORS.textSecondary
   },
-  nameRow: { 
-    flexDirection: 'row', 
-    alignItems: 'center' 
+  nameRow: {
+    flexDirection: 'row',
+    alignItems: 'center'
   },
-  name: { 
-    fontSize: 18, 
-    fontWeight: '700', 
-    color: COLORS.text 
+  name: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: COLORS.text
   },
-  helloIcon: { 
-    width: 20, 
-    height: 20, 
-    marginLeft: 6 
+  helloIcon: {
+    width: 20,
+    height: 20,
+    marginLeft: 6
   },
-  scrollContent: { 
-    flex: 1 
+  scrollContent: {
+    flex: 1
   },
-  bannerContent: { 
-    flex: 1 
+  bannerContent: {
+    flex: 1
   },
   banner: {
     marginHorizontal: 15,
@@ -581,18 +591,18 @@ const styles = StyleSheet.create({
     marginBottom: 2,
     fontWeight: '500',
   },
-  learnMoreText: { 
-    color: COLORS.text, 
-    fontWeight: '600' 
+  learnMoreText: {
+    color: COLORS.text,
+    fontWeight: '600'
   },
-  bannerImage: { 
-    width: 130, 
-    height: 130, 
-    resizeMode: 'contain' 
+  bannerImage: {
+    width: 130,
+    height: 130,
+    resizeMode: 'contain'
   },
-  section: { 
-    paddingHorizontal: 15, 
-    marginVertical: 10 
+  section: {
+    paddingHorizontal: 15,
+    marginVertical: 10
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -600,14 +610,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 12,
   },
-  sectionTitle: { 
-    fontSize: 18, 
-    fontWeight: '800', 
-    color: COLORS.text 
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: COLORS.text
   },
-  seeAll: { 
-    color: COLORS.primary, 
-    fontWeight: '600' 
+  seeAll: {
+    color: COLORS.primary,
+    fontWeight: '600'
   },
   siteCard: {
     width: '100%',
@@ -644,14 +654,14 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: COLORS.cardBorder,
   },
-  shiftTime: { 
-    fontSize: 13, 
-    color: COLORS.text, 
-    fontWeight: '500' 
+  shiftTime: {
+    fontSize: 13,
+    color: COLORS.text,
+    fontWeight: '500'
   },
-  guardName: { 
-    fontSize: 13, 
-    color: COLORS.textSecondary 
+  guardName: {
+    fontSize: 13,
+    color: COLORS.textSecondary
   },
   statusBadge: {
     paddingHorizontal: 10,
@@ -679,8 +689,8 @@ const styles = StyleSheet.create({
     shadowRadius: 10,
     elevation: 2,
   },
-  categoryList: { 
-    paddingVertical: 8 
+  categoryList: {
+    paddingVertical: 8
   },
   categoryIcon: {
     width: 34,
@@ -688,9 +698,9 @@ const styles = StyleSheet.create({
     tintColor: COLORS.primary,
     marginBottom: 6,
   },
-  categoryTitle: { 
-    fontSize: 10, 
-    color: COLORS.text, 
-    textAlign: 'center' 
+  categoryTitle: {
+    fontSize: 10,
+    color: COLORS.text,
+    textAlign: 'center'
   },
 });

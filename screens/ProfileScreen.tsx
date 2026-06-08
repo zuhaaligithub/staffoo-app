@@ -426,75 +426,22 @@ export default function ProfileScreen({ navigation }: Props) {
       return;
     }
 
-    // if (route === 'DeleteProfile') {
-    //   Alert.alert(
-    //     'Delete Profile',
-    //     'This action cannot be undone. Are you sure you want to permanently delete your profile?',
-    //     [
-    //       { text: 'Cancel', style: 'cancel' },
-    //       {
-    //         text: 'Delete',
-    //         style: 'destructive',
-    //         onPress: async () => {
-    //           try {
-    //             if (!userId) {
-    //               Toast.show({ type: 'error', text1: 'User ID missing' });
-    //               return;
-    //             }
-    //             const token = await AsyncStorage.getItem('@auth_token');
-    //             if (!token) {
-    //               Toast.show({ type: 'error', text1: 'No auth token' });
-    //               return;
-    //             }
-    //             const response = await fetch(
-    //               `https://apis.staffoo.com.au/api/user-delete/${userId}`,
-    //               {
-    //                 method: 'GET',
-    //                 headers: {
-    //                   'Content-Type': 'application/json',
-    //                   Authorization: `Bearer ${token}`,
-    //                 },
-    //               },
-    //             );
-    //             const data = await response.json();
-    //             if (!response.ok || !data.success) {
-    //               Toast.show({
-    //                 type: 'error',
-    //                 text1: 'Delete failed',
-    //                 text2: data.message || 'Something went wrong',
-    //               });
-    //               return;
-    //             }
-    //             await AsyncStorage.multiRemove([
-    //               '@user_id',
-    //               '@auth_token',
-    //               'user',
-    //               'profileImage',
-    //             ]);
-    //             Toast.show({
-    //               type: 'success',
-    //               text1: 'Profile deleted successfully',
-    //             });
-    //             navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
-    //           } catch (err) {
-    //             Toast.show({
-    //               type: 'error',
-    //               text1: 'Error deleting profile',
-    //               text2: err instanceof Error ? err.message : 'Unknown error',
-    //             });
-    //           }
-    //         },
-    //       },
-    //     ],
-    //   );
-    //   return;
-    // }
+    
     if (route === 'DeleteProfile') {
       navigation.navigate('DeleteProfileVerification');
       return;
     }
 
     navigation.navigate(route);
+  };
+
+  const capitalizeName = (name: string = '') => {
+    return name
+      .toLowerCase()
+      .split(' ')
+      .filter(Boolean)
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
   };
 
   const getUserTypeLabel = (type: string | undefined | null) => {
@@ -570,17 +517,24 @@ export default function ProfileScreen({ navigation }: Props) {
               </TouchableOpacity>
 
               <View style={styles.nameSection}>
-                <Text style={styles.heroName}>
-                  {user?.name || 'Samad Younas'}
+                <Text style={styles.greeting}>
+                  {capitalizeName(
+                    user?.name ||
+                    user?.staff?.name ||
+                    user?.contractor?.name ||
+                    user?.customer?.name ||
+                    'User',
+                  )}{' '}
+                  👋
                 </Text>
 
-                {user?.user_type && (
+                {/* {user?.user_type && (
                   <View style={styles.typeBadge}>
                     <Text style={styles.typeBadgeText}>
                       {getUserTypeLabel(user.user_type)}
                     </Text>
                   </View>
-                )}
+                )} */}
 
                 <View style={styles.statusRow}>
                   <View
@@ -752,6 +706,14 @@ const styles = StyleSheet.create({
     // paddingHorizontal: 20,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.primaryBorder,
+  },
+  greeting: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    textTransform: 'capitalize',
+    letterSpacing: 0.3,
+    marginBottom: 4,
   },
 
   heroTopRow: {

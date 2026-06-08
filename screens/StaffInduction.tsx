@@ -183,10 +183,10 @@ export default function StaffInductionScreen({
           questions: item.questionnaire?.length || 0,
           date: item.created_at
             ? new Date(item.created_at).toLocaleDateString('en-AU', {
-                day: 'numeric',
-                month: 'short',
-                year: 'numeric',
-              })
+              day: 'numeric',
+              month: 'short',
+              year: 'numeric',
+            })
             : 'Recently Added',
           questionnaire: item.questionnaire,
           created_at: item.created_at,
@@ -199,6 +199,15 @@ export default function StaffInductionScreen({
     } finally {
       setLoading(false);
     }
+  };
+
+  const capitalizeText = (text: string = '') => {
+    return text
+      .toLowerCase()
+      .split(' ')
+      .filter(Boolean)
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
   };
 
   const getInitials = (name: string) => {
@@ -252,7 +261,9 @@ export default function StaffInductionScreen({
         </View>
 
         <View style={styles.listContent}>
-          <Text style={styles.listTitle}>{item.title}</Text>
+          <Text style={styles.listTitle}>
+            {capitalizeText(item.title)}
+          </Text>
           <Text style={styles.listSubtitle}>
             {item.subtitle} • {item.date}
           </Text>
@@ -303,12 +314,13 @@ export default function StaffInductionScreen({
 
         <View style={styles.headerTitleContainer}>
           <Text style={styles.greeting}>
-            {user?.name ||
+            {capitalizeText(
+              user?.name ||
               user?.staff?.name ||
               user?.contractor?.name ||
               user?.customer?.name ||
-              'User'}{' '}
-            👋
+              'User',
+            )} 👋
           </Text>
 
           <Text style={styles.staffName}>Staff Induction Program</Text>
@@ -322,10 +334,10 @@ export default function StaffInductionScreen({
               <Text style={styles.initialsTextSmall}>
                 {getInitials(
                   user?.name ||
-                    user?.staff?.name ||
-                    user?.contractor?.name ||
-                    user?.customer?.name ||
-                    'U',
+                  user?.staff?.name ||
+                  user?.contractor?.name ||
+                  user?.customer?.name ||
+                  'U',
                 )}
               </Text>
             </View>
@@ -353,7 +365,9 @@ export default function StaffInductionScreen({
               {/* <Text style={styles.recentSubtitle}>
                 {recentInduction.subtitle}
               </Text> */}
-              <Text style={styles.recentTitle}>{recentInduction.title}</Text>
+              <Text style={styles.recentTitle}>
+                {capitalizeText(recentInduction.title)}
+              </Text>
               <Text style={styles.recentDate}>{recentInduction.date}</Text>
 
               <Text style={styles.questionsCount}>
@@ -398,7 +412,7 @@ export default function StaffInductionScreen({
             <Text style={{ fontSize: 16, fontWeight: '600', color: '#64748b' }}>
               No Induction Found
             </Text>
-           
+
           </View>
         )}
         <FlatList
@@ -414,28 +428,29 @@ export default function StaffInductionScreen({
 
 /* Styles remain the same as your original */
 const styles = StyleSheet.create({
- container: {
-  flex: 1,
-  // backgroundColor: COLORS.background,
-   backgroundColor: '#111111',
-},
- headerRow: {
-  flexDirection: 'row',
-  alignItems: 'center',
-  justifyContent: 'space-between',
+  container: {
+    flex: 1,
+    // backgroundColor: COLORS.background,
+    backgroundColor: '#111111',
+    paddingTop: 25,
+  },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
 
-  paddingHorizontal: 16,
-  paddingVertical: 14,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
 
-  marginHorizontal: 16,
-  marginTop: 10,
+    marginHorizontal: 16,
+    marginTop: 10,
 
-  borderRadius: 18,
+    borderRadius: 18,
 
-  // backgroundColor: COLORS.surface2,
-  borderWidth: 1,
-  borderColor: COLORS.border,
-},
+    // backgroundColor: COLORS.surface2,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
   backBox: {
     width: 42,
     height: 42,
@@ -446,16 +461,16 @@ const styles = StyleSheet.create({
   },
   headerTitleContainer: { flex: 1, marginLeft: 14 },
   greeting: {
-  fontSize: 18,
-  fontWeight: '700',
-  color: COLORS.text,
-},
+    fontSize: 18,
+    fontWeight: '700',
+    color: COLORS.text,
+  },
 
-staffName: {
-  fontSize: 13,
-  color: COLORS.textSecondary,
-  marginTop: 2,
-},
+  staffName: {
+    fontSize: 13,
+    color: COLORS.textSecondary,
+    marginTop: 2,
+  },
   rightProfile: { width: 44, height: 44, borderRadius: 22 },
   avatarSmall: { width: 44, height: 44, borderRadius: 22 },
   initialsAvatarSmall: {
@@ -474,40 +489,40 @@ staffName: {
     fontWeight: '700',
     color: '#fff',
     marginBottom: 12,
-    marginTop:10
+    marginTop: 10
   },
   completedCardBorder: {
     borderWidth: 1,
     borderColor: '#22c55e',
   },
 
- recentCard: {
-  // backgroundColor: COLORS.surface,
-  borderRadius: 22,
-  padding: 18,
-  flexDirection: 'row',
+  recentCard: {
+    // backgroundColor: COLORS.surface,
+    borderRadius: 22,
+    padding: 18,
+    flexDirection: 'row',
 
-  borderWidth: 1,
-  borderColor: COLORS.border,
+    borderWidth: 1,
+    borderColor: COLORS.border,
 
-  shadowColor: '#000',
-  shadowOpacity: 0.25,
-  shadowRadius: 12,
-  elevation: 8,
-},
-recentIcon: {
-  width: 70,
-  height: 70,
-  borderRadius: 18,
+    shadowColor: '#000',
+    shadowOpacity: 0.25,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  recentIcon: {
+    width: 70,
+    height: 70,
+    borderRadius: 18,
 
-  backgroundColor: 'rgba(137, 231, 208, 0.08)',
-  borderWidth: 1,
-  borderColor: COLORS.border,
+    backgroundColor: 'rgba(137, 231, 208, 0.08)',
+    borderWidth: 1,
+    borderColor: COLORS.border,
 
-  alignItems: 'center',
-  justifyContent: 'center',
-  marginRight: 16,
-},
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 16,
+  },
   recentContent: { flex: 1 },
   recentSubtitle: { color: THEME_COLOR, fontSize: 15, fontWeight: '600' },
   recentTitle: {
@@ -523,35 +538,35 @@ recentIcon: {
     fontWeight: '600',
     marginTop: 4,
   },
-startButton: {
-  backgroundColor: COLORS.primary,
-  paddingVertical: 12,
-  paddingHorizontal: 20,
-  borderRadius: 14,
-  marginTop: 12,
-  alignSelf: 'flex-start',
-},
+  startButton: {
+    backgroundColor: COLORS.primary,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 14,
+    marginTop: 12,
+    alignSelf: 'flex-start',
+  },
 
-startButtonText: {
-  color: '#001F3F',
-  fontWeight: '800',
-  fontSize: 14,
-},
+  startButtonText: {
+    color: '#001F3F',
+    fontWeight: '800',
+    fontSize: 14,
+  },
 
- listCard: {
-  flexDirection: 'row',
-  alignItems: 'center',
+  listCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
 
-  backgroundColor: COLORS.card,
+    backgroundColor: COLORS.card,
 
-  padding: 14,
-  borderRadius: 18,
+    padding: 14,
+    borderRadius: 18,
 
-  marginBottom: 14,
+    marginBottom: 14,
 
-  borderWidth: 1,
-  borderColor: COLORS.border,
-},
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
   completedBorder: {
     borderWidth: 1,
     borderColor: '#22c55e',
@@ -568,19 +583,19 @@ startButtonText: {
     right: 10,
     zIndex: 10,
   },
- iconContainer: {
-  width: 52,
-  height: 52,
-  borderRadius: 16,
+  iconContainer: {
+    width: 52,
+    height: 52,
+    borderRadius: 16,
 
-  backgroundColor: 'rgba(137, 231, 208, 0.08)',
-  borderWidth: 1,
-  borderColor: COLORS.border,
+    backgroundColor: 'rgba(137, 231, 208, 0.08)',
+    borderWidth: 1,
+    borderColor: COLORS.border,
 
-  alignItems: 'center',
-  justifyContent: 'center',
-  marginRight: 14,
-},
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 14,
+  },
   listContent: { flex: 1 },
   listTitle: { fontSize: 16, fontWeight: '700', color: '#fff' },
   listSubtitle: { fontSize: 13, color: '#64748b', marginTop: 4 },
@@ -591,35 +606,42 @@ startButtonText: {
     marginTop: 6,
   },
 
-completedBadge: {
-  flexDirection: 'row',
-  alignItems: 'center',
-  marginTop: 8,
 
-  backgroundColor: 'rgba(34,197,94,0.1)',
-  paddingHorizontal: 10,
-  paddingVertical: 4,
-  borderRadius: 12,
-},
-completedText: {
-  color: COLORS.success,
-  fontWeight: '700',
-  marginLeft: 6,
-},
+  completedText: {
+    color: COLORS.success,
+    fontWeight: '700',
+    marginLeft: 6,
+  },
 
-pendingBadge: {
-  flexDirection: 'row',
-  alignItems: 'center',
-  marginTop: 8,
 
-  backgroundColor: 'rgba(245,158,11,0.1)',
-  paddingHorizontal: 10,
-  paddingVertical: 4,
-  borderRadius: 12,
-},
-pendingText: {
-  color: COLORS.warning,
-  fontWeight: '700',
-  marginLeft: 6,
-},
+  pendingText: {
+    color: COLORS.warning,
+    fontWeight: '700',
+    marginLeft: 6,
+  },
+  completedBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 8,
+
+    backgroundColor: 'rgba(34,197,94,0.1)',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+
+    alignSelf: 'flex-start', // ✅ only content width
+  },
+
+  pendingBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 8,
+
+    backgroundColor: 'rgba(245,158,11,0.1)',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+
+    alignSelf: 'flex-start', // ✅ only content width
+  },
 });
