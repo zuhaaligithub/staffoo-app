@@ -1021,21 +1021,6 @@ type Document = {
   document_type: string;
 };
 
-// Fixed order list matching your requirements
-const MASTER_DOCUMENT_TYPES = [
-  { label: 'Driver License (Front)', value: 'Driver License Front', category: 'citizen' },
-  { label: 'Driver License (Back)', value: 'Driver License Back', category: 'citizen' },
-  { label: 'Passport', value: 'Passport', category: 'citizen' },
-  { label: 'Security License', value: 'Security License', category: 'citizen' },
-  { label: 'Working With Children Check (WWCC)', value: 'Working with Children', category: 'citizen' },
-  { label: 'First Aid Certificate', value: 'First Aid', category: 'citizen' },
-  { label: 'CPR Certificate', value: 'CPR', category: 'citizen' },
-  { label: 'Citizen Ship', value: 'Citizen Ship', category: 'citizen' },
-  { label: 'Medicare', value: 'Medicare', category: 'citizen' },
-  { label: 'Birth Certificate', value: 'Birth Certificate', category: 'citizen' },
-
-];
-
 const THEME = {
   background: '#111111',
   cardBg: '#1C2541',
@@ -1135,11 +1120,15 @@ const ExpiryBadge = ({ status }: { status: 'expired' | 'expiring_soon' | 'ok' | 
 export default function DocumentsScreen({ navigation }: Props) {
   const [modalVisible, setModalVisible] = useState(false);
   const [fileError, setFileError] = useState('');
-  const [docTypeError, setDocTypeError] = useState('');
   const [docNumberError, setDocNumberError] = useState('');
   const [expiryError, setExpiryError] = useState('');
 
-  const [selectedDocType, setSelectedDocType] = useState<typeof MASTER_DOCUMENT_TYPES[0] | null>(null);
+  const [selectedDocType, setSelectedDocType] = useState<{
+    label: string;
+    value: string;
+    category: string;
+  } | null>(null);
+
   const [documentNumber, setDocumentNumber] = useState('');
   const [expirationDate, setExpirationDate] = useState<Date | null>(null);
   const [showInlineCalendar, setShowInlineCalendar] = useState(false);
@@ -1183,12 +1172,11 @@ export default function DocumentsScreen({ navigation }: Props) {
     setShowInlineCalendar(false);
     setCurrentCalendarMonth(new Date());
     setFileError('');
-    setDocTypeError('');
     setDocNumberError('');
     setExpiryError('');
   };
 
-  const handleOpenAddModal = (docType: typeof MASTER_DOCUMENT_TYPES[0]) => {
+  const handleOpenAddModal = (docType: { label: string; value: string; category: string }) => {
     resetForm();
     setSelectedDocType(docType);
     setModalVisible(true);
@@ -1276,15 +1264,14 @@ export default function DocumentsScreen({ navigation }: Props) {
       const day = String(expirationDate!.getDate()).padStart(2, '0');
       const expDate = `${year}-${month}-${day}`;
 
-      // 1. Check if document row already exists in database
+      // Find existing doc from API list
       const existingDoc = uploadedDocuments.find(d => {
         const apiName = d.document_name?.toLowerCase().replace(/[\s_]+/g, '') || '';
         const apiType = d.document_type?.toLowerCase().replace(/[\s_]+/g, '') || '';
-        const matchValue = selectedDocType!.value.toLowerCase().replace(/[\s_]+/g, '') || '';
+        const matchValue = selectedDocType!.value.toLowerCase().replace(/[\s_]+/g, '');
         return apiName === matchValue || apiType === matchValue;
       });
 
-      // 2. Base payload structure
       const payload: any = {
         user_id: userId,
         document_no: documentNumber.trim(),
@@ -1293,17 +1280,13 @@ export default function DocumentsScreen({ navigation }: Props) {
         document_category: selectedDocType!.category,
       };
 
-      // 🌟 CONDITIONALLY BUILD PAYLOAD FIELDS TO AVOID 404 & 500 ERRORS
       if (existingDoc) {
-        // For the 6 pre-existing empty cards (Fixes 500 Error)
         payload.id = existingDoc.id;
         payload.document_name = existingDoc.document_name || selectedDocType!.value;
         payload.document_type = existingDoc.document_type || selectedDocType!.value.toLowerCase().replace(/\s+/g, '_');
-        payload.exp = 'exp' in existingDoc ? (existingDoc as any).exp : false;
-        payload.no = 'no' in existingDoc ? (existingDoc as any).no : false;
+        payload.exp = (existingDoc as any).exp ?? false;
+        payload.no = (existingDoc as any).no ?? false;
       } else {
-        // For brand new cards like Medicare, Birth Certificate (Fixes 404 Error)
-        // Notice: 'id' key is NOT added here at all!
         payload.document_name = selectedDocType!.value;
         payload.document_type = selectedDocType!.value.toLowerCase().replace(/\s+/g, '_');
         payload.exp = false;
@@ -1318,7 +1301,7 @@ export default function DocumentsScreen({ navigation }: Props) {
         },
       });
 
-      Toast.show({ type: 'success', text1: 'Document Updated Successfully', position: 'bottom' });
+      Toast.show({ type: 'success', text1: 'Document Saved Successfully', position: 'bottom' });
       setModalVisible(false);
       loadData();
     } catch (err) {
@@ -1328,9 +1311,7 @@ export default function DocumentsScreen({ navigation }: Props) {
       setSaving(false);
     }
   };
-  const isDocumentFilled = (doc?: Document) => {
-    return !!(doc?.file && doc.file.trim().length > 0);
-  };
+
   const calendarGrid = useMemo(() => {
     const year = currentCalendarMonth.getFullYear();
     const month = currentCalendarMonth.getMonth();
@@ -1349,6 +1330,8 @@ export default function DocumentsScreen({ navigation }: Props) {
       return n;
     });
   };
+
+  // ─── Modal File Preview ───────────────────────────────────────────────────
 
   const renderModalPreview = () => {
     const fileUri = selectedFile?.uri || (uploadedFilePath ? getFileUrl(uploadedFilePath) : null);
@@ -1377,141 +1360,128 @@ export default function DocumentsScreen({ navigation }: Props) {
     );
   };
 
-  // ─── Render Single Matrix Card Item ────────────────────────────────────────
+  // ─── Card: API-driven (filled state) ─────────────────────────────────────
 
-  // ─── Render Single Matrix Card Item ────────────────────────────────────────
+  const renderFilledCard = (item: Document) => {
+    const status = getExpiryStatus(item.document_expiry);
+    const isImg = isImageFile(item.file);
+    const ext = item.file?.split('.').pop()?.toUpperCase() || '';
 
-  const renderCardItem = ({ item }: { item: typeof MASTER_DOCUMENT_TYPES[0] }) => {
-    // FIXED MATCHING LOGIC: Standardizes spaces & underscores so it accurately updates state
-    const uploadedDoc = uploadedDocuments.find(d => {
-      const apiName = d.document_name?.toLowerCase().replace(/[\s_]+/g, '') || '';
-      const matchValue = item.value.toLowerCase().replace(/[\s_]+/g, '') || '';
-      return apiName === matchValue;
-    });
-
-    const isFilled = isDocumentFilled(uploadedDoc);
-
-    // 🌟 FIX: Lock tabhi hoga jab sach mein 'file' uploaded hogi. Warna '+' button dikhega!
-    if (uploadedDoc?.file && uploadedDoc.file.trim() !== '') {
-      const status = getExpiryStatus(uploadedDoc.document_expiry);
-      const isImg = isImageFile(uploadedDoc.file);
-      const fileUrl = getFileUrl(uploadedDoc.file);
-      const ext = uploadedDoc.file?.split('.').pop()?.toUpperCase() || '';
-
-      return (
-        <LinearGradient
-          colors={['#1e2538', '#141929']}
-          style={styles.cardGradient}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-        >
-          <View style={styles.cardTopRow}>
-            <View style={styles.docIconBox}>
-              <FileText size={22} color={THEME.teal} />
-            </View>
-
-            <View style={{ flex: 1, marginHorizontal: 12 }}>
-              <Text style={styles.cardDocName} numberOfLines={1}>
-                {item.label}
-              </Text>
-              <View style={styles.cardSubRow}>
-                {!!ext && (
-                  <View style={styles.extBadge}>
-                    <Text style={styles.extBadgeText}>{ext}</Text>
-                  </View>
-                )}
-                <ExpiryBadge status={status} />
-              </View>
-            </View>
-
-            {/* Document filled/updated: Shows static Lock Icon */}
-            <View style={styles.lockIconWrap}>
-              <Lock size={16} color={THEME.textMuted} />
-            </View>
-          </View>
-
-          <View style={styles.divider} />
-
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Document No</Text>
-            <Text style={styles.infoValue}>{uploadedDoc.document_no || '—'}</Text>
-          </View>
-
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Expiry Date</Text>
-            <Text style={[
-              styles.infoValue,
-              status === 'expired' && { color: '#ff6b6b' },
-              status === 'expiring_soon' && { color: '#f0a500' },
-            ]}>
-              {formatDisplayDate(uploadedDoc.document_expiry)}
-            </Text>
-          </View>
-
-          {/* {!!fileUrl && isImg && (
-            <LazyImage uri={fileUrl} style={styles.cardImagePreview} />
-          )} */}
-
-          {!!uploadedDoc.file && (
-            <TouchableOpacity
-              style={styles.viewBtn}
-              onPress={() => openFile(uploadedDoc.file)}
-              activeOpacity={0.85}
-            >
-              <Eye size={17} color="#fff" style={{ marginRight: 8 }} />
-              <Text style={styles.viewBtnText}>
-                {isImg ? 'VIEW IMAGE' : 'VIEW / DOWNLOAD'}
-              </Text>
-            </TouchableOpacity>
-          )}
-        </LinearGradient>
-      );
-    }
-
-    // 2. EMPTY STATE: Agar file nahi hai toh Plus (+) button dikhao taa k user add kar sakay
     return (
       <LinearGradient
-        colors={['#171d30', '#0f1322']}
-        style={[styles.cardGradient, { borderStyle: 'dashed', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)' }]}
+        colors={['#1e2538', '#141929']}
+        style={styles.cardGradient}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
       >
         <View style={styles.cardTopRow}>
-          <View style={[styles.docIconBox, { backgroundColor: 'rgba(255,255,255,0.03)' }]}>
-            <FileText size={22} color={THEME.textMuted} />
+          <View style={styles.docIconBox}>
+            <FileText size={22} color={THEME.teal} />
           </View>
 
           <View style={{ flex: 1, marginHorizontal: 12 }}>
-            <Text style={[styles.cardDocName, { color: THEME.textMuted }]}>
-              {item.label}
+            <Text style={styles.cardDocName} numberOfLines={1}>
+              {item.document_name || '—'}
             </Text>
-            <Text style={{ color: '#fff', fontSize: 11, marginTop: 2 }}>Add Required Document</Text>
+            <View style={styles.cardSubRow}>
+              {!!ext && (
+                <View style={styles.extBadge}>
+                  <Text style={styles.extBadgeText}>{ext}</Text>
+                </View>
+              )}
+              <ExpiryBadge status={status} />
+            </View>
           </View>
 
-          {/* Top-right corner interactive Plus (+) Button */}
-          {/* <TouchableOpacity
-            style={styles.lockIconWrap}
-            onPress={() => handleOpenAddModal(item)}
-            activeOpacity={0.7}
-          >
-            <PlusCircle size={20} color={THEME.teal} />
-          </TouchableOpacity> */}
+          <View style={styles.lockIconWrap}>
+            <Lock size={16} color={THEME.textMuted} />
+          </View>
         </View>
 
-        {/* Lower body interactive Plus (+) Action Button */}
+        <View style={styles.divider} />
+
+        <View style={styles.infoRow}>
+          <Text style={styles.infoLabel}>Document No</Text>
+          <Text style={styles.infoValue}>{item.document_no || '—'}</Text>
+        </View>
+
+        <View style={styles.infoRow}>
+          <Text style={styles.infoLabel}>Expiry Date</Text>
+          <Text style={[
+            styles.infoValue,
+            status === 'expired' && { color: '#ff6b6b' },
+            status === 'expiring_soon' && { color: '#f0a500' },
+          ]}>
+            {formatDisplayDate(item.document_expiry)}
+          </Text>
+        </View>
+
         <TouchableOpacity
-          style={styles.addCardButton}
-          onPress={() => handleOpenAddModal(item)}
-          activeOpacity={0.8}
+          style={styles.viewBtn}
+          onPress={() => openFile(item.file)}
+          activeOpacity={0.85}
         >
-          <PlusCircle size={16} color={THEME.teal} style={{ marginRight: 6 }} />
-          <Text style={styles.addCardButtonText}>ADD DOCUMENT</Text>
+          <Eye size={17} color="#fff" style={{ marginRight: 8 }} />
+          <Text style={styles.viewBtnText}>
+            {isImg ? 'VIEW IMAGE' : 'VIEW / DOWNLOAD'}
+          </Text>
         </TouchableOpacity>
       </LinearGradient>
     );
   };
 
-  // ─── Main Structural Return ────────────────────────────────────────────────
+  // ─── Card: API-driven (empty state) ──────────────────────────────────────
+
+  const renderEmptyCard = (item: Document) => (
+    <LinearGradient
+      colors={['#171d30', '#0f1322']}
+      style={[styles.cardGradient, {
+        borderStyle: 'dashed',
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.08)',
+      }]}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+    >
+      <View style={styles.cardTopRow}>
+        <View style={[styles.docIconBox, { backgroundColor: 'rgba(255,255,255,0.03)' }]}>
+          <FileText size={22} color={THEME.textMuted} />
+        </View>
+        <View style={{ flex: 1, marginHorizontal: 12 }}>
+          <Text style={[styles.cardDocName, { color: THEME.textMuted }]}>
+            {item.document_name || '—'}
+          </Text>
+          <Text style={{ color: '#aaa', fontSize: 11, marginTop: 2 }}>
+            Add Required Document
+          </Text>
+        </View>
+      </View>
+
+      <TouchableOpacity
+        style={styles.addCardButton}
+        onPress={() =>
+          handleOpenAddModal({
+            label: item.document_name,
+            value: item.document_name,
+            category: item.document_type,
+          })
+        }
+        activeOpacity={0.8}
+      >
+        <PlusCircle size={16} color={THEME.teal} style={{ marginRight: 6 }} />
+        <Text style={styles.addCardButtonText}>ADD DOCUMENT</Text>
+      </TouchableOpacity>
+    </LinearGradient>
+  );
+
+  // ─── FlatList renderItem ──────────────────────────────────────────────────
+
+  const renderItem = ({ item }: { item: Document }) => {
+    const isFilled = !!(item.file && item.file.trim().length > 0);
+    return isFilled ? renderFilledCard(item) : renderEmptyCard(item);
+  };
+
+  // ─── Main Return ──────────────────────────────────────────────────────────
 
   return (
     <SafeAreaView style={styles.container}>
@@ -1529,14 +1499,17 @@ export default function DocumentsScreen({ navigation }: Props) {
         <ActivityIndicator size="large" color={THEME.teal} style={{ marginTop: 60 }} />
       ) : (
         <FlatList
-          data={MASTER_DOCUMENT_TYPES}
-          keyExtractor={(item, index) => index.toString()}
-          renderItem={renderCardItem}
+          data={uploadedDocuments}
+          keyExtractor={(item) => item.id.toString()}
+          renderItem={renderItem}
           contentContainerStyle={styles.listContent}
+          ListEmptyComponent={
+            <Text style={styles.emptyText}>No documents found</Text>
+          }
         />
       )}
 
-      {/* ── Add / Upload Form Modal ── */}
+      {/* ── Upload Modal ── */}
       <Modal
         animationType="slide"
         transparent
@@ -1554,7 +1527,7 @@ export default function DocumentsScreen({ navigation }: Props) {
 
             <ScrollView style={styles.modalBody} keyboardShouldPersistTaps="handled">
 
-              {/* File selection block */}
+              {/* File upload block */}
               <View style={styles.imageUploadArea}>
                 {renderModalPreview()}
                 <TouchableOpacity
@@ -1576,7 +1549,7 @@ export default function DocumentsScreen({ navigation }: Props) {
                 {fileError ? <Text style={styles.errorText}>{fileError}</Text> : null}
               </View>
 
-              {/* Context Locked Dropdown Block */}
+              {/* Locked document type */}
               <Text style={styles.fieldLabel}>DOCUMENT TYPE</Text>
               <View style={[styles.dropdownSelector, styles.dropdownSelectorDisabled]}>
                 <Text style={styles.disabledDropdownText}>
@@ -1584,11 +1557,9 @@ export default function DocumentsScreen({ navigation }: Props) {
                 </Text>
                 <Lock size={16} color={THEME.textMuted} />
               </View>
-              <Text style={styles.inputHelpText}>Locked to item selection context.</Text>
+              <Text style={styles.inputHelpText}>Locked to selected document.</Text>
 
-
-
-              {/* Input for Calendar Expiry Date */}
+              {/* Expiry date */}
               <Text style={[styles.fieldLabel, { marginTop: 18 }]}>EXPIRATION DATE *</Text>
               <TouchableOpacity
                 style={styles.dateButton}
@@ -1633,7 +1604,8 @@ export default function DocumentsScreen({ navigation }: Props) {
                       const target = new Date(date);
                       target.setHours(0, 0, 0, 0);
                       const isPast = target < today;
-                      const isSelected = expirationDate && date.toDateString() === expirationDate.toDateString();
+                      const isSelected =
+                        expirationDate && date.toDateString() === expirationDate.toDateString();
                       return (
                         <TouchableOpacity
                           key={idx}
@@ -1664,7 +1636,7 @@ export default function DocumentsScreen({ navigation }: Props) {
                 </View>
               )}
 
-              {/* Input for Document Serial Number */}
+              {/* Document number */}
               <Text style={[styles.fieldLabel, { marginTop: 18 }]}>DOCUMENT NUMBER *</Text>
               <TextInput
                 style={styles.inputBox}
@@ -1698,9 +1670,11 @@ export default function DocumentsScreen({ navigation }: Props) {
   );
 }
 
-// ─── Stylesheet Layout Configuration ─────────────────────────────────────────
+// ─── Styles ───────────────────────────────────────────────────────────────────
+
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: THEME.background, paddingTop: 25 },
+
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -1712,27 +1686,59 @@ const styles = StyleSheet.create({
   },
   backBtn: { width: 40, height: 40, justifyContent: 'center', alignItems: 'center' },
   headerTitle: { color: '#fff', fontSize: 18, fontWeight: 'bold' },
-  listContent: { padding: 16, paddingBottom: 40 },
 
+  listContent: { padding: 16, paddingBottom: 40 },
+  emptyText: { textAlign: 'center', marginTop: 60, color: THEME.textMuted, fontSize: 15 },
+
+  // ── Cards ──
   cardGradient: { borderRadius: 12, padding: 16, marginBottom: 16 },
   cardTopRow: { flexDirection: 'row', alignItems: 'center' },
-  docIconBox: { width: 40, height: 40, borderRadius: 8, backgroundColor: 'rgba(137,231,208,0.1)', justifyContent: 'center', alignItems: 'center' },
+  docIconBox: {
+    width: 40,
+    height: 40,
+    borderRadius: 8,
+    backgroundColor: 'rgba(137,231,208,0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   cardDocName: { color: '#fff', fontSize: 15, fontWeight: 'bold' },
   cardSubRow: { flexDirection: 'row', marginTop: 4, alignItems: 'center', gap: 8 },
-  extBadge: { backgroundColor: 'rgba(255,255,255,0.1)', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 },
+  extBadge: {
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
   extBadgeText: { color: '#fff', fontSize: 10, fontWeight: 'bold' },
   lockIconWrap: { width: 36, height: 36, justifyContent: 'center', alignItems: 'center' },
   divider: { height: 1, backgroundColor: THEME.border, marginVertical: 12 },
   infoRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 },
   infoLabel: { color: THEME.textMuted, fontSize: 13 },
   infoValue: { color: '#fff', fontSize: 13, fontWeight: '500' },
-  cardImagePreview: { width: '100%', height: 150, borderRadius: 8, marginTop: 12 },
-  viewBtn: { backgroundColor: THEME.accent, height: 40, borderRadius: 8, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginTop: 12 },
+  viewBtn: {
+    backgroundColor: THEME.accent,
+    height: 40,
+    borderRadius: 8,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 12,
+  },
   viewBtnText: { color: '#fff', fontSize: 13, fontWeight: 'bold' },
-
-  addCardButton: { height: 38, backgroundColor: 'rgba(137,231,208,0.08)', borderRadius: 6, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginTop: 14, borderWidth: 1, borderColor: 'rgba(137,231,208,0.2)' },
+  addCardButton: {
+    height: 38,
+    backgroundColor: 'rgba(137,231,208,0.08)',
+    borderRadius: 6,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(137,231,208,0.2)',
+  },
   addCardButtonText: { color: THEME.teal, fontSize: 12, fontWeight: 'bold' },
 
+  // ── Badges ──
   badge: { paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 },
   badgeExpired: { backgroundColor: 'rgba(255,107,107,0.15)' },
   badgeExpiringSoon: { backgroundColor: 'rgba(240,165,0,0.15)' },
@@ -1740,49 +1746,166 @@ const styles = StyleSheet.create({
   badgeTextExpired: { color: '#ff6b6b' },
   badgeTextExpiringSoon: { color: '#f0a500' },
 
+  // ── Modal ──
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'flex-end' },
-  modalContent: { backgroundColor: THEME.cardBg, borderTopLeftRadius: 20, borderTopRightRadius: 20, height: '92%' },
-  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 16, borderBottomWidth: 1, borderBottomColor: THEME.border },
+  modalContent: {
+    backgroundColor: THEME.cardBg,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    height: '92%',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: THEME.border,
+  },
   modalTitle: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
   modalBody: { padding: 16 },
 
   imageUploadArea: { alignItems: 'center', marginBottom: 20 },
-  imagePlaceholder: { width: width - 64, height: 160, backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: 12, overflow: 'hidden', marginBottom: 12 },
+  imagePlaceholder: {
+    width: width - 64,
+    height: 160,
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderRadius: 12,
+    overflow: 'hidden',
+    marginBottom: 12,
+  },
   previewImage: { width: '100%', height: '100%' },
-  uploadTriggerButton: { flexDirection: 'row', backgroundColor: 'rgba(255,255,255,0.05)', borderWidth: 1, borderColor: THEME.border, borderStyle: 'dashed', width: '100%', height: 48, borderRadius: 8, justifyContent: 'center', alignItems: 'center' },
+  uploadTriggerButton: {
+    flexDirection: 'row',
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderWidth: 1,
+    borderColor: THEME.border,
+    borderStyle: 'dashed',
+    width: '100%',
+    height: 48,
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   uploadTriggerText: { color: '#fff', fontSize: 12, fontWeight: '600' },
 
-  docPreviewCard: { width: '100%', padding: 16, backgroundColor: 'rgba(255,255,255,0.03)', borderRadius: 12, alignItems: 'center', marginBottom: 12 },
-  docPreviewIconWrap: { width: 80, height: 80, borderRadius: 40, backgroundColor: 'rgba(137,231,208,0.05)', justifyContent: 'center', alignItems: 'center', marginBottom: 8 },
+  docPreviewCard: {
+    width: '100%',
+    padding: 16,
+    backgroundColor: 'rgba(255,255,255,0.03)',
+    borderRadius: 12,
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  docPreviewIconWrap: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: 'rgba(137,231,208,0.05)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
   docPreviewLabel: { color: '#fff', fontSize: 13, textAlign: 'center', marginBottom: 12 },
-  viewDocButton: { flexDirection: 'row', backgroundColor: THEME.accent, paddingHorizontal: 16, height: 36, borderRadius: 18, justifyContent: 'center', alignItems: 'center' },
+  viewDocButton: {
+    flexDirection: 'row',
+    backgroundColor: THEME.accent,
+    paddingHorizontal: 16,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   viewDocButtonText: { color: '#fff', fontSize: 11, fontWeight: 'bold' },
 
   fieldLabel: { color: THEME.teal, fontSize: 11, fontWeight: 'bold', marginBottom: 6 },
-  inputBox: { backgroundColor: 'rgba(255,255,255,0.05)', borderWidth: 1, borderColor: THEME.border, height: 48, borderRadius: 8, paddingHorizontal: 12, color: '#fff', fontSize: 14 },
-  dateButton: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.05)', borderWidth: 1, borderColor: THEME.border, height: 48, borderRadius: 8, paddingHorizontal: 12 },
+  inputBox: {
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderWidth: 1,
+    borderColor: THEME.border,
+    height: 48,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    color: '#fff',
+    fontSize: 14,
+  },
+  dateButton: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderWidth: 1,
+    borderColor: THEME.border,
+    height: 48,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+  },
   dateText: { color: '#fff', fontSize: 14 },
   errorText: { color: '#ff6b6b', fontSize: 12, marginTop: 4 },
 
-  dropdownSelector: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.05)', borderWidth: 1, borderColor: THEME.border, height: 48, borderRadius: 8, paddingHorizontal: 12 },
-  dropdownSelectorDisabled: { backgroundColor: 'rgba(255,255,255,0.02)', borderColor: 'rgba(255,255,255,0.05)' },
+  dropdownSelector: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderWidth: 1,
+    borderColor: THEME.border,
+    height: 48,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+  },
+  dropdownSelectorDisabled: {
+    backgroundColor: 'rgba(255,255,255,0.02)',
+    borderColor: 'rgba(255,255,255,0.05)',
+  },
   disabledDropdownText: { color: '#a0aab2', fontSize: 14, fontWeight: '500' },
   inputHelpText: { color: THEME.textMuted, fontSize: 11, marginTop: 4, fontStyle: 'italic' },
 
-  saveButton: { backgroundColor: THEME.accent, height: 54, justifyContent: 'center', alignItems: 'center', margin: 16, borderRadius: 8 },
+  saveButton: {
+    backgroundColor: THEME.accent,
+    height: 54,
+    justifyContent: 'center',
+    alignItems: 'center',
+    margin: 16,
+    borderRadius: 8,
+  },
   saveButtonText: { color: '#fff', fontSize: 15, fontWeight: 'bold' },
 
-  inlineCalendar: { backgroundColor: '#fff', borderRadius: 12, padding: 12, marginTop: 8 },
-  calendarHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
+  // ── Calendar ──
+  inlineCalendar: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 12,
+    marginTop: 8,
+  },
+  calendarHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
   calendarMonthHeading: { color: '#111', fontWeight: 'bold', fontSize: 14 },
-  monthArrow: { width: 32, height: 32, justifyContent: 'center', alignItems: 'center', backgroundColor: '#f0f0f0', borderRadius: 16 },
+  monthArrow: {
+    width: 32,
+    height: 32,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#f0f0f0',
+    borderRadius: 16,
+  },
   weekDaysRow: { flexDirection: 'row', justifyContent: 'space-around', marginBottom: 6 },
   weekDayLabel: { color: '#777', fontSize: 11, fontWeight: 'bold', width: 36, textAlign: 'center' },
   daysGrid: { flexDirection: 'row', flexWrap: 'wrap' },
-  dayCell: { width: (width - 56) / 7, height: 36, justifyContent: 'center', alignItems: 'center', marginVertical: 2 },
+  dayCell: {
+    width: (width - 56) / 7,
+    height: 36,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginVertical: 2,
+  },
   dayCellSelected: { backgroundColor: THEME.accent, borderRadius: 18 },
   dayCellDisabled: { opacity: 0.25 },
   dayText: { color: '#111', fontSize: 13, fontWeight: '500' },
   dayTextSelected: { color: '#fff', fontWeight: 'bold' },
-  dayTextDisabled: { color: '#aaa' }
+  dayTextDisabled: { color: '#aaa' },
 });
