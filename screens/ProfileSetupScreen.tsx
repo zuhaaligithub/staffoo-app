@@ -452,13 +452,13 @@ export default function ProfileSetupScreen({ navigation }: Props) {
       return false;
     }
 
-    if (!securityLicenseNo.trim()) {
-      Toast.show({
-        type: 'error',
-        text1: 'Security License No is required',
-      });
-      return false;
-    }
+    // if (!securityLicenseNo.trim()) {
+    //   Toast.show({
+    //     type: 'error',
+    //     text1: 'Security License No is required',
+    //   });
+    //   return false;
+    // }
 
     const isValidPhone =
       // Australia
@@ -549,7 +549,14 @@ export default function ProfileSetupScreen({ navigation }: Props) {
         country: country.trim(),
         coordinates: coordinates ? `${coordinates.lat},${coordinates.lng}` : '',
       };
+      console.log('🔥 FINAL PROFILE PAYLOAD:', payload);
 
+      if (userType === 'staff') {
+        console.log(
+          '🔐 Security License Included:',
+          payload.security_license_no || payload.staff?.security_license_no || securityLicenseNo
+        );
+      }
       if (imageFile) {
         payload.profile_image = imageFile;
       }
@@ -885,7 +892,7 @@ export default function ProfileSetupScreen({ navigation }: Props) {
               </LinearGradient>
             </TouchableOpacity>
 
-            <InputField
+            {/* <InputField
               icon={FileText}
               label={
                 <>
@@ -895,7 +902,7 @@ export default function ProfileSetupScreen({ navigation }: Props) {
               value={securityLicenseNo}
               onChange={setSecurityLicenseNo}
               placeholder="Enter Security License No."
-            />
+            /> */}
 
           </>
         )}

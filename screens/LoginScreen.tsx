@@ -7,7 +7,7 @@
 //   StyleSheet,
 //   SafeAreaView,
 //   KeyboardAvoidingView,
-//   Platform,
+//   Platform,f
 //   Image,
 //   ScrollView,
 //   useWindowDimensions,
