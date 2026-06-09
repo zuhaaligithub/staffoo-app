@@ -3411,6 +3411,7 @@ const StaffFormsScreen = ({ navigation }: any) => {
       const token = await getToken();
       if (!token) throw new Error('Auth token not found');
 
+      // ✅ FIX 1: Use 'superannuation' only for the form-data GET, not for the upload
       const apiType = pdfType === 'super_form' ? 'superannuation' : pdfType;
 
       const formRes = await axios.get(`${BASE_URL}/api/form-data`, {
@@ -3430,37 +3431,44 @@ const StaffFormsScreen = ({ navigation }: any) => {
 
       const form = new FormData();
       form.append('user_id', String(userId));
-      form.append('type', pdfType === 'super_form' ? 'superannuation' : pdfType);
-      form.append('folder', pdfType === 'onboarding' ? 'onboarding_forms' : 'forms');
+
+      // ✅ FIX 2: Pass pdfType as-is ('super_form', 'tfn', 'onboarding') — no conversion
+      form.append('type', pdfType);
+
+      // ✅ FIX 3: Always use 'onboarding_forms' as the folder
+      form.append('folder', 'onboarding_forms');
+
       form.append('file', {
         uri: Platform.OS === 'ios' ? pdfFilePath : `file://${pdfFilePath}`,
         type: 'application/pdf',
         name: `${pdfType}_${Date.now()}.pdf`,
       } as any);
 
+      // Debug log
+      console.log(`📤 UPLOAD PAYLOAD for ${pdfType}:`);
+      // @ts-ignore
+      for (const [key, value] of form._parts) {
+        console.log(`  ${key}:`, value);
+      }
+
       const uploadRes = await axios.post(`${BASE_URL}/api/upload-staff-file`, form, {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'multipart/form-data',
+        },
       });
 
       const uploadedUrl = uploadRes.data?.url || uploadRes.data?.data?.url;
-      const finalUrl = uploadedUrl
-        ? uploadedUrl.startsWith('http')
-          ? uploadedUrl
-          : `${BASE_URL}/storage/${uploadedUrl}`
-        : Platform.OS === 'ios'
-          ? pdfFilePath
-          : `file://${pdfFilePath}`;
-
-      if (uploadedUrl) {
-        setFormUrls(prev => ({ ...prev, [pdfType]: finalUrl }));
-      }
+      console.log('✅ Upload successful:', uploadedUrl);
 
       await saveAndOpenPdf(pdfFilePath);
+
     } catch (error: any) {
+      console.error('❌ PDF generate/upload error:', error);
       Toast.show({
         type: 'error',
-        text1: 'PDF Flow Failed',
-        text2: error?.response?.data?.message || error.message || 'Error occurred',
+        text1: 'PDF Failed',
+        text2: error?.response?.data?.message || error?.message || 'Try again',
       });
     } finally {
       setLoading(false);
@@ -3699,6 +3707,129 @@ const StaffFormsScreen = ({ navigation }: any) => {
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
   };
 
+  // const handleSave = async () => {
+  //   if (!userId || !activeStaffTab) return;
+
+  //   if (!isFormComplete(activeStaffTab)) {
+  //     Toast.show({
+  //       type: 'error',
+  //       text1: 'Incomplete Form',
+  //       text2: 'Please complete all required (*) fields.',
+  //       position: 'top',
+  //     });
+  //     return;
+  //   }
+
+  //   setLoading(true);
+
+  //   try {
+  //     const token = await getToken();
+  //     const headers = { Authorization: `Bearer ${token}` };
+  //     if (activeStaffTab === 'tfn') {
+  //       const tfnPayload = {
+  //         user_id: userId,
+  //         tfn: tfnNumber,
+  //         title: tfnTitle,
+  //         first_name: tfnFirstName,
+  //         surname: tfnSurname,
+  //         previous_name: tfnPrevName,
+  //         dob: tfnDobBackend,
+  //         address: tfnAddress,
+  //         basis_of_payment: basisOfPayment,
+  //         australian_resident: australianResident,
+  //         claim_threshold: claimTaxFree,
+  //         help_debt: hasDebt,
+  //         signature: signatureTfn,
+  //         date: dateTfnBackend,
+  //       };
+
+  //       console.log('📤 TFN PAYLOAD:', JSON.stringify(tfnPayload, null, 2));
+
+  //       await axios.post(
+  //         `${BASE_URL}/api/tfn-declaration`,
+  //         tfnPayload,
+  //         { headers }
+  //       );
+
+  //       Toast.show({ type: 'success', text1: '✓ TFN saved successfully!' });
+  //       await generateUploadAndOpenPdf('tfn');
+  //     }
+
+  //     else if (activeStaffTab === 'super') {
+  //       await axios.post(`${BASE_URL}/api/superannuation`, {
+  //         user_id: userId,
+  //         full_name: superFullName || autoFullName,
+  //         employee_number: superEmployeeNumber,
+  //         fund_choice: fundChoice,
+  //         fund_name: fundChoice === 'own' ? superFundName : '',
+  //         fund_abn: fundChoice === 'own' ? superFundAbn : '',
+  //         fund_usi: fundChoice === 'own' ? superFundUsi : '',
+  //         member_account: fundChoice === 'own' ? superMemberNumber : '',
+  //         signature: signatureSuper,
+  //         date: dateSuperBackend,
+  //         super_confirm: superConfirmation ? 1 : 0,
+  //       }, { headers });
+  //       Toast.show({ type: 'success', text1: '✓ Superannuation saved!' });
+  //       await generateUploadAndOpenPdf('super_form');
+  //     }
+
+  //     else if (activeStaffTab === 'onboarding') {
+  //       const onboardingPayload = {
+  //         user_id: userId,
+  //         full_name: onboardFullName || autoFullName,
+  //         dob: formatDateSafe(onboardDobBackend, 'dob'),
+  //         residential_status: residentialStatus,
+  //         address: onboardAddress,
+  //         mobile: onboardMobile,
+  //         email: onboardEmail,
+  //         passport_number: passportNumber,
+  //         passport_country: passportCountry,
+  //         passport_expiry: formatDateSafe(passportExpiryBackend, 'passport_expiry'),
+  //         work_rights: workRights === 'other' ? otherVisaType : workRights,
+  //         tfn: onboardTfn,
+  //         super_fund: onboardSuperFundName,
+  //         super_usi: onboardSuperUsi,
+  //         super_member: onboardMemberNumber,
+  //         id_checks: {
+  //           primary_id: idChecks.primary_id,
+  //           drivers_license: idChecks.drivers_license,
+  //           security_license: idChecks.security_license,
+  //           medicare_or_utility: idChecks.medicare_or_utility,
+  //         },
+  //         bank_name: bankName,
+  //         bsb: bsb,
+  //         account_number: accountNumber,
+  //         security_license: securityLicence,
+  //         security_license_expiry: formatDateSafe(securityExpiryBackend, 'security_license_expiry'),
+  //         first_aid_cert: firstAidNumber,
+  //         first_aid_expiry: formatDateSafe(firstAidExpiryBackend, 'first_aid_expiry'),
+  //         passport_doc: passportDoc,
+  //         security_license_doc: securityLicenseDoc,
+  //         first_aid_doc: firstAidDoc,
+  //         signature: signatureOnboard,
+  //         date: formatDateSafe(dateOnboardBackend, 'date'),
+  //       };
+
+  //       await axios.post(`${BASE_URL}/api/onboarding`, onboardingPayload, { headers });
+  //       Toast.show({ type: 'success', text1: '✓ Onboarding saved!' });
+  //       await generateUploadAndOpenPdf('onboarding');
+  //     }
+
+  //     await fetchFormData(userId);
+  //   } catch (err: any) {
+  //     console.error('❌ Save error:', err);
+  //     Toast.show({
+  //       type: 'error',
+  //       text1: 'Save Failed',
+  //       text2: err?.response?.data?.message || 'Check your connection and try again.',
+  //     });
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
+
+
+
   const handleSave = async () => {
     if (!userId || !activeStaffTab) return;
 
@@ -3717,6 +3848,8 @@ const StaffFormsScreen = ({ navigation }: any) => {
     try {
       const token = await getToken();
       const headers = { Authorization: `Bearer ${token}` };
+
+      // 1. Submit the form data based on the active tab
       if (activeStaffTab === 'tfn') {
         const tfnPayload = {
           user_id: userId,
@@ -3734,21 +3867,12 @@ const StaffFormsScreen = ({ navigation }: any) => {
           signature: signatureTfn,
           date: dateTfnBackend,
         };
-
         console.log('📤 TFN PAYLOAD:', JSON.stringify(tfnPayload, null, 2));
-
-        await axios.post(
-          `${BASE_URL}/api/tfn-declaration`,
-          tfnPayload,
-          { headers }
-        );
-
-        Toast.show({ type: 'success', text1: '✓ TFN saved successfully!' });
-        await generateUploadAndOpenPdf('tfn');
+        await axios.post(`${BASE_URL}/api/tfn-declaration`, tfnPayload, { headers });
       }
 
       else if (activeStaffTab === 'super') {
-        await axios.post(`${BASE_URL}/api/superannuation`, {
+        const superPayload = {
           user_id: userId,
           full_name: superFullName || autoFullName,
           employee_number: superEmployeeNumber,
@@ -3760,9 +3884,9 @@ const StaffFormsScreen = ({ navigation }: any) => {
           signature: signatureSuper,
           date: dateSuperBackend,
           super_confirm: superConfirmation ? 1 : 0,
-        }, { headers });
-        Toast.show({ type: 'success', text1: '✓ Superannuation saved!' });
-        await generateUploadAndOpenPdf('super_form');
+        };
+        console.log('📤 SUPERANNUATION PAYLOAD:', JSON.stringify(superPayload, null, 2));
+        await axios.post(`${BASE_URL}/api/superannuation`, superPayload, { headers });
       }
 
       else if (activeStaffTab === 'onboarding') {
@@ -3801,25 +3925,30 @@ const StaffFormsScreen = ({ navigation }: any) => {
           signature: signatureOnboard,
           date: formatDateSafe(dateOnboardBackend, 'date'),
         };
-
+        console.log('📤 ONBOARDING PAYLOAD:', JSON.stringify(onboardingPayload, null, 2));
         await axios.post(`${BASE_URL}/api/onboarding`, onboardingPayload, { headers });
-        Toast.show({ type: 'success', text1: '✓ Onboarding saved!' });
-        await generateUploadAndOpenPdf('onboarding');
       }
 
+      Toast.show({ type: 'success', text1: '✓ Form saved successfully!' });
+
+      // 2. Immediately trigger PDF generation and the upload-staff-file API call
+      const pdfType = activeStaffTab === 'super' ? 'super_form' : activeStaffTab;
+      await generateUploadAndOpenPdf(pdfType as 'tfn' | 'super_form' | 'onboarding');
+
+      // 3. Refresh data to sync state with the server
       await fetchFormData(userId);
+
     } catch (err: any) {
-      console.error('❌ Save error:', err);
+      console.error('❌ Save/Upload Flow Error:', err);
       Toast.show({
         type: 'error',
-        text1: 'Save Failed',
-        text2: err?.response?.data?.message || 'Check your connection and try again.',
+        text1: 'Save or Upload Failed',
+        text2: err?.response?.data?.message || 'Please check your connection and try again.',
       });
     } finally {
       setLoading(false);
     }
   };
-
   const isFormComplete = (tab: StaffTab): boolean => {
     if (tab === 'tfn') {
       return !!(
