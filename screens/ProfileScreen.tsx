@@ -341,13 +341,13 @@ export default function ProfileScreen({ navigation }: Props) {
         route: 'Logout',
         isDanger: true,
       },
-      {
-        title: 'Delete Profile',
-        icon: <Trash2 size={20} color={COLORS.danger} />,
-        iconBg: COLORS.dangerBg,
-        route: 'DeleteProfile',
-        isDanger: true,
-      },
+      // {
+      //   title: 'Delete Profile',
+      //   icon: <Trash2 size={20} color={COLORS.danger} />,
+      //   iconBg: COLORS.dangerBg,
+      //   route: 'DeleteProfile',
+      //   isDanger: true,
+      // },
     ];
 
     if (type === 'staff') {
@@ -359,7 +359,7 @@ export default function ProfileScreen({ navigation }: Props) {
           'Induction',
           'Privacy Policy',
           'Log Out',
-          'Delete Profile',
+          // 'Delete Profile',
         ].includes(s.title),
       );
     }
@@ -371,7 +371,7 @@ export default function ProfileScreen({ navigation }: Props) {
           'Staff Management',
           'Privacy Policy',
           'Log Out',
-          'Delete Profile',
+          // 'Delete Profile',
         ].includes(s.title),
       );
     }
@@ -383,7 +383,7 @@ export default function ProfileScreen({ navigation }: Props) {
           'Bank Details',
           'Privacy Policy',
           'Log Out',
-          'Delete Profile',
+          // 'Delete Profile',
         ].includes(s.title),
       );
     }
@@ -426,7 +426,7 @@ export default function ProfileScreen({ navigation }: Props) {
       return;
     }
 
-    
+
     if (route === 'DeleteProfile') {
       navigation.navigate('DeleteProfileVerification');
       return;
@@ -591,7 +591,7 @@ export default function ProfileScreen({ navigation }: Props) {
             {/* Progress Bar */}
             <View style={styles.progressSection}>
               <View style={styles.progressLabelRow}>
-                <Text style={styles.progressLabel}>Profile completion</Text>
+                <Text style={styles.progressLabel}>Profile Completion</Text>
                 <Text style={styles.progressValue}>
                   {completionPercentage}%
                 </Text>

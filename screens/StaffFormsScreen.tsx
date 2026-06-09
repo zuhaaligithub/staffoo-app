@@ -3717,9 +3717,8 @@ const StaffFormsScreen = ({ navigation }: any) => {
     try {
       const token = await getToken();
       const headers = { Authorization: `Bearer ${token}` };
-
       if (activeStaffTab === 'tfn') {
-        await axios.post(`${BASE_URL}/api/tfn-declaration`, {
+        const tfnPayload = {
           user_id: userId,
           tfn: tfnNumber,
           title: tfnTitle,
@@ -3729,12 +3728,21 @@ const StaffFormsScreen = ({ navigation }: any) => {
           dob: tfnDobBackend,
           address: tfnAddress,
           basis_of_payment: basisOfPayment,
-          australian_resident: yesNoToBinary(australianResident),
-          claim_threshold: yesNoToBinary(claimTaxFree),
-          help_debt: yesNoToBinary(hasDebt),
+          australian_resident: australianResident,
+          claim_threshold: claimTaxFree,
+          help_debt: hasDebt,
           signature: signatureTfn,
           date: dateTfnBackend,
-        }, { headers });
+        };
+
+        console.log('📤 TFN PAYLOAD:', JSON.stringify(tfnPayload, null, 2));
+
+        await axios.post(
+          `${BASE_URL}/api/tfn-declaration`,
+          tfnPayload,
+          { headers }
+        );
+
         Toast.show({ type: 'success', text1: '✓ TFN saved successfully!' });
         await generateUploadAndOpenPdf('tfn');
       }

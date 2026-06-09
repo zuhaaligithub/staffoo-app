@@ -511,15 +511,15 @@ export default function CreateJobScreen() {
   const categoryOptions = [
     // { value: '', label: 'Select type' },
     {
-      label: 'Crowd Controller (Standard venue/event)',
+      label: 'Crowd Controller (Standard Venue/Event)',
       value: 'Crowd Controller (Standard venue/event)',
     },
     {
-      label: 'Static Security Guard (Gatehouse, warehouse, construction site)',
+      label: 'Static Security Guard (Gatehouse, Warehouse, Construction Site)',
       value: 'Static Security Guard (Gatehouse, warehouse, construction site)',
     },
     {
-      label: 'Patrol Guard (Foot or routine mobile patrol)',
+      label: 'Patrol Guard (Foot or Routine Mobile Patrol)',
       value: 'Patrol Guard (Foot or routine mobile patrol)',
     },
     {
@@ -1424,6 +1424,8 @@ export default function CreateJobScreen() {
     });
   };
 
+
+
   // Auto-calculate and highlight matching level when category changes
   useEffect(() => {
     if (!form.category) return;
@@ -1928,7 +1930,7 @@ export default function CreateJobScreen() {
             <View
               style={{ flexDirection: 'row', justifyContent: 'space-between' }}
             >
-              <Text style={{ color: TEXT_MUTED }}>Calculated Man-Hours</Text>
+              <Text style={{ color: TEXT_MUTED }}>Calculated Hours</Text>
               <Text style={{ color: '#FFF', fontWeight: '700' }}>
                 {totalManHours.toFixed(1)} hrs
               </Text>
@@ -2037,7 +2039,7 @@ export default function CreateJobScreen() {
           </View>
 
           <Text style={styles.inputLabel}>Required Documents</Text>
-          <View style={styles.toggleContainer}>
+          {/* <View style={styles.toggleContainer}>
             {documentOptions.slice(0, 3).map(doc => {
               const isActive = form.documents.includes(doc.value);
 
@@ -2077,6 +2079,59 @@ export default function CreateJobScreen() {
                       >
                         {isActive ? 'YES' : 'NO'}
                       </Text>
+                    </TouchableOpacity>
+                  </View>
+                </LinearGradient>
+              );
+            })}
+          </View> */}
+
+          <View style={styles.toggleContainer}>
+            {documentOptions.slice(0, 3).map(doc => {
+              const isActive = form.documents.includes(doc.value);
+
+              return (
+                <LinearGradient
+                  key={doc.value}
+                  colors={['rgba(255,255,255,0.25)', 'rgba(255,255,255,0.08)']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={styles.toggleCard}
+                >
+                  <View style={styles.toggleRow}>
+                    <Text style={styles.toggleLabel}>{doc.label}</Text>
+
+                    {/* SWITCH */}
+                    <TouchableOpacity
+                      activeOpacity={1}
+                      style={styles.toggleSwitch}
+                      onPress={() => toggleDocument(doc.value)}
+                    >
+                      {/* YES Side */}
+                      <View style={[
+                        styles.toggleOption,
+                        isActive && styles.toggleOptionActiveYes
+                      ]}>
+                        <Text style={[
+                          styles.toggleText,
+                          isActive && styles.toggleTextActive
+                        ]}>
+                          Yes
+                        </Text>
+                      </View>
+
+                      {/* NO Side */}
+                      <View style={[
+                        styles.toggleOption,
+                        !isActive && styles.toggleOptionActiveNo
+                      ]}>
+                        <Text style={[
+                          styles.toggleText,
+                          !isActive && styles.toggleTextActive
+                        ]}>
+                          No
+                        </Text>
+                      </View>
                     </TouchableOpacity>
                   </View>
                 </LinearGradient>
@@ -2124,7 +2179,7 @@ export default function CreateJobScreen() {
           {/* File Upload Framework */}
           <View style={styles.sectionCard}>
             <Text style={styles.inputLabel}>
-              Upload Supporting Documents / Floor Plans
+              Upload Documents
             </Text>
             <TouchableOpacity
               style={styles.uploadBoxFrame}
@@ -2399,6 +2454,7 @@ const styles = StyleSheet.create({
     flex: 1,
     //  backgroundColor: BRAND_BG
     backgroundColor: '#111111',
+    paddingTop: 25,
   },
   header: {
     height: 60,
@@ -2774,66 +2830,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 14,
   },
-  toggleContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-  },
-  toggleCard: {
-    width: '48%',
-    borderRadius: 14,
-    overflow: 'hidden',
-    marginBottom: 10,
-    borderWidth: 1,
-    borderColor: BORDER_COLOR,
-  },
-  toggleRow: {
-    padding: 13,
-    minHeight: 90,
-    justifyContent: 'space-between',
-    backgroundColor: CARD_BG, // Changed from dark rgba
-    borderRadius: 12,
-  },
-  toggleContent: {
-    gap: 6,
-  },
-  toggleLabel: {
-    fontSize: 13,
-    color: '#fff',
-    fontWeight: '700',
-    lineHeight: 20,
-  },
-  toggleSwitch: {
-    height: 36,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.12)',
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 6,
-    alignSelf: 'flex-start',
-    minWidth: 78,
-  },
-  toggleSwitchActive: {
-    backgroundColor: '#001F3F',
-  },
-  toggleKnob: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: 'rgba(255,255,255,0.5)',
-    marginRight: 8,
-  },
-  toggleKnobActive: {
-    backgroundColor: '#fff',
-  },
-  toggleText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: 'rgba(255,255,255,0.7)',
-  },
-  toggleTextActive: {
-    color: '#fff',
-  },
+
+
+
+
   shiftHeaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -2846,5 +2846,89 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '700',
     textTransform: 'uppercase',
+  },
+
+
+
+  toggleKnob: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#fff',
+    position: 'absolute',
+    left: 3,
+  },
+
+  toggleKnobActive: {
+    left: undefined,
+    right: 3, // THIS moves knob to right
+  },
+
+
+
+
+  toggleSwitch: {
+    width: 85,
+    height: 34,
+    borderRadius: 50,
+    backgroundColor: '#F4F5F7',
+    flexDirection: 'row',
+    alignItems: 'center',
+    // padding: 2,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    overflow: 'hidden', // <--- ADD THIS LINE
+  },
+  toggleOption: {
+    flex: 1,
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 0, // Matches the inner curvature 
+  },
+  toggleOptionActiveYes: {
+    backgroundColor: '#1A8754', // The green color from your image
+  },
+  toggleOptionActiveNo: {
+    backgroundColor: '#6B7280', // Dark gray for when "No" is selected
+  },
+  toggleText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#4B5563', // Dark text for the unselected option
+  },
+  toggleTextActive: {
+    color: '#FFFFFF', // White text for the selected option
+  },
+
+  // --- YOUR EXISTING STYLES ---
+  toggleContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+  },
+  toggleCard: {
+    width: '48%',
+    borderRadius: 14,
+    overflow: 'hidden',
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.2)', // Assuming a fallback for BORDER_COLOR
+  },
+  toggleRow: {
+    padding: 13,
+    minHeight: 90,
+    justifyContent: 'space-between',
+    backgroundColor: '#1E1E1E', // Assuming a fallback for CARD_BG
+    borderRadius: 12,
+  },
+  toggleContent: {
+    gap: 6,
+  },
+  toggleLabel: {
+    fontSize: 12,
+    color: '#fff',
+    fontWeight: '700',
+    lineHeight: 20,
   },
 });

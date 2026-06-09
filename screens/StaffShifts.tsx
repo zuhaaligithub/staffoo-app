@@ -183,20 +183,28 @@ export default function StaffShifts({ navigation, route }: any) {
 
   const formatDate = (val: any) => {
     if (!val) return '—';
-    const str = String(val).trim();
-    if (!str) return '—';
 
-    const [datePart] = str.split(' ');
-    if (!datePart) return str;
+    // remove time if exists
+    const clean = String(val).split('T')[0].split(' ')[0];
 
-    const parts = datePart.split('-');
-    if (parts.length === 3) {
-      const [y, m, d] = parts;
-      return `${d.padStart(2, '0')}-${m.padStart(2, '0')}-${y}`;
+    const parts = clean.includes('-')
+      ? clean.split('-')
+      : clean.split('/');
+
+    if (parts.length !== 3) return '—';
+
+    let [y, m, d] = parts;
+
+    // detect if already DD/MM/YYYY or YYYY/MM/DD
+    if (y.length === 4) {
+      // YYYY-MM-DD → convert to DD/MM/YYYY
+      return `${d.padStart(2, '0')}/${m.padStart(2, '0')}/${y}`;
+    } else {
+      // fallback for DD/MM/YYYY input
+      return `${y.padStart(2, '0')}/${m.padStart(2, '0')}/${d}`;
     }
-
-    return datePart || '—';
   };
+
 
   const formatTime = (val: any) => {
     if (!val) return '—';
@@ -439,8 +447,9 @@ export default function StaffShifts({ navigation, route }: any) {
             </View>
             <Text style={styles.rowText}>
               {formatDate(shift.start) ||
-                `${shift.job_start_day || '—'}-${shift.job_start_month || '—'
-                }-${shift.job_start_year || '—'}`}
+                `${String(shift.job_start_day || '—').padStart(2, '0')}/${String(
+                  shift.job_start_month || '—',
+                ).padStart(2, '0')}/${shift.job_start_year || '—'}`}
             </Text>
           </View>
 
@@ -677,7 +686,7 @@ export default function StaffShifts({ navigation, route }: any) {
 
           <View style={styles.infoRow}>
             <MapPin size={20} color="#EF4444" />
-            <Text style={styles.addressInSheet} numberOfLines={3}>
+            <Text style={styles.addressInSheet} numberOfLines={4}>
               {jobData?.site?.address ||
                 jobData?.address ||
                 'No address available'}
@@ -1092,7 +1101,7 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   infoText: {
-    fontSize: 14,
+    fontSize: 12,
     color: '#111',
     fontWeight: '500',
   },

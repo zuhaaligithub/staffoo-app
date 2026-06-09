@@ -3183,12 +3183,12 @@ Phone: [1800782366]`;
                   </Text>
                 </View>
                 <View style={styles.totalLine}>
-                  <Text style={styles.totalLabel}>GST (10%)</Text>
+                  <Text style={styles.totalGST}>GST (10%)</Text>
                   <Text style={styles.gstValue}>${gst.toFixed(2)}</Text>
                 </View>
                 <View style={styles.finalTotalLine}>
-                  <Text style={styles.finalTotalLabel}>Total Qutation</Text>
-                  <Text style={styles.finalTotalValue}>
+                  <Text style={styles.quoteTotal}>Quote Total</Text>
+                  <Text style={styles.quoteTotalvalue}>
                     ${totalIncGST.toFixed(2)}
                   </Text>
                 </View>
@@ -3197,7 +3197,7 @@ Phone: [1800782366]`;
                 {selectedPlan === 'full' && (
                   <View style={styles.totalLine}>
                     <Text style={styles.totalLabel}>
-                      5% Pay-in-Full Discount Applied
+                      5% Pay-in-Full Discount
                     </Text>
 
                     <Text style={{ color: '#16A34A', fontWeight: '700' }}>
@@ -3208,7 +3208,7 @@ Phone: [1800782366]`;
 
                 {selectedPlan === 'split' && (
                   <View style={styles.totalLine}>
-                    <Text style={styles.totalLabel}>Balance Remaining</Text>
+                    <Text style={styles.totalLabel}>Split Payment (50%)</Text>
                     <Text style={{ color: '#64748B', fontWeight: '600' }}>
                       ${splitUpfront.toFixed(2)}
                     </Text>
@@ -3310,7 +3310,7 @@ Phone: [1800782366]`;
                     selectedPlan === 'split' && styles.planNameSelected,
                   ]}
                 >
-                  50/50 Split
+                  Split Payment (50/50)
                 </Text>
               </View>
               <Text style={styles.planDesc}>
@@ -4176,6 +4176,19 @@ const styles = StyleSheet.create({
     color: '#CBD5E1',
     fontSize: 15,
   },
+  totalGST: {
+    color: '#CBD5E1',
+    fontSize: 15,
+  },
+  quoteTotal: {
+    color: '#CBD5E1',
+    fontSize: 17, fontWeight: '700',
+  },
+
+  quoteTotalvalue: {
+    color: '#CBD5E1',
+    fontSize: 17, fontWeight: '700',
+  },
 
   subtotalValue: {
     color: '#fff',
@@ -4183,7 +4196,7 @@ const styles = StyleSheet.create({
   },
 
   gstValue: {
-    color: '#89E7D0',
+    color: '#CBD5E1',
     fontWeight: '700',
   },
 

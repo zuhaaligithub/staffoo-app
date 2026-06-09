@@ -1485,7 +1485,7 @@ export default function DocumentsScreen({ navigation }: Props) {
             <Text style={[styles.cardDocName, { color: THEME.textMuted }]}>
               {item.label}
             </Text>
-            <Text style={{ color: '#ff6b6b', fontSize: 11, marginTop: 2 }}>Missing Required Document</Text>
+            <Text style={{ color: '#fff', fontSize: 11, marginTop: 2 }}>Add Required Document</Text>
           </View>
 
           {/* Top-right corner interactive Plus (+) Button */}

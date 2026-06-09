@@ -1067,6 +1067,14 @@ export default function ProfileSetupScreen({ navigation }: Props) {
             <Text style={styles.buttonText}>Save</Text>
           )}
         </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.deleteButton}
+          onPress={() => navigation.navigate('DeleteProfileVerification')}
+          activeOpacity={0.8}
+        >
+          <Text style={styles.deleteButtonText}>Delete Profile</Text>
+        </TouchableOpacity>
       </ScrollView>
 
       {showSuggestions && predictions.length > 0 && (
@@ -1137,6 +1145,8 @@ export default function ProfileSetupScreen({ navigation }: Props) {
                 <Text style={styles.cancelModalText}>Cancel</Text>
               </TouchableOpacity>
 
+
+
               <TouchableOpacity
                 style={[
                   styles.verifyModalBtn,
@@ -1151,6 +1161,9 @@ export default function ProfileSetupScreen({ navigation }: Props) {
                   <Text style={styles.verifyModalText}>Verify & Save</Text>
                 )}
               </TouchableOpacity>
+
+
+
             </View>
           </View>
         </View>
@@ -1220,7 +1233,22 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     height: 47,
   },
+  deleteButton: {
+    marginTop: 12,
+    marginBottom: 20,
+    height: 52,
+    borderWidth: 1,
+    borderColor: '#EF4444',
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
 
+  deleteButtonText: {
+    color: '#EF4444',
+    fontSize: 16,
+    fontWeight: '600',
+  },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',

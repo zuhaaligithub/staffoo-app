@@ -11,6 +11,7 @@ import {
   Platform,
   ActivityIndicator,
   Alert,
+  TextInput,
 } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -93,7 +94,7 @@ export default function WeeklyRosterScreen({ navigation }: any) {
   const [staffList, setStaffList] = useState<{ id: number; name: string }[]>(
     [],
   );
-
+  const [searchText, setSearchText] = useState('');
   const [selectedStaffId, setSelectedStaffId] = useState<number | null>(null);
   const [loadingStaff, setLoadingStaff] = useState(false);
   const [user, setUser] = useState<any>(null);
@@ -134,6 +135,20 @@ export default function WeeklyRosterScreen({ navigation }: any) {
       month: 'short',
     })} ${s.getFullYear()}`;
   }, [weekStart]);
+
+  const filteredShifts = useMemo(() => {
+    if (!searchText.trim()) return shifts;
+
+    const q = searchText.toLowerCase().trim();
+
+    return shifts.filter(item => {
+      return (
+        item.siteName?.toLowerCase().includes(q) ||
+        item.address?.toLowerCase().includes(q) ||
+        item.jobStatus?.toLowerCase().includes(q)
+      );
+    });
+  }, [searchText, shifts]);
 
   const generateShiftPDF = async (shift: Shift) => {
     if (generatingPDF) return;
@@ -474,8 +489,18 @@ export default function WeeklyRosterScreen({ navigation }: any) {
         <TouchableOpacity onPress={() => navigation?.goBack()}>
           <ChevronLeft size={22} color="#fff" />
         </TouchableOpacity>
-        <Text style={styles.screenTitle}>My Job Applications</Text>
+        <Text style={styles.screenTitle}>Job Applications</Text>
         <View style={{ width: 40 }} />
+      </View>
+
+      <View style={styles.searchContainer}>
+        <TextInput
+          placeholder="Search by site name or job status..."
+          placeholderTextColor="#94A3B8"
+          value={searchText}
+          onChangeText={setSearchText}
+          style={styles.searchInput}
+        />
       </View>
 
       {/* Week selector */}
@@ -526,7 +551,7 @@ export default function WeeklyRosterScreen({ navigation }: any) {
           </View>
         ) : (
           <View style={styles.cardList}>
-            {shifts.map(shift => {
+            {filteredShifts.map(shift => {
               const pill = getStatusPill(shift.jobStatus);
               const isConfirmed = shift.jobStatus === 'completed';
               return (
@@ -890,6 +915,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 2,
   },
+  searchContainer: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+  },
+
+  searchInput: {
+    backgroundColor: COLORS.card,
+    borderWidth: 1,
+    borderColor: COLORS.cardBorder,
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    color: COLORS.text,
+    fontSize: 14,
+  },
   downloadText: {
     color: COLORS.text,
     fontSize: 13,
@@ -1049,7 +1089,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   viewBtnText: {
-    color: COLORS.background, // Used background color so text pops against the primary button
+    color: '#ffff', // Used background color so text pops against the primary button
     fontSize: 12,
     fontWeight: '700',
   },
