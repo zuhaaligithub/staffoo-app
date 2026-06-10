@@ -4420,22 +4420,22 @@ const StaffFormsScreen = ({ navigation }: any) => {
             <SectionLabel>3. 100-Point Identification Check</SectionLabel>
             <View style={s.idTable}>
               <IdCheckRow
-                label="Primary ID (Passport / Birth Cert) - 70 Pts"
+                label="Birth Certificate, Passport, or Citizenship Certificate - 70 Points"
                 checked={idChecks.primary_id}
                 onPress={() => setIdChecks(p => ({ ...p, primary_id: !p.primary_id }))}
               />
               <IdCheckRow
-                label="Drivers License / Govt Photo ID - 40 Pts"
+                label="Driver Licence or Government Issued Photo ID - 40 Points"
                 checked={idChecks.drivers_license}
                 onPress={() => setIdChecks(p => ({ ...p, drivers_license: !p.drivers_license }))}
               />
               <IdCheckRow
-                label="Security License (Mandatory) - 40 Pts"
+                label="Security License (Mandatory) - 40 Points"
                 checked={idChecks.security_license}
                 onPress={() => setIdChecks(p => ({ ...p, security_license: !p.security_license }))}
               />
               <IdCheckRow
-                label="Medicare / Utility / Statement - 25 Pts"
+                label="Medicare Card, Utility Bill, or Bank Statement - 25 Points"
                 checked={idChecks.medicare_or_utility}
                 onPress={() => setIdChecks(p => ({ ...p, medicare_or_utility: !p.medicare_or_utility }))}
               />
@@ -4909,7 +4909,7 @@ const s = StyleSheet.create({
   yesNoTextOn: { color: BRAND },
   idTable: { borderWidth: 1, borderColor: 'rgba(137, 231, 208, 0.2)', borderRadius: 12, overflow: 'hidden', marginBottom: 16 },
   idRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 12, backgroundColor: BRAND_LIGHT, borderBottomWidth: 1, borderBottomColor: 'rgba(137, 231, 208, 0.1)' },
-  idRowText: { color: '#94A3B8', fontSize: 12 },
+  idRowText: { color: '#94A3B8', fontSize: 10 },
   idCheckCircle: { width: 18, height: 18, borderRadius: 4, borderWidth: 1, borderColor: '#475569', justifyContent: 'center', alignItems: 'center' },
   idCheckCircleOn: { backgroundColor: BRAND, borderColor: BRAND },
   sigModalHeader: { height: 56, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16 },

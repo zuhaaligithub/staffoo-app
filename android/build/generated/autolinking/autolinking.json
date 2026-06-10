@@ -565,7 +565,7 @@
       "platforms": {
         "ios": {
           "podspecPath": "C:\\stafoo-app\\staffoo-app\\node_modules\\react-native-onesignal\\react-native-onesignal.podspec",
-          "version": "5.4.7",
+          "version": "5.5.0",
           "configurations": [],
           "scriptPhases": []
         },
@@ -617,7 +617,7 @@
       "platforms": {
         "ios": {
           "podspecPath": "C:\\stafoo-app\\staffoo-app\\node_modules\\react-native-permissions\\RNPermissions.podspec",
-          "version": "5.5.2",
+          "version": "5.5.3",
           "configurations": [],
           "scriptPhases": []
         },

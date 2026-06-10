@@ -281,7 +281,7 @@ export default function ProfileScreen({ navigation }: Props) {
 
     const allSections = [
       {
-        title: 'Personal Info',
+        title: 'Personal Information',
         icon: <User size={20} color="#6590D9" />,
         iconBg: 'rgba(101,144,217,0.15)',
         route: 'ProfileSetup',
@@ -293,7 +293,7 @@ export default function ProfileScreen({ navigation }: Props) {
         route: 'Documents',
       },
       {
-        title: 'Staff Forms',
+        title: 'Verification Forms',
         icon: <FileText size={20} color="#6AA957" />,
         iconBg: 'rgba(106,169,87,0.15)',
         route: 'StaffForms',
@@ -353,9 +353,9 @@ export default function ProfileScreen({ navigation }: Props) {
     if (type === 'staff') {
       return allSections.filter(s =>
         [
-          'Personal Info',
+          'Personal Information',
           'Documents',
-          'Staff Forms',
+          'Verification Forms',
           'Induction',
           'Privacy Policy',
           'Log Out',
@@ -366,7 +366,7 @@ export default function ProfileScreen({ navigation }: Props) {
     if (type === 'contractor') {
       return allSections.filter(s =>
         [
-          'Personal Info',
+          'Personal Information',
           'Documents',
           'Staff Management',
           'Privacy Policy',
@@ -378,7 +378,7 @@ export default function ProfileScreen({ navigation }: Props) {
     if (type === 'customer') {
       return allSections.filter(s =>
         [
-          'Personal Info',
+          'Personal Information',
           'Payment History',
           'Bank Details',
           'Privacy Policy',

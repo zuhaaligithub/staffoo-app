@@ -31,12 +31,13 @@ import {
   Navigation,
   Edit2,
   ChevronDown,
+  Calendar,
 } from 'lucide-react-native';
 import { Image } from 'react-native';
 import { launchImageLibrary } from 'react-native-image-picker';
 import ImageResizer from 'react-native-image-resizer';
 import LinearGradient from 'react-native-linear-gradient';
-
+import DateTimePicker from '@react-native-community/datetimepicker';
 const GOOGLE_API_KEY = 'AIzaSyCS-DB39Kk-Z25C5GWymVGshXIALbjXPGY';
 const COLORS = {
   brand: '#0A7C6E',
@@ -70,6 +71,27 @@ export default function ProfileSetupScreen({ navigation }: Props) {
   const [residentialStatus, setResidentialStatus] = useState<string | null>(
     null,
   );
+
+  const australianToApiDate = (dateStr: string): string => {
+    if (!dateStr) return '';
+
+    const [day, month, year] = dateStr.split('/');
+
+    return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+  };
+  const formatToAustralian = (date: Date): string => {
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
+    return `${day}/${month}/${year}`;
+  };
+
+  const parseAustralianToDate = (dateStr: string): Date | null => {
+    if (!dateStr) return null;
+    const [day, month, year] = dateStr.split('/').map(Number);
+    const date = new Date(year, month - 1, day);
+    return isNaN(date.getTime()) ? null : date;
+  };
   const [securityLicenseNo, setSecurityLicenseNo] = useState('');
   const [scrollY, setScrollY] = useState(0);
   const [companyName, setCompanyName] = useState('');
@@ -99,7 +121,9 @@ export default function ProfileSetupScreen({ navigation }: Props) {
   // Custom Dropdown States
   const [showGenderModal, setShowGenderModal] = useState(false);
   const [showResidentialModal, setShowResidentialModal] = useState(false);
-
+  const [dateOfBirth, setDateOfBirth] = useState('');        // Now stores DD/MM/YYYY
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [tempDate, setTempDate] = useState(new Date());
   const genderOptions = [
     { label: 'Male', value: 'male' },
     { label: 'Female', value: 'female' },
@@ -350,6 +374,23 @@ export default function ProfileSetupScreen({ navigation }: Props) {
           setPhoneNumber(profile?.staff?.phone ?? '');
           setGender(profile?.staff?.gender ?? null);
           setResidentialStatus(profile?.staff?.staff_document_type ?? null);
+          // ✅ FIXED DATE LOADING
+          if (profile?.staff?.date_of_birth) {
+            let dob = profile.staff.date_of_birth.trim();
+
+            // Handle both YYYY-MM-DD and DD/MM/YYYY
+            if (dob.includes('-')) {
+              const [year, month, day] = dob.split('-').map(Number);
+              dob = `${String(day).padStart(2, '0')}/${String(month).padStart(2, '0')}/${year}`;
+            }
+
+            setDateOfBirth(dob);
+
+            const parsedDate = parseAustralianToDate(dob);
+            if (parsedDate) {
+              setTempDate(parsedDate);
+            }
+          }
           setSecurityLicenseNo(
             profile?.staff?.security_license_no ??
             // profile?.documents?.find(
@@ -487,11 +528,20 @@ export default function ProfileSetupScreen({ navigation }: Props) {
       //   Toast.show({ type: 'error', text1: 'Registration Number is required' });
       //   return false;
       // }
-    } else if (userType === 'staff') {
+    } if (userType === 'staff') {
+      if (!dateOfBirth.trim()) {
+        Toast.show({
+          type: 'error',
+          text1: 'Date of Birth is required',
+        });
+        return false;
+      }
+
       if (!gender) {
         Toast.show({ type: 'error', text1: 'Gender is required' });
         return false;
       }
+
       if (!residentialStatus) {
         Toast.show({ type: 'error', text1: 'Residential Status is required' });
         return false;
@@ -569,6 +619,7 @@ export default function ProfileSetupScreen({ navigation }: Props) {
         payload.abn = abn.trim(); // ← NEW
       } else if (userType === 'staff') {
         payload.gender = gender;
+        payload.date_of_birth = australianToApiDate(dateOfBirth);
         payload.staff_document_type = residentialStatus;
 
         // Sometimes backend expects address inside staff object
@@ -854,6 +905,47 @@ export default function ProfileSetupScreen({ navigation }: Props) {
                 <ChevronDown size={20} color="#fff" />
               </LinearGradient>
             </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.field}
+              onPress={() => setShowDatePicker(true)}
+            >
+              <Text style={styles.label}>
+                Date of Birth <Text style={styles.required}>*</Text>
+              </Text>
+              <LinearGradient
+                colors={['rgba(48, 47, 47, 0.92)', 'rgba(22, 20, 20, 0.92)']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.inputContainer}
+              >
+                <Calendar size={20} color="#fff" style={styles.inputIcon} />
+                <Text style={[
+                  styles.input,
+                  !dateOfBirth && { color: 'rgba(255,255,255,0.6)' }
+                ]}>
+                  {dateOfBirth || 'DD/MM/YYYY'}
+                </Text>
+              </LinearGradient>
+            </TouchableOpacity>
+
+            {/* Native Date Picker */}
+            {showDatePicker && (
+              <DateTimePicker
+                value={tempDate}
+                mode="date"
+                display="spinner"           // Use "calendar" on newer iOS if preferred
+                onChange={(event, selectedDate) => {
+                  setShowDatePicker(false);
+                  if (selectedDate) {
+                    setTempDate(selectedDate);
+                    const formatted = formatToAustralian(selectedDate);
+                    setDateOfBirth(formatted);
+                  }
+                }}
+                maximumDate={new Date()}     // Prevent future dates
+              />
+            )}
 
             <TouchableOpacity
               style={styles.field}

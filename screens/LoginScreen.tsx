@@ -630,63 +630,73 @@ export default function LoginScreen({ navigation }: Props) {
   };
 
   const handleGoogleLogin = async () => {
-    if (Platform.OS === 'ios') return;
-    // ... (your existing Google login logic remains unchanged)
     try {
       setLoading(true);
-      await GoogleSignin.hasPlayServices({
-        showPlayServicesUpdateDialog: true,
-      });
+      console.log('🚀 [GOOGLE] Starting Google Sign-In...');
+      await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
       await GoogleSignin.signOut().catch(() => { });
-
       const userInfo = await GoogleSignin.signIn();
       if (userInfo.type !== 'success' || !userInfo.data) {
         throw new Error('Google sign-in failed');
       }
-
       const tokens = await GoogleSignin.getTokens();
       const { accessToken } = tokens;
       if (!accessToken) throw new Error('No access token');
-
       const response = await fetch(`${BASE_URL}/auth/google/callback`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           Accept: 'application/json',
         },
-        body: JSON.stringify({ credential: accessToken }),
+        body: JSON.stringify({
+          credential: accessToken,
+        }),
       });
 
-      if (!response.ok) throw new Error(`Server error ${response.status}`);
-
+      if (!response.ok) {
+        throw new Error(`Server error ${response.status}`);
+      }
       const data = await response.json();
+      console.log('✅ Callback success:', data);
       const user = data.user;
       const token = data.token;
-
+      if (!user?.id || !token) {
+        throw new Error('Invalid response');
+      }
       await AsyncStorage.setItem('@auth_token', token);
       await AsyncStorage.setItem('user', JSON.stringify(user));
       await AsyncStorage.setItem('@user_id', String(user.id));
+      console.log('🧪 Saved user:', user);
+      console.log('🧪 Saved userId:', user.id);
+      try {
+        const playerId = await OneSignal.User.pushSubscription.getIdAsync();
 
-      const playerId = await OneSignal.User.pushSubscription.getIdAsync();
-      if (playerId) {
-        await sendNotificationTokenToServer(playerId, String(user.id));
-        OneSignal.login(String(user.id));
+        if (playerId) {
+          await sendNotificationTokenToServer(playerId, String(user.id));
+          OneSignal.login(String(user.id));
+        }
+      } catch (e) {
+        console.log('OneSignal error:', e);
       }
-
       Toast.show({
         type: 'success',
         text1: 'Login Successful',
         position: 'bottom',
       });
-
       setTimeout(() => {
-        navigation.reset({ index: 0, routes: [{ name: 'Profile' }] });
+        navigation.reset({
+          index: 0,
+          routes: [{ name: 'Profile' }],
+        });
       }, 500);
+
     } catch (error: any) {
+      console.error('❌ Google Login Error:', error);
       Toast.show({
         type: 'error',
         text1: 'Login Failed',
-        text2: error.message || 'Please try again',
+        text2: error.message,
+        position: 'bottom',
       });
     } finally {
       setLoading(false);
@@ -746,15 +756,23 @@ export default function LoginScreen({ navigation }: Props) {
   };
 
   const handleSignIn = async () => {
-    if (!email.trim())
-      return Toast.show({ type: 'error', text1: 'Email Required' });
-    if (!password.trim())
-      return Toast.show({ type: 'error', text1: 'Password Required' });
+    if (!email.trim()) {
+      Toast.show({ type: 'error', text1: 'Email Required', position: 'bottom' });
+      return;
+    }
+
+    if (!password.trim()) {
+      Toast.show({ type: 'error', text1: 'Password Required', position: 'bottom' });
+      return;
+    }
 
     setLoading(true);
+
     try {
       const netState = await NetInfo.fetch();
-      if (!netState.isConnected) throw new Error('No internet connection.');
+      if (!netState.isConnected) {
+        throw new Error('No internet connection. Please try again.');
+      }
 
       const response = await loginUser({
         email: email.trim(),
@@ -762,26 +780,47 @@ export default function LoginScreen({ navigation }: Props) {
       });
       const user = response;
       const token = response.token;
-
       await AsyncStorage.setItem('@auth_token', token);
       await AsyncStorage.setItem('@user_id', String(user.id));
-      await AsyncStorage.setItem('@user_type', user.user_type || 'staff');
+      const userTypeValue = user.user_type || 'staff';
+      await AsyncStorage.setItem('@user_type', userTypeValue);
       await AsyncStorage.setItem('user', JSON.stringify(user));
-
-      const playerId = await OneSignal.User.pushSubscription.getIdAsync();
-      if (playerId) {
-        await sendNotificationTokenToServer(playerId, String(user.id));
-        OneSignal.login(String(user.id));
+      const allKeys = await AsyncStorage.getAllKeys();
+      console.log('AsyncStorage keys after login:', allKeys);
+      console.log('✅ Login Success - Saved:');
+      console.log('   • User ID   :', user.id);
+      console.log('   • User Type :', userTypeValue);
+      console.log('   • Token     :', token ? 'Saved' : 'Missing');
+      try {
+        await new Promise(r => setTimeout(r, 1200));
+        const playerId = await OneSignal.User.pushSubscription.getIdAsync();
+        if (playerId) {
+          await sendNotificationTokenToServer(playerId, String(user.id));
+          OneSignal.login(String(user.id));
+        }
+      } catch (e) {
+        console.log('OneSignal error:', e);
       }
 
-      Toast.show({ type: 'success', text1: 'Login Successful' });
+      Toast.show({
+        type: 'success',
+        text1: 'Login Successful',
+        position: 'bottom',
+      });
 
-      setTimeout(() => redirectAfterLogin(user), 500);
+      setTimeout(() => {
+        navigation.reset({
+          index: 0,
+          routes: [{ name: 'Profile' }],
+        });
+      }, 500);
+
     } catch (err: any) {
       Toast.show({
         type: 'error',
         text1: 'Login Failed',
         text2: err.message || 'Please try again',
+        position: 'bottom',
       });
     } finally {
       setLoading(false);
@@ -889,7 +928,7 @@ export default function LoginScreen({ navigation }: Props) {
             )}
           </TouchableOpacity>
 
-          {/* {Platform.OS === 'android' && (
+          {Platform.OS === 'android' && (
             <TouchableOpacity
               style={styles.googleButton}
               onPress={handleGoogleLogin}
@@ -901,7 +940,7 @@ export default function LoginScreen({ navigation }: Props) {
               />
               <Text style={styles.googleText}>Continue with Google</Text>
             </TouchableOpacity>
-          )} */}
+          )}
 
           <View style={styles.signupRow}>
             <Text style={{ color: '#fff' }}>Don't have an account? </Text>

@@ -94,6 +94,9 @@ export default function HomeScreen({ navigation }: any) {
     return d;
   });
 
+  const capitalizeWords = (text: string = '') =>
+    text.replace(/\b\w/g, char => char.toUpperCase());
+
   const calculateTotalHours = (jobRoster: any[]) => {
     if (!jobRoster || jobRoster.length === 0) return 0;
 
@@ -428,8 +431,13 @@ export default function HomeScreen({ navigation }: any) {
                             </Text>
                           </View>
 
-                          <Text style={styles.guardName}>
+                          {/* <Text style={styles.guardName}>
                             {job.guards?.name || 'Unassigned'}
+                          </Text> */}
+                          <Text style={styles.guardName}>
+                            {job.guards?.name
+                              ? capitalizeWords(job.guards.name)
+                              : 'Unassigned'}
                           </Text>
 
                           <View

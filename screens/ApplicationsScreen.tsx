@@ -385,6 +385,8 @@ export default function WeeklyRosterScreen({ navigation }: any) {
     setSelectedShift(shift);
     setShowShiftModal(true);
   };
+  const capitalizeWords = (text: string = '') =>
+  text.replace(/\b\w/g, char => char.toUpperCase());
 
   const navigateShift = (dir: 'prev' | 'next') => {
     const next = dir === 'next' ? shiftIndex + 1 : shiftIndex - 1;
@@ -633,9 +635,9 @@ export default function WeeklyRosterScreen({ navigation }: any) {
                             color="#94a3b8"
                             style={{ marginRight: 4 }}
                           />
-                          <Text style={styles.guardName} numberOfLines={1}>
-                            {shift.guard}
-                          </Text>
+                         <Text style={styles.guardName} numberOfLines={1}>
+  {capitalizeWords(shift.guard)}
+</Text>
                         </View>
                         <TouchableOpacity
                           style={styles.viewBtn}
