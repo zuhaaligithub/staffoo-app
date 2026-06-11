@@ -36,6 +36,7 @@ export interface ProfileUpdatePayload {
   registration_number?: string;
   acn?: string; // ← Add this
   abn?: string;
+  date_of_birth?: string; // ← Add this
 }
 
 export const getAuthToken = async (): Promise<string | null> => {
@@ -225,63 +226,67 @@ export const updateUserProfile = async (
 
   const formData = new FormData();
 
-  // 🔹 Append normal fields
+  // ==================== BASIC FIELDS ====================
   if (payload.name) formData.append('name', payload.name);
   if (payload.phone) formData.append('phone', payload.phone);
   if (payload.email) formData.append('email', payload.email);
   if (payload.email_otp) formData.append('email_otp', payload.email_otp);
+
   if (payload.gender) formData.append('gender', payload.gender);
+
   if (payload.staff_document_type)
     formData.append('staff_document_type', payload.staff_document_type);
 
+  // ==================== 🔥 FIX: DATE OF BIRTH ====================
+  if (payload.date_of_birth) {
+    formData.append('date_of_birth', payload.date_of_birth);
+  }
+
+  // ==================== ADDRESS ====================
   if (payload.address) formData.append('address', payload.address);
   if (payload.city) formData.append('city', payload.city);
   if (payload.state) formData.append('state', payload.state);
   if (payload.country) formData.append('country', payload.country);
-  if (payload.coordinates) formData.append('coordinates', payload.coordinates);
+  if (payload.coordinates)
+    formData.append('coordinates', payload.coordinates);
 
-  // Contractor-specific fields
+  // ==================== CONTRACTOR ====================
   if (payload.company_name)
     formData.append('company_name', payload.company_name);
 
   if (payload.registration_number)
     formData.append('registration_number', payload.registration_number);
 
-  // 🔥 ACN and ABN (Newly Added)
   if (payload.acn) formData.append('acn', payload.acn);
   if (payload.abn) formData.append('abn', payload.abn);
 
-  // 🔥 Append profile image
+  // ==================== PROFILE IMAGE ====================
   if (payload.profile_image) {
     formData.append('profile_image', payload.profile_image);
   }
 
-  // ==================== IMPROVED LOGGING ====================
+  // ==================== LOGGING ====================
   console.log('[UPDATE PROFILE] Sending to:', endpoint);
-  console.log('[UPDATE PROFILE] Payload keys:', Object.keys(payload));
 
-  // Safe logging for FormData in React Native
-  console.log('[UPDATE PROFILE] FormData contents:');
-  // We can't reliably use forEach in RN, so we log what we know
-  const logData: Record<string, any> = {};
-  if (payload.name) logData.name = payload.name;
-  if (payload.phone) logData.phone = payload.phone;
-  if (payload.email) logData.email = payload.email;
-  if (payload.gender) logData.gender = payload.gender;
-  if (payload.staff_document_type)
-    logData.staff_document_type = payload.staff_document_type;
-  if (payload.company_name) logData.company_name = payload.company_name;
-  if (payload.registration_number)
-    logData.registration_number = payload.registration_number;
-  if (payload.acn) logData.acn = payload.acn;
-  if (payload.abn) logData.abn = payload.abn;
-  if (payload.address) logData.address = payload.address;
-  if (payload.city) logData.city = payload.city;
-  if (payload.state) logData.state = payload.state;
-  if (payload.country) logData.country = payload.country;
-  if (payload.coordinates) logData.coordinates = payload.coordinates;
+  const logData: Record<string, any> = {
+    name: payload.name,
+    phone: payload.phone,
+    email: payload.email,
+    gender: payload.gender,
+    staff_document_type: payload.staff_document_type,
+    date_of_birth: payload.date_of_birth, // 🔥 ADD THIS
+    company_name: payload.company_name,
+    registration_number: payload.registration_number,
+    acn: payload.acn,
+    abn: payload.abn,
+    address: payload.address,
+    city: payload.city,
+    state: payload.state,
+    country: payload.country,
+    coordinates: payload.coordinates,
+  };
 
-  console.log(logData);
+  console.log('[UPDATE PROFILE] FormData contents:', logData);
 
   try {
     const response = await axios.post(endpoint, formData, {

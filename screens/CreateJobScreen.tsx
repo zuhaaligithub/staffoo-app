@@ -496,8 +496,8 @@ export default function CreateJobScreen() {
   const [errors, setErrors] = useState<FormErrors>({});
 
   const documentOptions = [
-    { label: 'MISC Time License', value: 'misc_time_license' },
-    { label: 'Working With Children', value: 'working_with_children' },
+    { label: 'White Card Required?', value: 'white_card' },
+    { label: 'Working With Children Check?', value: 'working_with_children' },
   ];
 
   // const categoryOptions = [
@@ -2926,7 +2926,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   toggleLabel: {
-    fontSize: 12,
+    fontSize: 10,
     color: '#fff',
     fontWeight: '700',
     lineHeight: 20,

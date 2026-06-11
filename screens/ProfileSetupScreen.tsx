@@ -592,58 +592,58 @@ export default function ProfileSetupScreen({ navigation }: Props) {
         name: fullName.trim(),
         phone: phoneNumber.trim(),
         email: gmail.trim().toLowerCase(),
-        // Keep address at root level (most common)
         address: address.trim(),
         city: city.trim(),
         state: stateValue.trim(),
         country: country.trim(),
-        coordinates: coordinates ? `${coordinates.lat},${coordinates.lng}` : '',
+        coordinates: coordinates
+          ? `${coordinates.lat},${coordinates.lng}`
+          : '',
       };
-      console.log('🔥 FINAL PROFILE PAYLOAD:', payload);
 
-      if (userType === 'staff') {
-        console.log(
-          '🔐 Security License Included:',
-          payload.security_license_no || payload.staff?.security_license_no || securityLicenseNo
-        );
+      // ✅ FIXED: DOB only added if valid
+      if (userType === 'staff' && dateOfBirth?.trim()) {
+        const dobApi = australianToApiDate(dateOfBirth);
+        if (dobApi) {
+          payload.date_of_birth = dobApi;
+        }
       }
+
+      // Profile image
       if (imageFile) {
         payload.profile_image = imageFile;
       }
 
-      // Add user-type specific fields
+      // Contractor fields
       if (userType === 'contractor') {
         payload.company_name = companyName.trim();
         payload.registration_number = registrationNumber.trim();
-        payload.acn = acn.trim(); // ← NEW
-        payload.abn = abn.trim(); // ← NEW
-      } else if (userType === 'staff') {
-        payload.gender = gender;
-        payload.date_of_birth = australianToApiDate(dateOfBirth);
-        payload.staff_document_type = residentialStatus;
-
-        // Sometimes backend expects address inside staff object
-        // Uncomment below if root level address is ignored
-        // payload.staff = {
-        //   address: address.trim(),
-        //   city: city.trim(),
-        //   state: stateValue.trim(),
-        //   country: country.trim(),
-        // };
-      } else if (userType === 'customer') {
-        // Same for customer if needed
-        // payload.customer = { address: address.trim(), ... };
+        payload.acn = acn.trim();
+        payload.abn = abn.trim();
       }
+
+      // Staff fields
+      else if (userType === 'staff') {
+        payload.gender = gender;
+        payload.staff_document_type = residentialStatus;
+      }
+
+      console.log('🔥 FINAL PROFILE PAYLOAD:', payload);
 
       await updateUserProfile(userId, payload);
 
+      // Email OTP flow
       if (emailChanged && userType === 'customer') {
         setOtpModalVisible(true);
         setLoading(false);
         return;
       }
 
-      Toast.show({ type: 'success', text1: 'Profile Updated Successfully' });
+      Toast.show({
+        type: 'success',
+        text1: 'Profile Updated Successfully',
+      });
+
       setOriginalGmail(gmail.trim().toLowerCase());
       navigation.navigate('Profile');
     } catch (err: any) {
@@ -654,7 +654,11 @@ export default function ProfileSetupScreen({ navigation }: Props) {
         err?.response?.data?.message ||
         'Failed to update profile';
 
-      Toast.show({ type: 'error', text1: errorMsg, position: 'bottom' });
+      Toast.show({
+        type: 'error',
+        text1: errorMsg,
+        position: 'bottom',
+      });
     } finally {
       setLoading(false);
     }

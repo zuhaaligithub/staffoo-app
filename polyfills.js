@@ -12,8 +12,3 @@ if (typeof global.process === 'undefined') {
   global.process.version = 'v16.0.0'; // Fake version for compatibility
 }
 
-// Crypto polyfill if needed
-if (!global.crypto) {
-  const crypto = require('react-native-crypto');
-  global.crypto = crypto;
-}

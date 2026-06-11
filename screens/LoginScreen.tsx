@@ -928,6 +928,12 @@ export default function LoginScreen({ navigation }: Props) {
             )}
           </TouchableOpacity>
 
+          <View style={styles.orContainer}>
+            <View style={styles.orLine} />
+            <Text style={styles.orText}>OR</Text>
+            <View style={styles.orLine} />
+          </View>
+
           {Platform.OS === 'android' && (
             <TouchableOpacity
               style={styles.googleButton}
@@ -1000,6 +1006,24 @@ const styles = StyleSheet.create({
     borderColor: COLORS.primary,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  orContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 20,
+  },
+
+  orLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: '#888',
+  },
+
+  orText: {
+    marginHorizontal: 10,
+    color: '#ccc',
+    fontSize: 14,
+    fontWeight: '500',
   },
   checkboxChecked: {
     backgroundColor: COLORS.primary,
