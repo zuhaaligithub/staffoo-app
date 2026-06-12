@@ -2773,6 +2773,7 @@ const StaffFormsScreen = ({ navigation }: any) => {
           }
           if (profile.email) setOnboardEmail(profile.email);
           if (profile.phone) setOnboardMobile(profile.phone);
+
           if (profile.address) {
             setOnboardAddress(profile.address);
             setTfnAddress(profile.address);
@@ -4306,14 +4307,17 @@ const StaffFormsScreen = ({ navigation }: any) => {
         {activeStaffTab === 'onboarding' && (
           <View style={s.card}>
             <SectionLabel>1. Contact Info</SectionLabel>
-            <Field label="Full Name (As per ID)">
-              <StyledInput
-                value={onboardFullName}
-                onChangeText={setOnboardFullName}
-                placeholder="Full Name"
-              />
-            </Field>
+
             <View style={s.row2}>
+              <View style={{ flex: 1 }}>
+                <Field label="Full Name (As per ID)">
+                  <StyledInput
+                    value={onboardFullName}
+                    onChangeText={setOnboardFullName}
+                    placeholder="Full Name"
+                  />
+                </Field>
+              </View>
               <View style={{ flex: 1 }}>
                 <Field label="Mobile Number">
                   <StyledInput
@@ -4323,7 +4327,9 @@ const StaffFormsScreen = ({ navigation }: any) => {
                     keyboardType="phone-pad"
                   />
                 </Field>
-              </View>
+              </View></View>
+            <View style={s.row2}>
+
               <View style={{ flex: 1 }}>
                 <Field label="Email Address">
                   <StyledInput
@@ -4394,13 +4400,13 @@ const StaffFormsScreen = ({ navigation }: any) => {
               onView={() => openDocument(passportDoc)}
               onClear={() => { setPassportDoc(''); setPassportDocName(''); }}
             />
-            <Field label="Work Rights Status">
+            <Field label="Work Rights In Australia">
               <RadioGroup
                 options={[
-                  { label: 'Australian Citizen / PR', value: 'citizen' },
-                  { label: 'Student Visa (24h Cap)', value: 'student' },
+                  { label: 'Australian Citizen / Permanent Resident', value: 'citizen' },
+                  { label: 'Student Visa', value: 'student' },
                   { label: 'Temporary Visa Holder', value: 'temporary' },
-                  { label: 'Other Visa Holder', value: 'other' },
+                  { label: 'Other Visa (please specify)', value: 'other' },
                 ]}
                 value={workRights}
                 onChange={setWorkRights}
@@ -4408,11 +4414,11 @@ const StaffFormsScreen = ({ navigation }: any) => {
             </Field>
 
             {workRights === 'other' && (
-              <Field label="Please specify your visa type">
+              <Field label="Visa Type">
                 <StyledInput
                   value={otherVisaType}
                   onChangeText={setOtherVisaType}
-                  placeholder="e.g. Working Holiday Visa (Subclass 417)"
+                  placeholder="Specify your visa type"
                 />
               </Field>
             )}

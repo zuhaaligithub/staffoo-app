@@ -48,9 +48,9 @@ const COLORS = {
   success: '#89E7D0',
   error: '#EF4444',
 
-  background: '#0B1220',
+  background: '#171d30',
   surface: '#121722',
-  surfaceLight: '#16213A',
+  surfaceLight: '#171d30',
 
   textPrimary: '#E5E7EB',
   textSecondary: '#94A3B8',
@@ -127,6 +127,7 @@ export default function ProfileSetupScreen({ navigation }: Props) {
   const genderOptions = [
     { label: 'Male', value: 'male' },
     { label: 'Female', value: 'female' },
+    { label: 'Prefer Not To Say', value: 'other' },
   ];
 
   const residentialOptions = [
@@ -747,7 +748,7 @@ export default function ProfileSetupScreen({ navigation }: Props) {
           )}
 
           <View style={styles.editIcon}>
-            <Edit2 size={16} color="#04103b" />
+            <Edit2 size={16} color="#fff" />
           </View>
         </TouchableOpacity>
 
@@ -789,9 +790,7 @@ export default function ProfileSetupScreen({ navigation }: Props) {
 
           <LinearGradient
             colors={[
-              'rgba(48, 47, 47, 0.92)',
-              'rgba(22, 20, 20, 0.92)',
-              // 'rgba(255,255,255,0.35)',
+              '#171d30', '#171d30'
             ]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
@@ -888,7 +887,7 @@ export default function ProfileSetupScreen({ navigation }: Props) {
               </Text>
 
               <LinearGradient
-                colors={['rgba(48, 47, 47, 0.92)', 'rgba(22, 20, 20, 0.92)',]}
+                colors={['#171d30', '#171d30']}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
                 style={styles.inputContainer}
@@ -918,7 +917,7 @@ export default function ProfileSetupScreen({ navigation }: Props) {
                 Date of Birth <Text style={styles.required}>*</Text>
               </Text>
               <LinearGradient
-                colors={['rgba(48, 47, 47, 0.92)', 'rgba(22, 20, 20, 0.92)']}
+                colors={['#171d30', '#171d30']}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
                 style={styles.inputContainer}
@@ -961,9 +960,7 @@ export default function ProfileSetupScreen({ navigation }: Props) {
 
               <LinearGradient
                 colors={[
-                  'rgba(255,255,255,0.18)',
-                  'rgba(255,255,255,0.10)',
-                  'rgba(255,255,255,0.05)',
+                  '#171d30', '#171d30'
                 ]}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
@@ -1073,7 +1070,7 @@ export default function ProfileSetupScreen({ navigation }: Props) {
           </Text>
 
           <LinearGradient
-            colors={['rgba(48, 47, 47, 0.92)', 'rgba(22, 20, 20, 0.92)',]}
+            colors={['#171d30', '#171d30']}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={styles.inputContainer}
@@ -1182,7 +1179,7 @@ export default function ProfileSetupScreen({ navigation }: Props) {
             styles.suggestionsList,
             {
               position: 'absolute',
-              top: addressLayout.y - scrollY + addressLayout.height + 70,
+              top: addressLayout.y - scrollY + addressLayout.height + 30,
               left: 24,
               right: 24,
               zIndex: 9999,
@@ -1282,7 +1279,7 @@ const InputField = ({
     <Text style={styles.label}>{label}</Text>
 
     <LinearGradient
-      colors={['rgba(48, 47, 47, 0.92)', 'rgba(22, 20, 20, 0.92)',]}
+      colors={['#171d30', '#171d30']}
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}
       style={styles.inputContainer}
@@ -1314,8 +1311,8 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.brandDark,
-    width: '100%',
-    paddingTop: Platform.OS === 'android' ? 20 : 0,
+    // width: '100%',
+    paddingTop: 25,
   },
 
   scrollContent: {
@@ -1349,12 +1346,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 15,
     paddingVertical: 14,
     // backgroundColor: COLORS.surface,
-    marginHorizontal: 20,
+    marginHorizontal: 5,
     borderRadius: 16,
-    marginBottom: 10,
+    marginBottom: 7,
     // borderWidth: 1,
     // borderColor: COLORS.border,
   },
@@ -1366,7 +1362,7 @@ const styles = StyleSheet.create({
   },
 
   headerTitle: {
-    fontSize: 20,
+    fontSize: 15,
     fontWeight: '700',
     color: COLORS.textPrimary,
   },
@@ -1423,11 +1419,11 @@ const styles = StyleSheet.create({
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderRadius: 12,
+    borderRadius: 50,
     borderWidth: 1,
     // borderColor: COLORS.border,
     borderColor: '#5d5c5ccc',
-    height: 47,
+    height: 42,
   },
 
   inputIcon: {
@@ -1437,7 +1433,7 @@ const styles = StyleSheet.create({
 
   input: {
     flex: 1,
-    fontSize: 15,
+    fontSize: 14,
     color: COLORS.textPrimary,
   },
 
@@ -1469,11 +1465,11 @@ const styles = StyleSheet.create({
     top: 50,
     left: 24,
     right: 24,
-    maxHeight: 340,
+    maxHeight: 300,
     backgroundColor: COLORS.surface,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: '#cccccc',
     // zIndex: 1000,
   },
 

@@ -1423,10 +1423,13 @@ const ALLOWED_FILE_TYPES = [
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
 ];
 
+// STRICT: ONLY these exact document names will show the verify button
+const VERIFIABLE_DOCUMENT_NAMES = ['visa', 'security license'];
+
 // Document types that staff must have
 const REQUIRED_DOC_TYPES = [
   { label: 'Security License', value: 'Security License', category: 'contractor_staff' },
-  { label: 'Working with Children', value: 'Working with Children', category: 'contractor_staff' },
+  { label: 'Working With Children', value: 'Working with Children', category: 'contractor_staff' },
   { label: 'White Card', value: 'White Card', category: 'contractor_staff' },
   { label: 'First Aid Certificate', value: 'First Aid Certificate', category: 'contractor_staff' },
   { label: 'Police Check', value: 'Police Check', category: 'contractor_staff' },
@@ -1508,6 +1511,18 @@ const formatDisplayDate = (dateStr?: string): string => {
   if (!dateStr) return '—';
   const [year, month, day] = dateStr.split('-');
   return `${day}/${month}/${year}`;
+};
+
+// STRICT CHECK: ONLY returns true for documents named "Visa" or "Security License"
+const isVerifiableDocType = (opts: {
+  label?: string | null;
+  value?: string | null;
+  category?: string | null;
+}): boolean => {
+  const docName = (opts.label || opts.value || '').toLowerCase().trim();
+  return VERIFIABLE_DOCUMENT_NAMES.some(keyword =>
+    docName === keyword || docName.includes(keyword)
+  );
 };
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
@@ -1611,6 +1626,21 @@ export default function StaffManagement({ navigation }: Props) {
   const [fileError, setFileError] = useState('');
   const [docNumberError, setDocNumberError] = useState('');
   const [expiryError, setExpiryError] = useState('');
+
+  // ── Online verification (Visa / Security License) ──────────────────────────
+  const [verifying, setVerifying] = useState(false);
+  const [isVerified, setIsVerified] = useState(false);
+
+  // STRICT: ONLY Visa and Security License documents need online verification
+  const needsVerification = selectedDocType
+    ? isVerifiableDocType(selectedDocType)
+    : false;
+
+  // Once a visa / security-license document has been verified, its expiry
+  // date came straight from the verification response — lock the field so
+  // it can't be hand-edited (applies both when adding fresh and when
+  // re-opening an already-verified document for update).
+  const isExpiryLocked = needsVerification && isVerified;
 
   useEffect(() => { getStaff(); }, []);
 
@@ -1794,10 +1824,22 @@ export default function StaffManagement({ navigation }: Props) {
       setResidentialStatusSaved(true);
       setEditErrors({});
       getStaff();
-      Alert.alert('Success', 'Staff updated. You can now manage their documents.', [
-        { text: 'Go to Documents', onPress: () => setActiveModalTab('documents') },
-        { text: 'OK' },
-      ]);
+      Alert.alert(
+        'Success',
+        'Staff updated. You can now manage their documents.',
+        [
+          {
+            text: 'Go to Documents',
+            onPress: () => setActiveModalTab('documents'),
+          },
+          {
+            text: 'OK',
+            onPress: () => {
+              setShowEditModal(false); // 👈 CLOSE MODAL
+            },
+          },
+        ]
+      );
     } catch (e: any) {
       Alert.alert('Error', e?.response?.data?.message || 'Failed to update staff.');
     } finally { setEditLoading(false); }
@@ -1904,11 +1946,13 @@ export default function StaffManagement({ navigation }: Props) {
     setDocumentNumber(''); setExpirationDate(null);
     setShowInlineCalendar(false); setCurrentCalendarMonth(new Date());
     setFileError(''); setDocNumberError(''); setExpiryError('');
+    setVerifying(false); setIsVerified(false);
   };
 
   const openDocModal = (docType: { label: string; value: string; category: string }, existingDoc?: StaffDocument) => {
     resetDocForm();
     setSelectedDocType(docType);
+
     if (existingDoc && existingDoc.id !== -1) {
       setDocumentNumber(existingDoc.document_no || '');
       if (existingDoc.document_expiry) {
@@ -1918,7 +1962,25 @@ export default function StaffManagement({ navigation }: Props) {
         setCurrentCalendarMonth(parsed);
       }
       if (existingDoc.file) setUploadedFilePath(existingDoc.file);
+
+      if (!isVerifiableDocType(docType)) {
+        // Non visa / security-license documents don't go through online
+        // verification, so treat them as already "verified" so Save works.
+        setIsVerified(true);
+      } else if (existingDoc.document_no && existingDoc.document_expiry) {
+        // This is a Visa / Security License document that was previously
+        // verified online (it already has a saved number + expiry date).
+        // Treat it as verified so the expiry stays locked (non-editable)
+        // and Save doesn't demand a fresh verification.
+        setIsVerified(true);
+      }
+    } else {
+      // Brand-new document: only auto-mark non-verifiable docs as verified.
+      if (!isVerifiableDocType(docType)) {
+        setIsVerified(true);
+      }
     }
+
     setDocModalVisible(true);
   };
 
@@ -1944,12 +2006,116 @@ export default function StaffManagement({ navigation }: Props) {
     } finally { setUploading(false); }
   };
 
+  // ─── Online document verification (Visa / Security License) ───────────────
+
+  const handleVerifyDocument = async () => {
+    if (!selectedDocType) {
+      Toast.show({ type: 'error', text1: 'Please select document type', position: 'bottom' });
+      return;
+    }
+
+    if (!documentNumber.trim()) {
+      setDocNumberError('Please enter document number');
+      Toast.show({ type: 'error', text1: 'Please enter document number', position: 'bottom' });
+      return;
+    }
+
+    try {
+      setVerifying(true);
+      setExpiryError('');
+      const token = await AsyncStorage.getItem('@auth_token');
+
+      const payload = {
+        document_type: selectedDocType.label,
+        license_number: documentNumber.trim(),
+        user_id: Number(currentStaffUserId),
+      };
+
+      const response = await axios.post(
+        `${BASE_URL}/documents-online-verification`,
+        payload,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      const data = response?.data;
+      const expiryDate =
+        data?.expiry_date ||
+        data?.document_expiry ||
+        data?.expiry ||
+        data?.data?.expiry_date ||
+        data?.data?.document_expiry ||
+        data?.data?.expiry;
+
+      if (expiryDate) {
+        const dateObj = new Date(expiryDate);
+
+        if (!isNaN(dateObj.getTime())) {
+          setExpirationDate(dateObj);
+          setCurrentCalendarMonth(dateObj);
+
+          // IMPORTANT: lock everything after verification
+          setIsVerified(true);
+          setShowInlineCalendar(false);
+          setExpiryError('');
+
+          Toast.show({
+            type: 'success',
+            text1: data?.message || 'Document verified successfully',
+            position: 'bottom',
+          });
+
+          return;
+        }
+      }
+
+      setIsVerified(false);
+      setExpirationDate(null);
+      setExpiryError('Could not process expiration date from verification');
+      Toast.show({
+        type: 'error',
+        text1: 'Verification failed to parse expiry date',
+        position: 'bottom',
+      });
+
+    } catch (error: any) {
+      setIsVerified(false);
+      setExpirationDate(null);
+      Toast.show({
+        type: 'error',
+        text1: error?.response?.data?.message || 'Document verification failed',
+        position: 'bottom',
+      });
+    } finally {
+      setVerifying(false);
+    }
+  };
+
   const handleSaveDoc = async () => {
     let hasError = false;
     setFileError(''); setDocNumberError(''); setExpiryError('');
     if (!selectedFile && !uploadedFilePath) { setFileError('Please upload a file'); hasError = true; }
     if (!documentNumber.trim()) { setDocNumberError('Please enter document number'); hasError = true; }
-    if (!expirationDate) { setExpiryError('Please select expiration date'); hasError = true; }
+
+    if (needsVerification) {
+      // ONLY Visa & Security License must be verified online first.
+      if (!isVerified || !expirationDate) {
+        Toast.show({
+          type: 'error',
+          text1: 'Please verify document first',
+          position: 'bottom',
+        });
+        return;
+      }
+    } else if (!expirationDate) {
+      setExpiryError('Please select expiration date');
+      hasError = true;
+    }
+
     if (hasError) return;
 
     setSaving(true);
@@ -2099,11 +2265,11 @@ export default function StaffManagement({ navigation }: Props) {
         <View style={docStyles.divider} />
 
         <View style={docStyles.infoRow}>
-          <Text style={docStyles.infoLabel}>Document No</Text>
+          <Text style={docStyles.infoLabel}>Document Number</Text>
           <Text style={docStyles.infoValue}>{item.document_no || '—'}</Text>
         </View>
         <View style={docStyles.infoRow}>
-          <Text style={docStyles.infoLabel}>Expiry Date</Text>
+          <Text style={docStyles.infoLabel}>Expiration Date</Text>
           <Text style={[
             docStyles.infoValue,
             status === 'expired' && { color: '#ff6b6b' },
@@ -2359,7 +2525,7 @@ export default function StaffManagement({ navigation }: Props) {
             <View style={styles.modalHeaderRow}>
               <View style={styles.headerTabs}>
                 <View style={[styles.tab, styles.tabActive]}>
-                  <Text style={[styles.tabText, styles.tabTextActive]}>Personal Info</Text>
+                  <Text style={[styles.tabText, styles.tabTextActive]}>Personal Information</Text>
                 </View>
               </View>
               <TouchableOpacity onPress={() => setShowAddModal(false)} style={styles.closeBtn}>
@@ -2390,7 +2556,7 @@ export default function StaffManagement({ navigation }: Props) {
                 <TouchableOpacity
                   style={[styles.tab, activeModalTab === 'personal' && styles.tabActive]}
                   onPress={() => setActiveModalTab('personal')}>
-                  <Text style={[styles.tabText, activeModalTab === 'personal' && styles.tabTextActive]}>Personal Info</Text>
+                  <Text style={[styles.tabText, activeModalTab === 'personal' && styles.tabTextActive]}>Personal Information</Text>
                 </TouchableOpacity>
                 {residentialStatusSaved && (
                   <TouchableOpacity
@@ -2401,14 +2567,14 @@ export default function StaffManagement({ navigation }: Props) {
                     </Text>
                   </TouchableOpacity>
                 )}
-                <TouchableOpacity
+                {/* <TouchableOpacity
                   style={[styles.tab, activeModalTab === 'onboarding' && styles.tabActive]}
                   onPress={() => {
                     setShowEditModal(false);
                     navigation.navigate('StaffForms');
                   }}>
                   <Text style={[styles.tabText, activeModalTab === 'onboarding' && styles.tabTextActive]}>Onboarding</Text>
-                </TouchableOpacity>
+                </TouchableOpacity> */}
               </View>
               <TouchableOpacity onPress={() => setShowEditModal(false)} style={styles.closeBtn}>
                 <X size={20} color={COLORS.textSecondary} />
@@ -2472,18 +2638,101 @@ export default function StaffManagement({ navigation }: Props) {
               </View>
               <Text style={docStyles.inputHelpText}>Locked to selected document type.</Text>
 
-              {/* Expiry date */}
-              <Text style={[docStyles.fieldLabel, { marginTop: 18 }]}>EXPIRATION DATE *</Text>
-              <TouchableOpacity style={docStyles.dateButton}
-                onPress={() => setShowInlineCalendar(!showInlineCalendar)}>
-                <Text style={docStyles.dateText}>
-                  {expirationDate ? expirationDate.toLocaleDateString('en-GB') : 'Select Date'}
+              {/* Document number */}
+              <Text style={[docStyles.fieldLabel, { marginTop: 18 }]}>DOCUMENT NUMBER *</Text>
+
+              {/* STRICT: Show verify button ONLY for Visa and Security License documents */}
+              {needsVerification ? (
+                <View style={{ flexDirection: 'row' }}>
+                  <TextInput
+                    style={[
+                      docStyles.inputBox,
+                      {
+                        flex: 1,
+                        borderTopRightRadius: 0,
+                        borderBottomRightRadius: 0,
+                      },
+                    ]}
+                    placeholder="Enter document number"
+                    placeholderTextColor={COLORS.textMuted}
+                    value={documentNumber}
+                    maxLength={DOC_NO_MAX}
+                    autoCapitalize="characters"
+                    onChangeText={t => {
+                      const formatted = t.toUpperCase();
+                      setDocumentNumber(formatted);
+                      if (formatted.trim()) setDocNumberError('');
+                      // Any change to the number invalidates a previous
+                      // verification — must re-verify before saving.
+                      setIsVerified(false);
+                      setExpirationDate(null);
+                      setExpiryError('');
+                    }}
+                  />
+                  <TouchableOpacity
+                    style={docStyles.verifyButton}
+                    disabled={verifying}
+                    onPress={handleVerifyDocument}
+                  >
+                    {verifying
+                      ? <ActivityIndicator color={COLORS.primary} />
+                      : <Text style={docStyles.verifyButtonText}>Verify</Text>
+                    }
+                  </TouchableOpacity>
+                </View>
+              ) : (
+                <TextInput
+                  style={docStyles.inputBox}
+                  placeholder="Enter document number"
+                  placeholderTextColor={COLORS.textMuted}
+                  value={documentNumber}
+                  maxLength={DOC_NO_MAX}
+                  onChangeText={t => { setDocumentNumber(t); if (t.trim()) setDocNumberError(''); }}
+                />
+              )}
+              {docNumberError ? <Text style={docStyles.errorText}>{docNumberError}</Text> : null}
+
+              {/* Helper text — only while a verifiable doc isn't verified yet */}
+              {needsVerification && !isVerified && (
+                <Text style={docStyles.inputHelpText}>
+                  Tap "Verify" to validate this document and auto-fill its expiry date.
                 </Text>
-                <CalendarIcon size={20} color={COLORS.primary} />
+              )}
+
+              {/* Expiry date — locked once auto-filled by verification */}
+              <Text style={[docStyles.fieldLabel, { marginTop: 18 }]}>EXPIRATION DATE *</Text>
+              <TouchableOpacity
+                style={[
+                  docStyles.dateButton,
+                  isExpiryLocked && docStyles.dateButtonDisabled,
+                ]}
+                activeOpacity={isExpiryLocked ? 1 : 0.8}
+                disabled={isExpiryLocked}
+                onPress={() => {
+                  if (!isExpiryLocked) setShowInlineCalendar(!showInlineCalendar);
+                }}
+              >
+                <Text style={[docStyles.dateText, { color: expirationDate ? '#fff' : COLORS.textMuted }]}>
+                  {expirationDate
+                    ? expirationDate.toLocaleDateString('en-GB')
+                    : needsVerification
+                      ? 'Verify document to auto-fill expiry date'
+                      : 'Select Date'}
+                </Text>
+                {isExpiryLocked ? (
+                  <Lock size={16} color={COLORS.textMuted} />
+                ) : (
+                  <CalendarIcon size={20} color={COLORS.primary} />
+                )}
               </TouchableOpacity>
+              {isExpiryLocked && (
+                <Text style={docStyles.inputHelpText}>
+                  Verified automatically — expiry date is locked.
+                </Text>
+              )}
               {expiryError ? <Text style={docStyles.errorText}>{expiryError}</Text> : null}
 
-              {showInlineCalendar && (
+              {showInlineCalendar && !isExpiryLocked && (
                 <View style={docStyles.inlineCalendar}>
                   <View style={docStyles.calendarHeaderRow}>
                     <Text style={docStyles.calendarMonthHeading}>
@@ -2523,18 +2772,6 @@ export default function StaffManagement({ navigation }: Props) {
                   </View>
                 </View>
               )}
-
-              {/* Document number */}
-              <Text style={[docStyles.fieldLabel, { marginTop: 18 }]}>DOCUMENT NUMBER *</Text>
-              <TextInput
-                style={docStyles.inputBox}
-                placeholder="Enter document number"
-                placeholderTextColor={COLORS.textMuted}
-                value={documentNumber}
-                maxLength={DOC_NO_MAX}
-                onChangeText={t => { setDocumentNumber(t); if (t.trim()) setDocNumberError(''); }}
-              />
-              {docNumberError ? <Text style={docStyles.errorText}>{docNumberError}</Text> : null}
 
               <View style={{ height: 30 }} />
             </ScrollView>
@@ -2659,7 +2896,23 @@ const docStyles = StyleSheet.create({
   viewDocButtonText: { color: '#fff', fontWeight: '700', fontSize: 13 },
   fieldLabel: { color: COLORS.primary, fontSize: 11, fontWeight: 'bold', marginBottom: 6, letterSpacing: 0.5 },
   inputBox: { backgroundColor: '#1C2541', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)', borderRadius: 10, padding: 14, color: '#fff', fontSize: 14 },
+  verifyButton: {
+    width: 110,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+    borderLeftWidth: 0,
+    borderTopRightRadius: 10,
+    borderBottomRightRadius: 10,
+    backgroundColor: '#1C2541',
+  },
+  verifyButtonText: { color: COLORS.primary, fontWeight: 'bold', fontSize: 14 },
   dateButton: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#1C2541', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)', height: 50, borderRadius: 10, paddingHorizontal: 14 },
+  dateButtonDisabled: {
+    backgroundColor: 'rgba(255,255,255,0.02)',
+    borderColor: 'rgba(255,255,255,0.05)',
+  },
   dateText: { color: '#fff', fontSize: 14 },
   errorText: { color: '#ff6b6b', fontSize: 12, marginTop: 4 },
   dropdownSelector: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#1C2541', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)', height: 50, borderRadius: 10, paddingHorizontal: 14 },

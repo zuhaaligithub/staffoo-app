@@ -503,6 +503,7 @@ import {
   ActivityIndicator,
   StatusBar,
   PermissionsAndroid,
+  Modal,
 } from 'react-native';
 
 import { Mail, Eye, EyeOff, Lock, Check } from 'lucide-react-native';
@@ -576,7 +577,10 @@ export default function LoginScreen({ navigation }: Props) {
   const [rememberMe, setRememberMe] = useState(false);
 
   const hasRequestedLocation = useRef(false);
-
+  const [showAccountTypeModal, setShowAccountTypeModal] = useState(false);
+  const [googleCredential, setGoogleCredential] = useState('');
+  const [selectedAccountType, setSelectedAccountType] =
+    useState<'customer' | 'staff' | 'contractor'>('customer');
   useEffect(() => {
     (async () => {
       try {
@@ -591,6 +595,8 @@ export default function LoginScreen({ navigation }: Props) {
       }
     })();
   }, []);
+
+
 
   useEffect(() => {
     if (Platform.OS === 'android') {
@@ -629,80 +635,224 @@ export default function LoginScreen({ navigation }: Props) {
     await requestLocationPermission();
   };
 
+  // const handleGoogleLogin = async () => {
+  //   try {
+  //     setLoading(true);
+  //     console.log('🚀 [GOOGLE] Starting Google Sign-In...');
+  //     await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
+  //     await GoogleSignin.signOut().catch(() => { });
+  //     const userInfo = await GoogleSignin.signIn();
+  //     if (userInfo.type !== 'success' || !userInfo.data) {
+  //       throw new Error('Google sign-in failed');
+  //     }
+  //     const tokens = await GoogleSignin.getTokens();
+  //     const { accessToken } = tokens;
+  //     if (!accessToken) throw new Error('No access token');
+  //     const response = await fetch(`${BASE_URL}/auth/google/callback`, {
+  //       method: 'POST',
+  //       headers: {
+  //         'Content-Type': 'application/json',
+  //         Accept: 'application/json',
+  //       },
+  //       body: JSON.stringify({
+  //         credential: accessToken,
+  //       }),
+  //     });
+
+  //     if (!response.ok) {
+  //       throw new Error(`Server error ${response.status}`);
+  //     }
+  //     const data = await response.json();
+  //     console.log('✅ Callback success:', data);
+  //     const user = data.user;
+  //     const token = data.token;
+  //     if (!user?.id || !token) {
+  //       throw new Error('Invalid response');
+  //     }
+  //     await AsyncStorage.setItem('@auth_token', token);
+  //     await AsyncStorage.setItem('user', JSON.stringify(user));
+  //     await AsyncStorage.setItem('@user_id', String(user.id));
+  //     console.log('🧪 Saved user:', user);
+  //     console.log('🧪 Saved userId:', user.id);
+  //     try {
+  //       const playerId = await OneSignal.User.pushSubscription.getIdAsync();
+
+  //       if (playerId) {
+  //         await sendNotificationTokenToServer(playerId, String(user.id));
+  //         OneSignal.login(String(user.id));
+  //       }
+  //     } catch (e) {
+  //       console.log('OneSignal error:', e);
+  //     }
+  //     Toast.show({
+  //       type: 'success',
+  //       text1: 'Login Successful',
+  //       position: 'bottom',
+  //     });
+  //     setTimeout(() => {
+  //       navigation.reset({
+  //         index: 0,
+  //         routes: [{ name: 'Profile' }],
+  //       });
+  //     }, 500);
+
+  //   } catch (error: any) {
+  //     console.error('❌ Google Login Error:', error);
+  //     Toast.show({
+  //       type: 'error',
+  //       text1: 'Login Failed',
+  //       text2: error.message,
+  //       position: 'bottom',
+  //     });
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
+
   const handleGoogleLogin = async () => {
     try {
       setLoading(true);
+
       console.log('🚀 [GOOGLE] Starting Google Sign-In...');
-      await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
+
+      await GoogleSignin.hasPlayServices({
+        showPlayServicesUpdateDialog: true,
+      });
+
       await GoogleSignin.signOut().catch(() => { });
+
       const userInfo = await GoogleSignin.signIn();
+
       if (userInfo.type !== 'success' || !userInfo.data) {
         throw new Error('Google sign-in failed');
       }
+
       const tokens = await GoogleSignin.getTokens();
-      const { accessToken } = tokens;
-      if (!accessToken) throw new Error('No access token');
-      const response = await fetch(`${BASE_URL}/auth/google/callback`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Accept: 'application/json',
-        },
-        body: JSON.stringify({
-          credential: accessToken,
-        }),
-      });
 
-      if (!response.ok) {
-        throw new Error(`Server error ${response.status}`);
-      }
-      const data = await response.json();
-      console.log('✅ Callback success:', data);
-      const user = data.user;
-      const token = data.token;
-      if (!user?.id || !token) {
-        throw new Error('Invalid response');
-      }
-      await AsyncStorage.setItem('@auth_token', token);
-      await AsyncStorage.setItem('user', JSON.stringify(user));
-      await AsyncStorage.setItem('@user_id', String(user.id));
-      console.log('🧪 Saved user:', user);
-      console.log('🧪 Saved userId:', user.id);
-      try {
-        const playerId = await OneSignal.User.pushSubscription.getIdAsync();
+      const credential = tokens.accessToken;
 
-        if (playerId) {
-          await sendNotificationTokenToServer(playerId, String(user.id));
-          OneSignal.login(String(user.id));
-        }
-      } catch (e) {
-        console.log('OneSignal error:', e);
+      if (!credential) {
+        throw new Error('Failed to get Google credential');
       }
-      Toast.show({
-        type: 'success',
-        text1: 'Login Successful',
-        position: 'bottom',
-      });
-      setTimeout(() => {
-        navigation.reset({
-          index: 0,
-          routes: [{ name: 'Profile' }],
-        });
-      }, 500);
 
+      console.log('✅ Google credential received');
+
+      setGoogleCredential(credential);
+
+      // Open popup like web version
+      setShowAccountTypeModal(true);
     } catch (error: any) {
       console.error('❌ Google Login Error:', error);
+
       Toast.show({
         type: 'error',
-        text1: 'Login Failed',
-        text2: error.message,
+        text1: 'Google Login Failed',
+        text2: error.message || 'Please try again',
         position: 'bottom',
       });
     } finally {
       setLoading(false);
     }
   };
+  const completeGoogleLogin = async () => {
+    try {
+      setLoading(true);
 
+      const payload = {
+        credential: googleCredential,
+        user_type: selectedAccountType,
+      };
+
+      console.log(
+        '📤 Sending Google Payload:',
+        JSON.stringify(payload, null, 2),
+      );
+
+      const response = await fetch(
+        `${BASE_URL}/auth/google/callback`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Accept: 'application/json',
+          },
+          body: JSON.stringify(payload),
+        },
+      );
+
+      const data = await response.json();
+
+      console.log(
+        '📥 Google Callback Response:',
+        JSON.stringify(data, null, 2),
+      );
+
+      if (!response.ok) {
+        throw new Error(data?.message || 'Login failed');
+      }
+
+      if (!data.success) {
+        throw new Error(data?.message || 'Login failed');
+      }
+
+      const user = data.user;
+      const token = data.token;
+
+      if (!user?.id || !token) {
+        throw new Error('Invalid server response');
+      }
+
+      await AsyncStorage.multiSet([
+        ['@auth_token', token],
+        ['user', JSON.stringify(user)],
+        ['@user_id', String(user.id)],
+        ['@user_type', user.user_type || selectedAccountType],
+      ]);
+
+      try {
+        const playerId =
+          await OneSignal.User.pushSubscription.getIdAsync();
+
+        if (playerId) {
+          await sendNotificationTokenToServer(
+            playerId,
+            String(user.id),
+          );
+
+          OneSignal.login(String(user.id));
+        }
+      } catch (e) {
+        console.log('OneSignal Error:', e);
+      }
+
+      setShowAccountTypeModal(false);
+
+      Toast.show({
+        type: 'success',
+        text1: 'Login Successful',
+        text2: `Welcome ${user.name || user.email}`,
+        position: 'bottom',
+      });
+
+      setTimeout(() => {
+        navigation.reset({
+          index: 0,
+          routes: [{ name: 'Profile' }],
+        });
+      }, 500);
+    } catch (error: any) {
+      console.error('❌ Google Callback Error:', error);
+
+      Toast.show({
+        type: 'error',
+        text1: 'Login Failed',
+        text2: error.message || 'Please try again',
+        position: 'bottom',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
   const handleForgotPassword = async () => {
     if (!email.trim()) {
       return Toast.show({
@@ -895,7 +1045,7 @@ export default function LoginScreen({ navigation }: Props) {
             style={{ alignSelf: 'flex-end', marginBottom: 10 }}
           >
             <Text style={{ color: '#89E7D0', fontSize: 13, fontWeight: '600' }}>
-              Forgot password?
+              Forgot Password?
             </Text>
           </TouchableOpacity>
           {/* <TouchableOpacity
@@ -918,7 +1068,7 @@ export default function LoginScreen({ navigation }: Props) {
 
           <TouchableOpacity
             style={[styles.signInButton, loading && { opacity: 0.7 }]}
-            onPress={handleSignIn}
+           onPress={handleSignIn}
             disabled={loading}
           >
             {loading ? (
@@ -956,6 +1106,107 @@ export default function LoginScreen({ navigation }: Props) {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
+
+      <Modal
+        visible={showAccountTypeModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowAccountTypeModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContainer}>
+
+            <TouchableOpacity
+              style={styles.closeButton}
+              onPress={() => setShowAccountTypeModal(false)}
+            >
+              <Text style={styles.closeText}>✕</Text>
+            </TouchableOpacity>
+
+            <Text style={styles.modalTitle}>
+              Complete Your Setup
+            </Text>
+
+            <Text style={styles.modalDescription}>
+              It Looks Like You Don't Have An Account Yet. Please Select Your
+              Account Type To Securely Create Your Profile And Continue.
+            </Text>
+
+            <Text style={styles.accountTypeLabel}>
+              Account Type <Text style={{ color: '#E53935' }}>*</Text>
+            </Text>
+
+            <View style={styles.accountTypeRow}>
+              <TouchableOpacity
+                style={[
+                  styles.accountTypeBtn,
+                  selectedAccountType === 'customer' &&
+                  styles.accountTypeBtnActive,
+                ]}
+                onPress={() => setSelectedAccountType('customer')}
+              >
+                <Text
+                  style={[
+                    styles.accountTypeText,
+                    selectedAccountType === 'customer' &&
+                    styles.accountTypeTextActive,
+                  ]}
+                >
+                  Client
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[
+                  styles.accountTypeBtn,
+                  selectedAccountType === 'staff' &&
+                  styles.accountTypeBtnActive,
+                ]}
+                onPress={() => setSelectedAccountType('staff')}
+              >
+                <Text
+                  style={[
+                    styles.accountTypeText,
+                    selectedAccountType === 'staff' &&
+                    styles.accountTypeTextActive,
+                  ]}
+                >
+                  Staff
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[
+                  styles.accountTypeBtn,
+                  selectedAccountType === 'contractor' &&
+                  styles.accountTypeBtnActive,
+                ]}
+                onPress={() => setSelectedAccountType('contractor')}
+              >
+                <Text
+                  style={[
+                    styles.accountTypeText,
+                    selectedAccountType === 'contractor' &&
+                    styles.accountTypeTextActive,
+                  ]}
+                >
+                  Resource Partner
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            <TouchableOpacity
+              style={styles.createAccountBtn}
+              onPress={completeGoogleLogin}
+            >
+              <Text style={styles.createAccountBtnText}>
+                Create Account & Login
+              </Text>
+            </TouchableOpacity>
+
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -1010,7 +1261,7 @@ const styles = StyleSheet.create({
   orContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginVertical: 20,
+    marginVertical: 5,
   },
 
   orLine: {
@@ -1074,4 +1325,106 @@ const styles = StyleSheet.create({
     color: COLORS.primary,
     fontWeight: '600',
   },
+
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.55)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 0,
+  },
+
+  modalContainer: {
+    width: '95%',
+    maxWidth: 650,
+    backgroundColor: '#fff',
+    borderRadius: 24,
+    paddingHorizontal: 25,
+    paddingVertical: 25,
+    paddingTop:20,
+    paddingBottom: 20,
+  },
+
+  closeButton: {
+    position: 'absolute',
+    right: 20,
+    top: 14,
+    zIndex: 99,
+    
+  },
+
+  closeText: {
+    fontSize: 20,
+    color: '#8B8B8B',
+    fontWeight: '300',
+  },
+
+  modalTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#202124',
+    marginBottom: 5,
+  },
+
+  modalDescription: {
+    fontSize: 12,
+    color: '#666',
+    lineHeight: 20,
+    marginBottom: 20,
+  },
+
+  accountTypeLabel: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 10,
+  },
+
+  accountTypeRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginBottom: 10,
+  },
+
+  accountTypeBtn: {
+    borderWidth: 1,
+    borderColor: '#D8D8D8',
+    borderRadius: 30,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    marginRight: 10,
+    // marginBottom: 10,
+    backgroundColor: '#fff',
+  },
+
+  accountTypeBtnActive: {
+    backgroundColor: '#3E8E7C',
+    borderColor: '#3E8E7C',
+  },
+
+  accountTypeText: {
+    fontSize: 14,
+    color: '#555',
+    fontWeight: '500',
+  },
+
+  accountTypeTextActive: {
+    color: '#fff',
+  },
+
+  createAccountBtn: {
+    backgroundColor: '#3E8E7C',
+    borderRadius: 10,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 10,
+  },
+
+  createAccountBtnText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+
 });

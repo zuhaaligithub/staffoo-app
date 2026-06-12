@@ -232,7 +232,7 @@ export default function PaymentHistoryScreen({ navigation, route }: Props) {
         {/* Form */}
         <View style={styles.form}>
           <View style={styles.field}>
-            <Text style={styles.label}>Name on Card</Text>
+            <Text style={styles.label}>Name</Text>
             <TextInput
               style={styles.input}
               value={name}
@@ -325,6 +325,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#111111',
     // backgroundColor: COLORS.background,
+    paddingTop:20,
   },
 
   header: {
@@ -368,17 +369,17 @@ const styles = StyleSheet.create({
 
   previewWrapper: {
     alignItems: 'center',
-    paddingHorizontal: 5,
+    paddingHorizontal: 15,
     paddingVertical: 0,
   },
 
   cardPreview: {
     width: '100%',
-    maxWidth: 390,
+    maxWidth: 350,
     height: 240,
 
     borderRadius: 18,
-
+    marginTop: 20,
     paddingHorizontal: 5,
     paddingVertical: 15,
 
@@ -516,7 +517,7 @@ const styles = StyleSheet.create({
     borderColor: COLORS.border,
   },
   field: {
-    marginBottom: 22,
+    marginBottom: 12,
   },
 
   label: {
@@ -532,7 +533,7 @@ const styles = StyleSheet.create({
     borderRadius: 14,
 
     paddingHorizontal: 16,
-    paddingVertical: 15,
+    paddingVertical: 10,
 
     fontSize: 16,
     color: COLORS.text,

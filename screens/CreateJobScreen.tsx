@@ -497,7 +497,7 @@ export default function CreateJobScreen() {
 
   const documentOptions = [
     { label: 'White Card Required?', value: 'white_card' },
-    { label: 'Working With Children Check?', value: 'working_with_children' },
+    { label: 'Working With Children Check Required?', value: 'working_with_children' },
   ];
 
   // const categoryOptions = [
@@ -2529,7 +2529,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   searchBarContainer: {
-    height: 35,
+    height: 40,
     backgroundColor: CHIP_DARK,
 
     borderRadius: 10,
@@ -2868,8 +2868,8 @@ const styles = StyleSheet.create({
 
 
   toggleSwitch: {
-    width: 85,
-    height: 34,
+    width: 65,
+    height: 30,
     borderRadius: 50,
     backgroundColor: '#F4F5F7',
     flexDirection: 'row',
@@ -2913,11 +2913,11 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     marginBottom: 10,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.2)', // Assuming a fallback for BORDER_COLOR
+    borderColor: 'rgba(255,255,255,0.2)',
   },
   toggleRow: {
     padding: 13,
-    minHeight: 90,
+    minHeight: 100,
     justifyContent: 'space-between',
     backgroundColor: '#1E1E1E', // Assuming a fallback for CARD_BG
     borderRadius: 12,

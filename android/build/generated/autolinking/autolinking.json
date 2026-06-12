@@ -77,6 +77,31 @@
         }
       }
     },
+    "@react-native-community/geolocation": {
+      "root": "/Users/mc/Documents/GitHub/staffoo-app/node_modules/@react-native-community/geolocation",
+      "name": "@react-native-community/geolocation",
+      "platforms": {
+        "ios": {
+          "podspecPath": "/Users/mc/Documents/GitHub/staffoo-app/node_modules/@react-native-community/geolocation/react-native-geolocation.podspec",
+          "version": "3.4.0",
+          "configurations": [],
+          "scriptPhases": []
+        },
+        "android": {
+          "sourceDir": "/Users/mc/Documents/GitHub/staffoo-app/node_modules/@react-native-community/geolocation/android",
+          "packageImportPath": "import com.reactnativecommunity.geolocation.GeolocationPackage;",
+          "packageInstance": "new GeolocationPackage()",
+          "buildTypes": [],
+          "libraryName": "RNCGeolocationSpec",
+          "componentDescriptors": [],
+          "cmakeListsPath": "/Users/mc/Documents/GitHub/staffoo-app/node_modules/@react-native-community/geolocation/android/build/generated/source/codegen/jni/CMakeLists.txt",
+          "cxxModuleCMakeListsModuleName": null,
+          "cxxModuleCMakeListsPath": null,
+          "cxxModuleHeaderName": null,
+          "isPureCxxDependency": false
+        }
+      }
+    },
     "@react-native-community/netinfo": {
       "root": "/Users/mc/Documents/GitHub/staffoo-app/node_modules/@react-native-community/netinfo",
       "name": "@react-native-community/netinfo",

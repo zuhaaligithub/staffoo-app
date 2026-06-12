@@ -1287,7 +1287,7 @@ export default function SignUpScreen({ navigation }: { navigation: any }) {
   const getDisplayName = (type: 'staff' | 'customer' | 'contractor') => {
     if (type === 'customer') return 'Client';
     if (type === 'staff') return 'Staff';
-    return 'Resource partner';
+    return 'Resource Partner';
   };
 
   const handleSignUp = async () => {
@@ -1725,7 +1725,7 @@ export default function SignUpScreen({ navigation }: { navigation: any }) {
               <Mail size={48} color="#4FCBB3" strokeWidth={1.5} />
             </View>
 
-            <Text style={styles.verifyTitle}>Verify your Email</Text>
+            <Text style={styles.verifyTitle}>Verify Your Email</Text>
 
             <Text style={styles.verifySubtitle}>
               We've sent a verification link to{' '}

@@ -36,7 +36,7 @@ const COLORS = {
   brand: '#89E7D0',
   brandDark: '#001F3F',
   brandLight: '#021d37',
-  background: '#001F3F',
+  background: '#111111',
   surface: '#0B2A4A',
   text: '#FFFFFF',
   textSecondary: 'rgba(255,255,255,0.75)',
@@ -294,7 +294,7 @@ const styles = StyleSheet.create({
   },
 
   buttonText: {
-    color: '#001F3F',
+    color: '#fff',
     fontSize: 18,
     fontWeight: '700',
     letterSpacing: 0.5,

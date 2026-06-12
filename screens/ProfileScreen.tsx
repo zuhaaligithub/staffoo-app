@@ -31,6 +31,8 @@ import {
   Settings,
   Shield,
 } from 'lucide-react-native';
+import Geolocation from '@react-native-community/geolocation';
+import { PermissionsAndroid } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { launchImageLibrary } from 'react-native-image-picker';
 import Toast from 'react-native-toast-message';
@@ -93,7 +95,8 @@ export default function ProfileScreen({ navigation }: Props) {
     ((event: any) => Promise<void>) | null
   >(null);
   const [imageFile, setImageFile] = useState<any>(null);
-
+  const BASE_URL = 'https://apis.staffoo.com.au/api';
+  const GOOGLE_API_KEY = 'AIzaSyCS-DB39Kk-Z25C5GWymVGshXIALbjXPGY';
   const getInitials = (name: string): string => {
     if (!name) return 'U';
     const parts = name.trim().split(' ').filter(Boolean);
@@ -103,70 +106,67 @@ export default function ProfileScreen({ navigation }: Props) {
       parts[parts.length - 1].charAt(0).toUpperCase()
     );
   };
-
+  const hasUpdatedRef = useRef(false);
   useFocusEffect(
     useCallback(() => {
       const loadProfile = async () => {
         setLoading(true);
+
         try {
           const uid = await AsyncStorage.getItem('@user_id');
           const token = await AsyncStorage.getItem('@auth_token');
-          const cachedImage = await AsyncStorage.getItem('profileImage');
-          if (cachedImage) setProfileImage(cachedImage);
+
           if (!uid || !token) {
             navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
             return;
           }
+
           setUserId(uid);
+
           const profileResponse = await getUserProfile(uid);
+
           if (profileResponse?.success && profileResponse?.data) {
             const freshData = profileResponse.data;
+
             setUser(freshData);
-            setCompletionPercentage(
-              freshData.profile_completion_percentage || 0,
-            );
+            setCompletionPercentage(freshData.profile_completion_percentage || 0);
             setIsActive(freshData.is_active || false);
 
             let imageUri = null;
             const BASE_IMAGE_URL = 'https://apis.staffoo.com.au/storage/';
+
             if (freshData.user_type === 'customer') {
-              imageUri =
-                freshData.customer?.profile_image || freshData.profile_image;
+              imageUri = freshData.customer?.profile_image || freshData.profile_image;
             } else if (freshData.user_type === 'staff') {
               imageUri = freshData.staff?.profile_image;
             } else if (freshData.user_type === 'contractor') {
               imageUri = freshData.contractor?.profile_image;
             }
+
             if (imageUri) {
               const fullUri = imageUri.startsWith('http')
                 ? imageUri
                 : `${BASE_IMAGE_URL}${imageUri}`;
+
               setProfileImage(fullUri);
               await AsyncStorage.setItem('profileImage', fullUri);
             }
+
             await AsyncStorage.setItem('user', JSON.stringify(freshData));
-          } else {
-            const cached = await AsyncStorage.getItem('user');
-            if (cached) setUser(JSON.parse(cached));
+
+            if (!hasUpdatedRef.current) {
+              hasUpdatedRef.current = true;
+              updateCoordinatesWithGoogle(uid);
+            }
           }
+
         } catch (err: any) {
           console.error('❌ Profile fetch error:', err);
-          if (err?.status === 401) {
-            await AsyncStorage.multiRemove([
-              '@user_id',
-              '@auth_token',
-              'user',
-              'profileImage',
-            ]);
-            navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
-            return;
-          }
-          const cached = await AsyncStorage.getItem('user');
-          if (cached) setUser(JSON.parse(cached));
         } finally {
           setLoading(false);
         }
       };
+
       loadProfile();
     }, []),
   );
@@ -261,6 +261,97 @@ export default function ProfileScreen({ navigation }: Props) {
     };
   }, [userId, user?.user_type]);
 
+  const updateCoordinatesWithGoogle = async (uid: string) => {
+    try {
+      const token = await AsyncStorage.getItem('@auth_token');
+
+      if (!token || !uid) {
+        console.log('❌ Missing token or user id');
+        return;
+      }
+
+      // Request location permission
+      let hasPermission = true;
+
+      if (Platform.OS === 'android') {
+        const result = await PermissionsAndroid.request(
+          PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+        );
+
+        hasPermission =
+          result === PermissionsAndroid.RESULTS.GRANTED;
+      }
+
+      if (!hasPermission) {
+        console.log('❌ Location permission denied');
+        return;
+      }
+
+      // Get current location
+      Geolocation.getCurrentPosition(
+        async position => {
+          try {
+            const { latitude, longitude } = position.coords;
+
+            const payload = {
+              current_coordinates: `${latitude},${longitude}`,
+            };
+
+            console.log('📍 Sending Coordinates:', payload.current_coordinates);
+
+            const response = await fetch(
+              `${BASE_URL}/update-coordinates/${uid}`,
+              {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify(payload),
+              },
+            );
+
+            const data = await response.json();
+
+            console.log('📍 Update Coordinate Response:', data);
+
+            if (response.ok && data.success) {
+              console.log('✅ Coordinates updated successfully');
+            } else {
+              console.log('❌ Update failed:', data);
+            }
+          } catch (apiError) {
+            console.error('❌ API Error:', apiError);
+          }
+        },
+        error => {
+          console.error('❌ Geolocation Error:', error);
+        },
+        {
+          enableHighAccuracy: false,
+          timeout: 20000,
+          maximumAge: 10000,
+        },
+      );
+    } catch (error) {
+      console.error('❌ Failed to update coordinates:', error);
+    }
+  };
+  useEffect(() => {
+    if (!userId) return;
+
+    // Initial call
+    updateCoordinatesWithGoogle(userId);
+
+    // Every 5 minutes
+    const interval = setInterval(() => {
+      console.log('📍 Updating coordinates...');
+      updateCoordinatesWithGoogle(userId);
+    }, 5 * 60 * 1000); // 300000 ms = 5 min
+
+    return () => clearInterval(interval);
+  }, [userId]);
+
   const pickImage = async () => {
     const result = await launchImageLibrary({
       mediaType: 'photo',
@@ -275,6 +366,9 @@ export default function ProfileScreen({ navigation }: Props) {
       }
     }
   };
+
+
+
 
   const getProfileSections = (userType: string | undefined) => {
     const type = userType?.toLowerCase().trim();
@@ -369,7 +463,7 @@ export default function ProfileScreen({ navigation }: Props) {
           'Personal Information',
           'Documents',
           'Staff Management',
-          'Privacy Policy',
+
           'Log Out',
           // 'Delete Profile',
         ].includes(s.title),
@@ -381,7 +475,7 @@ export default function ProfileScreen({ navigation }: Props) {
           'Personal Information',
           'Payment History',
           'Bank Details',
-          'Privacy Policy',
+
           'Log Out',
           // 'Delete Profile',
         ].includes(s.title),

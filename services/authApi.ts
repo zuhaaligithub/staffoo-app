@@ -122,6 +122,26 @@ export const loginUser = async (payload: LoginPayload): Promise<UserData> => {
   }
 };
 
+export const updateCoordinates = async (
+  userId: string | number,
+  payload: any,
+) => {
+  const token = await AsyncStorage.getItem('@auth_token');
+
+  const res = await axios.post(
+    `${BASE_URL}/update-coordinates/${userId}`,
+    payload,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+    },
+  );
+
+  return res.data;
+};
+
 export const getUserProfile = async (userId: string | number) => {
   try {
     console.log('🔹 getUserProfile called with ID:', userId);
