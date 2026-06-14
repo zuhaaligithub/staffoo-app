@@ -1,5 +1,3 @@
-
-
 // import React, { useState, useEffect, useRef } from 'react';
 // import {
 //   View,
@@ -876,7 +874,6 @@
 //     <div class="row">
 //       <div class="field"><div class="field-label">First Aid Cert No:</div><div class="field-input">${data.first_aid_cert || ''
 //       }</div>
-
 
 //       </div>
 //       <div class="field"><div class="field-label">First Aid Expiry:</div><div class="field-input">${data.first_aid_expiry || ''
@@ -2584,8 +2581,8 @@
 
 // export default StaffFormsScreen;
 
-import React, { useState, useEffect, useRef } from 'react';
-import ReactNativeBlobUtil from 'react-native-blob-util';
+import React, { useState, useEffect, useRef } from "react";
+import ReactNativeBlobUtil from "react-native-blob-util";
 import {
   View,
   Text,
@@ -2601,9 +2598,9 @@ import {
   Animated,
   Dimensions,
   Linking,
-} from 'react-native';
+} from "react-native";
 
-import RNFS from 'react-native-fs';
+import RNFS from "react-native-fs";
 import {
   ArrowLeft,
   ChevronDown,
@@ -2614,30 +2611,30 @@ import {
   X,
   Check,
   Download,
-} from 'lucide-react-native';
-import FileViewer from 'react-native-file-viewer';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import Toast from 'react-native-toast-message';
-import { getUserProfile, uploadFile } from '../services/authApi';
-import DateTimePicker from '@react-native-community/datetimepicker';
-import SignatureScreen from 'react-native-signature-canvas';
-import axios from 'axios';
-import { generatePDF as pdfConvert } from 'react-native-html-to-pdf';
-import * as DocumentPicker from '@react-native-documents/picker';
-import { pick, types } from '@react-native-documents/picker';
+} from "lucide-react-native";
+import FileViewer from "react-native-file-viewer";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import Toast from "react-native-toast-message";
+import { getUserProfile, uploadFile } from "../services/authApi";
+import DateTimePicker from "@react-native-community/datetimepicker";
+import SignatureScreen from "react-native-signature-canvas";
+import axios from "axios";
+import { generatePDF as pdfConvert } from "react-native-html-to-pdf";
+import * as DocumentPicker from "@react-native-documents/picker";
+import { pick, types } from "@react-native-documents/picker";
 
-const BASE_URL = 'https://apis.staffoo.com.au';
-const GOOGLE_API_KEY = 'AIzaSyCS-DB39Kk-Z25C5GWymVGshXIALbjXPGY';
-const BRAND = '#89E7D0'; // Mint accent
-const BRAND_DARK = '#111111'; // Deep Navy
-const BRAND_LIGHT = '#111111'; // Darker navy
-const ACCENT = '#0047FF'; // Bright blue
-const SUCCESS = '#89E7D0';
-const ERROR = '#EF4444';
-const GRAY_BG = '#001F3F';
-const CARD_BG = '#111111';
+const BASE_URL = "https://apis.staffoo.com.au";
+const GOOGLE_API_KEY = "AIzaSyCS-DB39Kk-Z25C5GWymVGshXIALbjXPGY";
+const BRAND = "#89E7D0"; // Mint accent
+const BRAND_DARK = "#111111"; // Deep Navy
+const BRAND_LIGHT = "#111111"; // Darker navy
+const ACCENT = "#0047FF"; // Bright blue
+const SUCCESS = "#89E7D0";
+const ERROR = "#EF4444";
+const GRAY_BG = "#001F3F";
+const CARD_BG = "#111111";
 
-type StaffTab = 'tfn' | 'super' | 'onboarding';
+type StaffTab = "tfn" | "super" | "onboarding";
 
 type FormUrls = {
   tfn?: string;
@@ -2646,7 +2643,7 @@ type FormUrls = {
 };
 
 const StaffFormsScreen = ({ navigation }: any) => {
-  const [activeStaffTab, setActiveStaffTab] = useState<StaffTab>('onboarding');
+  const [activeStaffTab, setActiveStaffTab] = useState<StaffTab>("onboarding");
   const [userId, setUserId] = useState<number | string | null>(null);
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
@@ -2654,63 +2651,67 @@ const StaffFormsScreen = ({ navigation }: any) => {
   const [tabLoading, setTabLoading] = useState(false);
 
   // ── TFN Fields ──────────────────────────────────────────────────────────────
-  const [tfnNumber, setTfnNumber] = useState('');
-  const [tfnTitle, setTfnTitle] = useState('');
-  const [tfnFirstName, setTfnFirstName] = useState('');
-  const [tfnSurname, setTfnSurname] = useState('');
-  const [tfnPrevName, setTfnPrevName] = useState('');
-  const [tfnDob, setTfnDob] = useState('');
-  const [tfnDobBackend, setTfnDobBackend] = useState('');
-  const [tfnAddress, setTfnAddress] = useState('');
+  const [tfnNumber, setTfnNumber] = useState("");
+  const [tfnTitle, setTfnTitle] = useState("");
+  const [tfnFirstName, setTfnFirstName] = useState("");
+  const [tfnSurname, setTfnSurname] = useState("");
+  const [tfnPrevName, setTfnPrevName] = useState("");
+  const [tfnDob, setTfnDob] = useState("");
+  const [tfnDobBackend, setTfnDobBackend] = useState("");
+  const [tfnAddress, setTfnAddress] = useState("");
   const [basisOfPayment, setBasisOfPayment] = useState<string | null>(null);
-  const [australianResident, setAustralianResident] = useState<string | null>(null);
+  const [australianResident, setAustralianResident] = useState<string | null>(
+    null,
+  );
   const [claimTaxFree, setClaimTaxFree] = useState<string | null>(null);
   const [hasDebt, setHasDebt] = useState<string | null>(null);
-  const [signatureTfn, setSignatureTfn] = useState('');
-  const [dateTfn, setDateTfn] = useState('');
-  const [dateTfnBackend, setDateTfnBackend] = useState('');
+  const [signatureTfn, setSignatureTfn] = useState("");
+  const [dateTfn, setDateTfn] = useState("");
+  const [dateTfnBackend, setDateTfnBackend] = useState("");
 
   // ── Super Fields ────────────────────────────────────────────────────────────
-  const [superFullName, setSuperFullName] = useState('');
-  const [superEmployeeNumber, setSuperEmployeeNumber] = useState('');
-  const [fundChoice, setFundChoice] = useState<'own' | 'employer'>('employer');
-  const [superFundName, setSuperFundName] = useState('');
-  const [superFundAbn, setSuperFundAbn] = useState('');
-  const [superFundUsi, setSuperFundUsi] = useState('');
-  const [superMemberNumber, setSuperMemberNumber] = useState('');
-  const [signatureSuper, setSignatureSuper] = useState('');
-  const [dateSuper, setDateSuper] = useState('');
-  const [dateSuperBackend, setDateSuperBackend] = useState('');
+  const [superFullName, setSuperFullName] = useState("");
+  const [superEmployeeNumber, setSuperEmployeeNumber] = useState("");
+  const [fundChoice, setFundChoice] = useState<"own" | "employer">("employer");
+  const [superFundName, setSuperFundName] = useState("");
+  const [superFundAbn, setSuperFundAbn] = useState("");
+  const [superFundUsi, setSuperFundUsi] = useState("");
+  const [superMemberNumber, setSuperMemberNumber] = useState("");
+  const [signatureSuper, setSignatureSuper] = useState("");
+  const [dateSuper, setDateSuper] = useState("");
+  const [dateSuperBackend, setDateSuperBackend] = useState("");
   const [formUrls, setFormUrls] = useState<FormUrls>({});
 
   // ── Onboarding Fields ───────────────────────────────────────────────────────
-  const [onboardTfn, setOnboardTfn] = useState('');
-  const [onboardSuperFundName, setOnboardSuperFundName] = useState('');
-  const [onboardSuperUsi, setOnboardSuperUsi] = useState('');
-  const [onboardMemberNumber, setOnboardMemberNumber] = useState('');
-  const [onboardFullName, setOnboardFullName] = useState('');
-  const [onboardMobile, setOnboardMobile] = useState('');
-  const [onboardEmail, setOnboardEmail] = useState('');
-  const [onboardAddress, setOnboardAddress] = useState('');
+  const [onboardTfn, setOnboardTfn] = useState("");
+  const [onboardSuperFundName, setOnboardSuperFundName] = useState("");
+  const [onboardSuperUsi, setOnboardSuperUsi] = useState("");
+  const [onboardMemberNumber, setOnboardMemberNumber] = useState("");
+  const [onboardFullName, setOnboardFullName] = useState("");
+  const [onboardMobile, setOnboardMobile] = useState("");
+  const [onboardEmail, setOnboardEmail] = useState("");
+  const [onboardAddress, setOnboardAddress] = useState("");
 
-  const [passportNumber, setPassportNumber] = useState('');
-  const [passportCountry, setPassportCountry] = useState('Australia');
+  const [passportNumber, setPassportNumber] = useState("");
+  const [passportCountry, setPassportCountry] = useState("Australia");
 
   // UI Display Dates
-  const [onboardDob, setOnboardDob] = useState('');
-  const [passportExpiry, setPassportExpiry] = useState('');
-  const [securityExpiry, setSecurityExpiry] = useState('');
-  const [firstAidExpiry, setFirstAidExpiry] = useState('');
+  const [onboardDob, setOnboardDob] = useState("");
+  const [passportExpiry, setPassportExpiry] = useState("");
+  const [securityExpiry, setSecurityExpiry] = useState("");
+  const [firstAidExpiry, setFirstAidExpiry] = useState("");
 
   // API Backend Dates (YYYY-MM-DD)
-  const [onboardDobBackend, setOnboardDobBackend] = useState('');
-  const [passportExpiryBackend, setPassportExpiryBackend] = useState('');
-  const [securityExpiryBackend, setSecurityExpiryBackend] = useState('');
-  const [firstAidExpiryBackend, setFirstAidExpiryBackend] = useState('');
+  const [onboardDobBackend, setOnboardDobBackend] = useState("");
+  const [passportExpiryBackend, setPassportExpiryBackend] = useState("");
+  const [securityExpiryBackend, setSecurityExpiryBackend] = useState("");
+  const [firstAidExpiryBackend, setFirstAidExpiryBackend] = useState("");
 
   const [workRights, setWorkRights] = useState<string | null>(null);
-  const [otherVisaType, setOtherVisaType] = useState('');
-  const [residentialStatus, setResidentialStatus] = useState<string | null>(null);
+  const [otherVisaType, setOtherVisaType] = useState("");
+  const [residentialStatus, setResidentialStatus] = useState<string | null>(
+    null,
+  );
 
   const [idChecks, setIdChecks] = useState({
     primary_id: false,
@@ -2718,70 +2719,99 @@ const StaffFormsScreen = ({ navigation }: any) => {
     security_license: false,
     medicare_or_utility: false,
   });
-  const [bankName, setBankName] = useState('');
-  const [bsb, setBsb] = useState('');
-  const [accountNumber, setAccountNumber] = useState('');
-  const [securityLicence, setSecurityLicence] = useState('');
-  const [firstAidNumber, setFirstAidNumber] = useState('');
+  const [bankName, setBankName] = useState("");
+  const [bsb, setBsb] = useState("");
+  const [accountNumber, setAccountNumber] = useState("");
+  const [securityLicence, setSecurityLicence] = useState("");
+  const [firstAidNumber, setFirstAidNumber] = useState("");
 
-  const [signatureOnboard, setSignatureOnboard] = useState('');
-  const [dateOnboard, setDateOnboard] = useState('');
-  const [dateOnboardBackend, setDateOnboardBackend] = useState('');
+  const [signatureOnboard, setSignatureOnboard] = useState("");
+  const [dateOnboard, setDateOnboard] = useState("");
+  const [dateOnboardBackend, setDateOnboardBackend] = useState("");
   const [superConfirmation, setSuperConfirmation] = useState(false);
 
   // ── Document Upload State ─────────────────────────────────────────────────
-  const [passportDoc, setPassportDoc] = useState('');
-  const [passportDocName, setPassportDocName] = useState('');
+  const [passportDoc, setPassportDoc] = useState("");
+  const [passportDocName, setPassportDocName] = useState("");
   const [passportDocUploading, setPassportDocUploading] = useState(false);
 
-  const [securityLicenseDoc, setSecurityLicenseDoc] = useState('');
-  const [securityLicenseDocName, setSecurityLicenseDocName] = useState('');
-  const [securityLicenseDocUploading, setSecurityLicenseDocUploading] = useState(false);
+  const [securityLicenseDoc, setSecurityLicenseDoc] = useState("");
+  const [securityLicenseDocName, setSecurityLicenseDocName] = useState("");
+  const [securityLicenseDocUploading, setSecurityLicenseDocUploading] =
+    useState(false);
 
-  const [firstAidDoc, setFirstAidDoc] = useState('');
-  const [firstAidDocName, setFirstAidDocName] = useState('');
+  const [firstAidDoc, setFirstAidDoc] = useState("");
+  const [firstAidDocName, setFirstAidDocName] = useState("");
   const [firstAidDocUploading, setFirstAidDocUploading] = useState(false);
 
   // ── UI State ────────────────────────────────────────────────────────────────
   const [showTitleModal, setShowTitleModal] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
-  const [selectedDateField, setSelectedDateField] = useState<string | null>(null);
+  const [selectedDateField, setSelectedDateField] = useState<string | null>(
+    null,
+  );
   const [showSignatureModal, setShowSignatureModal] = useState(false);
-  const [currentSignatureField, setCurrentSignatureField] = useState<'tfn' | 'super' | 'onboard' | null>(null);
+  const [currentSignatureField, setCurrentSignatureField] = useState<
+    "tfn" | "super" | "onboard" | null
+  >(null);
 
-  const titleOptions = ['Mr', 'Mrs', 'Miss'];
-  const autoFullName = [tfnTitle, tfnFirstName, tfnSurname].filter(Boolean).join(' ');
+  const titleOptions = ["Mr", "Mrs", "Miss"];
+  const autoFullName = [tfnTitle, tfnFirstName, tfnSurname]
+    .filter(Boolean)
+    .join(" ");
 
-  // ── Init ────────────────────────────────────────────────────────────────────
+  // ── Init + Auto-fill Profile Data ───────────────────────────────────────────
   useEffect(() => {
     const init = async () => {
       try {
-        const storedUser = await AsyncStorage.getItem('user');
-        if (storedUser) {
-          const parsed = JSON.parse(storedUser);
-          setUserId(parsed.id);
+        const storedUser = await AsyncStorage.getItem("user");
+        if (!storedUser) return;
 
-          const profileResponse = await getUserProfile(parsed.id);
-          const profile = profileResponse?.data || {};
+        const parsed = JSON.parse(storedUser);
+        setUserId(parsed.id);
 
-          if (profile.name) {
-            const fullName = profile.name.trim();
-            setTfnFirstName(fullName.split(' ')[0] || '');
-            setTfnSurname(fullName.split(' ').slice(1).join(' ') || '');
-            setSuperFullName(fullName);
-            setOnboardFullName(fullName);
-          }
-          if (profile.email) setOnboardEmail(profile.email);
-          if (profile.phone) setOnboardMobile(profile.phone);
+        const profileResponse = await getUserProfile(parsed.id);
+        const profile = profileResponse?.data || {};
 
-          if (profile.address) {
-            setOnboardAddress(profile.address);
-            setTfnAddress(profile.address);
-          }
+        // Auto-fill basic info
+        if (profile.name) {
+          const fullName = profile.name.trim();
+          setTfnFirstName(fullName.split(" ")[0] || "");
+          setTfnSurname(fullName.split(" ").slice(1).join(" ") || "");
+          setSuperFullName(fullName);
+          setOnboardFullName(fullName);
         }
-      } catch (_) { }
+
+        if (profile.email) setOnboardEmail(profile.email);
+        if (profile.phone) setOnboardMobile(profile.phone);
+        if (profile.address) {
+          setOnboardAddress(profile.address);
+          setTfnAddress(profile.address);
+        }
+
+        // 🔥 ROBUST DOB Auto-fill from multiple possible locations
+        const dobRaw =
+          profile.staff?.date_of_birth ||
+          profile.date_of_birth ||
+          profile.dob ||
+          profile.staff?.dob;
+
+        if (dobRaw) {
+          const formattedDob = formatDateToDDMMYYYY(dobRaw);
+
+          // Force fill both forms
+          setTfnDob(formattedDob);
+          setTfnDobBackend(dobRaw);
+
+          setOnboardDob(formattedDob);
+          setOnboardDobBackend(dobRaw);
+        }
+      } catch (e) {
+        console.log("Profile load error:", e);
+      }
       setFetching(false);
     };
+
     init();
   }, []);
 
@@ -2803,49 +2833,49 @@ const StaffFormsScreen = ({ navigation }: any) => {
   const handleDateChange = (event: any, selectedDate?: Date) => {
     setShowDatePicker(false);
     if (!selectedDate || !selectedDateField) return;
-    const dd = ('0' + selectedDate.getDate()).slice(-2);
-    const mm = ('0' + (selectedDate.getMonth() + 1)).slice(-2);
+    const dd = ("0" + selectedDate.getDate()).slice(-2);
+    const mm = ("0" + (selectedDate.getMonth() + 1)).slice(-2);
     const yyyy = selectedDate.getFullYear();
     const display = `${dd}/${mm}/${yyyy}`;
-    const backend = selectedDate.toISOString().split('T')[0];
+    const backend = selectedDate.toISOString().split("T")[0];
 
     switch (selectedDateField) {
-      case 'tfnDob':
+      case "tfnDob":
         setTfnDob(display);
         setTfnDobBackend(backend);
         break;
-      case 'onboardDob': // Added logic correctly for onboarding DOB
+      case "onboardDob": // Added logic correctly for onboarding DOB
         setOnboardDob(display);
         setOnboardDobBackend(backend);
         break;
-      case 'dateTfn':
+      case "dateTfn":
         setDateTfn(display);
         setDateTfnBackend(backend);
         break;
-      case 'dateSuper':
+      case "dateSuper":
         setDateSuper(display);
         setDateSuperBackend(backend);
         break;
-      case 'dateOnboard':
+      case "dateOnboard":
         setDateOnboard(display);
         setDateOnboardBackend(backend);
         break;
-      case 'passportExp':
+      case "passportExp":
         setPassportExpiry(display);
         setPassportExpiryBackend(backend);
         break;
-      case 'secExp':
+      case "secExp":
         setSecurityExpiry(display);
         setSecurityExpiryBackend(backend);
         break;
-      case 'faExp':
+      case "faExp":
         setFirstAidExpiry(display);
         setFirstAidExpiryBackend(backend);
         break;
     }
   };
 
-  const openSignature = (f: 'tfn' | 'super' | 'onboard') => {
+  const openSignature = (f: "tfn" | "super" | "onboard") => {
     setCurrentSignatureField(f);
     setShowSignatureModal(true);
   };
@@ -2863,7 +2893,7 @@ const StaffFormsScreen = ({ navigation }: any) => {
 
     loadAllFormData();
 
-    const unsubscribe = navigation.addListener('focus', () => {
+    const unsubscribe = navigation.addListener("focus", () => {
       loadAllFormData();
     });
 
@@ -2876,56 +2906,72 @@ const StaffFormsScreen = ({ navigation }: any) => {
       if (!token) return;
 
       const res = await axios.get(`${BASE_URL}/api/form-data`, {
-        params: { user_id: id, type: 'all' },
-        headers: { Authorization: `Bearer ${token}` }
+        params: { user_id: id, type: "all" },
+        headers: { Authorization: `Bearer ${token}` },
       });
       const data = res.data?.data || {};
       setFormUrls({
         tfn: data.tfn_form ? `${BASE_URL}/storage/${data.tfn_form}` : undefined,
-        super_form: data.super_form ? `${BASE_URL}/storage/${data.super_form}` : undefined,
-        onboarding: data.onboarding_form ? `${BASE_URL}/storage/${data.onboarding_form}` : undefined,
+        super_form: data.super_form
+          ? `${BASE_URL}/storage/${data.super_form}`
+          : undefined,
+        onboarding: data.onboarding_form
+          ? `${BASE_URL}/storage/${data.onboarding_form}`
+          : undefined,
       });
     } catch (e) {
-      console.log('Failed to fetch existing forms', e);
+      console.log("Failed to fetch existing forms", e);
     }
   };
 
   const handleSaveSignature = async (signature: string) => {
     try {
       if (!signature || signature.length < 100) {
-        Toast.show({ type: 'error', text1: 'Invalid signature' });
+        Toast.show({ type: "error", text1: "Invalid signature" });
         return;
       }
       setLoading(true);
-      const base64Data = signature.replace('data:image/png;base64,', '');
-      const filePath = `${RNFS.CachesDirectoryPath}/signature_${Date.now()}.png`;
-      await RNFS.writeFile(filePath, base64Data, 'base64');
+      const base64Data = signature.replace("data:image/png;base64,", "");
+      const filePath = `${
+        RNFS.CachesDirectoryPath
+      }/signature_${Date.now()}.png`;
+      await RNFS.writeFile(filePath, base64Data, "base64");
       const file = {
-        uri: Platform.OS === 'ios' ? `file://${filePath}` : filePath,
-        type: 'image/png',
+        uri: Platform.OS === "ios" ? `file://${filePath}` : filePath,
+        type: "image/png",
         name: `signature_${Date.now()}.png`,
       };
       const uploadResponse = await uploadFile(file);
-      const uploadedSignature = uploadResponse?.url || uploadResponse?.file || uploadResponse?.path;
-      if (!uploadedSignature) throw new Error('Signature upload failed');
+      const uploadedSignature =
+        uploadResponse?.url || uploadResponse?.file || uploadResponse?.path;
+      if (!uploadedSignature) throw new Error("Signature upload failed");
 
-      if (currentSignatureField === 'tfn') setSignatureTfn(uploadedSignature);
-      if (currentSignatureField === 'super') setSignatureSuper(uploadedSignature);
-      if (currentSignatureField === 'onboard') setSignatureOnboard(uploadedSignature);
+      if (currentSignatureField === "tfn") setSignatureTfn(uploadedSignature);
+      if (currentSignatureField === "super")
+        setSignatureSuper(uploadedSignature);
+      if (currentSignatureField === "onboard")
+        setSignatureOnboard(uploadedSignature);
 
       setShowSignatureModal(false);
-      Toast.show({ type: 'success', text1: '✓ Signature uploaded successfully' });
+      Toast.show({
+        type: "success",
+        text1: "✓ Signature uploaded successfully",
+      });
     } catch (error: any) {
-      Toast.show({ type: 'error', text1: 'Upload failed', text2: error.message });
+      Toast.show({
+        type: "error",
+        text1: "Upload failed",
+        text2: error.message,
+      });
     } finally {
       setLoading(false);
     }
   };
 
   const getToken = async () =>
-    (await AsyncStorage.getItem('@auth_token')) ||
-    (await AsyncStorage.getItem('auth_token')) ||
-    (await AsyncStorage.getItem('@token'));
+    (await AsyncStorage.getItem("@auth_token")) ||
+    (await AsyncStorage.getItem("auth_token")) ||
+    (await AsyncStorage.getItem("@token"));
 
   // ── Document Upload Helper ────────────────────────────────────────────────
   const uploadDocumentFile = async (
@@ -2937,7 +2983,7 @@ const StaffFormsScreen = ({ navigation }: any) => {
       const result = await pick({
         allowMultiSelection: false,
         type: [types.pdf, types.doc, types.docx, types.images],
-        copyTo: 'cachesDirectory',
+        copyTo: "cachesDirectory",
       });
       const file = result?.[0];
       if (!file) return;
@@ -2945,30 +2991,39 @@ const StaffFormsScreen = ({ navigation }: any) => {
       setUploading(true);
       const token = await getToken();
       const form = new FormData();
-      form.append('folder', 'staff_documents');
-      form.append('file', {
+      form.append("folder", "staff_documents");
+      form.append("file", {
         uri: file.uri,
-        type: file.type ?? 'application/octet-stream',
+        type: file.type ?? "application/octet-stream",
         name: file.name ?? `upload_${Date.now()}`,
       } as any);
 
       const res = await axios.post(`${BASE_URL}/api/upload-file`, form, {
         headers: {
           Authorization: `Bearer ${token}`,
-          'Content-Type': 'multipart/form-data',
+          "Content-Type": "multipart/form-data",
         },
       });
 
       const uploaded =
-        res.data?.file || res.data?.filename || res.data?.name ||
-        res.data?.data?.file || res.data?.data?.filename || res.data?.url || file.name;
+        res.data?.file ||
+        res.data?.filename ||
+        res.data?.name ||
+        res.data?.data?.file ||
+        res.data?.data?.filename ||
+        res.data?.url ||
+        file.name;
 
       setStoredName(uploaded);
       setFileName(file.name || uploaded);
-      Toast.show({ type: 'success', text1: '✓ Document uploaded' });
+      Toast.show({ type: "success", text1: "✓ Document uploaded" });
     } catch (err: any) {
-      if (err?.code === 'CANCELED' || err?.code === 'cancel') return;
-      Toast.show({ type: 'error', text1: 'Upload failed', text2: err?.message || 'Try again' });
+      if (err?.code === "CANCELED" || err?.code === "cancel") return;
+      Toast.show({
+        type: "error",
+        text1: "Upload failed",
+        text2: err?.message || "Try again",
+      });
     } finally {
       setUploading(false);
     }
@@ -2977,12 +3032,12 @@ const StaffFormsScreen = ({ navigation }: any) => {
   const openDocument = async (storedName: string) => {
     if (!storedName) return;
     try {
-      const url = storedName.startsWith('http')
+      const url = storedName.startsWith("http")
         ? storedName
         : `${BASE_URL}/staff_documents/${storedName}`;
       await Linking.openURL(url);
     } catch {
-      Toast.show({ type: 'error', text1: 'Cannot open document' });
+      Toast.show({ type: "error", text1: "Cannot open document" });
     }
   };
 
@@ -2991,25 +3046,29 @@ const StaffFormsScreen = ({ navigation }: any) => {
   // ═══════════════════════════════════════════════════════════════════════════
   const generateTfnPdf = async (data: Record<string, any>): Promise<string> => {
     const formatDate = (dateStr?: string): string => {
-      if (!dateStr) return '__ / __ / 2026';
+      if (!dateStr) return "__ / __ / 2026";
       try {
         const date = new Date(dateStr);
-        const dd = ('0' + date.getDate()).slice(-2);
-        const mm = ('0' + (date.getMonth() + 1)).slice(-2);
+        const dd = ("0" + date.getDate()).slice(-2);
+        const mm = ("0" + (date.getMonth() + 1)).slice(-2);
         const yyyy = date.getFullYear();
         return `${dd} / ${mm} / ${yyyy}`;
       } catch {
-        return dateStr || '__ / __ / 2026';
+        return dateStr || "__ / __ / 2026";
       }
     };
 
     const check = (value: any, expectedYes: boolean = true): string => {
-      if (value === undefined || value === null) return '☐';
+      if (value === undefined || value === null) return "☐";
       const val = String(value).toLowerCase().trim();
       if (expectedYes) {
-        return val === '1' || val === 'yes' || val === 'true' || val === 'on' ? '☑' : '☐';
+        return val === "1" || val === "yes" || val === "true" || val === "on"
+          ? "☑"
+          : "☐";
       } else {
-        return val === '0' || val === 'no' || val === 'false' || val === 'off' ? '☑' : '☐';
+        return val === "0" || val === "no" || val === "false" || val === "off"
+          ? "☑"
+          : "☐";
       }
     };
 
@@ -3045,34 +3104,44 @@ const StaffFormsScreen = ({ navigation }: any) => {
   <div class="form-box">
     <div class="section">
       <div class="label">1. Tax file number (TFN)</div>
-      <div class="field">${data.tfn || '—'}</div>
+      <div class="field">${data.tfn || "—"}</div>
     </div>
     <div class="section">
       <div class="label">2. Name</div>
       <div style="display:flex; gap:15px;">
-        <div style="flex:0.6"><small>Title:</small><div class="field">${data.title || ''}</div></div>
-        <div style="flex:1"><small>First Name:</small><div class="field">${data.first_name || ''}</div></div>
-        <div style="flex:1"><small>Surname:</small><div class="field">${data.surname || ''}</div></div>
+        <div style="flex:0.6"><small>Title:</small><div class="field">${
+          data.title || ""
+        }</div></div>
+        <div style="flex:1"><small>First Name:</small><div class="field">${
+          data.first_name || ""
+        }</div></div>
+        <div style="flex:1"><small>Surname:</small><div class="field">${
+          data.surname || ""
+        }</div></div>
       </div>
     </div>
     <div class="section">
       <div class="label">3. Previous name (if applicable)</div>
-      <div class="field">${data.previous_name || '—'}</div>
+      <div class="field">${data.previous_name || "—"}</div>
     </div>
     <div class="section">
       <div class="label">4. Date of birth</div>
-      <div class="field">${data.dob || '—'}</div>
+      <div class="field">${data.dob || "—"}</div>
     </div>
     <div class="section">
       <div class="label">5. Residential address</div>
-      <div class="field" style="min-height:45px;">${data.address || '—'}</div>
+      <div class="field" style="min-height:45px;">${data.address || "—"}</div>
     </div>
     <div class="section">
       <div class="label">6. Employment Type</div>
       <div class="checkbox-line">
-        ${check(data.basis_of_payment === 'full-time')} Full-time &nbsp;&nbsp;&nbsp;
-        ${check(data.basis_of_payment === 'part-time')} Part-time &nbsp;&nbsp;&nbsp;
-        ${check(data.basis_of_payment === 'casual')} Casual
+        ${check(
+          data.basis_of_payment === "full-time",
+        )} Full-time &nbsp;&nbsp;&nbsp;
+        ${check(
+          data.basis_of_payment === "part-time",
+        )} Part-time &nbsp;&nbsp;&nbsp;
+        ${check(data.basis_of_payment === "casual")} Casual
       </div>
     </div>
     <div class="section">
@@ -3098,10 +3167,11 @@ const StaffFormsScreen = ({ navigation }: any) => {
     </div>
   </div>
   <div style="margin-top:50px;">
-    ${data.signature
+    ${
+      data.signature
         ? `<img src="${data.signature}" style="max-height:90px; max-width:320px; object-fit:contain;" />`
         : '<div style="border-bottom:2px solid #333; width:280px; height:70px;"></div>'
-      }
+    }
     <div style="font-weight:bold; margin-top:8px;">Employee Signature</div>
     <div>Date: ${formatDate(data.signed_date || data.date)}</div>
   </div>
@@ -3112,30 +3182,32 @@ const StaffFormsScreen = ({ navigation }: any) => {
     const result = await pdfConvert({
       html,
       fileName: `TFN_Declaration_${Date.now()}`,
-      directory: 'Cache',
+      directory: "Cache",
       base64: false,
       width: 595,
       height: 842,
     });
-    if (!result?.filePath) throw new Error('PDF generation failed');
+    if (!result?.filePath) throw new Error("PDF generation failed");
     return result.filePath;
   };
 
-  const generateSuperPdf = async (data: Record<string, any>): Promise<string> => {
+  const generateSuperPdf = async (
+    data: Record<string, any>,
+  ): Promise<string> => {
     const formatDate = (dateStr?: string): string => {
-      if (!dateStr) return '__ / __ / 2026';
+      if (!dateStr) return "__ / __ / 2026";
       try {
         const date = new Date(dateStr);
-        const dd = ('0' + date.getDate()).slice(-2);
-        const mm = ('0' + (date.getMonth() + 1)).slice(-2);
+        const dd = ("0" + date.getDate()).slice(-2);
+        const mm = ("0" + (date.getMonth() + 1)).slice(-2);
         const yyyy = date.getFullYear();
         return `${dd} / ${mm} / ${yyyy}`;
       } catch {
-        return dateStr || '__ / __ / 2026';
+        return dateStr || "__ / __ / 2026";
       }
     };
 
-    const checked = (value: any): string => (value ? '☑' : '☐');
+    const checked = (value: any): string => (value ? "☑" : "☐");
     const html = `
 <!DOCTYPE html>
 <html>
@@ -3181,21 +3253,33 @@ const StaffFormsScreen = ({ navigation }: any) => {
         <div class="label">Employee Details</div>
         <div style="margin-bottom:10px;">
           <div class="small">Name:</div>
-          <div class="field">${data.full_name || ''}</div>
+          <div class="field">${data.full_name || ""}</div>
         </div>
         <div>
           <div class="small">Employee Number (if known):</div>
-          <div class="field">${data.employee_number || ''}</div>
+          <div class="field">${data.employee_number || ""}</div>
         </div>
       </div>
       <div class="section">
         <div class="label">Choice of Fund</div>
-        <div class="checkbox-line">${data.fund_choice === 'own' ? '☑' : '☐'} 1. I nominate my own individual fund:</div>
-        <div style="margin-top:8px;"><div class="small">Fund Name:</div><div class="field">${data.fund_name || ''}</div></div>
-        <div style="margin-top:8px;"><div class="small">Fund ABN:</div><div class="field">${data.fund_abn || ''}</div></div>
-        <div style="margin-top:8px;"><div class="small">Fund USI:</div><div class="field">${data.fund_usi || ''}</div></div>
-        <div style="margin-top:8px;"><div class="small">Member Account Number:</div><div class="field">${data.member_account || ''}</div></div>
-        <div class="checkbox-line" style="margin-top:16px;">${data.fund_choice === 'employer' ? '☑' : '☐'} 2. Employer-nominated fund (default)</div>
+        <div class="checkbox-line">${
+          data.fund_choice === "own" ? "☑" : "☐"
+        } 1. I nominate my own individual fund:</div>
+        <div style="margin-top:8px;"><div class="small">Fund Name:</div><div class="field">${
+          data.fund_name || ""
+        }</div></div>
+        <div style="margin-top:8px;"><div class="small">Fund ABN:</div><div class="field">${
+          data.fund_abn || ""
+        }</div></div>
+        <div style="margin-top:8px;"><div class="small">Fund USI:</div><div class="field">${
+          data.fund_usi || ""
+        }</div></div>
+        <div style="margin-top:8px;"><div class="small">Member Account Number:</div><div class="field">${
+          data.member_account || ""
+        }</div></div>
+        <div class="checkbox-line" style="margin-top:16px;">${
+          data.fund_choice === "employer" ? "☑" : "☐"
+        } 2. Employer-nominated fund (default)</div>
       </div>
     </div>
     <div class="employer-box">
@@ -3205,7 +3289,11 @@ const StaffFormsScreen = ({ navigation }: any) => {
       <div class="small">Address: 21 Tigriswood Blvd, Truganina VIC 3029</div>
     </div>
     <div class="signature-area">
-      <div class="signature-line">${data.signature ? `<img src="${data.signature}" class="signature-img" />` : ''}</div>
+      <div class="signature-line">${
+        data.signature
+          ? `<img src="${data.signature}" class="signature-img" />`
+          : ""
+      }</div>
       <div class="signature-label">Employee Signature</div>
       <div class="date">Date: ${formatDate(data.signed_date || data.date)}</div>
     </div>
@@ -3217,36 +3305,56 @@ const StaffFormsScreen = ({ navigation }: any) => {
     const result = await pdfConvert({
       html,
       fileName: `superannuation_${Date.now()}`,
-      directory: 'Cache',
+      directory: "Cache",
       base64: false,
     });
-    if (!result.filePath) throw new Error('Super PDF generation failed');
+    if (!result.filePath) throw new Error("Super PDF generation failed");
     return result.filePath;
   };
 
-  const generateOnboardingPdf = async (data: Record<string, any>): Promise<string> => {
+  const generateOnboardingPdf = async (
+    data: Record<string, any>,
+  ): Promise<string> => {
     const idRows = [
-      { label: 'Birth cert / Passport / Citizenship', pts: 70, key: 'primary_id' },
-      { label: "Driver's licence / Govt photo ID", pts: 40, key: 'drivers_license' },
-      { label: 'Security licence (mandatory)', pts: 40, key: 'security_license' },
-      { label: 'Medicare / Utility bill / Bank stmt', pts: 25, key: 'medicare_or_utility' },
+      {
+        label: "Birth cert / Passport / Citizenship",
+        pts: 70,
+        key: "primary_id",
+      },
+      {
+        label: "Driver's licence / Govt photo ID",
+        pts: 40,
+        key: "drivers_license",
+      },
+      {
+        label: "Security licence (mandatory)",
+        pts: 40,
+        key: "security_license",
+      },
+      {
+        label: "Medicare / Utility bill / Bank stmt",
+        pts: 25,
+        key: "medicare_or_utility",
+      },
     ];
     const formatDate = (dateStr?: string): string => {
-      if (!dateStr) return '__ / __ / 2026';
+      if (!dateStr) return "__ / __ / 2026";
       try {
         const date = new Date(dateStr);
-        const dd = ('0' + date.getDate()).slice(-2);
-        const mm = ('0' + (date.getMonth() + 1)).slice(-2);
+        const dd = ("0" + date.getDate()).slice(-2);
+        const mm = ("0" + (date.getMonth() + 1)).slice(-2);
         const yyyy = date.getFullYear();
         return `${dd} / ${mm} / ${yyyy}`;
       } catch {
-        return dateStr || '__ / __ / 2026';
+        return dateStr || "__ / __ / 2026";
       }
     };
 
     let normalizedChecks: any = {};
-    if (typeof data.id_checks === 'string') {
-      try { normalizedChecks = JSON.parse(data.id_checks); } catch (_) { }
+    if (typeof data.id_checks === "string") {
+      try {
+        normalizedChecks = JSON.parse(data.id_checks);
+      } catch (_) {}
     } else {
       normalizedChecks = data.id_checks || {};
     }
@@ -3296,69 +3404,117 @@ const StaffFormsScreen = ({ navigation }: any) => {
     
     <div class="section-title">1. PERSONAL CONTACT DETAILS</div>
    <div class="row">
-      <div class="field"><div class="field-label">Full Name:</div><div class="field-input">${data.full_name || ''}</div></div>
-      <div class="field"><div class="field-label">Date of Birth:</div><div class="field-input">${data.dob || ''}</div></div>
+      <div class="field"><div class="field-label">Full Name:</div><div class="field-input">${
+        data.full_name || ""
+      }</div></div>
+      <div class="field"><div class="field-label">Date of Birth:</div><div class="field-input">${
+        data.dob || ""
+      }</div></div>
     </div>
     <div class="row">
-      <div class="field"><div class="field-label">Residential Address:</div><div class="field-input">${data.address || ''}</div></div>
+      <div class="field"><div class="field-label">Residential Address:</div><div class="field-input">${
+        data.address || ""
+      }</div></div>
     </div>
     <div class="row">
-      <div class="field"><div class="field-label">Mobile Phone Number:</div><div class="field-input">${data.mobile || ''}</div></div>
-      <div class="field"><div class="field-label">Personal Email Address:</div><div class="field-input">${data.email || ''}</div></div>
+      <div class="field"><div class="field-label">Mobile Phone Number:</div><div class="field-input">${
+        data.mobile || ""
+      }</div></div>
+      <div class="field"><div class="field-label">Personal Email Address:</div><div class="field-input">${
+        data.email || ""
+      }</div></div>
     </div>
 
     <div class="section-title">2. PASSPORT & WORK RIGHTS</div>
     <div class="row">
-      <div class="field"><div class="field-label">Passport Number:</div><div class="field-input">${data.passport_number || ''}</div></div>
-      <div class="field"><div class="field-label">Country of Issue:</div><div class="field-input">${data.passport_country || ''}</div></div>
-      <div class="field"><div class="field-label">Passport Expiry Date:</div><div class="field-input">${data.passport_expiry || ''}</div></div>
+      <div class="field"><div class="field-label">Passport Number:</div><div class="field-input">${
+        data.passport_number || ""
+      }</div></div>
+      <div class="field"><div class="field-label">Country of Issue:</div><div class="field-input">${
+        data.passport_country || ""
+      }</div></div>
+      <div class="field"><div class="field-label">Passport Expiry Date:</div><div class="field-input">${
+        data.passport_expiry || ""
+      }</div></div>
     </div>
 <div class="checkbox-line">
  Work Rights Status:
- ${data.work_rights === 'citizen' ? '[✓]' : '[ ]'} Australian Citizen/PR &nbsp;&nbsp;
- ${data.work_rights === 'student' ? '[✓]' : '[ ]'} Student Visa &nbsp;&nbsp;
- ${data.work_rights === 'temporary' ? '[✓]' : '[ ]'} Temporary Visa Holder &nbsp;&nbsp;
- ${data.work_rights && !['citizen', 'student', 'temporary'].includes(data.work_rights) ? '[✓]' : '[ ]'} Other Visa
+ ${
+   data.work_rights === "citizen" ? "[✓]" : "[ ]"
+ } Australian Citizen/PR &nbsp;&nbsp;
+ ${data.work_rights === "student" ? "[✓]" : "[ ]"} Student Visa &nbsp;&nbsp;
+ ${
+   data.work_rights === "temporary" ? "[✓]" : "[ ]"
+ } Temporary Visa Holder &nbsp;&nbsp;
+ ${
+   data.work_rights &&
+   !["citizen", "student", "temporary"].includes(data.work_rights)
+     ? "[✓]"
+     : "[ ]"
+ } Other Visa
 </div>
 
     <div class="section-title">3. 100-POINT IDENTIFICATION CHECK</div>
     <table>
       <tr><th>Document Type</th><th style="width:60px;">Points</th><th style="width:70px;">Tick Attached</th></tr>
-      ${idRows.map(r => `<tr><td>${r.label}</td><td>${r.pts}</td><td style="text-align:center;">${normalizedChecks[r.key] ? '[✓]' : '[ ]'}</td></tr>`).join('')}
+      ${idRows
+        .map(
+          (r) =>
+            `<tr><td>${r.label}</td><td>${
+              r.pts
+            }</td><td style="text-align:center;">${
+              normalizedChecks[r.key] ? "[✓]" : "[ ]"
+            }</td></tr>`,
+        )
+        .join("")}
     </table>
 
     <div class="section-title">4. BANKING, TAX & SUPERANNUATION</div>
     <div class="row">
-      <div class="field"><div class="field-label">Bank Name:</div><div class="field-input">${data.bank_name || ''}</div></div>
-      <div class="field"><div class="field-label">BSB Number:</div><div class="field-input">${data.bsb || ''}</div></div>
-      <div class="field"><div class="field-label">Account Number:</div><div class="field-input">${data.account_number || ''}</div></div>
+      <div class="field"><div class="field-label">Bank Name:</div><div class="field-input">${
+        data.bank_name || ""
+      }</div></div>
+      <div class="field"><div class="field-label">BSB Number:</div><div class="field-input">${
+        data.bsb || ""
+      }</div></div>
+      <div class="field"><div class="field-label">Account Number:</div><div class="field-input">${
+        data.account_number || ""
+      }</div></div>
     </div>
 <div class="row">
   <div class="field"><div class="field-label">Tax File Number:</div>
-    <div class="field-input">${data.tfn || ''}</div>
+    <div class="field-input">${data.tfn || ""}</div>
   </div>
 </div>
 <div class="row">
   <div class="field"><div class="field-label">Super Fund Name:</div>
-    <div class="field-input">${data.super_fund || ''}</div>
+    <div class="field-input">${data.super_fund || ""}</div>
   </div>
   <div class="field"><div class="field-label">Super USI:</div>
-    <div class="field-input">${data.super_usi || ''}</div>
+    <div class="field-input">${data.super_usi || ""}</div>
   </div>
 </div>
 <div class="row">
   <div class="field"><div class="field-label">Member Number:</div>
-    <div class="field-input">${data.super_member || ''}</div>
+    <div class="field-input">${data.super_member || ""}</div>
   </div>
 </div>
     <div class="section-title">5. LICENCES & CERTIFICATIONS</div>
     <div class="row">
-      <div class="field"><div class="field-label">Security licence No:</div><div class="field-input">${data.security_license || ''}</div></div>
-      <div class="field"><div class="field-label">Licence Expiry:</div><div class="field-input">${data.security_license_expiry || ''}</div></div>
+      <div class="field"><div class="field-label">Security licence No:</div><div class="field-input">${
+        data.security_license || ""
+      }</div></div>
+      <div class="field"><div class="field-label">Licence Expiry:</div><div class="field-input">${
+        data.security_license_expiry || ""
+      }</div></div>
     </div>
     <div class="row">
-      <div class="field"><div class="field-label">First Aid Cert No:</div><div class="field-input">${data.first_aid_cert || ''}</div></div>
-      <div class="field"><div class="field-label">First Aid Expiry:</div><div class="field-input">${data.first_aid_expiry || ''}</div></div>
+      <div class="field"><div class="field-label">First Aid Cert No:</div><div class="field-input">${
+        data.first_aid_cert || ""
+      }</div></div>
+      <div class="field"><div class="field-label">First Aid Expiry:</div><div class="field-input">${
+        data.first_aid_expiry || ""
+      }</div></div>
     </div>
 
     <div class="declaration">
@@ -3366,11 +3522,17 @@ const StaffFormsScreen = ({ navigation }: any) => {
     </div>
     <div class="signature-row">
       <div class="signature-box">
-        <div class="signature-line">${data.signature ? `<img src="${data.signature}" class="signature-img" />` : ''}</div>
+        <div class="signature-line">${
+          data.signature
+            ? `<img src="${data.signature}" class="signature-img" />`
+            : ""
+        }</div>
         <div class="signature-label">Signature</div>
       </div>
       <div class="date-box">
-        <div style="height:28px; border-bottom:1px solid #666; font-size:10px; padding-top:14px;">${formatDate(data.signed_date || data.date)}</div>
+        <div style="height:28px; border-bottom:1px solid #666; font-size:10px; padding-top:14px;">${formatDate(
+          data.signed_date || data.date,
+        )}</div>
         <div class="signature-label">Date</div>
       </div>
     </div>
@@ -3382,10 +3544,10 @@ const StaffFormsScreen = ({ navigation }: any) => {
     const result = await pdfConvert({
       html,
       fileName: `onboarding_${Date.now()}`,
-      directory: 'Cache',
+      directory: "Cache",
       base64: false,
     });
-    if (!result.filePath) throw new Error('Onboarding PDF generation failed');
+    if (!result.filePath) throw new Error("Onboarding PDF generation failed");
     return result.filePath;
   };
 
@@ -3396,52 +3558,56 @@ const StaffFormsScreen = ({ navigation }: any) => {
         showAppsSuggestions: true,
       });
     } catch (err: any) {
-      console.error('File viewer error:', err);
-      if (Platform.OS === 'android') {
-        const uri = cachePath.startsWith('file://') ? cachePath : `file://${cachePath}`;
+      console.error("File viewer error:", err);
+      if (Platform.OS === "android") {
+        const uri = cachePath.startsWith("file://")
+          ? cachePath
+          : `file://${cachePath}`;
         await Linking.openURL(uri).catch(() => {
-          Toast.show({ type: 'error', text1: 'Could not open or save file' });
+          Toast.show({ type: "error", text1: "Could not open or save file" });
         });
       }
     }
   };
 
-  const generateUploadAndOpenPdf = async (pdfType: 'tfn' | 'super_form' | 'onboarding') => {
+  const generateUploadAndOpenPdf = async (
+    pdfType: "tfn" | "super_form" | "onboarding",
+  ) => {
     try {
       setLoading(true);
       const token = await getToken();
-      if (!token) throw new Error('Auth token not found');
+      if (!token) throw new Error("Auth token not found");
 
       // ✅ FIX 1: Use 'superannuation' only for the form-data GET, not for the upload
-      const apiType = pdfType === 'super_form' ? 'superannuation' : pdfType;
+      const apiType = pdfType === "super_form" ? "superannuation" : pdfType;
 
       const formRes = await axios.get(`${BASE_URL}/api/form-data`, {
         params: { user_id: userId, type: apiType },
-        headers: { Authorization: `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${token}` },
       });
       const formData = formRes.data?.data || formRes.data || {};
 
-      let pdfFilePath = '';
-      if (pdfType === 'tfn') {
+      let pdfFilePath = "";
+      if (pdfType === "tfn") {
         pdfFilePath = await generateTfnPdf(formData);
-      } else if (pdfType === 'super_form') {
+      } else if (pdfType === "super_form") {
         pdfFilePath = await generateSuperPdf(formData);
       } else {
         pdfFilePath = await generateOnboardingPdf(formData);
       }
 
       const form = new FormData();
-      form.append('user_id', String(userId));
+      form.append("user_id", String(userId));
 
       // ✅ FIX 2: Pass pdfType as-is ('super_form', 'tfn', 'onboarding') — no conversion
-      form.append('type', pdfType);
+      form.append("type", pdfType);
 
       // ✅ FIX 3: Always use 'onboarding_forms' as the folder
-      form.append('folder', 'onboarding_forms');
+      form.append("folder", "onboarding_forms");
 
-      form.append('file', {
-        uri: Platform.OS === 'ios' ? pdfFilePath : `file://${pdfFilePath}`,
-        type: 'application/pdf',
+      form.append("file", {
+        uri: Platform.OS === "ios" ? pdfFilePath : `file://${pdfFilePath}`,
+        type: "application/pdf",
         name: `${pdfType}_${Date.now()}.pdf`,
       } as any);
 
@@ -3452,24 +3618,27 @@ const StaffFormsScreen = ({ navigation }: any) => {
         console.log(`  ${key}:`, value);
       }
 
-      const uploadRes = await axios.post(`${BASE_URL}/api/upload-staff-file`, form, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'multipart/form-data',
+      const uploadRes = await axios.post(
+        `${BASE_URL}/api/upload-staff-file`,
+        form,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "multipart/form-data",
+          },
         },
-      });
+      );
 
       const uploadedUrl = uploadRes.data?.url || uploadRes.data?.data?.url;
-      console.log('✅ Upload successful:', uploadedUrl);
+      console.log("✅ Upload successful:", uploadedUrl);
 
       await saveAndOpenPdf(pdfFilePath);
-
     } catch (error: any) {
-      console.error('❌ PDF generate/upload error:', error);
+      console.error("❌ PDF generate/upload error:", error);
       Toast.show({
-        type: 'error',
-        text1: 'PDF Failed',
-        text2: error?.response?.data?.message || error?.message || 'Try again',
+        type: "error",
+        text1: "PDF Failed",
+        text2: error?.response?.data?.message || error?.message || "Try again",
       });
     } finally {
       setLoading(false);
@@ -3486,34 +3655,44 @@ const StaffFormsScreen = ({ navigation }: any) => {
       if (/^https?:\/\//.test(url)) {
         await Linking.openURL(url);
       } else {
-        const localUrl = Platform.OS === 'android' && !url.startsWith('file://') ? `file://${url}` : url;
+        const localUrl =
+          Platform.OS === "android" && !url.startsWith("file://")
+            ? `file://${url}`
+            : url;
         await FileViewer.open(localUrl);
       }
     } catch (e) {
-      Toast.show({ type: 'error', text1: 'Cannot open PDF' });
+      Toast.show({ type: "error", text1: "Cannot open PDF" });
     }
   };
 
   const convertToYesNo = (val: any): string | null => {
-    if (val === 1 || val === '1' || val === true || val === 'yes') return 'yes';
-    if (val === 0 || val === '0' || val === false || val === 'no') return 'no';
+    if (val === 1 || val === "1" || val === true || val === "yes") return "yes";
+    if (val === 0 || val === "0" || val === false || val === "no") return "no";
     return null;
   };
 
   const yesNoToBinary = (val: string | null): number | null => {
-    if (val === 'yes') return 1;
-    if (val === 'no') return 0;
+    if (val === "yes") return 1;
+    if (val === "no") return 0;
     return null;
   };
 
-  const formatDateToDDMMYYYY = (dateStr?: string) => {
-    if (!dateStr) return '';
-    const parts = dateStr.split('-');
-    if (parts.length !== 3) return '';
-    const [y, m, d] = parts;
-    return `${d}/${m}/${y}`;
-  };
+  const formatDateToDDMMYYYY = (dateStr?: string): string => {
+    if (!dateStr) return "";
 
+    try {
+      const date = new Date(dateStr);
+      if (isNaN(date.getTime())) return dateStr;
+
+      const dd = String(date.getDate()).padStart(2, "0");
+      const mm = String(date.getMonth() + 1).padStart(2, "0");
+      const yyyy = date.getFullYear();
+      return `${dd}/${mm}/${yyyy}`;
+    } catch {
+      return dateStr;
+    }
+  };
   const fetchFormData = async (id: number | string) => {
     try {
       setTabLoading(true);
@@ -3524,11 +3703,12 @@ const StaffFormsScreen = ({ navigation }: any) => {
         return;
       }
 
-      const apiType = activeStaffTab === 'super' ? 'superannuation' : activeStaffTab;
+      const apiType =
+        activeStaffTab === "super" ? "superannuation" : activeStaffTab;
 
       const res = await axios.get(`${BASE_URL}/api/form-data`, {
         params: { user_id: id, type: apiType },
-        headers: { Authorization: `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${token}` },
       });
 
       const formData = res.data?.data;
@@ -3539,20 +3719,20 @@ const StaffFormsScreen = ({ navigation }: any) => {
       }
 
       // ================= TFN =================
-      if (activeStaffTab === 'tfn') {
-        setTfnNumber(formData.tfn || '');
-        setTfnTitle(formData.title || '');
-        setTfnFirstName(formData.first_name || '');
-        setTfnSurname(formData.surname || '');
-        setTfnPrevName(formData.previous_name || '');
-        setTfnAddress(formData.address || '');
-        setBasisOfPayment(formData.basis_of_payment || '');
+      if (activeStaffTab === "tfn") {
+        setTfnNumber(formData.tfn || "");
+        setTfnTitle(formData.title || "");
+        setTfnFirstName(formData.first_name || "");
+        setTfnSurname(formData.surname || "");
+        setTfnPrevName(formData.previous_name || "");
+        setTfnAddress(formData.address || "");
+        setBasisOfPayment(formData.basis_of_payment || "");
 
         setAustralianResident(convertToYesNo(formData.australian_resident));
         setClaimTaxFree(convertToYesNo(formData.claim_threshold));
         setHasDebt(convertToYesNo(formData.help_debt));
 
-        setSignatureTfn(formData.signature || '');
+        setSignatureTfn(formData.signature || "");
 
         if (formData.dob) {
           setTfnDobBackend(formData.dob);
@@ -3566,18 +3746,18 @@ const StaffFormsScreen = ({ navigation }: any) => {
       }
 
       // ================= SUPER =================
-      else if (activeStaffTab === 'super') {
-        setSuperFullName(formData.full_name || '');
-        setSuperEmployeeNumber(formData.employee_number || '');
-        setFundChoice(formData.fund_choice || 'employer');
-        setSuperFundName(formData.fund_name || '');
-        setSuperFundAbn(formData.fund_abn || '');
-        setSuperFundUsi(formData.fund_usi || '');
-        setSuperMemberNumber(formData.member_account || '');
-        setSignatureSuper(formData.signature || '');
+      else if (activeStaffTab === "super") {
+        setSuperFullName(formData.full_name || "");
+        setSuperEmployeeNumber(formData.employee_number || "");
+        setFundChoice(formData.fund_choice || "employer");
+        setSuperFundName(formData.fund_name || "");
+        setSuperFundAbn(formData.fund_abn || "");
+        setSuperFundUsi(formData.fund_usi || "");
+        setSuperMemberNumber(formData.member_account || "");
+        setSignatureSuper(formData.signature || "");
 
         setSuperConfirmation(
-          formData.super_confirm === 1 || formData.super_confirm === true
+          formData.super_confirm === 1 || formData.super_confirm === true,
         );
 
         if (formData.signed_date) {
@@ -3587,17 +3767,17 @@ const StaffFormsScreen = ({ navigation }: any) => {
       }
 
       // ================= ONBOARDING =================
-      else if (activeStaffTab === 'onboarding') {
-        setOnboardTfn(formData.tfn || '');
-        setOnboardSuperFundName(formData.super_fund || '');
-        setOnboardSuperUsi(formData.super_usi || '');
-        setOnboardMemberNumber(formData.super_member || '');
-        setOnboardFullName(formData.full_name || '');
-        setOnboardMobile(formData.mobile || '');
-        setOnboardEmail(formData.email || '');
-        setOnboardAddress(formData.address || '');
-        setPassportNumber(formData.passport_number || '');
-        setPassportCountry(formData.passport_country || 'Australia');
+      else if (activeStaffTab === "onboarding") {
+        setOnboardTfn(formData.tfn || "");
+        setOnboardSuperFundName(formData.super_fund || "");
+        setOnboardSuperUsi(formData.super_usi || "");
+        setOnboardMemberNumber(formData.super_member || "");
+        setOnboardFullName(formData.full_name || "");
+        setOnboardMobile(formData.mobile || "");
+        setOnboardEmail(formData.email || "");
+        setOnboardAddress(formData.address || "");
+        setPassportNumber(formData.passport_number || "");
+        setPassportCountry(formData.passport_country || "Australia");
 
         if (formData.dob) {
           setOnboardDobBackend(formData.dob);
@@ -3606,18 +3786,18 @@ const StaffFormsScreen = ({ navigation }: any) => {
 
         // work rights
         if (formData.work_rights) {
-          const standard = ['citizen', 'student', 'temporary'];
+          const standard = ["citizen", "student", "temporary"];
           if (standard.includes(formData.work_rights)) {
             setWorkRights(formData.work_rights);
           } else {
-            setWorkRights('other');
+            setWorkRights("other");
             setOtherVisaType(formData.work_rights);
           }
         }
 
         // id checks (safe parse)
         let checks = formData.id_checks;
-        if (typeof checks === 'string') {
+        if (typeof checks === "string") {
           try {
             checks = JSON.parse(checks);
           } catch {
@@ -3632,13 +3812,13 @@ const StaffFormsScreen = ({ navigation }: any) => {
           medicare_or_utility: !!checks?.medicare_or_utility,
         });
 
-        setResidentialStatus(formData.residential_status || '');
-        setBankName(formData.bank_name || '');
-        setBsb(formData.bsb || '');
-        setAccountNumber(formData.account_number || '');
-        setSecurityLicence(formData.security_license || '');
-        setFirstAidNumber(formData.first_aid_cert || '');
-        setSignatureOnboard(formData.signature || '');
+        setResidentialStatus(formData.residential_status || "");
+        setBankName(formData.bank_name || "");
+        setBsb(formData.bsb || "");
+        setAccountNumber(formData.account_number || "");
+        setSecurityLicence(formData.security_license || "");
+        setFirstAidNumber(formData.first_aid_cert || "");
+        setSignatureOnboard(formData.signature || "");
 
         // dates
         if (formData.signed_date) {
@@ -3651,7 +3831,9 @@ const StaffFormsScreen = ({ navigation }: any) => {
         }
         if (formData.security_license_expiry) {
           setSecurityExpiryBackend(formData.security_license_expiry);
-          setSecurityExpiry(formatDateToDDMMYYYY(formData.security_license_expiry));
+          setSecurityExpiry(
+            formatDateToDDMMYYYY(formData.security_license_expiry),
+          );
         }
         if (formData.first_aid_expiry) {
           setFirstAidExpiryBackend(formData.first_aid_expiry);
@@ -3659,11 +3841,10 @@ const StaffFormsScreen = ({ navigation }: any) => {
         }
 
         // docs
-        setPassportDoc(formData.passport_doc || '');
-        setSecurityLicenseDoc(formData.security_license_doc || '');
-        setFirstAidDoc(formData.first_aid_doc || '');
+        setPassportDoc(formData.passport_doc || "");
+        setSecurityLicenseDoc(formData.security_license_doc || "");
+        setFirstAidDoc(formData.first_aid_doc || "");
       }
-
     } catch (error) {
       console.log(`Failed to fetch form data for ${activeStaffTab}:`, error);
     } finally {
@@ -3672,162 +3853,64 @@ const StaffFormsScreen = ({ navigation }: any) => {
   };
 
   const resetAllFields = () => {
-    setTfnNumber('');
-    setSignatureTfn('');
-    setSuperFundName('');
-    setSuperFundAbn('');
-    setSuperFundUsi('');
-    setSuperMemberNumber('');
-    setSignatureSuper('');
-    setPassportNumber('');
-    setBankName('');
-    setBsb('');
-    setAccountNumber('');
-    setSecurityLicence('');
-    setFirstAidNumber('');
-    setSignatureOnboard('');
-    setPassportDoc('');
-    setSecurityLicenseDoc('');
-    setFirstAidDoc('');
+    // Preserve DOB (and other profile data) when switching tabs
+    const currentTfnDob = tfnDob;
+    const currentTfnDobBackend = tfnDobBackend;
+    const currentOnboardDob = onboardDob;
+    const currentOnboardDobBackend = onboardDobBackend;
 
-    // Properly clean dates so they don't leak when empty
-    setTfnDob(''); setTfnDobBackend('');
-    setDateTfn(''); setDateTfnBackend('');
-    setDateSuper(''); setDateSuperBackend('');
-    setOnboardDob(''); setOnboardDobBackend('');
-    setDateOnboard(''); setDateOnboardBackend('');
-    setPassportExpiry(''); setPassportExpiryBackend('');
-    setSecurityExpiry(''); setSecurityExpiryBackend('');
-    setFirstAidExpiry(''); setFirstAidExpiryBackend('');
+    setTfnNumber("");
+    setSignatureTfn("");
+    setSuperFundName("");
+    setSuperFundAbn("");
+    setSuperFundUsi("");
+    setSuperMemberNumber("");
+    setSignatureSuper("");
+    setPassportNumber("");
+    setBankName("");
+    setBsb("");
+    setAccountNumber("");
+    setSecurityLicence("");
+    setFirstAidNumber("");
+    setSignatureOnboard("");
+    setPassportDoc("");
+    setSecurityLicenseDoc("");
+    setFirstAidDoc("");
+
+    // Reset only fields that should be cleared
+    setDateTfn("");
+    setDateTfnBackend("");
+    setDateSuper("");
+    setDateSuperBackend("");
+    setDateOnboard("");
+    setDateOnboardBackend("");
+    setPassportExpiry("");
+    setPassportExpiryBackend("");
+    setSecurityExpiry("");
+    setSecurityExpiryBackend("");
+    setFirstAidExpiry("");
+    setFirstAidExpiryBackend("");
+
+    // Restore DOB
+    if (currentTfnDob) {
+      setTfnDob(currentTfnDob);
+      setTfnDobBackend(currentTfnDobBackend);
+    }
+    if (currentOnboardDob) {
+      setOnboardDob(currentOnboardDob);
+      setOnboardDobBackend(currentOnboardDobBackend);
+    }
   };
 
   const formatDateSafe = (date: any, fieldName: string) => {
     if (!date) return null;
     const d = new Date(date);
     if (isNaN(d.getTime())) return null;
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(
+      2,
+      "0",
+    )}-${String(d.getDate()).padStart(2, "0")}`;
   };
-
-  // const handleSave = async () => {
-  //   if (!userId || !activeStaffTab) return;
-
-  //   if (!isFormComplete(activeStaffTab)) {
-  //     Toast.show({
-  //       type: 'error',
-  //       text1: 'Incomplete Form',
-  //       text2: 'Please complete all required (*) fields.',
-  //       position: 'top',
-  //     });
-  //     return;
-  //   }
-
-  //   setLoading(true);
-
-  //   try {
-  //     const token = await getToken();
-  //     const headers = { Authorization: `Bearer ${token}` };
-  //     if (activeStaffTab === 'tfn') {
-  //       const tfnPayload = {
-  //         user_id: userId,
-  //         tfn: tfnNumber,
-  //         title: tfnTitle,
-  //         first_name: tfnFirstName,
-  //         surname: tfnSurname,
-  //         previous_name: tfnPrevName,
-  //         dob: tfnDobBackend,
-  //         address: tfnAddress,
-  //         basis_of_payment: basisOfPayment,
-  //         australian_resident: australianResident,
-  //         claim_threshold: claimTaxFree,
-  //         help_debt: hasDebt,
-  //         signature: signatureTfn,
-  //         date: dateTfnBackend,
-  //       };
-
-  //       console.log('📤 TFN PAYLOAD:', JSON.stringify(tfnPayload, null, 2));
-
-  //       await axios.post(
-  //         `${BASE_URL}/api/tfn-declaration`,
-  //         tfnPayload,
-  //         { headers }
-  //       );
-
-  //       Toast.show({ type: 'success', text1: '✓ TFN saved successfully!' });
-  //       await generateUploadAndOpenPdf('tfn');
-  //     }
-
-  //     else if (activeStaffTab === 'super') {
-  //       await axios.post(`${BASE_URL}/api/superannuation`, {
-  //         user_id: userId,
-  //         full_name: superFullName || autoFullName,
-  //         employee_number: superEmployeeNumber,
-  //         fund_choice: fundChoice,
-  //         fund_name: fundChoice === 'own' ? superFundName : '',
-  //         fund_abn: fundChoice === 'own' ? superFundAbn : '',
-  //         fund_usi: fundChoice === 'own' ? superFundUsi : '',
-  //         member_account: fundChoice === 'own' ? superMemberNumber : '',
-  //         signature: signatureSuper,
-  //         date: dateSuperBackend,
-  //         super_confirm: superConfirmation ? 1 : 0,
-  //       }, { headers });
-  //       Toast.show({ type: 'success', text1: '✓ Superannuation saved!' });
-  //       await generateUploadAndOpenPdf('super_form');
-  //     }
-
-  //     else if (activeStaffTab === 'onboarding') {
-  //       const onboardingPayload = {
-  //         user_id: userId,
-  //         full_name: onboardFullName || autoFullName,
-  //         dob: formatDateSafe(onboardDobBackend, 'dob'),
-  //         residential_status: residentialStatus,
-  //         address: onboardAddress,
-  //         mobile: onboardMobile,
-  //         email: onboardEmail,
-  //         passport_number: passportNumber,
-  //         passport_country: passportCountry,
-  //         passport_expiry: formatDateSafe(passportExpiryBackend, 'passport_expiry'),
-  //         work_rights: workRights === 'other' ? otherVisaType : workRights,
-  //         tfn: onboardTfn,
-  //         super_fund: onboardSuperFundName,
-  //         super_usi: onboardSuperUsi,
-  //         super_member: onboardMemberNumber,
-  //         id_checks: {
-  //           primary_id: idChecks.primary_id,
-  //           drivers_license: idChecks.drivers_license,
-  //           security_license: idChecks.security_license,
-  //           medicare_or_utility: idChecks.medicare_or_utility,
-  //         },
-  //         bank_name: bankName,
-  //         bsb: bsb,
-  //         account_number: accountNumber,
-  //         security_license: securityLicence,
-  //         security_license_expiry: formatDateSafe(securityExpiryBackend, 'security_license_expiry'),
-  //         first_aid_cert: firstAidNumber,
-  //         first_aid_expiry: formatDateSafe(firstAidExpiryBackend, 'first_aid_expiry'),
-  //         passport_doc: passportDoc,
-  //         security_license_doc: securityLicenseDoc,
-  //         first_aid_doc: firstAidDoc,
-  //         signature: signatureOnboard,
-  //         date: formatDateSafe(dateOnboardBackend, 'date'),
-  //       };
-
-  //       await axios.post(`${BASE_URL}/api/onboarding`, onboardingPayload, { headers });
-  //       Toast.show({ type: 'success', text1: '✓ Onboarding saved!' });
-  //       await generateUploadAndOpenPdf('onboarding');
-  //     }
-
-  //     await fetchFormData(userId);
-  //   } catch (err: any) {
-  //     console.error('❌ Save error:', err);
-  //     Toast.show({
-  //       type: 'error',
-  //       text1: 'Save Failed',
-  //       text2: err?.response?.data?.message || 'Check your connection and try again.',
-  //     });
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
 
 
 
@@ -3836,10 +3919,10 @@ const StaffFormsScreen = ({ navigation }: any) => {
 
     if (!isFormComplete(activeStaffTab)) {
       Toast.show({
-        type: 'error',
-        text1: 'Incomplete Form',
-        text2: 'Please complete all required (*) fields.',
-        position: 'top',
+        type: "error",
+        text1: "Incomplete Form",
+        text2: "Please complete all required (*) fields.",
+        position: "top",
       });
       return;
     }
@@ -3851,7 +3934,7 @@ const StaffFormsScreen = ({ navigation }: any) => {
       const headers = { Authorization: `Bearer ${token}` };
 
       // 1. Submit the form data based on the active tab
-      if (activeStaffTab === 'tfn') {
+      if (activeStaffTab === "tfn") {
         const tfnPayload = {
           user_id: userId,
           tfn: tfnNumber,
@@ -3868,41 +3951,47 @@ const StaffFormsScreen = ({ navigation }: any) => {
           signature: signatureTfn,
           date: dateTfnBackend,
         };
-        console.log('📤 TFN PAYLOAD:', JSON.stringify(tfnPayload, null, 2));
-        await axios.post(`${BASE_URL}/api/tfn-declaration`, tfnPayload, { headers });
-      }
-
-      else if (activeStaffTab === 'super') {
+        console.log("📤 TFN PAYLOAD:", JSON.stringify(tfnPayload, null, 2));
+        await axios.post(`${BASE_URL}/api/tfn-declaration`, tfnPayload, {
+          headers,
+        });
+      } else if (activeStaffTab === "super") {
         const superPayload = {
           user_id: userId,
           full_name: superFullName || autoFullName,
           employee_number: superEmployeeNumber,
           fund_choice: fundChoice,
-          fund_name: fundChoice === 'own' ? superFundName : '',
-          fund_abn: fundChoice === 'own' ? superFundAbn : '',
-          fund_usi: fundChoice === 'own' ? superFundUsi : '',
-          member_account: fundChoice === 'own' ? superMemberNumber : '',
+          fund_name: fundChoice === "own" ? superFundName : "",
+          fund_abn: fundChoice === "own" ? superFundAbn : "",
+          fund_usi: fundChoice === "own" ? superFundUsi : "",
+          member_account: fundChoice === "own" ? superMemberNumber : "",
           signature: signatureSuper,
           date: dateSuperBackend,
           super_confirm: superConfirmation ? 1 : 0,
         };
-        console.log('📤 SUPERANNUATION PAYLOAD:', JSON.stringify(superPayload, null, 2));
-        await axios.post(`${BASE_URL}/api/superannuation`, superPayload, { headers });
-      }
-
-      else if (activeStaffTab === 'onboarding') {
+        console.log(
+          "📤 SUPERANNUATION PAYLOAD:",
+          JSON.stringify(superPayload, null, 2),
+        );
+        await axios.post(`${BASE_URL}/api/superannuation`, superPayload, {
+          headers,
+        });
+      } else if (activeStaffTab === "onboarding") {
         const onboardingPayload = {
           user_id: userId,
           full_name: onboardFullName || autoFullName,
-          dob: formatDateSafe(onboardDobBackend, 'dob'),
+          dob: formatDateSafe(onboardDobBackend, "dob"),
           residential_status: residentialStatus,
           address: onboardAddress,
           mobile: onboardMobile,
           email: onboardEmail,
           passport_number: passportNumber,
           passport_country: passportCountry,
-          passport_expiry: formatDateSafe(passportExpiryBackend, 'passport_expiry'),
-          work_rights: workRights === 'other' ? otherVisaType : workRights,
+          passport_expiry: formatDateSafe(
+            passportExpiryBackend,
+            "passport_expiry",
+          ),
+          work_rights: workRights === "other" ? otherVisaType : workRights,
           tfn: onboardTfn,
           super_fund: onboardSuperFundName,
           super_usi: onboardSuperUsi,
@@ -3917,65 +4006,109 @@ const StaffFormsScreen = ({ navigation }: any) => {
           bsb: bsb,
           account_number: accountNumber,
           security_license: securityLicence,
-          security_license_expiry: formatDateSafe(securityExpiryBackend, 'security_license_expiry'),
+          security_license_expiry: formatDateSafe(
+            securityExpiryBackend,
+            "security_license_expiry",
+          ),
           first_aid_cert: firstAidNumber,
-          first_aid_expiry: formatDateSafe(firstAidExpiryBackend, 'first_aid_expiry'),
+          first_aid_expiry: formatDateSafe(
+            firstAidExpiryBackend,
+            "first_aid_expiry",
+          ),
           passport_doc: passportDoc,
           security_license_doc: securityLicenseDoc,
           first_aid_doc: firstAidDoc,
           signature: signatureOnboard,
-          date: formatDateSafe(dateOnboardBackend, 'date'),
+          date: formatDateSafe(dateOnboardBackend, "date"),
         };
-        console.log('📤 ONBOARDING PAYLOAD:', JSON.stringify(onboardingPayload, null, 2));
-        await axios.post(`${BASE_URL}/api/onboarding`, onboardingPayload, { headers });
+        console.log(
+          "📤 ONBOARDING PAYLOAD:",
+          JSON.stringify(onboardingPayload, null, 2),
+        );
+        await axios.post(`${BASE_URL}/api/onboarding`, onboardingPayload, {
+          headers,
+        });
       }
 
-      Toast.show({ type: 'success', text1: '✓ Form saved successfully!' });
+      Toast.show({ type: "success", text1: "✓ Form saved successfully!" });
 
       // 2. Immediately trigger PDF generation and the upload-staff-file API call
-      const pdfType = activeStaffTab === 'super' ? 'super_form' : activeStaffTab;
-      await generateUploadAndOpenPdf(pdfType as 'tfn' | 'super_form' | 'onboarding');
+      const pdfType =
+        activeStaffTab === "super" ? "super_form" : activeStaffTab;
+      await generateUploadAndOpenPdf(
+        pdfType as "tfn" | "super_form" | "onboarding",
+      );
 
       // 3. Refresh data to sync state with the server
       await fetchFormData(userId);
-
     } catch (err: any) {
-      console.error('❌ Save/Upload Flow Error:', err);
+      console.error("❌ Save/Upload Flow Error:", err);
       Toast.show({
-        type: 'error',
-        text1: 'Save or Upload Failed',
-        text2: err?.response?.data?.message || 'Please check your connection and try again.',
+        type: "error",
+        text1: "Save or Upload Failed",
+        text2:
+          err?.response?.data?.message ||
+          "Please check your connection and try again.",
       });
     } finally {
       setLoading(false);
     }
   };
   const isFormComplete = (tab: StaffTab): boolean => {
-    if (tab === 'tfn') {
+    if (tab === "tfn") {
       return !!(
-        tfnNumber && tfnTitle && tfnFirstName && tfnSurname &&
-        tfnDobBackend && tfnAddress && basisOfPayment &&
-        australianResident !== null && claimTaxFree !== null &&
-        hasDebt !== null && signatureTfn
+        tfnNumber &&
+        tfnTitle &&
+        tfnFirstName &&
+        tfnSurname &&
+        tfnDobBackend &&
+        tfnAddress &&
+        basisOfPayment &&
+        australianResident !== null &&
+        claimTaxFree !== null &&
+        hasDebt !== null &&
+        signatureTfn
       );
     }
-    if (tab === 'super') {
+    if (tab === "super") {
       return !!(
         (superFullName || autoFullName) &&
         signatureSuper &&
-        (fundChoice === 'employer' || (fundChoice === 'own' && superFundName && superFundAbn && superFundUsi && superMemberNumber)) &&
+        (fundChoice === "employer" ||
+          (fundChoice === "own" &&
+            superFundName &&
+            superFundAbn &&
+            superFundUsi &&
+            superMemberNumber)) &&
         superConfirmation
       );
     }
-    if (tab === 'onboarding') {
-      const isOtherVisaComplete = workRights === 'other' ? !!otherVisaType.trim() : true;
+    if (tab === "onboarding") {
+      const isOtherVisaComplete =
+        workRights === "other" ? !!otherVisaType.trim() : true;
       return !!(
-        (onboardFullName || autoFullName) && onboardDobBackend && onboardAddress &&
-        onboardMobile && onboardEmail && passportNumber && passportCountry &&
-        passportExpiryBackend && workRights && isOtherVisaComplete && signatureOnboard && bankName &&
-        bsb && accountNumber && onboardTfn && onboardSuperFundName &&
-        onboardSuperUsi && onboardMemberNumber && securityLicence &&
-        securityExpiryBackend && firstAidNumber && firstAidExpiryBackend
+        (onboardFullName || autoFullName) &&
+        onboardDobBackend &&
+        onboardAddress &&
+        onboardMobile &&
+        onboardEmail &&
+        passportNumber &&
+        passportCountry &&
+        passportExpiryBackend &&
+        workRights &&
+        isOtherVisaComplete &&
+        signatureOnboard &&
+        bankName &&
+        bsb &&
+        accountNumber &&
+        onboardTfn &&
+        onboardSuperFundName &&
+        onboardSuperUsi &&
+        onboardMemberNumber &&
+        securityLicence &&
+        securityExpiryBackend &&
+        firstAidNumber &&
+        firstAidExpiryBackend
       );
     }
     return false;
@@ -3989,7 +4122,7 @@ const StaffFormsScreen = ({ navigation }: any) => {
       <SafeAreaView style={s.container}>
         <View style={s.loadingWrap}>
           <ActivityIndicator size="large" color={BRAND} />
-          <Text style={s.loadingText}>Loading your profile…</Text>
+          <Text style={s.loadingText}>Loading Your Profile…</Text>
         </View>
       </SafeAreaView>
     );
@@ -4004,17 +4137,18 @@ const StaffFormsScreen = ({ navigation }: any) => {
         <TouchableOpacity onPress={() => navigation.goBack()} style={s.backBtn}>
           <ArrowLeft size={20} color="#fff" />
         </TouchableOpacity>
-        <Text style={s.headerTitle}>Staff Forms</Text>
+        <Text style={s.headerTitle}>Staffoo Verification Forms</Text>
+
         <View style={{ width: 40 }} />
       </View>
 
       {/* ── Tab Bar ── */}
       <View style={s.tabBar}>
         {[
-          { key: 'onboarding', label: 'Employee Onboarding', Icon: BadgeCheck },
-          { key: 'tfn', label: 'TFN Declaration', Icon: FileText },
-          { key: 'super', label: 'Superannuation', Icon: Building2 },
-        ].map(tab => {
+          { key: "onboarding", label: "Employee Onboarding", Icon: BadgeCheck },
+          { key: "tfn", label: "TFN Declaration", Icon: FileText },
+          { key: "super", label: "Superannuation", Icon: Building2 },
+        ].map((tab) => {
           const active = activeStaffTab === tab.key;
           return (
             <TouchableOpacity
@@ -4022,7 +4156,7 @@ const StaffFormsScreen = ({ navigation }: any) => {
               style={[s.tabBtn, active && s.tabBtnActive]}
               onPress={() => setActiveStaffTab(tab.key as StaffTab)}
             >
-              <tab.Icon size={18} color={active ? '#fff' : '#94A3B8'} />
+              <tab.Icon size={18} color={active ? "#fff" : "#94A3B8"} />
               <Text style={[s.tabLabel, active && s.tabLabelActive]}>
                 {tab.label}
               </Text>
@@ -4033,7 +4167,7 @@ const StaffFormsScreen = ({ navigation }: any) => {
 
       <ScrollView contentContainerStyle={s.scrollContent}>
         {/* TFN TAB VIEW */}
-        {activeStaffTab === 'tfn' && (
+        {activeStaffTab === "tfn" && (
           <View style={s.card}>
             <SectionLabel>Tax File Number</SectionLabel>
             <Field label="TFN">
@@ -4054,8 +4188,10 @@ const StaffFormsScreen = ({ navigation }: any) => {
                     style={s.selectBtn}
                     onPress={() => setShowTitleModal(true)}
                   >
-                    <Text style={[s.selectText, !tfnTitle && { color: '#9CA3AF' }]}>
-                      {tfnTitle || 'Mr/Ms'}
+                    <Text
+                      style={[s.selectText, !tfnTitle && { color: "#9CA3AF" }]}
+                    >
+                      {tfnTitle || "Mr/Ms"}
                     </Text>
                     <ChevronDown size={14} color="#94a3b8" />
                   </TouchableOpacity>
@@ -4096,7 +4232,7 @@ const StaffFormsScreen = ({ navigation }: any) => {
                   <DateButton
                     value={tfnDob}
                     placeholder="dd/mm/yyyy"
-                    onPress={() => openDatePicker('tfnDob')}
+                    onPress={() => openDatePicker("tfnDob")}
                   />
                 </Field>
               </View>
@@ -4115,9 +4251,9 @@ const StaffFormsScreen = ({ navigation }: any) => {
             <Field label="Employment Type">
               <RadioGroup
                 options={[
-                  { label: 'Full-time', value: 'full-time' },
-                  { label: 'Part-time', value: 'part-time' },
-                  { label: 'Casual', value: 'casual' },
+                  { label: "Full-time", value: "full-time" },
+                  { label: "Part-time", value: "part-time" },
+                  { label: "Casual", value: "casual" },
                 ]}
                 value={basisOfPayment}
                 onChange={setBasisOfPayment}
@@ -4144,8 +4280,8 @@ const StaffFormsScreen = ({ navigation }: any) => {
                 <Field label="Signature">
                   <SignatureButton
                     value={signatureTfn}
-                    onPress={() => openSignature('tfn')}
-                    onClear={() => setSignatureTfn('')}
+                    onPress={() => openSignature("tfn")}
+                    onClear={() => setSignatureTfn("")}
                   />
                 </Field>
               </View>
@@ -4154,7 +4290,7 @@ const StaffFormsScreen = ({ navigation }: any) => {
                   <DateButton
                     value={dateTfn}
                     placeholder="dd/mm/yyyy"
-                    onPress={() => openDatePicker('dateTfn')}
+                    onPress={() => openDatePicker("dateTfn")}
                   />
                 </Field>
               </View>
@@ -4170,7 +4306,7 @@ const StaffFormsScreen = ({ navigation }: any) => {
         )}
 
         {/* SUPER TAB VIEW */}
-        {activeStaffTab === 'super' && (
+        {activeStaffTab === "super" && (
           <View style={s.card}>
             <SectionLabel>Employee Details</SectionLabel>
             <Field label="Full Name">
@@ -4191,14 +4327,17 @@ const StaffFormsScreen = ({ navigation }: any) => {
             <SectionLabel>Fund Choice</SectionLabel>
             <RadioGroup
               options={[
-                { label: 'I nominate my own super fund', value: 'own' },
-                { label: 'Use the employer\'s default super fund', value: 'employer' },
+                { label: "I nominate my own super fund", value: "own" },
+                {
+                  label: "Use the employer's default super fund",
+                  value: "employer",
+                },
               ]}
               value={fundChoice}
               onChange={(v: any) => setFundChoice(v)}
             />
 
-            {fundChoice === 'own' && (
+            {fundChoice === "own" && (
               <View style={s.ownFundBox}>
                 <View style={s.row2}>
                   <View style={{ flex: 1 }}>
@@ -4250,8 +4389,8 @@ const StaffFormsScreen = ({ navigation }: any) => {
                 <Field label="Signature">
                   <SignatureButton
                     value={signatureSuper}
-                    onPress={() => openSignature('super')}
-                    onClear={() => setSignatureSuper('')}
+                    onPress={() => openSignature("super")}
+                    onClear={() => setSignatureSuper("")}
                   />
                 </Field>
               </View>
@@ -4260,7 +4399,7 @@ const StaffFormsScreen = ({ navigation }: any) => {
                   <DateButton
                     value={dateSuper}
                     placeholder="dd/mm/yyyy"
-                    onPress={() => openDatePicker('dateSuper')}
+                    onPress={() => openDatePicker("dateSuper")}
                   />
                 </Field>
               </View>
@@ -4268,7 +4407,11 @@ const StaffFormsScreen = ({ navigation }: any) => {
 
             <Field label="Confirmation">
               <TouchableOpacity
-                style={{ flexDirection: 'row', alignItems: 'center', marginVertical: 10 }}
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  marginVertical: 10,
+                }}
                 onPress={() => setSuperConfirmation(!superConfirmation)}
               >
                 <View
@@ -4276,21 +4419,31 @@ const StaffFormsScreen = ({ navigation }: any) => {
                     width: 20,
                     height: 20,
                     borderWidth: 1,
-                    borderColor: '#94A3B8',
+                    borderColor: "#94A3B8",
                     marginRight: 10,
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                    backgroundColor: superConfirmation ? '#2563EB' : 'transparent',
+                    justifyContent: "center",
+                    alignItems: "center",
+                    backgroundColor: superConfirmation
+                      ? "#2563EB"
+                      : "transparent",
                   }}
                 >
                   {superConfirmation && (
-                    <Text style={{ color: '#fff', fontSize: 14, fontWeight: 'bold' }}>
+                    <Text
+                      style={{
+                        color: "#fff",
+                        fontSize: 14,
+                        fontWeight: "bold",
+                      }}
+                    >
                       ✓
                     </Text>
                   )}
                 </View>
-                <Text style={{ fontSize: 12, flex: 1, color: '#989696' }}>
-                  I confirm that the superannuation fund details provided are correct. I understand my super contributions will be paid into the fund I have selected above.
+                <Text style={{ fontSize: 12, flex: 1, color: "#989696" }}>
+                  I confirm that the superannuation fund details provided are
+                  correct. I understand my super contributions will be paid into
+                  the fund I have selected above.
                 </Text>
               </TouchableOpacity>
             </Field>
@@ -4304,7 +4457,7 @@ const StaffFormsScreen = ({ navigation }: any) => {
         )}
 
         {/* ONBOARDING TAB VIEW */}
-        {activeStaffTab === 'onboarding' && (
+        {activeStaffTab === "onboarding" && (
           <View style={s.card}>
             <SectionLabel>1. Contact Info</SectionLabel>
 
@@ -4327,9 +4480,9 @@ const StaffFormsScreen = ({ navigation }: any) => {
                     keyboardType="phone-pad"
                   />
                 </Field>
-              </View></View>
+              </View>
+            </View>
             <View style={s.row2}>
-
               <View style={{ flex: 1 }}>
                 <Field label="Email Address">
                   <StyledInput
@@ -4346,7 +4499,7 @@ const StaffFormsScreen = ({ navigation }: any) => {
                 <DateButton
                   value={onboardDob}
                   placeholder="dd/mm/yyyy"
-                  onPress={() => openDatePicker('onboardDob')}
+                  onPress={() => openDatePicker("onboardDob")}
                 />
               </Field>
             </View>
@@ -4363,7 +4516,7 @@ const StaffFormsScreen = ({ navigation }: any) => {
             <SectionLabel>2. Passport & Work Rights</SectionLabel>
             <View style={s.row3}>
               <View style={{ flex: 1 }}>
-                <Field label="Passport No.">
+                <Field label="Passport Number">
                   <StyledInput
                     value={passportNumber}
                     onChangeText={setPassportNumber}
@@ -4380,40 +4533,53 @@ const StaffFormsScreen = ({ navigation }: any) => {
                   />
                 </Field>
               </View>
+            
+            </View>
               <View style={{ flex: 1 }}>
-                <Field label="Expiry">
+                <Field label="Passport Expiry">
                   <DateButton
                     value={passportExpiry}
                     placeholder="dd/mm/yyyy"
-                    onPress={() => openDatePicker('passportExp')}
+                    onPress={() => openDatePicker("passportExp")}
                   />
                 </Field>
               </View>
-            </View>
             <DocUploadField
               label="Upload Passport Document"
               required
               fileName={passportDocName}
               uploading={passportDocUploading}
               storedName={passportDoc}
-              onPick={() => uploadDocumentFile(setPassportDocUploading, setPassportDocName, setPassportDoc)}
+              onPick={() =>
+                uploadDocumentFile(
+                  setPassportDocUploading,
+                  setPassportDocName,
+                  setPassportDoc,
+                )
+              }
               onView={() => openDocument(passportDoc)}
-              onClear={() => { setPassportDoc(''); setPassportDocName(''); }}
+              onClear={() => {
+                setPassportDoc("");
+                setPassportDocName("");
+              }}
             />
             <Field label="Work Rights In Australia">
               <RadioGroup
                 options={[
-                  { label: 'Australian Citizen / Permanent Resident', value: 'citizen' },
-                  { label: 'Student Visa', value: 'student' },
-                  { label: 'Temporary Visa Holder', value: 'temporary' },
-                  { label: 'Other Visa (please specify)', value: 'other' },
+                  {
+                    label: "Australian Citizen / Permanent Resident",
+                    value: "citizen",
+                  },
+                  { label: "Student Visa", value: "student" },
+                  { label: "Temporary Visa Holder", value: "temporary" },
+                  { label: "Other Visa (please specify)", value: "other" },
                 ]}
                 value={workRights}
                 onChange={setWorkRights}
               />
             </Field>
 
-            {workRights === 'other' && (
+            {workRights === "other" && (
               <Field label="Visa Type">
                 <StyledInput
                   value={otherVisaType}
@@ -4428,22 +4594,39 @@ const StaffFormsScreen = ({ navigation }: any) => {
               <IdCheckRow
                 label="Birth Certificate, Passport, or Citizenship Certificate - 70 Points"
                 checked={idChecks.primary_id}
-                onPress={() => setIdChecks(p => ({ ...p, primary_id: !p.primary_id }))}
+                onPress={() =>
+                  setIdChecks((p) => ({ ...p, primary_id: !p.primary_id }))
+                }
               />
               <IdCheckRow
                 label="Driver Licence or Government Issued Photo ID - 40 Points"
                 checked={idChecks.drivers_license}
-                onPress={() => setIdChecks(p => ({ ...p, drivers_license: !p.drivers_license }))}
+                onPress={() =>
+                  setIdChecks((p) => ({
+                    ...p,
+                    drivers_license: !p.drivers_license,
+                  }))
+                }
               />
               <IdCheckRow
                 label="Security License (Mandatory) - 40 Points"
                 checked={idChecks.security_license}
-                onPress={() => setIdChecks(p => ({ ...p, security_license: !p.security_license }))}
+                onPress={() =>
+                  setIdChecks((p) => ({
+                    ...p,
+                    security_license: !p.security_license,
+                  }))
+                }
               />
               <IdCheckRow
                 label="Medicare Card, Utility Bill, or Bank Statement - 25 Points"
                 checked={idChecks.medicare_or_utility}
-                onPress={() => setIdChecks(p => ({ ...p, medicare_or_utility: !p.medicare_or_utility }))}
+                onPress={() =>
+                  setIdChecks((p) => ({
+                    ...p,
+                    medicare_or_utility: !p.medicare_or_utility,
+                  }))
+                }
               />
             </View>
 
@@ -4534,7 +4717,7 @@ const StaffFormsScreen = ({ navigation }: any) => {
                   <DateButton
                     value={securityExpiry}
                     placeholder="dd/mm/yyyy"
-                    onPress={() => openDatePicker('secExp')}
+                    onPress={() => openDatePicker("secExp")}
                   />
                 </Field>
               </View>
@@ -4546,9 +4729,18 @@ const StaffFormsScreen = ({ navigation }: any) => {
               fileName={securityLicenseDocName}
               uploading={securityLicenseDocUploading}
               storedName={securityLicenseDoc}
-              onPick={() => uploadDocumentFile(setSecurityLicenseDocUploading, setSecurityLicenseDocName, setSecurityLicenseDoc)}
+              onPick={() =>
+                uploadDocumentFile(
+                  setSecurityLicenseDocUploading,
+                  setSecurityLicenseDocName,
+                  setSecurityLicenseDoc,
+                )
+              }
               onView={() => openDocument(securityLicenseDoc)}
-              onClear={() => { setSecurityLicenseDoc(''); setSecurityLicenseDocName(''); }}
+              onClear={() => {
+                setSecurityLicenseDoc("");
+                setSecurityLicenseDocName("");
+              }}
             />
             <View style={s.row2}>
               <View style={{ flex: 1 }}>
@@ -4565,7 +4757,7 @@ const StaffFormsScreen = ({ navigation }: any) => {
                   <DateButton
                     value={firstAidExpiry}
                     placeholder="dd/mm/yyyy"
-                    onPress={() => openDatePicker('faExp')}
+                    onPress={() => openDatePicker("faExp")}
                   />
                 </Field>
               </View>
@@ -4577,9 +4769,18 @@ const StaffFormsScreen = ({ navigation }: any) => {
               fileName={firstAidDocName}
               uploading={firstAidDocUploading}
               storedName={firstAidDoc}
-              onPick={() => uploadDocumentFile(setFirstAidDocUploading, setFirstAidDocName, setFirstAidDoc)}
+              onPick={() =>
+                uploadDocumentFile(
+                  setFirstAidDocUploading,
+                  setFirstAidDocName,
+                  setFirstAidDoc,
+                )
+              }
               onView={() => openDocument(firstAidDoc)}
-              onClear={() => { setFirstAidDoc(''); setFirstAidDocName(''); }}
+              onClear={() => {
+                setFirstAidDoc("");
+                setFirstAidDocName("");
+              }}
             />
 
             <SectionLabel>Declaration & Signature</SectionLabel>
@@ -4588,8 +4789,8 @@ const StaffFormsScreen = ({ navigation }: any) => {
                 <Field label="Employee signature">
                   <SignatureButton
                     value={signatureOnboard}
-                    onPress={() => openSignature('onboard')}
-                    onClear={() => setSignatureOnboard('')}
+                    onPress={() => openSignature("onboard")}
+                    onClear={() => setSignatureOnboard("")}
                   />
                 </Field>
               </View>
@@ -4598,7 +4799,7 @@ const StaffFormsScreen = ({ navigation }: any) => {
                   <DateButton
                     value={dateOnboard}
                     placeholder="dd/mm/yyyy"
-                    onPress={() => openDatePicker('dateOnboard')}
+                    onPress={() => openDatePicker("dateOnboard")}
                   />
                 </Field>
               </View>
@@ -4620,14 +4821,14 @@ const StaffFormsScreen = ({ navigation }: any) => {
           value={new Date()}
           mode="date"
           textColor="#fff"
-          display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+          display={Platform.OS === "ios" ? "spinner" : "default"}
           onChange={handleDateChange}
         />
       )}
 
       {/* ── Signature Modal ── */}
       <Modal visible={showSignatureModal} animationType="slide">
-        <SafeAreaView style={{ flex: 1, backgroundColor: '#fff' }}>
+        <SafeAreaView style={{ flex: 1, backgroundColor: "#fff" }}>
           <View style={s.sigModalHeader}>
             <TouchableOpacity
               onPress={() => setShowSignatureModal(false)}
@@ -4646,8 +4847,10 @@ const StaffFormsScreen = ({ navigation }: any) => {
           </View>
           <View style={{ flex: 1 }}>
             <SignatureScreen
-              onOK={sig => handleSaveSignature(sig)}
-              onEmpty={() => Toast.show({ type: 'error', text1: 'Please draw a signature' })}
+              onOK={(sig) => handleSaveSignature(sig)}
+              onEmpty={() =>
+                Toast.show({ type: "error", text1: "Please draw a signature" })
+              }
               autoClear={false}
               descriptionText=""
               clearText="Clear"
@@ -4678,7 +4881,7 @@ const StaffFormsScreen = ({ navigation }: any) => {
           <View style={s.modalSheet}>
             <View style={s.modalHandle} />
             <Text style={s.modalSheetTitle}>Select Title</Text>
-            {titleOptions.map(t => (
+            {titleOptions.map((t) => (
               <TouchableOpacity
                 key={t}
                 style={[s.modalOption, tfnTitle === t && s.modalOptionActive]}
@@ -4687,7 +4890,12 @@ const StaffFormsScreen = ({ navigation }: any) => {
                   setShowTitleModal(false);
                 }}
               >
-                <Text style={[s.modalOptionText, tfnTitle === t && s.modalOptionTextActive]}>
+                <Text
+                  style={[
+                    s.modalOptionText,
+                    tfnTitle === t && s.modalOptionTextActive,
+                  ]}
+                >
                   {t}
                 </Text>
                 {tfnTitle === t && <Check size={16} color={BRAND_DARK} />}
@@ -4707,9 +4915,11 @@ const SectionLabel = ({ children }: { children: string }) => (
   </View>
 );
 
-const Field = ({ label, children }: { label: string, children: any }) => (
+const Field = ({ label, children }: { label: string; children: any }) => (
   <View style={s.fieldWrapper}>
-    <Text style={s.label}>{label} <Text style={{ color: 'red' }}>*</Text></Text>
+    <Text style={s.label}>
+      {label} <Text style={{ color: "red" }}>*</Text>
+    </Text>
     {children}
   </View>
 );
@@ -4725,7 +4935,7 @@ const StyledInput = (props: any) => (
 
 const DateButton = ({ value, placeholder, onPress }: any) => (
   <TouchableOpacity style={s.dateBtn} onPress={onPress}>
-    <Text style={[s.dateBtnText, !value && { color: 'rgba(255,255,255,0.4)' }]}>
+    <Text style={[s.dateBtnText, !value && { color: "rgba(255,255,255,0.4)" }]}>
       {value || placeholder}
     </Text>
   </TouchableOpacity>
@@ -4749,7 +4959,11 @@ const SignatureButton = ({ value, onPress, onClear }: any) => (
 );
 
 const SaveButton = ({ label, loading, onPress, disabled }: any) => (
-  <TouchableOpacity style={[s.saveBtn, disabled && { opacity: 0.5 }]} onPress={onPress} disabled={loading || disabled}>
+  <TouchableOpacity
+    style={[s.saveBtn, disabled && { opacity: 0.5 }]}
+    onPress={onPress}
+    disabled={loading || disabled}
+  >
     {loading ? (
       <ActivityIndicator size="small" color={BRAND_DARK} />
     ) : (
@@ -4788,7 +5002,7 @@ const RadioGroup = ({ options, value, onChange }: any) => (
 
 const YesNoGroup = ({ value, onChange }: any) => (
   <View style={s.yesNoRow}>
-    {['yes', 'no'].map(opt => (
+    {["yes", "no"].map((opt) => (
       <TouchableOpacity
         key={opt}
         style={[s.yesNoBtn, value === opt && s.yesNoBtnOn]}
@@ -4839,7 +5053,7 @@ const DocUploadField = ({
         )}
       </TouchableOpacity>
       <Text style={s.docFileName} numberOfLines={1} ellipsizeMode="middle">
-        {fileName || 'No file chosen'}
+        {fileName || "No file chosen"}
       </Text>
       {storedName ? (
         <TouchableOpacity onPress={onClear} style={s.docClearBtn}>
@@ -4860,89 +5074,341 @@ const DocUploadField = ({
 // STYLES
 // ═══════════════════════════════════════════════════════════════════════════
 const s = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#111111', paddingTop: 25 },
+  container: { flex: 1, backgroundColor: "#111111", paddingTop: 25 },
   fieldWrapper: { marginBottom: 16 },
-  label: { fontSize: 10, fontWeight: '600', color: '#929294', marginBottom: 5 },
-  asterisk: { color: '#EF4444', fontWeight: 'bold' },
-  loadingWrap: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  loadingText: { marginTop: 12, color: '#fff', fontSize: 14 },
-  header: { height: 56, backgroundColor: BRAND_DARK, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 12 },
-  headerTitle: { color: '#fff', fontSize: 18, fontWeight: '700' },
-  backBtn: { width: 40, height: 40, justifyContent: 'center', alignItems: 'center' },
-  tabBar: { flexDirection: 'row', backgroundColor: BRAND_LIGHT, padding: 4, borderRadius: 8, marginHorizontal: 10, marginTop: 8 },
-  tabItem: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 8, borderRadius: 6, gap: 6 },
-  suggestionsContainer: { backgroundColor: CARD_BG, borderWidth: 1, borderColor: '#475569', borderRadius: 10, marginTop: 4, marginBottom: 12, maxHeight: 220, overflow: 'hidden', zIndex: 10 },
-  suggestionItem: { padding: 14, borderBottomWidth: 1, borderBottomColor: '#334155' },
-  suggestionText: { color: '#fff', fontSize: 14, lineHeight: 20 },
+  label: { fontSize: 10, fontWeight: "600", color: "#929294", marginBottom: 5 },
+  asterisk: { color: "#EF4444", fontWeight: "bold" },
+  loadingWrap: { flex: 1, justifyContent: "center", alignItems: "center" },
+  loadingText: { marginTop: 12, color: "#fff", fontSize: 14 },
+  header: {
+    height: 56,
+    backgroundColor: BRAND_DARK,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 12,
+  },
+  headerTitle: { color: "#fff", fontSize: 18, fontWeight: "700" },
+  backBtn: {
+    width: 40,
+    height: 40,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  tabBar: {
+    flexDirection: "row",
+    backgroundColor: BRAND_LIGHT,
+    padding: 4,
+    borderRadius: 8,
+    marginHorizontal: 10,
+    marginTop: 5,
+  },
+  tabItem: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 8,
+    borderRadius: 6,
+    gap: 6,
+  },
+  suggestionsContainer: {
+    backgroundColor: CARD_BG,
+    borderWidth: 1,
+    borderColor: "#475569",
+    borderRadius: 10,
+    marginTop: 4,
+    marginBottom: 12,
+    maxHeight: 220,
+    overflow: "hidden",
+    zIndex: 10,
+  },
+  suggestionItem: {
+    padding: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: "#334155",
+  },
+  suggestionText: { color: "#fff", fontSize: 14, lineHeight: 20 },
   tabItemActive: { backgroundColor: BRAND },
-  tabText: { fontSize: 11, fontWeight: '600', color: '#94A3B8' },
+  tabText: { fontSize: 11, fontWeight: "600", color: "#94A3B8" },
   tabTextActive: { color: BRAND_DARK },
   scrollContent: { padding: 12, paddingBottom: 40 },
-  card: { backgroundColor: CARD_BG, borderRadius: 16, padding: 16, borderWidth: 1, borderColor: 'rgba(137, 231, 208, 0.1)' },
-  sectionLabelWrap: { marginTop: 16, marginBottom: 8, borderLeftWidth: 3, borderLeftColor: BRAND, paddingLeft: 8 },
-  sectionLabelText: { color: BRAND, fontSize: 13, fontWeight: '700', textTransform: 'uppercase' },
+  card: {
+    backgroundColor: CARD_BG,
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: "rgba(137, 231, 208, 0.1)",
+  },
+  sectionLabelWrap: {
+    marginTop: 16,
+    marginBottom: 8,
+    borderLeftWidth: 3,
+    borderLeftColor: BRAND,
+    paddingLeft: 8,
+  },
+  sectionLabelText: {
+    color: BRAND,
+    fontSize: 13,
+    fontWeight: "700",
+    textTransform: "uppercase",
+  },
   fieldWrap: { marginBottom: 12 },
-  fieldLabel: { color: '#94A3B8', fontSize: 11, fontWeight: '600', marginBottom: 4 },
-  input: { borderWidth: 1, borderColor: '#475569', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, fontSize: 14, color: '#fff' },
-  row2: { flexDirection: 'row', gap: 10 },
-  row3: { flexDirection: 'row', gap: 8 },
-  selectBtn: { borderWidth: 1, borderColor: '#475569', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 12, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  selectText: { color: '#fff', fontSize: 14 },
-  dateBtn: { borderWidth: 1, borderColor: '#475569', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 12 },
-  dateBtnText: { color: '#fff', fontSize: 14 },
-  sigContainer: { height: 44, justifyContent: 'center' },
-  sigPlaceholderBtn: { borderWidth: 1, borderStyle: 'dashed', borderColor: BRAND, borderRadius: 10, height: '100%', justifyContent: 'center', alignItems: 'center' },
-  sigPlaceholderText: { color: BRAND, fontSize: 13, fontWeight: '600' },
-  sigUploadedBox: { borderWidth: 1, borderColor: BRAND, borderRadius: 10, height: '100%', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 12 },
-  sigUploadedText: { color: BRAND, fontSize: 13, fontWeight: '600' },
+  fieldLabel: {
+    color: "#94A3B8",
+    fontSize: 11,
+    fontWeight: "600",
+    marginBottom: 4,
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: "#475569",
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 14,
+    color: "#fff",
+  },
+  row2: { flexDirection: "row", gap: 10 },
+  row3: { flexDirection: "row", gap: 8 },
+  selectBtn: {
+    borderWidth: 1,
+    borderColor: "#475569",
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  selectText: { color: "#fff", fontSize: 14 },
+  dateBtn: {
+    borderWidth: 1,
+    borderColor: "#475569",
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+  },
+  dateBtnText: { color: "#fff", fontSize: 14 },
+  sigContainer: { height: 44, justifyContent: "center" },
+  sigPlaceholderBtn: {
+    borderWidth: 1,
+    borderStyle: "dashed",
+    borderColor: BRAND,
+    borderRadius: 10,
+    height: "100%",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  sigPlaceholderText: { color: BRAND, fontSize: 13, fontWeight: "600" },
+  sigUploadedBox: {
+    borderWidth: 1,
+    borderColor: BRAND,
+    borderRadius: 10,
+    height: "100%",
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 12,
+  },
+  sigUploadedText: { color: BRAND, fontSize: 13, fontWeight: "600" },
   sigClearBtn: { padding: 4 },
-  saveBtn: { backgroundColor: BRAND, borderRadius: 12, paddingVertical: 14, alignItems: 'center', marginTop: 20 },
-  saveBtnText: { color: BRAND_DARK, fontSize: 15, fontWeight: '700' },
-  downloadBtn: { flexDirection: 'row', backgroundColor: '#fff', borderRadius: 12, paddingVertical: 12, alignItems: 'center', justifyContent: 'center', marginTop: 12, gap: 8 },
-  downloadBtnText: { fontSize: 14, fontWeight: '700' },
-  ownFundBox: { backgroundColor: 'rgba(0,0,0,0.15)', padding: 10, borderRadius: 12, marginTop: 4, marginBottom: 12, borderWidth: 1, borderColor: '#475569' },
+  saveBtn: {
+    backgroundColor: BRAND,
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: "center",
+    marginTop: 20,
+  },
+  saveBtnText: { color: BRAND_DARK, fontSize: 15, fontWeight: "700" },
+  downloadBtn: {
+    flexDirection: "row",
+    backgroundColor: "#fff",
+    borderRadius: 12,
+    paddingVertical: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 12,
+    gap: 8,
+  },
+  downloadBtnText: { fontSize: 14, fontWeight: "700" },
+  ownFundBox: {
+    backgroundColor: "rgba(0,0,0,0.15)",
+    padding: 10,
+    borderRadius: 12,
+    marginTop: 4,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: "#475569",
+  },
   radioGroup: { gap: 8, marginVertical: 4 },
-  radioOpt: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 4 },
-  radioCircle: { width: 16, height: 16, borderRadius: 8, borderWidth: 1, borderColor: '#475569', justifyContent: 'center', alignItems: 'center' },
+  radioOpt: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    paddingVertical: 4,
+  },
+  radioCircle: {
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#475569",
+    justifyContent: "center",
+    alignItems: "center",
+  },
   radioCircleOn: { borderColor: BRAND },
   radioDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: BRAND },
-  radioLabel: { color: '#94A3B8', fontSize: 13 },
-  radioLabelOn: { color: '#fff' },
-  yesNoRow: { flexDirection: 'row', gap: 10, marginTop: 4 },
-  yesNoBtn: { flex: 1, height: 40, borderRadius: 10, borderWidth: 1, borderColor: '#475569', alignItems: 'center', justifyContent: 'center' },
-  yesNoBtnOn: { backgroundColor: 'rgba(137, 231, 208, 0.15)', borderColor: BRAND },
-  yesNoText: { fontSize: 13, color: '#94A3B8', fontWeight: '600' },
+  radioLabel: { color: "#94A3B8", fontSize: 13 },
+  radioLabelOn: { color: "#fff" },
+  yesNoRow: { flexDirection: "row", gap: 10, marginTop: 4 },
+  yesNoBtn: {
+    flex: 1,
+    height: 40,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "#475569",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  yesNoBtnOn: {
+    backgroundColor: "rgba(137, 231, 208, 0.15)",
+    borderColor: BRAND,
+  },
+  yesNoText: { fontSize: 13, color: "#94A3B8", fontWeight: "600" },
   yesNoTextOn: { color: BRAND },
-  idTable: { borderWidth: 1, borderColor: 'rgba(137, 231, 208, 0.2)', borderRadius: 12, overflow: 'hidden', marginBottom: 16 },
-  idRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 12, backgroundColor: BRAND_LIGHT, borderBottomWidth: 1, borderBottomColor: 'rgba(137, 231, 208, 0.1)' },
-  idRowText: { color: '#94A3B8', fontSize: 10 },
-  idCheckCircle: { width: 18, height: 18, borderRadius: 4, borderWidth: 1, borderColor: '#475569', justifyContent: 'center', alignItems: 'center' },
+  idTable: {
+    borderWidth: 1,
+    borderColor: "rgba(137, 231, 208, 0.2)",
+    borderRadius: 12,
+    overflow: "hidden",
+    marginBottom: 16,
+  },
+  idRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    padding: 12,
+    backgroundColor: BRAND_LIGHT,
+    borderBottomWidth: 1,
+    borderBottomColor: "rgba(137, 231, 208, 0.1)",
+  },
+  idRowText: { color: "#94A3B8", fontSize: 10 },
+  idCheckCircle: {
+    width: 18,
+    height: 18,
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: "#475569",
+    justifyContent: "center",
+    alignItems: "center",
+  },
   idCheckCircleOn: { backgroundColor: BRAND, borderColor: BRAND },
-  sigModalHeader: { height: 56, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16 },
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(0, 31, 63, 0.6)', justifyContent: 'flex-end' },
-  modalSheet: { backgroundColor: CARD_BG, borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 16, paddingBottom: 30 },
-  modalHandle: { width: 40, height: 4, backgroundColor: '#475569', borderRadius: 2, alignSelf: 'center', marginBottom: 12 },
-  modalSheetTitle: { color: '#fff', fontSize: 16, fontWeight: '700', marginBottom: 12, textAlign: 'center' },
-  modalOption: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.05)' },
+  sigModalHeader: {
+    height: 56,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 16,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 31, 63, 0.6)",
+    justifyContent: "flex-end",
+  },
+  modalSheet: {
+    backgroundColor: CARD_BG,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: 16,
+    paddingBottom: 30,
+  },
+  modalHandle: {
+    width: 40,
+    height: 4,
+    backgroundColor: "#475569",
+    borderRadius: 2,
+    alignSelf: "center",
+    marginBottom: 12,
+  },
+  modalSheetTitle: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "700",
+    marginBottom: 12,
+    textAlign: "center",
+  },
+  modalOption: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "rgba(255,255,255,0.05)",
+  },
   modalOptionActive: { opacity: 0.8 },
-  modalOptionText: { color: '#94A3B8', fontSize: 15 },
-  modalOptionTextActive: { color: BRAND, fontWeight: '600' },
-  sigCancelBtn: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  sigCancelText: { color: ERROR, fontSize: 15, fontWeight: '600' },
-  sigModalTitle: { fontSize: 16, fontWeight: '700', color: '#fff' },
-  sigHint: { backgroundColor: BRAND_LIGHT, paddingHorizontal: 16, paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: 'rgba(137, 231, 208, 0.2)' },
-  sigHintText: { fontSize: 12, color: '#94A3B8', textAlign: 'center' },
-  tabBtn: { flex: 1, alignItems: 'center', padding: 7, borderRadius: 8, backgroundColor: BRAND_LIGHT },
-  tabBtnActive: { backgroundColor: BRAND, shadowColor: BRAND, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.4, shadowRadius: 10, elevation: 8 },
-  tabLabel: { fontSize: 10, fontWeight: '700', color: '#94A3B8', marginTop: 4 },
-  tabLabelActive: { color: BRAND_DARK, fontWeight: '700' },
-  docUploadRow: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: '#475569', borderRadius: 10, overflow: 'hidden' },
-  docPickBtn: { backgroundColor: BRAND, paddingHorizontal: 14, paddingVertical: 11, minWidth: 100, alignItems: 'center', justifyContent: 'center' },
-  docPickBtnText: { color: BRAND_DARK, fontSize: 13, fontWeight: '700' },
-  docFileName: { flex: 1, color: '#fff', fontSize: 12, paddingHorizontal: 10 },
+  modalOptionText: { color: "#94A3B8", fontSize: 15 },
+  modalOptionTextActive: { color: BRAND, fontWeight: "600" },
+  sigCancelBtn: { flexDirection: "row", alignItems: "center", gap: 4 },
+  sigCancelText: { color: ERROR, fontSize: 15, fontWeight: "600" },
+  sigModalTitle: { fontSize: 16, fontWeight: "700", color: "#fff" },
+  sigHint: {
+    backgroundColor: BRAND_LIGHT,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: "rgba(137, 231, 208, 0.2)",
+  },
+  sigHintText: { fontSize: 12, color: "#94A3B8", textAlign: "center" },
+  tabBtn: {
+    flex: 1,
+    alignItems: "center",
+    padding: 7,
+    borderRadius: 8,
+    backgroundColor: BRAND_LIGHT,
+  },
+  tabBtnActive: {
+    backgroundColor: BRAND,
+    shadowColor: BRAND,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 10,
+    elevation: 8,
+  },
+  tabLabel: { fontSize: 10, fontWeight: "700", color: "#94A3B8", marginTop: 4 },
+  tabLabelActive: { color: BRAND_DARK, fontWeight: "700" },
+  docUploadRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#475569",
+    borderRadius: 10,
+    overflow: "hidden",
+  },
+  docPickBtn: {
+    backgroundColor: BRAND,
+    paddingHorizontal: 14,
+    paddingVertical: 11,
+    minWidth: 100,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  docPickBtnText: { color: BRAND_DARK, fontSize: 13, fontWeight: "700" },
+  docFileName: { flex: 1, color: "#fff", fontSize: 12, paddingHorizontal: 10 },
   docClearBtn: { padding: 10 },
-  docViewBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 6, paddingVertical: 4 },
-  docViewBtnText: { color: BRAND, fontSize: 12, fontWeight: '600', textDecorationLine: 'underline' },
+  docViewBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginTop: 6,
+    paddingVertical: 4,
+  },
+  docViewBtnText: {
+    color: BRAND,
+    fontSize: 12,
+    fontWeight: "600",
+    textDecorationLine: "underline",
+  },
 });
 
 export default StaffFormsScreen;

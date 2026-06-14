@@ -1,26 +1,26 @@
 {
-  "root": "/Users/mc/Documents/GitHub/staffoo-app",
-  "reactNativePath": "/Users/mc/Documents/GitHub/staffoo-app/node_modules/react-native",
+  "root": "/Users/test/Desktop/infomatic/staffooApp/staffoo-app",
+  "reactNativePath": "/Users/test/Desktop/infomatic/staffooApp/staffoo-app/node_modules/react-native",
   "reactNativeVersion": "0.83",
   "dependencies": {
     "@react-native-async-storage/async-storage": {
-      "root": "/Users/mc/Documents/GitHub/staffoo-app/node_modules/@react-native-async-storage/async-storage",
+      "root": "/Users/test/Desktop/infomatic/staffooApp/staffoo-app/node_modules/@react-native-async-storage/async-storage",
       "name": "@react-native-async-storage/async-storage",
       "platforms": {
         "ios": {
-          "podspecPath": "/Users/mc/Documents/GitHub/staffoo-app/node_modules/@react-native-async-storage/async-storage/RNCAsyncStorage.podspec",
+          "podspecPath": "/Users/test/Desktop/infomatic/staffooApp/staffoo-app/node_modules/@react-native-async-storage/async-storage/RNCAsyncStorage.podspec",
           "version": "2.2.0",
           "configurations": [],
           "scriptPhases": []
         },
         "android": {
-          "sourceDir": "/Users/mc/Documents/GitHub/staffoo-app/node_modules/@react-native-async-storage/async-storage/android",
+          "sourceDir": "/Users/test/Desktop/infomatic/staffooApp/staffoo-app/node_modules/@react-native-async-storage/async-storage/android",
           "packageImportPath": "import com.reactnativecommunity.asyncstorage.AsyncStoragePackage;",
           "packageInstance": "new AsyncStoragePackage()",
           "buildTypes": [],
           "libraryName": "rnasyncstorage",
           "componentDescriptors": [],
-          "cmakeListsPath": "/Users/mc/Documents/GitHub/staffoo-app/node_modules/@react-native-async-storage/async-storage/android/build/generated/source/codegen/jni/CMakeLists.txt",
+          "cmakeListsPath": "/Users/test/Desktop/infomatic/staffooApp/staffoo-app/node_modules/@react-native-async-storage/async-storage/android/build/generated/source/codegen/jni/CMakeLists.txt",
           "cxxModuleCMakeListsModuleName": null,
           "cxxModuleCMakeListsPath": null,
           "cxxModuleHeaderName": null,
@@ -29,22 +29,22 @@
       }
     },
     "@react-native-community/checkbox": {
-      "root": "/Users/mc/Documents/GitHub/staffoo-app/node_modules/@react-native-community/checkbox",
+      "root": "/Users/test/Desktop/infomatic/staffooApp/staffoo-app/node_modules/@react-native-community/checkbox",
       "name": "@react-native-community/checkbox",
       "platforms": {
         "ios": {
-          "podspecPath": "/Users/mc/Documents/GitHub/staffoo-app/node_modules/@react-native-community/checkbox/RNCCheckbox.podspec",
+          "podspecPath": "/Users/test/Desktop/infomatic/staffooApp/staffoo-app/node_modules/@react-native-community/checkbox/RNCCheckbox.podspec",
           "version": "0.5.20",
           "configurations": [],
           "scriptPhases": []
         },
         "android": {
-          "sourceDir": "/Users/mc/Documents/GitHub/staffoo-app/node_modules/@react-native-community/checkbox/android",
+          "sourceDir": "/Users/test/Desktop/infomatic/staffooApp/staffoo-app/node_modules/@react-native-community/checkbox/android",
           "packageImportPath": "import com.reactnativecommunity.checkbox.ReactCheckBoxPackage;",
           "packageInstance": "new ReactCheckBoxPackage()",
           "buildTypes": [],
           "componentDescriptors": [],
-          "cmakeListsPath": "/Users/mc/Documents/GitHub/staffoo-app/node_modules/@react-native-community/checkbox/android/build/generated/source/codegen/jni/CMakeLists.txt",
+          "cmakeListsPath": "/Users/test/Desktop/infomatic/staffooApp/staffoo-app/node_modules/@react-native-community/checkbox/android/build/generated/source/codegen/jni/CMakeLists.txt",
           "cxxModuleCMakeListsModuleName": null,
           "cxxModuleCMakeListsPath": null,
           "cxxModuleHeaderName": null,
@@ -53,23 +53,23 @@
       }
     },
     "@react-native-community/datetimepicker": {
-      "root": "/Users/mc/Documents/GitHub/staffoo-app/node_modules/@react-native-community/datetimepicker",
+      "root": "/Users/test/Desktop/infomatic/staffooApp/staffoo-app/node_modules/@react-native-community/datetimepicker",
       "name": "@react-native-community/datetimepicker",
       "platforms": {
         "ios": {
-          "podspecPath": "/Users/mc/Documents/GitHub/staffoo-app/node_modules/@react-native-community/datetimepicker/RNDateTimePicker.podspec",
+          "podspecPath": "/Users/test/Desktop/infomatic/staffooApp/staffoo-app/node_modules/@react-native-community/datetimepicker/RNDateTimePicker.podspec",
           "version": "8.6.0",
           "configurations": [],
           "scriptPhases": []
         },
         "android": {
-          "sourceDir": "/Users/mc/Documents/GitHub/staffoo-app/node_modules/@react-native-community/datetimepicker/android",
+          "sourceDir": "/Users/test/Desktop/infomatic/staffooApp/staffoo-app/node_modules/@react-native-community/datetimepicker/android",
           "packageImportPath": "import com.reactcommunity.rndatetimepicker.RNDateTimePickerPackage;",
           "packageInstance": "new RNDateTimePickerPackage()",
           "buildTypes": [],
           "libraryName": "RNDateTimePickerCGen",
           "componentDescriptors": [],
-          "cmakeListsPath": "/Users/mc/Documents/GitHub/staffoo-app/node_modules/@react-native-community/datetimepicker/android/build/generated/source/codegen/jni/CMakeLists.txt",
+          "cmakeListsPath": "/Users/test/Desktop/infomatic/staffooApp/staffoo-app/node_modules/@react-native-community/datetimepicker/android/build/generated/source/codegen/jni/CMakeLists.txt",
           "cxxModuleCMakeListsModuleName": null,
           "cxxModuleCMakeListsPath": null,
           "cxxModuleHeaderName": null,
@@ -78,23 +78,23 @@
       }
     },
     "@react-native-community/geolocation": {
-      "root": "/Users/mc/Documents/GitHub/staffoo-app/node_modules/@react-native-community/geolocation",
+      "root": "/Users/test/Desktop/infomatic/staffooApp/staffoo-app/node_modules/@react-native-community/geolocation",
       "name": "@react-native-community/geolocation",
       "platforms": {
         "ios": {
-          "podspecPath": "/Users/mc/Documents/GitHub/staffoo-app/node_modules/@react-native-community/geolocation/react-native-geolocation.podspec",
+          "podspecPath": "/Users/test/Desktop/infomatic/staffooApp/staffoo-app/node_modules/@react-native-community/geolocation/react-native-geolocation.podspec",
           "version": "3.4.0",
           "configurations": [],
           "scriptPhases": []
         },
         "android": {
-          "sourceDir": "/Users/mc/Documents/GitHub/staffoo-app/node_modules/@react-native-community/geolocation/android",
+          "sourceDir": "/Users/test/Desktop/infomatic/staffooApp/staffoo-app/node_modules/@react-native-community/geolocation/android",
           "packageImportPath": "import com.reactnativecommunity.geolocation.GeolocationPackage;",
           "packageInstance": "new GeolocationPackage()",
           "buildTypes": [],
           "libraryName": "RNCGeolocationSpec",
           "componentDescriptors": [],
-          "cmakeListsPath": "/Users/mc/Documents/GitHub/staffoo-app/node_modules/@react-native-community/geolocation/android/build/generated/source/codegen/jni/CMakeLists.txt",
+          "cmakeListsPath": "/Users/test/Desktop/infomatic/staffooApp/staffoo-app/node_modules/@react-native-community/geolocation/android/build/generated/source/codegen/jni/CMakeLists.txt",
           "cxxModuleCMakeListsModuleName": null,
           "cxxModuleCMakeListsPath": null,
           "cxxModuleHeaderName": null,
@@ -103,23 +103,23 @@
       }
     },
     "@react-native-community/netinfo": {
-      "root": "/Users/mc/Documents/GitHub/staffoo-app/node_modules/@react-native-community/netinfo",
+      "root": "/Users/test/Desktop/infomatic/staffooApp/staffoo-app/node_modules/@react-native-community/netinfo",
       "name": "@react-native-community/netinfo",
       "platforms": {
         "ios": {
-          "podspecPath": "/Users/mc/Documents/GitHub/staffoo-app/node_modules/@react-native-community/netinfo/react-native-netinfo.podspec",
+          "podspecPath": "/Users/test/Desktop/infomatic/staffooApp/staffoo-app/node_modules/@react-native-community/netinfo/react-native-netinfo.podspec",
           "version": "12.0.1",
           "configurations": [],
           "scriptPhases": []
         },
         "android": {
-          "sourceDir": "/Users/mc/Documents/GitHub/staffoo-app/node_modules/@react-native-community/netinfo/android",
+          "sourceDir": "/Users/test/Desktop/infomatic/staffooApp/staffoo-app/node_modules/@react-native-community/netinfo/android",
           "packageImportPath": "import com.reactnativecommunity.netinfo.NetInfoPackage;",
           "packageInstance": "new NetInfoPackage()",
           "buildTypes": [],
           "libraryName": "RNCNetInfoSpec",
           "componentDescriptors": [],
-          "cmakeListsPath": "/Users/mc/Documents/GitHub/staffoo-app/node_modules/@react-native-community/netinfo/android/build/generated/source/codegen/jni/CMakeLists.txt",
+          "cmakeListsPath": "/Users/test/Desktop/infomatic/staffooApp/staffoo-app/node_modules/@react-native-community/netinfo/android/build/generated/source/codegen/jni/CMakeLists.txt",
           "cxxModuleCMakeListsModuleName": null,
           "cxxModuleCMakeListsPath": null,
           "cxxModuleHeaderName": null,
@@ -128,17 +128,17 @@
       }
     },
     "@react-native-community/slider": {
-      "root": "/Users/mc/Documents/GitHub/staffoo-app/node_modules/@react-native-community/slider",
+      "root": "/Users/test/Desktop/infomatic/staffooApp/staffoo-app/node_modules/@react-native-community/slider",
       "name": "@react-native-community/slider",
       "platforms": {
         "ios": {
-          "podspecPath": "/Users/mc/Documents/GitHub/staffoo-app/node_modules/@react-native-community/slider/react-native-slider.podspec",
+          "podspecPath": "/Users/test/Desktop/infomatic/staffooApp/staffoo-app/node_modules/@react-native-community/slider/react-native-slider.podspec",
           "version": "5.2.0",
           "configurations": [],
           "scriptPhases": []
         },
         "android": {
-          "sourceDir": "/Users/mc/Documents/GitHub/staffoo-app/node_modules/@react-native-community/slider/android",
+          "sourceDir": "/Users/test/Desktop/infomatic/staffooApp/staffoo-app/node_modules/@react-native-community/slider/android",
           "packageImportPath": "import com.reactnativecommunity.slider.ReactSliderPackage;",
           "packageInstance": "new ReactSliderPackage()",
           "buildTypes": [],
@@ -146,7 +146,7 @@
           "componentDescriptors": [
             "RNCSliderComponentDescriptor"
           ],
-          "cmakeListsPath": "/Users/mc/Documents/GitHub/staffoo-app/node_modules/@react-native-community/slider/android/src/main/jni/CMakeLists.txt",
+          "cmakeListsPath": "/Users/test/Desktop/infomatic/staffooApp/staffoo-app/node_modules/@react-native-community/slider/android/src/main/jni/CMakeLists.txt",
           "cxxModuleCMakeListsModuleName": null,
           "cxxModuleCMakeListsPath": null,
           "cxxModuleHeaderName": null,
@@ -155,23 +155,23 @@
       }
     },
     "@react-native-documents/picker": {
-      "root": "/Users/mc/Documents/GitHub/staffoo-app/node_modules/@react-native-documents/picker",
+      "root": "/Users/test/Desktop/infomatic/staffooApp/staffoo-app/node_modules/@react-native-documents/picker",
       "name": "@react-native-documents/picker",
       "platforms": {
         "ios": {
-          "podspecPath": "/Users/mc/Documents/GitHub/staffoo-app/node_modules/@react-native-documents/picker/react-native-document-picker.podspec",
+          "podspecPath": "/Users/test/Desktop/infomatic/staffooApp/staffoo-app/node_modules/@react-native-documents/picker/react-native-document-picker.podspec",
           "version": "12.0.1",
           "configurations": [],
           "scriptPhases": []
         },
         "android": {
-          "sourceDir": "/Users/mc/Documents/GitHub/staffoo-app/node_modules/@react-native-documents/picker/android",
+          "sourceDir": "/Users/test/Desktop/infomatic/staffooApp/staffoo-app/node_modules/@react-native-documents/picker/android",
           "packageImportPath": "import com.reactnativedocumentpicker.RNDocumentPickerPackage;",
           "packageInstance": "new RNDocumentPickerPackage()",
           "buildTypes": [],
           "libraryName": "rndocumentpickerCGen",
           "componentDescriptors": [],
-          "cmakeListsPath": "/Users/mc/Documents/GitHub/staffoo-app/node_modules/@react-native-documents/picker/android/build/generated/source/codegen/jni/CMakeLists.txt",
+          "cmakeListsPath": "/Users/test/Desktop/infomatic/staffooApp/staffoo-app/node_modules/@react-native-documents/picker/android/build/generated/source/codegen/jni/CMakeLists.txt",
           "cxxModuleCMakeListsModuleName": null,
           "cxxModuleCMakeListsPath": null,
           "cxxModuleHeaderName": null,
@@ -180,17 +180,17 @@
       }
     },
     "@react-native-google-signin/google-signin": {
-      "root": "/Users/mc/Documents/GitHub/staffoo-app/node_modules/@react-native-google-signin/google-signin",
+      "root": "/Users/test/Desktop/infomatic/staffooApp/staffoo-app/node_modules/@react-native-google-signin/google-signin",
       "name": "@react-native-google-signin/google-signin",
       "platforms": {
         "ios": {
-          "podspecPath": "/Users/mc/Documents/GitHub/staffoo-app/node_modules/@react-native-google-signin/google-signin/RNGoogleSignin.podspec",
+          "podspecPath": "/Users/test/Desktop/infomatic/staffooApp/staffoo-app/node_modules/@react-native-google-signin/google-signin/RNGoogleSignin.podspec",
           "version": "16.1.2",
           "configurations": [],
           "scriptPhases": []
         },
         "android": {
-          "sourceDir": "/Users/mc/Documents/GitHub/staffoo-app/node_modules/@react-native-google-signin/google-signin/android",
+          "sourceDir": "/Users/test/Desktop/infomatic/staffooApp/staffoo-app/node_modules/@react-native-google-signin/google-signin/android",
           "packageImportPath": "import com.reactnativegooglesignin.RNGoogleSigninPackage;",
           "packageInstance": "new RNGoogleSigninPackage()",
           "buildTypes": [],
@@ -198,7 +198,7 @@
           "componentDescriptors": [
             "RNGoogleSigninButtonComponentDescriptor"
           ],
-          "cmakeListsPath": "/Users/mc/Documents/GitHub/staffoo-app/node_modules/@react-native-google-signin/google-signin/android/build/generated/source/codegen/jni/CMakeLists.txt",
+          "cmakeListsPath": "/Users/test/Desktop/infomatic/staffooApp/staffoo-app/node_modules/@react-native-google-signin/google-signin/android/build/generated/source/codegen/jni/CMakeLists.txt",
           "cxxModuleCMakeListsModuleName": null,
           "cxxModuleCMakeListsPath": null,
           "cxxModuleHeaderName": null,
@@ -207,17 +207,17 @@
       }
     },
     "@react-native-picker/picker": {
-      "root": "/Users/mc/Documents/GitHub/staffoo-app/node_modules/@react-native-picker/picker",
+      "root": "/Users/test/Desktop/infomatic/staffooApp/staffoo-app/node_modules/@react-native-picker/picker",
       "name": "@react-native-picker/picker",
       "platforms": {
         "ios": {
-          "podspecPath": "/Users/mc/Documents/GitHub/staffoo-app/node_modules/@react-native-picker/picker/RNCPicker.podspec",
+          "podspecPath": "/Users/test/Desktop/infomatic/staffooApp/staffoo-app/node_modules/@react-native-picker/picker/RNCPicker.podspec",
           "version": "2.11.4",
           "configurations": [],
           "scriptPhases": []
         },
         "android": {
-          "sourceDir": "/Users/mc/Documents/GitHub/staffoo-app/node_modules/@react-native-picker/picker/android",
+          "sourceDir": "/Users/test/Desktop/infomatic/staffooApp/staffoo-app/node_modules/@react-native-picker/picker/android",
           "packageImportPath": "import com.reactnativecommunity.picker.RNCPickerPackage;",
           "packageInstance": "new RNCPickerPackage()",
           "buildTypes": [],
@@ -226,7 +226,7 @@
             "RNCAndroidDialogPickerComponentDescriptor",
             "RNCAndroidDropdownPickerComponentDescriptor"
           ],
-          "cmakeListsPath": "/Users/mc/Documents/GitHub/staffoo-app/node_modules/@react-native-picker/picker/android/src/main/jni/CMakeLists.txt",
+          "cmakeListsPath": "/Users/test/Desktop/infomatic/staffooApp/staffoo-app/node_modules/@react-native-picker/picker/android/src/main/jni/CMakeLists.txt",
           "cxxModuleCMakeListsModuleName": null,
           "cxxModuleCMakeListsPath": null,
           "cxxModuleHeaderName": null,
@@ -235,17 +235,17 @@
       }
     },
     "@stripe/stripe-react-native": {
-      "root": "/Users/mc/Documents/GitHub/staffoo-app/node_modules/@stripe/stripe-react-native",
+      "root": "/Users/test/Desktop/infomatic/staffooApp/staffoo-app/node_modules/@stripe/stripe-react-native",
       "name": "@stripe/stripe-react-native",
       "platforms": {
         "ios": {
-          "podspecPath": "/Users/mc/Documents/GitHub/staffoo-app/node_modules/@stripe/stripe-react-native/stripe-react-native.podspec",
+          "podspecPath": "/Users/test/Desktop/infomatic/staffooApp/staffoo-app/node_modules/@stripe/stripe-react-native/stripe-react-native.podspec",
           "version": "0.62.0",
           "configurations": [],
           "scriptPhases": []
         },
         "android": {
-          "sourceDir": "/Users/mc/Documents/GitHub/staffoo-app/node_modules/@stripe/stripe-react-native/android",
+          "sourceDir": "/Users/test/Desktop/infomatic/staffooApp/staffoo-app/node_modules/@stripe/stripe-react-native/android",
           "packageImportPath": "import com.reactnativestripesdk.StripeSdkPackage;",
           "packageInstance": "new StripeSdkPackage()",
           "buildTypes": [],
@@ -264,7 +264,7 @@
             "PaymentMethodMessagingElementViewComponentDescriptor",
             "StripeContainerComponentDescriptor"
           ],
-          "cmakeListsPath": "/Users/mc/Documents/GitHub/staffoo-app/node_modules/@stripe/stripe-react-native/android/build/generated/source/codegen/jni/CMakeLists.txt",
+          "cmakeListsPath": "/Users/test/Desktop/infomatic/staffooApp/staffoo-app/node_modules/@stripe/stripe-react-native/android/build/generated/source/codegen/jni/CMakeLists.txt",
           "cxxModuleCMakeListsModuleName": null,
           "cxxModuleCMakeListsPath": null,
           "cxxModuleHeaderName": null,
@@ -273,17 +273,17 @@
       }
     },
     "react-native-agora": {
-      "root": "/Users/mc/Documents/GitHub/staffoo-app/node_modules/react-native-agora",
+      "root": "/Users/test/Desktop/infomatic/staffooApp/staffoo-app/node_modules/react-native-agora",
       "name": "react-native-agora",
       "platforms": {
         "ios": {
-          "podspecPath": "/Users/mc/Documents/GitHub/staffoo-app/node_modules/react-native-agora/react-native-agora.podspec",
-          "version": "4.4.0",
+          "podspecPath": "/Users/test/Desktop/infomatic/staffooApp/staffoo-app/node_modules/react-native-agora/react-native-agora.podspec",
+          "version": "4.5.4",
           "configurations": [],
           "scriptPhases": []
         },
         "android": {
-          "sourceDir": "/Users/mc/Documents/GitHub/staffoo-app/node_modules/react-native-agora/android",
+          "sourceDir": "/Users/test/Desktop/infomatic/staffooApp/staffoo-app/node_modules/react-native-agora/android",
           "packageImportPath": "import io.agora.rtc.ng.react.AgoraRtcNgPackage;",
           "packageInstance": "new AgoraRtcNgPackage()",
           "buildTypes": [],
@@ -292,7 +292,7 @@
             "AgoraRtcSurfaceViewComponentDescriptor",
             "AgoraRtcTextureViewComponentDescriptor"
           ],
-          "cmakeListsPath": "/Users/mc/Documents/GitHub/staffoo-app/node_modules/react-native-agora/android/build/generated/source/codegen/jni/CMakeLists.txt",
+          "cmakeListsPath": "/Users/test/Desktop/infomatic/staffooApp/staffoo-app/node_modules/react-native-agora/android/build/generated/source/codegen/jni/CMakeLists.txt",
           "cxxModuleCMakeListsModuleName": null,
           "cxxModuleCMakeListsPath": null,
           "cxxModuleHeaderName": null,
@@ -301,23 +301,23 @@
       }
     },
     "react-native-blob-util": {
-      "root": "/Users/mc/Documents/GitHub/staffoo-app/node_modules/react-native-blob-util",
+      "root": "/Users/test/Desktop/infomatic/staffooApp/staffoo-app/node_modules/react-native-blob-util",
       "name": "react-native-blob-util",
       "platforms": {
         "ios": {
-          "podspecPath": "/Users/mc/Documents/GitHub/staffoo-app/node_modules/react-native-blob-util/react-native-blob-util.podspec",
+          "podspecPath": "/Users/test/Desktop/infomatic/staffooApp/staffoo-app/node_modules/react-native-blob-util/react-native-blob-util.podspec",
           "version": "0.24.9",
           "configurations": [],
           "scriptPhases": []
         },
         "android": {
-          "sourceDir": "/Users/mc/Documents/GitHub/staffoo-app/node_modules/react-native-blob-util/android",
+          "sourceDir": "/Users/test/Desktop/infomatic/staffooApp/staffoo-app/node_modules/react-native-blob-util/android",
           "packageImportPath": "import com.ReactNativeBlobUtil.ReactNativeBlobUtilPackage;",
           "packageInstance": "new ReactNativeBlobUtilPackage()",
           "buildTypes": [],
           "libraryName": "ReactNativeBlobUtilSpec",
           "componentDescriptors": [],
-          "cmakeListsPath": "/Users/mc/Documents/GitHub/staffoo-app/node_modules/react-native-blob-util/android/build/generated/source/codegen/jni/CMakeLists.txt",
+          "cmakeListsPath": "/Users/test/Desktop/infomatic/staffooApp/staffoo-app/node_modules/react-native-blob-util/android/build/generated/source/codegen/jni/CMakeLists.txt",
           "cxxModuleCMakeListsModuleName": null,
           "cxxModuleCMakeListsPath": null,
           "cxxModuleHeaderName": null,
@@ -326,22 +326,22 @@
       }
     },
     "react-native-file-viewer": {
-      "root": "/Users/mc/Documents/GitHub/staffoo-app/node_modules/react-native-file-viewer",
+      "root": "/Users/test/Desktop/infomatic/staffooApp/staffoo-app/node_modules/react-native-file-viewer",
       "name": "react-native-file-viewer",
       "platforms": {
         "ios": {
-          "podspecPath": "/Users/mc/Documents/GitHub/staffoo-app/node_modules/react-native-file-viewer/RNFileViewer.podspec",
+          "podspecPath": "/Users/test/Desktop/infomatic/staffooApp/staffoo-app/node_modules/react-native-file-viewer/RNFileViewer.podspec",
           "version": "2.1.5",
           "configurations": [],
           "scriptPhases": []
         },
         "android": {
-          "sourceDir": "/Users/mc/Documents/GitHub/staffoo-app/node_modules/react-native-file-viewer/android",
+          "sourceDir": "/Users/test/Desktop/infomatic/staffooApp/staffoo-app/node_modules/react-native-file-viewer/android",
           "packageImportPath": "import com.vinzscam.reactnativefileviewer.RNFileViewerPackage;",
           "packageInstance": "new RNFileViewerPackage()",
           "buildTypes": [],
           "componentDescriptors": [],
-          "cmakeListsPath": "/Users/mc/Documents/GitHub/staffoo-app/node_modules/react-native-file-viewer/android/build/generated/source/codegen/jni/CMakeLists.txt",
+          "cmakeListsPath": "/Users/test/Desktop/infomatic/staffooApp/staffoo-app/node_modules/react-native-file-viewer/android/build/generated/source/codegen/jni/CMakeLists.txt",
           "cxxModuleCMakeListsModuleName": null,
           "cxxModuleCMakeListsPath": null,
           "cxxModuleHeaderName": null,
@@ -350,22 +350,22 @@
       }
     },
     "react-native-fs": {
-      "root": "/Users/mc/Documents/GitHub/staffoo-app/node_modules/react-native-fs",
+      "root": "/Users/test/Desktop/infomatic/staffooApp/staffoo-app/node_modules/react-native-fs",
       "name": "react-native-fs",
       "platforms": {
         "ios": {
-          "podspecPath": "/Users/mc/Documents/GitHub/staffoo-app/node_modules/react-native-fs/RNFS.podspec",
+          "podspecPath": "/Users/test/Desktop/infomatic/staffooApp/staffoo-app/node_modules/react-native-fs/RNFS.podspec",
           "version": "2.20.0",
           "configurations": [],
           "scriptPhases": []
         },
         "android": {
-          "sourceDir": "/Users/mc/Documents/GitHub/staffoo-app/node_modules/react-native-fs/android",
+          "sourceDir": "/Users/test/Desktop/infomatic/staffooApp/staffoo-app/node_modules/react-native-fs/android",
           "packageImportPath": "import com.rnfs.RNFSPackage;",
           "packageInstance": "new RNFSPackage()",
           "buildTypes": [],
           "componentDescriptors": [],
-          "cmakeListsPath": "/Users/mc/Documents/GitHub/staffoo-app/node_modules/react-native-fs/android/build/generated/source/codegen/jni/CMakeLists.txt",
+          "cmakeListsPath": "/Users/test/Desktop/infomatic/staffooApp/staffoo-app/node_modules/react-native-fs/android/build/generated/source/codegen/jni/CMakeLists.txt",
           "cxxModuleCMakeListsModuleName": null,
           "cxxModuleCMakeListsPath": null,
           "cxxModuleHeaderName": null,
@@ -374,22 +374,22 @@
       }
     },
     "react-native-geolocation-service": {
-      "root": "/Users/mc/Documents/GitHub/staffoo-app/node_modules/react-native-geolocation-service",
+      "root": "/Users/test/Desktop/infomatic/staffooApp/staffoo-app/node_modules/react-native-geolocation-service",
       "name": "react-native-geolocation-service",
       "platforms": {
         "ios": {
-          "podspecPath": "/Users/mc/Documents/GitHub/staffoo-app/node_modules/react-native-geolocation-service/react-native-geolocation-service.podspec",
+          "podspecPath": "/Users/test/Desktop/infomatic/staffooApp/staffoo-app/node_modules/react-native-geolocation-service/react-native-geolocation-service.podspec",
           "version": "5.3.1",
           "configurations": [],
           "scriptPhases": []
         },
         "android": {
-          "sourceDir": "/Users/mc/Documents/GitHub/staffoo-app/node_modules/react-native-geolocation-service/android",
+          "sourceDir": "/Users/test/Desktop/infomatic/staffooApp/staffoo-app/node_modules/react-native-geolocation-service/android",
           "packageImportPath": "import com.agontuk.RNFusedLocation.RNFusedLocationPackage;",
           "packageInstance": "new RNFusedLocationPackage()",
           "buildTypes": [],
           "componentDescriptors": [],
-          "cmakeListsPath": "/Users/mc/Documents/GitHub/staffoo-app/node_modules/react-native-geolocation-service/android/build/generated/source/codegen/jni/CMakeLists.txt",
+          "cmakeListsPath": "/Users/test/Desktop/infomatic/staffooApp/staffoo-app/node_modules/react-native-geolocation-service/android/build/generated/source/codegen/jni/CMakeLists.txt",
           "cxxModuleCMakeListsModuleName": null,
           "cxxModuleCMakeListsPath": null,
           "cxxModuleHeaderName": null,
@@ -398,17 +398,17 @@
       }
     },
     "react-native-gesture-handler": {
-      "root": "/Users/mc/Documents/GitHub/staffoo-app/node_modules/react-native-gesture-handler",
+      "root": "/Users/test/Desktop/infomatic/staffooApp/staffoo-app/node_modules/react-native-gesture-handler",
       "name": "react-native-gesture-handler",
       "platforms": {
         "ios": {
-          "podspecPath": "/Users/mc/Documents/GitHub/staffoo-app/node_modules/react-native-gesture-handler/RNGestureHandler.podspec",
-          "version": "2.31.2",
+          "podspecPath": "/Users/test/Desktop/infomatic/staffooApp/staffoo-app/node_modules/react-native-gesture-handler/RNGestureHandler.podspec",
+          "version": "2.32.0",
           "configurations": [],
           "scriptPhases": []
         },
         "android": {
-          "sourceDir": "/Users/mc/Documents/GitHub/staffoo-app/node_modules/react-native-gesture-handler/android",
+          "sourceDir": "/Users/test/Desktop/infomatic/staffooApp/staffoo-app/node_modules/react-native-gesture-handler/android",
           "packageImportPath": "import com.swmansion.gesturehandler.RNGestureHandlerPackage;",
           "packageInstance": "new RNGestureHandlerPackage()",
           "buildTypes": [],
@@ -417,7 +417,7 @@
             "RNGestureHandlerButtonComponentDescriptor",
             "RNGestureHandlerRootViewComponentDescriptor"
           ],
-          "cmakeListsPath": "/Users/mc/Documents/GitHub/staffoo-app/node_modules/react-native-gesture-handler/android/build/generated/source/codegen/jni/CMakeLists.txt",
+          "cmakeListsPath": "/Users/test/Desktop/infomatic/staffooApp/staffoo-app/node_modules/react-native-gesture-handler/android/build/generated/source/codegen/jni/CMakeLists.txt",
           "cxxModuleCMakeListsModuleName": null,
           "cxxModuleCMakeListsPath": null,
           "cxxModuleHeaderName": null,
@@ -426,23 +426,23 @@
       }
     },
     "react-native-get-random-values": {
-      "root": "/Users/mc/Documents/GitHub/staffoo-app/node_modules/react-native-get-random-values",
+      "root": "/Users/test/Desktop/infomatic/staffooApp/staffoo-app/node_modules/react-native-get-random-values",
       "name": "react-native-get-random-values",
       "platforms": {
         "ios": {
-          "podspecPath": "/Users/mc/Documents/GitHub/staffoo-app/node_modules/react-native-get-random-values/react-native-get-random-values.podspec",
+          "podspecPath": "/Users/test/Desktop/infomatic/staffooApp/staffoo-app/node_modules/react-native-get-random-values/react-native-get-random-values.podspec",
           "version": "2.0.0",
           "configurations": [],
           "scriptPhases": []
         },
         "android": {
-          "sourceDir": "/Users/mc/Documents/GitHub/staffoo-app/node_modules/react-native-get-random-values/android",
+          "sourceDir": "/Users/test/Desktop/infomatic/staffooApp/staffoo-app/node_modules/react-native-get-random-values/android",
           "packageImportPath": "import org.linusu.RNGetRandomValuesPackage;",
           "packageInstance": "new RNGetRandomValuesPackage()",
           "buildTypes": [],
           "libraryName": "RNGetRandomValuesSpec",
           "componentDescriptors": [],
-          "cmakeListsPath": "/Users/mc/Documents/GitHub/staffoo-app/node_modules/react-native-get-random-values/android/build/generated/source/codegen/jni/CMakeLists.txt",
+          "cmakeListsPath": "/Users/test/Desktop/infomatic/staffooApp/staffoo-app/node_modules/react-native-get-random-values/android/build/generated/source/codegen/jni/CMakeLists.txt",
           "cxxModuleCMakeListsModuleName": null,
           "cxxModuleCMakeListsPath": null,
           "cxxModuleHeaderName": null,
@@ -451,23 +451,23 @@
       }
     },
     "react-native-html-to-pdf": {
-      "root": "/Users/mc/Documents/GitHub/staffoo-app/node_modules/react-native-html-to-pdf",
+      "root": "/Users/test/Desktop/infomatic/staffooApp/staffoo-app/node_modules/react-native-html-to-pdf",
       "name": "react-native-html-to-pdf",
       "platforms": {
         "ios": {
-          "podspecPath": "/Users/mc/Documents/GitHub/staffoo-app/node_modules/react-native-html-to-pdf/HtmlToPdf.podspec",
+          "podspecPath": "/Users/test/Desktop/infomatic/staffooApp/staffoo-app/node_modules/react-native-html-to-pdf/HtmlToPdf.podspec",
           "version": "1.3.0",
           "configurations": [],
           "scriptPhases": []
         },
         "android": {
-          "sourceDir": "/Users/mc/Documents/GitHub/staffoo-app/node_modules/react-native-html-to-pdf/android",
+          "sourceDir": "/Users/test/Desktop/infomatic/staffooApp/staffoo-app/node_modules/react-native-html-to-pdf/android",
           "packageImportPath": "import com.htmltopdf.HtmlToPdfPackage;",
           "packageInstance": "new HtmlToPdfPackage()",
           "buildTypes": [],
           "libraryName": "HtmlToPdfSpec",
           "componentDescriptors": [],
-          "cmakeListsPath": "/Users/mc/Documents/GitHub/staffoo-app/node_modules/react-native-html-to-pdf/android/build/generated/source/codegen/jni/CMakeLists.txt",
+          "cmakeListsPath": "/Users/test/Desktop/infomatic/staffooApp/staffoo-app/node_modules/react-native-html-to-pdf/android/build/generated/source/codegen/jni/CMakeLists.txt",
           "cxxModuleCMakeListsModuleName": null,
           "cxxModuleCMakeListsPath": null,
           "cxxModuleHeaderName": null,
@@ -476,23 +476,23 @@
       }
     },
     "react-native-image-picker": {
-      "root": "/Users/mc/Documents/GitHub/staffoo-app/node_modules/react-native-image-picker",
+      "root": "/Users/test/Desktop/infomatic/staffooApp/staffoo-app/node_modules/react-native-image-picker",
       "name": "react-native-image-picker",
       "platforms": {
         "ios": {
-          "podspecPath": "/Users/mc/Documents/GitHub/staffoo-app/node_modules/react-native-image-picker/react-native-image-picker.podspec",
+          "podspecPath": "/Users/test/Desktop/infomatic/staffooApp/staffoo-app/node_modules/react-native-image-picker/react-native-image-picker.podspec",
           "version": "8.2.1",
           "configurations": [],
           "scriptPhases": []
         },
         "android": {
-          "sourceDir": "/Users/mc/Documents/GitHub/staffoo-app/node_modules/react-native-image-picker/android",
+          "sourceDir": "/Users/test/Desktop/infomatic/staffooApp/staffoo-app/node_modules/react-native-image-picker/android",
           "packageImportPath": "import com.imagepicker.ImagePickerPackage;",
           "packageInstance": "new ImagePickerPackage()",
           "buildTypes": [],
           "libraryName": "RNImagePickerSpec",
           "componentDescriptors": [],
-          "cmakeListsPath": "/Users/mc/Documents/GitHub/staffoo-app/node_modules/react-native-image-picker/android/build/generated/source/codegen/jni/CMakeLists.txt",
+          "cmakeListsPath": "/Users/test/Desktop/infomatic/staffooApp/staffoo-app/node_modules/react-native-image-picker/android/build/generated/source/codegen/jni/CMakeLists.txt",
           "cxxModuleCMakeListsModuleName": null,
           "cxxModuleCMakeListsPath": null,
           "cxxModuleHeaderName": null,
@@ -501,22 +501,22 @@
       }
     },
     "react-native-image-resizer": {
-      "root": "/Users/mc/Documents/GitHub/staffoo-app/node_modules/react-native-image-resizer",
+      "root": "/Users/test/Desktop/infomatic/staffooApp/staffoo-app/node_modules/react-native-image-resizer",
       "name": "react-native-image-resizer",
       "platforms": {
         "ios": {
-          "podspecPath": "/Users/mc/Documents/GitHub/staffoo-app/node_modules/react-native-image-resizer/react-native-image-resizer.podspec",
+          "podspecPath": "/Users/test/Desktop/infomatic/staffooApp/staffoo-app/node_modules/react-native-image-resizer/react-native-image-resizer.podspec",
           "version": "1.4.5",
           "configurations": [],
           "scriptPhases": []
         },
         "android": {
-          "sourceDir": "/Users/mc/Documents/GitHub/staffoo-app/node_modules/react-native-image-resizer/android",
+          "sourceDir": "/Users/test/Desktop/infomatic/staffooApp/staffoo-app/node_modules/react-native-image-resizer/android",
           "packageImportPath": "import fr.bamlab.rnimageresizer.ImageResizerPackage;",
           "packageInstance": "new ImageResizerPackage()",
           "buildTypes": [],
           "componentDescriptors": [],
-          "cmakeListsPath": "/Users/mc/Documents/GitHub/staffoo-app/node_modules/react-native-image-resizer/android/build/generated/source/codegen/jni/CMakeLists.txt",
+          "cmakeListsPath": "/Users/test/Desktop/infomatic/staffooApp/staffoo-app/node_modules/react-native-image-resizer/android/build/generated/source/codegen/jni/CMakeLists.txt",
           "cxxModuleCMakeListsModuleName": null,
           "cxxModuleCMakeListsPath": null,
           "cxxModuleHeaderName": null,
@@ -525,22 +525,22 @@
       }
     },
     "react-native-linear-gradient": {
-      "root": "/Users/mc/Documents/GitHub/staffoo-app/node_modules/react-native-linear-gradient",
+      "root": "/Users/test/Desktop/infomatic/staffooApp/staffoo-app/node_modules/react-native-linear-gradient",
       "name": "react-native-linear-gradient",
       "platforms": {
         "ios": {
-          "podspecPath": "/Users/mc/Documents/GitHub/staffoo-app/node_modules/react-native-linear-gradient/BVLinearGradient.podspec",
+          "podspecPath": "/Users/test/Desktop/infomatic/staffooApp/staffoo-app/node_modules/react-native-linear-gradient/BVLinearGradient.podspec",
           "version": "2.8.3",
           "configurations": [],
           "scriptPhases": []
         },
         "android": {
-          "sourceDir": "/Users/mc/Documents/GitHub/staffoo-app/node_modules/react-native-linear-gradient/android",
+          "sourceDir": "/Users/test/Desktop/infomatic/staffooApp/staffoo-app/node_modules/react-native-linear-gradient/android",
           "packageImportPath": "import com.BV.LinearGradient.LinearGradientPackage;",
           "packageInstance": "new LinearGradientPackage()",
           "buildTypes": [],
           "componentDescriptors": [],
-          "cmakeListsPath": "/Users/mc/Documents/GitHub/staffoo-app/node_modules/react-native-linear-gradient/android/build/generated/source/codegen/jni/CMakeLists.txt",
+          "cmakeListsPath": "/Users/test/Desktop/infomatic/staffooApp/staffoo-app/node_modules/react-native-linear-gradient/android/build/generated/source/codegen/jni/CMakeLists.txt",
           "cxxModuleCMakeListsModuleName": null,
           "cxxModuleCMakeListsPath": null,
           "cxxModuleHeaderName": null,
@@ -549,17 +549,17 @@
       }
     },
     "react-native-maps": {
-      "root": "/Users/mc/Documents/GitHub/staffoo-app/node_modules/react-native-maps",
+      "root": "/Users/test/Desktop/infomatic/staffooApp/staffoo-app/node_modules/react-native-maps",
       "name": "react-native-maps",
       "platforms": {
         "ios": {
-          "podspecPath": "/Users/mc/Documents/GitHub/staffoo-app/node_modules/react-native-maps/react-native-maps.podspec",
+          "podspecPath": "/Users/test/Desktop/infomatic/staffooApp/staffoo-app/node_modules/react-native-maps/react-native-maps.podspec",
           "version": "1.27.2",
           "configurations": [],
           "scriptPhases": []
         },
         "android": {
-          "sourceDir": "/Users/mc/Documents/GitHub/staffoo-app/node_modules/react-native-maps/android",
+          "sourceDir": "/Users/test/Desktop/infomatic/staffooApp/staffoo-app/node_modules/react-native-maps/android",
           "packageImportPath": "import com.rnmaps.maps.MapsPackage;",
           "packageInstance": "new MapsPackage()",
           "buildTypes": [],
@@ -576,7 +576,7 @@
             "RNMapsUrlTileComponentDescriptor",
             "RNMapsWMSTileComponentDescriptor"
           ],
-          "cmakeListsPath": "/Users/mc/Documents/GitHub/staffoo-app/node_modules/react-native-maps/android/src/main/jni/CMakeLists.txt",
+          "cmakeListsPath": "/Users/test/Desktop/infomatic/staffooApp/staffoo-app/node_modules/react-native-maps/android/src/main/jni/CMakeLists.txt",
           "cxxModuleCMakeListsModuleName": null,
           "cxxModuleCMakeListsPath": null,
           "cxxModuleHeaderName": null,
@@ -585,23 +585,23 @@
       }
     },
     "react-native-onesignal": {
-      "root": "/Users/mc/Documents/GitHub/staffoo-app/node_modules/react-native-onesignal",
+      "root": "/Users/test/Desktop/infomatic/staffooApp/staffoo-app/node_modules/react-native-onesignal",
       "name": "react-native-onesignal",
       "platforms": {
         "ios": {
-          "podspecPath": "/Users/mc/Documents/GitHub/staffoo-app/node_modules/react-native-onesignal/react-native-onesignal.podspec",
-          "version": "5.5.0",
+          "podspecPath": "/Users/test/Desktop/infomatic/staffooApp/staffoo-app/node_modules/react-native-onesignal/react-native-onesignal.podspec",
+          "version": "5.5.1",
           "configurations": [],
           "scriptPhases": []
         },
         "android": {
-          "sourceDir": "/Users/mc/Documents/GitHub/staffoo-app/node_modules/react-native-onesignal/android",
+          "sourceDir": "/Users/test/Desktop/infomatic/staffooApp/staffoo-app/node_modules/react-native-onesignal/android",
           "packageImportPath": "import com.onesignal.rnonesignalandroid.ReactNativeOneSignalPackage;",
           "packageInstance": "new ReactNativeOneSignalPackage()",
           "buildTypes": [],
           "libraryName": "RNOneSignalSpec",
           "componentDescriptors": [],
-          "cmakeListsPath": "/Users/mc/Documents/GitHub/staffoo-app/node_modules/react-native-onesignal/android/build/generated/source/codegen/jni/CMakeLists.txt",
+          "cmakeListsPath": "/Users/test/Desktop/infomatic/staffooApp/staffoo-app/node_modules/react-native-onesignal/android/build/generated/source/codegen/jni/CMakeLists.txt",
           "cxxModuleCMakeListsModuleName": null,
           "cxxModuleCMakeListsPath": null,
           "cxxModuleHeaderName": null,
@@ -610,17 +610,17 @@
       }
     },
     "react-native-pdf": {
-      "root": "/Users/mc/Documents/GitHub/staffoo-app/node_modules/react-native-pdf",
+      "root": "/Users/test/Desktop/infomatic/staffooApp/staffoo-app/node_modules/react-native-pdf",
       "name": "react-native-pdf",
       "platforms": {
         "ios": {
-          "podspecPath": "/Users/mc/Documents/GitHub/staffoo-app/node_modules/react-native-pdf/react-native-pdf.podspec",
+          "podspecPath": "/Users/test/Desktop/infomatic/staffooApp/staffoo-app/node_modules/react-native-pdf/react-native-pdf.podspec",
           "version": "7.0.4",
           "configurations": [],
           "scriptPhases": []
         },
         "android": {
-          "sourceDir": "/Users/mc/Documents/GitHub/staffoo-app/node_modules/react-native-pdf/android",
+          "sourceDir": "/Users/test/Desktop/infomatic/staffooApp/staffoo-app/node_modules/react-native-pdf/android",
           "packageImportPath": "import org.wonday.pdf.RNPDFPackage;",
           "packageInstance": "new RNPDFPackage()",
           "buildTypes": [],
@@ -628,7 +628,7 @@
           "componentDescriptors": [
             "RNPDFPdfViewComponentDescriptor"
           ],
-          "cmakeListsPath": "/Users/mc/Documents/GitHub/staffoo-app/node_modules/react-native-pdf/android/build/generated/source/codegen/jni/CMakeLists.txt",
+          "cmakeListsPath": "/Users/test/Desktop/infomatic/staffooApp/staffoo-app/node_modules/react-native-pdf/android/build/generated/source/codegen/jni/CMakeLists.txt",
           "cxxModuleCMakeListsModuleName": null,
           "cxxModuleCMakeListsPath": null,
           "cxxModuleHeaderName": null,
@@ -637,23 +637,23 @@
       }
     },
     "react-native-permissions": {
-      "root": "/Users/mc/Documents/GitHub/staffoo-app/node_modules/react-native-permissions",
+      "root": "/Users/test/Desktop/infomatic/staffooApp/staffoo-app/node_modules/react-native-permissions",
       "name": "react-native-permissions",
       "platforms": {
         "ios": {
-          "podspecPath": "/Users/mc/Documents/GitHub/staffoo-app/node_modules/react-native-permissions/RNPermissions.podspec",
+          "podspecPath": "/Users/test/Desktop/infomatic/staffooApp/staffoo-app/node_modules/react-native-permissions/RNPermissions.podspec",
           "version": "5.5.3",
           "configurations": [],
           "scriptPhases": []
         },
         "android": {
-          "sourceDir": "/Users/mc/Documents/GitHub/staffoo-app/node_modules/react-native-permissions/android",
+          "sourceDir": "/Users/test/Desktop/infomatic/staffooApp/staffoo-app/node_modules/react-native-permissions/android",
           "packageImportPath": "import com.zoontek.rnpermissions.RNPermissionsPackage;",
           "packageInstance": "new RNPermissionsPackage()",
           "buildTypes": [],
           "libraryName": "RNPermissionsSpec",
           "componentDescriptors": [],
-          "cmakeListsPath": "/Users/mc/Documents/GitHub/staffoo-app/node_modules/react-native-permissions/android/build/generated/source/codegen/jni/CMakeLists.txt",
+          "cmakeListsPath": "/Users/test/Desktop/infomatic/staffooApp/staffoo-app/node_modules/react-native-permissions/android/build/generated/source/codegen/jni/CMakeLists.txt",
           "cxxModuleCMakeListsModuleName": null,
           "cxxModuleCMakeListsPath": null,
           "cxxModuleHeaderName": null,
@@ -662,23 +662,23 @@
       }
     },
     "react-native-reanimated": {
-      "root": "/Users/mc/Documents/GitHub/staffoo-app/node_modules/react-native-reanimated",
+      "root": "/Users/test/Desktop/infomatic/staffooApp/staffoo-app/node_modules/react-native-reanimated",
       "name": "react-native-reanimated",
       "platforms": {
         "ios": {
-          "podspecPath": "/Users/mc/Documents/GitHub/staffoo-app/node_modules/react-native-reanimated/RNReanimated.podspec",
+          "podspecPath": "/Users/test/Desktop/infomatic/staffooApp/staffoo-app/node_modules/react-native-reanimated/RNReanimated.podspec",
           "version": "4.4.1",
           "configurations": [],
           "scriptPhases": []
         },
         "android": {
-          "sourceDir": "/Users/mc/Documents/GitHub/staffoo-app/node_modules/react-native-reanimated/android",
+          "sourceDir": "/Users/test/Desktop/infomatic/staffooApp/staffoo-app/node_modules/react-native-reanimated/android",
           "packageImportPath": "import com.swmansion.reanimated.ReanimatedPackage;",
           "packageInstance": "new ReanimatedPackage()",
           "buildTypes": [],
           "libraryName": "rnreanimated",
           "componentDescriptors": [],
-          "cmakeListsPath": "/Users/mc/Documents/GitHub/staffoo-app/node_modules/react-native-reanimated/android/build/generated/source/codegen/jni/CMakeLists.txt",
+          "cmakeListsPath": "/Users/test/Desktop/infomatic/staffooApp/staffoo-app/node_modules/react-native-reanimated/android/build/generated/source/codegen/jni/CMakeLists.txt",
           "cxxModuleCMakeListsModuleName": null,
           "cxxModuleCMakeListsPath": null,
           "cxxModuleHeaderName": null,
@@ -687,17 +687,17 @@
       }
     },
     "react-native-safe-area-context": {
-      "root": "/Users/mc/Documents/GitHub/staffoo-app/node_modules/react-native-safe-area-context",
+      "root": "/Users/test/Desktop/infomatic/staffooApp/staffoo-app/node_modules/react-native-safe-area-context",
       "name": "react-native-safe-area-context",
       "platforms": {
         "ios": {
-          "podspecPath": "/Users/mc/Documents/GitHub/staffoo-app/node_modules/react-native-safe-area-context/react-native-safe-area-context.podspec",
+          "podspecPath": "/Users/test/Desktop/infomatic/staffooApp/staffoo-app/node_modules/react-native-safe-area-context/react-native-safe-area-context.podspec",
           "version": "5.8.0",
           "configurations": [],
           "scriptPhases": []
         },
         "android": {
-          "sourceDir": "/Users/mc/Documents/GitHub/staffoo-app/node_modules/react-native-safe-area-context/android",
+          "sourceDir": "/Users/test/Desktop/infomatic/staffooApp/staffoo-app/node_modules/react-native-safe-area-context/android",
           "packageImportPath": "import com.th3rdwave.safeareacontext.SafeAreaContextPackage;",
           "packageInstance": "new SafeAreaContextPackage()",
           "buildTypes": [],
@@ -706,7 +706,7 @@
             "RNCSafeAreaProviderComponentDescriptor",
             "RNCSafeAreaViewComponentDescriptor"
           ],
-          "cmakeListsPath": "/Users/mc/Documents/GitHub/staffoo-app/node_modules/react-native-safe-area-context/android/src/main/jni/CMakeLists.txt",
+          "cmakeListsPath": "/Users/test/Desktop/infomatic/staffooApp/staffoo-app/node_modules/react-native-safe-area-context/android/src/main/jni/CMakeLists.txt",
           "cxxModuleCMakeListsModuleName": null,
           "cxxModuleCMakeListsPath": null,
           "cxxModuleHeaderName": null,
@@ -715,17 +715,17 @@
       }
     },
     "react-native-screens": {
-      "root": "/Users/mc/Documents/GitHub/staffoo-app/node_modules/react-native-screens",
+      "root": "/Users/test/Desktop/infomatic/staffooApp/staffoo-app/node_modules/react-native-screens",
       "name": "react-native-screens",
       "platforms": {
         "ios": {
-          "podspecPath": "/Users/mc/Documents/GitHub/staffoo-app/node_modules/react-native-screens/RNScreens.podspec",
+          "podspecPath": "/Users/test/Desktop/infomatic/staffooApp/staffoo-app/node_modules/react-native-screens/RNScreens.podspec",
           "version": "4.25.2",
           "configurations": [],
           "scriptPhases": []
         },
         "android": {
-          "sourceDir": "/Users/mc/Documents/GitHub/staffoo-app/node_modules/react-native-screens/android",
+          "sourceDir": "/Users/test/Desktop/infomatic/staffooApp/staffoo-app/node_modules/react-native-screens/android",
           "packageImportPath": "import com.swmansion.rnscreens.RNScreensPackage;",
           "packageInstance": "new RNScreensPackage()",
           "buildTypes": [],
@@ -748,7 +748,7 @@
             "RNSStackHeaderConfigComponentDescriptor",
             "RNSStackHeaderSubviewComponentDescriptor"
           ],
-          "cmakeListsPath": "/Users/mc/Documents/GitHub/staffoo-app/node_modules/react-native-screens/android/src/main/jni/CMakeLists.txt",
+          "cmakeListsPath": "/Users/test/Desktop/infomatic/staffooApp/staffoo-app/node_modules/react-native-screens/android/src/main/jni/CMakeLists.txt",
           "cxxModuleCMakeListsModuleName": null,
           "cxxModuleCMakeListsPath": null,
           "cxxModuleHeaderName": null,
@@ -757,22 +757,22 @@
       }
     },
     "react-native-sound-player": {
-      "root": "/Users/mc/Documents/GitHub/staffoo-app/node_modules/react-native-sound-player",
+      "root": "/Users/test/Desktop/infomatic/staffooApp/staffoo-app/node_modules/react-native-sound-player",
       "name": "react-native-sound-player",
       "platforms": {
         "ios": {
-          "podspecPath": "/Users/mc/Documents/GitHub/staffoo-app/node_modules/react-native-sound-player/RNSoundPlayer.podspec",
+          "podspecPath": "/Users/test/Desktop/infomatic/staffooApp/staffoo-app/node_modules/react-native-sound-player/RNSoundPlayer.podspec",
           "version": "0.14.5",
           "configurations": [],
           "scriptPhases": []
         },
         "android": {
-          "sourceDir": "/Users/mc/Documents/GitHub/staffoo-app/node_modules/react-native-sound-player/android",
+          "sourceDir": "/Users/test/Desktop/infomatic/staffooApp/staffoo-app/node_modules/react-native-sound-player/android",
           "packageImportPath": "import com.johnsonsu.rnsoundplayer.RNSoundPlayerPackage;",
           "packageInstance": "new RNSoundPlayerPackage()",
           "buildTypes": [],
           "componentDescriptors": [],
-          "cmakeListsPath": "/Users/mc/Documents/GitHub/staffoo-app/node_modules/react-native-sound-player/android/build/generated/source/codegen/jni/CMakeLists.txt",
+          "cmakeListsPath": "/Users/test/Desktop/infomatic/staffooApp/staffoo-app/node_modules/react-native-sound-player/android/build/generated/source/codegen/jni/CMakeLists.txt",
           "cxxModuleCMakeListsModuleName": null,
           "cxxModuleCMakeListsPath": null,
           "cxxModuleHeaderName": null,
@@ -781,17 +781,17 @@
       }
     },
     "react-native-svg": {
-      "root": "/Users/mc/Documents/GitHub/staffoo-app/node_modules/react-native-svg",
+      "root": "/Users/test/Desktop/infomatic/staffooApp/staffoo-app/node_modules/react-native-svg",
       "name": "react-native-svg",
       "platforms": {
         "ios": {
-          "podspecPath": "/Users/mc/Documents/GitHub/staffoo-app/node_modules/react-native-svg/RNSVG.podspec",
+          "podspecPath": "/Users/test/Desktop/infomatic/staffooApp/staffoo-app/node_modules/react-native-svg/RNSVG.podspec",
           "version": "15.15.5",
           "configurations": [],
           "scriptPhases": []
         },
         "android": {
-          "sourceDir": "/Users/mc/Documents/GitHub/staffoo-app/node_modules/react-native-svg/android",
+          "sourceDir": "/Users/test/Desktop/infomatic/staffooApp/staffoo-app/node_modules/react-native-svg/android",
           "packageImportPath": "import com.horcrux.svg.SvgPackage;",
           "packageInstance": "new SvgPackage()",
           "buildTypes": [],
@@ -827,7 +827,7 @@
             "RNSVGTSpanComponentDescriptor",
             "RNSVGUseComponentDescriptor"
           ],
-          "cmakeListsPath": "/Users/mc/Documents/GitHub/staffoo-app/node_modules/react-native-svg/android/src/main/jni/CMakeLists.txt",
+          "cmakeListsPath": "/Users/test/Desktop/infomatic/staffooApp/staffoo-app/node_modules/react-native-svg/android/src/main/jni/CMakeLists.txt",
           "cxxModuleCMakeListsModuleName": null,
           "cxxModuleCMakeListsPath": null,
           "cxxModuleHeaderName": null,
@@ -836,23 +836,23 @@
       }
     },
     "react-native-vector-icons": {
-      "root": "/Users/mc/Documents/GitHub/staffoo-app/node_modules/react-native-vector-icons",
+      "root": "/Users/test/Desktop/infomatic/staffooApp/staffoo-app/node_modules/react-native-vector-icons",
       "name": "react-native-vector-icons",
       "platforms": {
         "ios": {
-          "podspecPath": "/Users/mc/Documents/GitHub/staffoo-app/node_modules/react-native-vector-icons/RNVectorIcons.podspec",
+          "podspecPath": "/Users/test/Desktop/infomatic/staffooApp/staffoo-app/node_modules/react-native-vector-icons/RNVectorIcons.podspec",
           "version": "10.3.0",
           "configurations": [],
           "scriptPhases": []
         },
         "android": {
-          "sourceDir": "/Users/mc/Documents/GitHub/staffoo-app/node_modules/react-native-vector-icons/android",
+          "sourceDir": "/Users/test/Desktop/infomatic/staffooApp/staffoo-app/node_modules/react-native-vector-icons/android",
           "packageImportPath": "import com.oblador.vectoricons.VectorIconsPackage;",
           "packageInstance": "new VectorIconsPackage()",
           "buildTypes": [],
           "libraryName": "RNVectorIconsSpec",
           "componentDescriptors": [],
-          "cmakeListsPath": "/Users/mc/Documents/GitHub/staffoo-app/node_modules/react-native-vector-icons/android/build/generated/source/codegen/jni/CMakeLists.txt",
+          "cmakeListsPath": "/Users/test/Desktop/infomatic/staffooApp/staffoo-app/node_modules/react-native-vector-icons/android/build/generated/source/codegen/jni/CMakeLists.txt",
           "cxxModuleCMakeListsModuleName": null,
           "cxxModuleCMakeListsPath": null,
           "cxxModuleHeaderName": null,
@@ -861,22 +861,22 @@
       }
     },
     "react-native-vision-camera": {
-      "root": "/Users/mc/Documents/GitHub/staffoo-app/node_modules/react-native-vision-camera",
+      "root": "/Users/test/Desktop/infomatic/staffooApp/staffoo-app/node_modules/react-native-vision-camera",
       "name": "react-native-vision-camera",
       "platforms": {
         "ios": {
-          "podspecPath": "/Users/mc/Documents/GitHub/staffoo-app/node_modules/react-native-vision-camera/VisionCamera.podspec",
+          "podspecPath": "/Users/test/Desktop/infomatic/staffooApp/staffoo-app/node_modules/react-native-vision-camera/VisionCamera.podspec",
           "version": "4.7.3",
           "configurations": [],
           "scriptPhases": []
         },
         "android": {
-          "sourceDir": "/Users/mc/Documents/GitHub/staffoo-app/node_modules/react-native-vision-camera/android",
+          "sourceDir": "/Users/test/Desktop/infomatic/staffooApp/staffoo-app/node_modules/react-native-vision-camera/android",
           "packageImportPath": "import com.mrousavy.camera.react.CameraPackage;",
           "packageInstance": "new CameraPackage()",
           "buildTypes": [],
           "componentDescriptors": [],
-          "cmakeListsPath": "/Users/mc/Documents/GitHub/staffoo-app/node_modules/react-native-vision-camera/android/build/generated/source/codegen/jni/CMakeLists.txt",
+          "cmakeListsPath": "/Users/test/Desktop/infomatic/staffooApp/staffoo-app/node_modules/react-native-vision-camera/android/build/generated/source/codegen/jni/CMakeLists.txt",
           "cxxModuleCMakeListsModuleName": null,
           "cxxModuleCMakeListsPath": null,
           "cxxModuleHeaderName": null,
@@ -885,17 +885,17 @@
       }
     },
     "react-native-webview": {
-      "root": "/Users/mc/Documents/GitHub/staffoo-app/node_modules/react-native-webview",
+      "root": "/Users/test/Desktop/infomatic/staffooApp/staffoo-app/node_modules/react-native-webview",
       "name": "react-native-webview",
       "platforms": {
         "ios": {
-          "podspecPath": "/Users/mc/Documents/GitHub/staffoo-app/node_modules/react-native-webview/react-native-webview.podspec",
+          "podspecPath": "/Users/test/Desktop/infomatic/staffooApp/staffoo-app/node_modules/react-native-webview/react-native-webview.podspec",
           "version": "13.16.1",
           "configurations": [],
           "scriptPhases": []
         },
         "android": {
-          "sourceDir": "/Users/mc/Documents/GitHub/staffoo-app/node_modules/react-native-webview/android",
+          "sourceDir": "/Users/test/Desktop/infomatic/staffooApp/staffoo-app/node_modules/react-native-webview/android",
           "packageImportPath": "import com.reactnativecommunity.webview.RNCWebViewPackage;",
           "packageInstance": "new RNCWebViewPackage()",
           "buildTypes": [],
@@ -903,7 +903,7 @@
           "componentDescriptors": [
             "RNCWebViewComponentDescriptor"
           ],
-          "cmakeListsPath": "/Users/mc/Documents/GitHub/staffoo-app/node_modules/react-native-webview/android/build/generated/source/codegen/jni/CMakeLists.txt",
+          "cmakeListsPath": "/Users/test/Desktop/infomatic/staffooApp/staffoo-app/node_modules/react-native-webview/android/build/generated/source/codegen/jni/CMakeLists.txt",
           "cxxModuleCMakeListsModuleName": null,
           "cxxModuleCMakeListsPath": null,
           "cxxModuleHeaderName": null,
@@ -912,23 +912,23 @@
       }
     },
     "react-native-worklets": {
-      "root": "/Users/mc/Documents/GitHub/staffoo-app/node_modules/react-native-worklets",
+      "root": "/Users/test/Desktop/infomatic/staffooApp/staffoo-app/node_modules/react-native-worklets",
       "name": "react-native-worklets",
       "platforms": {
         "ios": {
-          "podspecPath": "/Users/mc/Documents/GitHub/staffoo-app/node_modules/react-native-worklets/RNWorklets.podspec",
+          "podspecPath": "/Users/test/Desktop/infomatic/staffooApp/staffoo-app/node_modules/react-native-worklets/RNWorklets.podspec",
           "version": "0.9.2",
           "configurations": [],
           "scriptPhases": []
         },
         "android": {
-          "sourceDir": "/Users/mc/Documents/GitHub/staffoo-app/node_modules/react-native-worklets/android",
+          "sourceDir": "/Users/test/Desktop/infomatic/staffooApp/staffoo-app/node_modules/react-native-worklets/android",
           "packageImportPath": "import com.swmansion.worklets.WorkletsPackage;",
           "packageInstance": "new WorkletsPackage()",
           "buildTypes": [],
           "libraryName": "rnworklets",
           "componentDescriptors": [],
-          "cmakeListsPath": "/Users/mc/Documents/GitHub/staffoo-app/node_modules/react-native-worklets/android/build/generated/source/codegen/jni/CMakeLists.txt",
+          "cmakeListsPath": "/Users/test/Desktop/infomatic/staffooApp/staffoo-app/node_modules/react-native-worklets/android/build/generated/source/codegen/jni/CMakeLists.txt",
           "cxxModuleCMakeListsModuleName": null,
           "cxxModuleCMakeListsPath": null,
           "cxxModuleHeaderName": null,
@@ -1099,7 +1099,7 @@
         {
           "name": "--path <path>",
           "description": "Path to the React Native project root.",
-          "default": "/Users/mc/Documents/GitHub/staffoo-app"
+          "default": "/Users/test/Desktop/infomatic/staffooApp/staffoo-app"
         },
         {
           "name": "--platform <string>",
@@ -1399,7 +1399,7 @@
   "assets": [],
   "project": {
     "ios": {
-      "sourceDir": "/Users/mc/Documents/GitHub/staffoo-app/ios",
+      "sourceDir": "/Users/test/Desktop/infomatic/staffooApp/staffoo-app/ios",
       "xcodeProject": {
         "name": "STAFFO.xcworkspace",
         "path": ".",
@@ -1408,7 +1408,7 @@
       "assets": []
     },
     "android": {
-      "sourceDir": "/Users/mc/Documents/GitHub/staffoo-app/android",
+      "sourceDir": "/Users/test/Desktop/infomatic/staffooApp/staffoo-app/android",
       "appName": "app",
       "packageName": "com.staffo",
       "applicationId": "com.staffo",

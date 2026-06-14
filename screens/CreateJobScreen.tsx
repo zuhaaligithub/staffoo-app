@@ -1915,7 +1915,7 @@ export default function CreateJobScreen() {
                             marginLeft: 4,
                           }}
                         >
-                          Add Shift Window
+                          Add Shift
                         </Text>
                       </TouchableOpacity>
                     </View>
@@ -2192,7 +2192,7 @@ export default function CreateJobScreen() {
                 <>
                   <CloudUpload size={28} color={ACCENT_TEAL} />
                   <Text style={{ color: '#FFF', marginTop: 6, fontSize: 13 }}>
-                    Tap to explore device files
+                    Upload files here
                   </Text>
                 </>
               )}
