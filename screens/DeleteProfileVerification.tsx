@@ -11,115 +11,58 @@ import {
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import Toast from "react-native-toast-message";
 import { ArrowLeft } from "lucide-react-native";
+
 const COLORS = {
   background: "#030508",
   surface: "#07111A",
   card: "#0D1421",
   cardBorder: "rgba(98, 97, 97, 0.83)",
-  primary: "#00A99D",
-  primaryGlow: "rgba(0,169,157,0.25)",
-  primaryBorder: "rgba(0,169,157,0.25)",
   text: "#FFFFFF",
   textSecondary: "#94A3B8",
   textMuted: "#4A6080",
-  success: "#34C88A",
   danger: "#F87171",
   dangerBg: "rgba(248,88,88,0.12)",
-  warning: "#F5A623",
-  warningBg: "rgba(245,166,35,0.08)",
-  heroBg1: "#0D1F2D",
-  heroBg2: "#061014",
 };
+
 export default function DeleteProfileVerification({ navigation }: any) {
   const [user, setUser] = useState<any>(null);
   const [userId, setUserId] = useState<string | null>(null);
   const [answers, setAnswers] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    loadUser();
-  }, []);
-
-  const loadUser = async () => {
-    try {
-      const storedUser = await AsyncStorage.getItem("user");
-      const uid = await AsyncStorage.getItem("@user_id");
-
-      if (storedUser) {
-        setUser(JSON.parse(storedUser));
-      }
-
-      setUserId(uid);
-    } catch (error) {
-      console.log(error);
-    }
-  };
-
   const deleteQuestions = [
-    {
-      question:
-        "Type your registered full name exactly as shown on your profile",
-      answer: user?.name || "",
-    },
-    {
-      question: "Type the last 4 digits of your registered phone number",
-      answer: user?.phone ? user.phone.toString().slice(-4) : "",
-    },
-    {
-      question: "Type your registered email address",
-      answer: user?.email || "",
-    },
-    {
-      question: "Type your username exactly as shown in your account",
-      answer: user?.username || "",
-    },
-    {
-      question: "Type DELETE in capital letters",
-      answer: "DELETE",
-    },
-    {
-      question: "Type: I UNDERSTAND THIS ACTION CANNOT BE UNDONE",
-      answer: "I UNDERSTAND THIS ACTION CANNOT BE UNDONE",
-    },
-    {
-      question: `To confirm, type: DELETE ${
-        user?.name?.toUpperCase() || ""
-      } PROFILE`,
-      answer: `DELETE ${user?.name?.toUpperCase() || ""} PROFILE`,
-    },
-    {
-      question: "Type the current year",
-      answer: new Date().getFullYear().toString(),
-    },
-    {
-      question: "Type PERMANENTLY DELETE ACCOUNT",
-      answer: "PERMANENTLY DELETE ACCOUNT",
-    },
-    {
-      question: "Type CONFIRM ACCOUNT DELETION to finalize this action",
-      answer: "CONFIRM ACCOUNT DELETION",
-    },
+    { question: "What is the primary reason you are leaving our platform?" },
+    { question: "How would you rate your overall experience (1-5)?" },
+    { question: "Which features did you find most useful?" },
+    { question: "What issues did you face while using the app?" },
+    { question: "What should we improve in the future?" },
+    { question: "Would you use our platform again?" },
+    { question: "Would you recommend this app to others?" },
+    { question: "Which alternative are you switching to (if any)?" },
   ];
 
   useEffect(() => {
+    loadUser();
     setAnswers(Array(deleteQuestions.length).fill(""));
-  }, [user]);
+  }, []);
 
-  const verifyAnswers = () => {
-    for (let i = 0; i < deleteQuestions.length; i++) {
-      const expected = deleteQuestions[i].answer.trim();
-      const entered = answers[i]?.trim();
+  const loadUser = async () => {
+    const storedUser = await AsyncStorage.getItem("user");
+    const uid = await AsyncStorage.getItem("@user_id");
 
-      if (entered !== expected) {
-        Alert.alert(
-          "Incorrect Answer",
-          `Question ${i + 1} answer is incorrect.`,
-        );
-        return false;
-      }
-    }
+    if (storedUser) setUser(JSON.parse(storedUser));
+    setUserId(uid);
+  };
 
-    return true;
+  const handleChange = (text: string, index: number) => {
+    const updated = [...answers];
+    updated[index] = text;
+    setAnswers(updated);
+  };
+
+  // ✅ ALL FIELDS REQUIRED VALIDATION
+  const isFormValid = () => {
+    return answers.every((a) => a && a.trim().length > 0);
   };
 
   const deleteProfile = async () => {
@@ -129,17 +72,14 @@ export default function DeleteProfileVerification({ navigation }: any) {
       const token = await AsyncStorage.getItem("@auth_token");
 
       if (!token || !userId) {
-        Toast.show({
-          type: "error",
-          text1: "Authentication failed",
-        });
+        Toast.show({ type: "error", text1: "Auth failed" });
         return;
       }
 
       const response = await fetch(
         `https://apis.staffoo.com.au/api/user-delete/${userId}`,
         {
-          method: "GET",
+          method: "DELETE",
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
@@ -153,7 +93,7 @@ export default function DeleteProfileVerification({ navigation }: any) {
         Toast.show({
           type: "error",
           text1: "Delete Failed",
-          text2: data?.message || "Something went wrong",
+          text2: data?.message,
         });
         return;
       }
@@ -167,18 +107,18 @@ export default function DeleteProfileVerification({ navigation }: any) {
 
       Toast.show({
         type: "success",
-        text1: "Profile deleted successfully",
+        text1: "Account deleted successfully",
       });
 
       navigation.reset({
         index: 0,
         routes: [{ name: "Login" }],
       });
-    } catch (error: any) {
+    } catch (err: any) {
       Toast.show({
         type: "error",
-        text1: "Delete Failed",
-        text2: error?.message || "Unknown error",
+        text1: "Error",
+        text2: err?.message,
       });
     } finally {
       setLoading(false);
@@ -186,18 +126,19 @@ export default function DeleteProfileVerification({ navigation }: any) {
   };
 
   const handleSubmit = () => {
-    if (!verifyAnswers()) {
+    if (!isFormValid()) {
+      Alert.alert(
+        "Required Fields",
+        "Please answer all questions before deleting your account.",
+      );
       return;
     }
 
     Alert.alert(
-      "Final Warning",
-      "Your profile will be permanently deleted and cannot be recovered.",
+      "Final Confirmation",
+      "This action is permanent and cannot be undone.",
       [
-        {
-          text: "Cancel",
-          style: "cancel",
-        },
+        { text: "Cancel", style: "cancel" },
         {
           text: "Delete Forever",
           style: "destructive",
@@ -210,7 +151,7 @@ export default function DeleteProfileVerification({ navigation }: any) {
   if (!user) {
     return (
       <View style={styles.center}>
-        <Text>Loading...</Text>
+        <Text style={{ color: COLORS.text }}>Loading...</Text>
       </View>
     );
   }
@@ -218,28 +159,28 @@ export default function DeleteProfileVerification({ navigation }: any) {
   return (
     <ScrollView
       style={styles.container}
-      contentContainerStyle={{ paddingBottom: 50 }}
+      contentContainerStyle={{ paddingBottom: 30 }}
     >
+      {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => navigation.goBack()}
-        >
+        <TouchableOpacity onPress={() => navigation.goBack()}>
           <ArrowLeft size={22} color={COLORS.text} />
         </TouchableOpacity>
 
-        <Text style={styles.headerTitle}>Delete Profile</Text>
+        <Text style={styles.headerTitle}>Delete Account</Text>
 
-        <View style={{ width: 42 }} />
+        <View style={{ width: 22 }} />
       </View>
 
+      {/* Warning */}
       <View style={styles.warningCard}>
-        <Text style={styles.warningTitle}>⚠ Permanent Account Deletion</Text>
+        <Text style={styles.warningTitle}>⚠ Permanent Deletion</Text>
         <Text style={styles.warningText}>
-          This action is irreversible. Once your profile is deleted, all account
-          data will be permanently removed.
+          All your data will be permanently removed.
         </Text>
       </View>
+
+      {/* Questions */}
       {deleteQuestions.map((item, index) => (
         <View key={index} style={styles.questionCard}>
           <Text style={styles.question}>
@@ -248,148 +189,108 @@ export default function DeleteProfileVerification({ navigation }: any) {
 
           <TextInput
             value={answers[index]}
-            onChangeText={(text) => {
-              const updated = [...answers];
-              updated[index] = text;
-              setAnswers(updated);
-            }}
-            placeholder="Enter answer"
+            onChangeText={(text) => handleChange(text, index)}
+            placeholder="Required answer"
             placeholderTextColor={COLORS.textMuted}
             style={styles.input}
           />
         </View>
       ))}
 
+      {/* Button */}
       <TouchableOpacity
-        disabled={loading}
-        style={[styles.deleteButton, loading && { opacity: 0.7 }]}
+        disabled={loading || !isFormValid()}
+        style={[
+          styles.deleteButton,
+          (!isFormValid() || loading) && { opacity: 0.5 },
+        ]}
         onPress={handleSubmit}
       >
         <Text style={styles.deleteButtonText}>
-          {loading ? "Deleting Account..." : "Verify & Delete Profile"}
+          {loading ? "Deleting..." : "Delete Account Permanently"}
         </Text>
       </TouchableOpacity>
     </ScrollView>
   );
 }
 
-const styles = StyleSheet.create({
-  heading: {
-    fontSize: 24,
-    fontWeight: "700",
-    marginBottom: 10,
-  },
-  warning: {
-    color: "red",
-    marginBottom: 25,
-    fontSize: 15,
-  },
-  questionContainer: {
-    marginBottom: 20,
-  },
+/* ---------------- STYLES ---------------- */
 
+const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.background,
-    paddingHorizontal: 20,
-    paddingTop: 30,
+    padding: 20,
+    marginBottom: 30, // ✅ FIXED BOTTOM SPACE
+    paddingTop:30,
   },
 
   header: {
     flexDirection: "row",
-    alignItems: "center",
     justifyContent: "space-between",
-    marginBottom: 25,
-  },
-
-  backButton: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    backgroundColor: COLORS.card,
-    borderWidth: 1,
-    borderColor: COLORS.cardBorder,
-    justifyContent: "center",
     alignItems: "center",
+    marginBottom: 20,
   },
 
   headerTitle: {
     color: COLORS.text,
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: "700",
   },
 
   warningCard: {
     backgroundColor: COLORS.dangerBg,
-    borderWidth: 1,
-    borderColor: "rgba(248,113,113,0.3)",
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 24,
+    padding: 15,
+    borderRadius: 12,
+    marginBottom: 20,
   },
 
   warningTitle: {
     color: COLORS.danger,
-    fontSize: 16,
     fontWeight: "700",
-    marginBottom: 8,
+    marginBottom: 5,
   },
 
   warningText: {
     color: COLORS.textSecondary,
-    lineHeight: 22,
-    fontSize: 14,
+    fontSize: 13,
   },
 
   questionCard: {
     backgroundColor: COLORS.card,
-    borderRadius: 18,
-    borderWidth: 1,
-    borderColor: COLORS.cardBorder,
-    padding: 16,
-    marginBottom: 16,
+    padding: 15,
+    borderRadius: 12,
+    marginBottom: 12,
   },
 
   question: {
     color: COLORS.text,
-    fontSize: 15,
     fontWeight: "600",
-    marginBottom: 12,
-    lineHeight: 22,
+    marginBottom: 10,
   },
 
   input: {
     backgroundColor: COLORS.surface,
+    borderRadius: 10,
+    padding: 12,
+    color: COLORS.text,
     borderWidth: 1,
     borderColor: COLORS.cardBorder,
-    borderRadius: 12,
-    color: COLORS.text,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    fontSize: 15,
   },
 
   deleteButton: {
+    marginTop: 10,
     backgroundColor: COLORS.danger,
-    borderRadius: 16,
-    paddingVertical: 16,
-    marginTop: 20,
-    marginBottom: 30,
-    shadowColor: COLORS.danger,
-    shadowOpacity: 0.4,
-    shadowRadius: 12,
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    elevation: 8,
+    padding: 15,
+    borderRadius: 12,
+    alignItems: "center",
+    marginBottom:20,
   },
 
   deleteButtonText: {
-    color: COLORS.text,
-    textAlign: "center",
-    fontSize: 16,
+    color: "#fff",
     fontWeight: "700",
+    fontSize: 16,
   },
 
   center: {

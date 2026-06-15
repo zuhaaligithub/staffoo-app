@@ -138,23 +138,6 @@ export default function ProfileSetupScreen({ navigation }: Props) {
     { label: "Visa Subclass 485", value: "visa_485" },
   ];
 
-  const getCountryCode = (countryName: string) => {
-    const countryMap: Record<string, string> = {
-      Pakistan: "PAK",
-      Australia: "AUS",
-      India: "IND",
-      Canada: "CAN",
-      "United States": "USA",
-      "United Kingdom": "GBR",
-      Germany: "DEU",
-      France: "FRA",
-      China: "CHN",
-      Japan: "JPN",
-      // add more as needed
-    };
-
-    return countryMap[countryName] || countryName;
-  };
   const handlePhoneChange = (text: string) => {
     // keep only digits and one +
     let cleaned = text.replace(/[^\d+]/g, "");
@@ -448,7 +431,10 @@ export default function ProfileSetupScreen({ navigation }: Props) {
           if (comp.types.includes("locality")) tempCity = comp.long_name;
           if (comp.types.includes("administrative_area_level_1"))
             tempState = comp.long_name;
-          if (comp.types.includes("country")) tempCountry = comp.long_name;
+          if (comp.types.includes("country")) {
+            // Prefer the full country name for display (e.g. "Pakistan")
+            tempCountry = comp.long_name || comp.short_name;
+          }
         });
 
         setCity(tempCity);
@@ -542,7 +528,24 @@ export default function ProfileSetupScreen({ navigation }: Props) {
     }
     return true;
   };
+  const countryMap: Record<string, string> = {
+    Pakistan: "PAK",
+    Australia: "AUS",
+    India: "IND",
+    Canada: "CAN",
+    "United States": "USA",
+    "United Kingdom": "GBR",
+  };
 
+  // Map common 2-letter ISO codes to full country names (used when Google returns short_name)
+  const countryCodeToName: Record<string, string> = {
+    PK: "Pakistan",
+    AU: "Australia",
+    IN: "India",
+    CA: "Canada",
+    US: "United States",
+    GB: "United Kingdom",
+  };
   const pickImage = async () => {
     const result = await launchImageLibrary({
       mediaType: "photo",
@@ -589,7 +592,7 @@ export default function ProfileSetupScreen({ navigation }: Props) {
         city: city.trim(),
         state: stateValue.trim(),
 
-        origin_country: getCountryCode(country.trim()),
+        origin_country: countryMap[country.trim()] || "",
         coordinates: coordinates ? `${coordinates.lat},${coordinates.lng}` : "",
       };
 

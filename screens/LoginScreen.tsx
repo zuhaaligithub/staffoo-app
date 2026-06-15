@@ -958,12 +958,7 @@ export default function LoginScreen({ navigation }: Props) {
         position: "bottom",
       });
 
-      setTimeout(() => {
-        navigation.reset({
-          index: 0,
-          routes: [{ name: "Profile" }],
-        });
-      }, 500);
+      setTimeout(() => redirectAfterLogin(user), 500);
     } catch (err: any) {
       Toast.show({
         type: "error",
@@ -1073,7 +1068,7 @@ export default function LoginScreen({ navigation }: Props) {
             {loading ? (
               <ActivityIndicator color="#fff" />
             ) : (
-              <Text style={styles.signInText}>Sign In</Text>
+              <Text style={styles.signInText}>Log In</Text>
             )}
           </TouchableOpacity>
 
