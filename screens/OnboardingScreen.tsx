@@ -17,7 +17,7 @@ const { width, height } = Dimensions.get('window');
 const slides = [
   {
     image: require('../assets/boarding1.png'),
-    title: 'Search Job Easier\nand More Effective',
+    title: 'Search job easier\nand more effective',
     desc: 'Make your experience of searching job\nmore easier and more effective',
   },
   {
@@ -27,7 +27,7 @@ const slides = [
   },
   {
     image: require('../assets/boarding3.png'),
-    title: 'Help Find the Right Job\nWith Your Desire',
+    title: 'Help find the right job\nwith your desire',
     desc: 'Jobfil can help you find the right\njob with your desire',
   },
 ];

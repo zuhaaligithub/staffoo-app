@@ -1848,7 +1848,7 @@
 //                 }
 //               />
 //               <IdCheckRow
-//                 label="Security License (Mandatory) - 40 Pts"
+//                 label="Security Licence (Mandatory) - 40 Pts"
 //                 checked={idChecks.security_license}
 //                 onPress={() =>
 //                   setIdChecks(p => ({
@@ -2610,6 +2610,7 @@ import {
   Send,
   X,
   Check,
+  Lock,
   Download,
 } from "lucide-react-native";
 import FileViewer from "react-native-file-viewer";
@@ -2625,10 +2626,10 @@ import { pick, types } from "@react-native-documents/picker";
 
 const BASE_URL = "https://apis.staffoo.com.au";
 const GOOGLE_API_KEY = "AIzaSyCS-DB39Kk-Z25C5GWymVGshXIALbjXPGY";
-const BRAND = "#89E7D0"; // Mint accent
-const BRAND_DARK = "#111111"; // Deep Navy
-const BRAND_LIGHT = "#111111"; // Darker navy
-const ACCENT = "#0047FF"; // Bright blue
+const BRAND = "#89E7D0";
+const BRAND_DARK = "#111111";
+const BRAND_LIGHT = "#111111";
+const ACCENT = "#0047FF";
 const SUCCESS = "#89E7D0";
 const ERROR = "#EF4444";
 const GRAY_BG = "#001F3F";
@@ -2713,6 +2714,10 @@ const StaffFormsScreen = ({ navigation }: any) => {
     null,
   );
 
+  // ── Security Licence Verification State ────────────────────────────────────
+  const [verifyingSecurity, setVerifyingSecurity] = useState(false);
+  const [isSecurityVerified, setIsSecurityVerified] = useState(false);
+
   const [idChecks, setIdChecks] = useState({
     primary_id: false,
     drivers_license: false,
@@ -2755,6 +2760,7 @@ const StaffFormsScreen = ({ navigation }: any) => {
     "tfn" | "super" | "onboard" | null
   >(null);
 
+  const Api_Url = "https://apis.thescouts.com.au/api";
   const titleOptions = ["Mr", "Mrs", "Miss"];
   const autoFullName = [tfnTitle, tfnFirstName, tfnSurname]
     .filter(Boolean)
@@ -2773,7 +2779,6 @@ const StaffFormsScreen = ({ navigation }: any) => {
         const profileResponse = await getUserProfile(parsed.id);
         const profile = profileResponse?.data || {};
 
-        // Auto-fill basic info
         if (profile.name) {
           const fullName = profile.name.trim();
           setTfnFirstName(fullName.split(" ")[0] || "");
@@ -2789,7 +2794,6 @@ const StaffFormsScreen = ({ navigation }: any) => {
           setTfnAddress(profile.address);
         }
 
-        // 🔥 ROBUST DOB Auto-fill from multiple possible locations
         const dobRaw =
           profile.staff?.date_of_birth ||
           profile.date_of_birth ||
@@ -2798,11 +2802,8 @@ const StaffFormsScreen = ({ navigation }: any) => {
 
         if (dobRaw) {
           const formattedDob = formatDateToDDMMYYYY(dobRaw);
-
-          // Force fill both forms
           setTfnDob(formattedDob);
           setTfnDobBackend(dobRaw);
-
           setOnboardDob(formattedDob);
           setOnboardDobBackend(dobRaw);
         }
@@ -2844,7 +2845,7 @@ const StaffFormsScreen = ({ navigation }: any) => {
         setTfnDob(display);
         setTfnDobBackend(backend);
         break;
-      case "onboardDob": // Added logic correctly for onboarding DOB
+      case "onboardDob":
         setOnboardDob(display);
         setOnboardDobBackend(backend);
         break;
@@ -2864,10 +2865,7 @@ const StaffFormsScreen = ({ navigation }: any) => {
         setPassportExpiry(display);
         setPassportExpiryBackend(backend);
         break;
-      case "secExp":
-        setSecurityExpiry(display);
-        setSecurityExpiryBackend(backend);
-        break;
+      // secExp is intentionally NOT handled here — it's locked after verification
       case "faExp":
         setFirstAidExpiry(display);
         setFirstAidExpiryBackend(backend);
@@ -2922,6 +2920,132 @@ const StaffFormsScreen = ({ navigation }: any) => {
     } catch (e) {
       console.log("Failed to fetch existing forms", e);
     }
+  };
+
+  // ── Security Licence Verification ─────────────────────────────────────────
+  /**
+   * Verifies the security licence number via the API.
+   * On success:
+   *  - Auto-fills the expiry date (display + backend)
+   *  - Locks the expiry date field (isSecurityVerified = true)
+   *  - Shows a success toast
+   * On failure:
+   *  - Resets isSecurityVerified to false
+   *  - Shows an error toast
+   * Changing the licence number resets verification state (handled in onChangeText).
+   */
+  const handleVerifySecurityLicence = async () => {
+    if (!securityLicence.trim()) {
+      Toast.show({
+        type: "error",
+        text1: "Please enter Security Licence Number",
+        position: "bottom",
+      });
+      return;
+    }
+
+    try {
+      setVerifyingSecurity(true);
+
+      const token = await getToken();
+      const payload = {
+        document_type: "Security License",
+        license_number: securityLicence.trim(),
+      };
+
+      const response = await axios.post(
+        `${Api_Url}/documents-online-verification-staffoo`,
+        payload,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        },
+      );
+
+      const data = response?.data;
+
+      if (data?.success === false) {
+        setIsSecurityVerified(false);
+        Toast.show({
+          type: "error",
+          text1: data?.message || "Verification failed",
+        });
+        return;
+      }
+
+      const expiryRaw =
+        data?.expiry ||
+        data?.expiry_date ||
+        data?.document_expiry ||
+        data?.data?.expiry ||
+        data?.data?.expiry_date;
+
+      if (expiryRaw) {
+        const dateObj = parseApiExpiryDate(expiryRaw);
+        if (dateObj) {
+          const dd = String(dateObj.getDate()).padStart(2, "0");
+          const mm = String(dateObj.getMonth() + 1).padStart(2, "0");
+          const yyyy = dateObj.getFullYear();
+          const displayDate = `${dd}/${mm}/${yyyy}`;
+          const backendDate = `${yyyy}-${mm}-${dd}`;
+
+          // Auto-fill both display and backend expiry values
+          setSecurityExpiry(displayDate);
+          setSecurityExpiryBackend(backendDate);
+
+          // Lock the expiry field — cannot be manually edited after verification
+          setIsSecurityVerified(true);
+
+          Toast.show({
+            type: "success",
+            text1: "✓ Security License verified successfully!",
+          });
+          return;
+        }
+      }
+
+      // API succeeded but no expiry date found
+      Toast.show({
+        type: "error",
+        text1: "Verification successful but could not retrieve expiry date",
+      });
+      setIsSecurityVerified(false);
+    } catch (error: any) {
+      console.error("Security Verify Error:", error);
+      Toast.show({
+        type: "error",
+        text1: error?.response?.data?.message || "Verification failed",
+      });
+      setIsSecurityVerified(false);
+    } finally {
+      setVerifyingSecurity(false);
+    }
+  };
+
+  const parseApiExpiryDate = (value: string): Date | null => {
+    if (!value) return null;
+
+    // DD/MM/YYYY
+    const ddmmyyyy = value.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+    if (ddmmyyyy) {
+      const [, dd, mm, yyyy] = ddmmyyyy;
+      const d = new Date(Number(yyyy), Number(mm) - 1, Number(dd));
+      return isNaN(d.getTime()) ? null : d;
+    }
+
+    // YYYY-MM-DD
+    const yyyymmdd = value.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+    if (yyyymmdd) {
+      const [, yyyy, mm, dd] = yyyymmdd;
+      const d = new Date(Number(yyyy), Number(mm) - 1, Number(dd));
+      return isNaN(d.getTime()) ? null : d;
+    }
+
+    // Fallback — try native Date parsing
+    const d = new Date(value);
+    return isNaN(d.getTime()) ? null : d;
   };
 
   const handleSaveSignature = async (signature: string) => {
@@ -3045,16 +3169,21 @@ const StaffFormsScreen = ({ navigation }: any) => {
   // PDF GENERATORS
   // ═══════════════════════════════════════════════════════════════════════════
   const generateTfnPdf = async (data: Record<string, any>): Promise<string> => {
-    const formatDate = (dateStr?: string): string => {
-      if (!dateStr) return "__ / __ / 2026";
+    // Australian Date Format: DD/MM/YYYY
+    const formatAUDate = (dateStr?: string): string => {
+      if (!dateStr) return "__/__/____";
+
       try {
         const date = new Date(dateStr);
+        if (isNaN(date.getTime())) return dateStr; // fallback for invalid dates
+
         const dd = ("0" + date.getDate()).slice(-2);
         const mm = ("0" + (date.getMonth() + 1)).slice(-2);
         const yyyy = date.getFullYear();
-        return `${dd} / ${mm} / ${yyyy}`;
+
+        return `${dd}/${mm}/${yyyy}`;
       } catch {
-        return dateStr || "__ / __ / 2026";
+        return dateStr || "__/__/____";
       }
     };
 
@@ -3126,7 +3255,7 @@ const StaffFormsScreen = ({ navigation }: any) => {
     </div>
     <div class="section">
       <div class="label">4. Date of birth</div>
-      <div class="field">${data.dob || "—"}</div>
+      <div class="field">${formatAUDate(data.dob)}</div>
     </div>
     <div class="section">
       <div class="label">5. Residential address</div>
@@ -3173,7 +3302,7 @@ const StaffFormsScreen = ({ navigation }: any) => {
         : '<div style="border-bottom:2px solid #333; width:280px; height:70px;"></div>'
     }
     <div style="font-weight:bold; margin-top:8px;">Employee Signature</div>
-    <div>Date: ${formatDate(data.signed_date || data.date)}</div>
+    <div>Date: ${formatAUDate(data.signed_date || data.date)}</div>
   </div>
 </div>
 </body>
@@ -3187,6 +3316,7 @@ const StaffFormsScreen = ({ navigation }: any) => {
       width: 595,
       height: 842,
     });
+
     if (!result?.filePath) throw new Error("PDF generation failed");
     return result.filePath;
   };
@@ -3194,20 +3324,24 @@ const StaffFormsScreen = ({ navigation }: any) => {
   const generateSuperPdf = async (
     data: Record<string, any>,
   ): Promise<string> => {
-    const formatDate = (dateStr?: string): string => {
-      if (!dateStr) return "__ / __ / 2026";
+    // Australian Date Format: DD/MM/YYYY
+    const formatAUDate = (dateStr?: string): string => {
+      if (!dateStr) return "__/__/____";
+
       try {
         const date = new Date(dateStr);
+        if (isNaN(date.getTime())) return dateStr; // fallback for invalid dates
+
         const dd = ("0" + date.getDate()).slice(-2);
         const mm = ("0" + (date.getMonth() + 1)).slice(-2);
         const yyyy = date.getFullYear();
-        return `${dd} / ${mm} / ${yyyy}`;
+
+        return `${dd}/${mm}/${yyyy}`;
       } catch {
-        return dateStr || "__ / __ / 2026";
+        return dateStr || "__/__/____";
       }
     };
 
-    const checked = (value: any): string => (value ? "☑" : "☐");
     const html = `
 <!DOCTYPE html>
 <html>
@@ -3233,8 +3367,8 @@ const StaffFormsScreen = ({ navigation }: any) => {
   .employer-title { font-size: 10px; font-weight: bold; margin-bottom: 6px; }
   .small { font-size: 9px; line-height: 1.5; }
   .signature-area { margin-top: 18px; }
- .signature-line { border-bottom: 1px solid #666; height: 80px; position: relative; padding: 5px; }
- .signature-img { position: absolute; width: 100%; height: 100%; object-fit: contain; transform: scale(1.2); }
+  .signature-line { border-bottom: 1px solid #666; height: 80px; position: relative; padding: 5px; }
+  .signature-img { position: absolute; width: 100%; height: 100%; object-fit: contain; transform: scale(1.2); }
   .signature-label { font-size: 9px; font-weight: bold; margin-top: 4px; }
   .date { font-size: 9px; margin-top: 2px; }
 </style>
@@ -3295,7 +3429,9 @@ const StaffFormsScreen = ({ navigation }: any) => {
           : ""
       }</div>
       <div class="signature-label">Employee Signature</div>
-      <div class="date">Date: ${formatDate(data.signed_date || data.date)}</div>
+      <div class="date">Date: ${formatAUDate(
+        data.signed_date || data.date,
+      )}</div>
     </div>
   </div>
 </div>
@@ -3308,6 +3444,7 @@ const StaffFormsScreen = ({ navigation }: any) => {
       directory: "Cache",
       base64: false,
     });
+
     if (!result.filePath) throw new Error("Super PDF generation failed");
     return result.filePath;
   };
@@ -3337,16 +3474,22 @@ const StaffFormsScreen = ({ navigation }: any) => {
         key: "medicare_or_utility",
       },
     ];
-    const formatDate = (dateStr?: string): string => {
-      if (!dateStr) return "__ / __ / 2026";
+
+    // Australian Date Format: DD/MM/YYYY
+    const formatAUDate = (dateStr?: string): string => {
+      if (!dateStr) return "__/__/____";
+
       try {
         const date = new Date(dateStr);
+        if (isNaN(date.getTime())) return dateStr; // fallback if invalid
+
         const dd = ("0" + date.getDate()).slice(-2);
         const mm = ("0" + (date.getMonth() + 1)).slice(-2);
         const yyyy = date.getFullYear();
-        return `${dd} / ${mm} / ${yyyy}`;
+
+        return `${dd}/${mm}/${yyyy}`; // Clean Australian format
       } catch {
-        return dateStr || "__ / __ / 2026";
+        return dateStr || "__/__/____";
       }
     };
 
@@ -3386,8 +3529,8 @@ const StaffFormsScreen = ({ navigation }: any) => {
   .declaration { margin-top: 10px; border: 1px solid #f2c46d; background: #fff8ea; padding: 6px; font-size: 7px; line-height: 1.5; color: #444; }
   .signature-row { display: flex; justify-content: space-between; margin-top: 10px; }
   .signature-box { width: 220px; }
-.signature-line { border-bottom: 1px solid #666; height: 80px; position: relative; padding: 5px; }
-.signature-img { position: absolute; width: 100%; height: 100%; object-fit: contain; transform: scale(1.2); }
+  .signature-line { border-bottom: 1px solid #666; height: 80px; position: relative; padding: 5px; }
+  .signature-img { position: absolute; width: 100%; height: 100%; object-fit: contain; transform: scale(1.2); }
   .signature-label { font-size: 8px; font-weight: bold; margin-top: 3px; }
   .date-box { width: 120px; }
 </style>
@@ -3399,17 +3542,17 @@ const StaffFormsScreen = ({ navigation }: any) => {
     <div class="header-right">Capital Services Pty Ltd<br/>ABN: 48 613 317 838<br/>21 Tigriswood Blvd, Truganina VIC 3029</div>
   </div>
   <div class="content">
-    <div class="title">EMPLOYEE ONBOARDING & ID VERIFICATION FORM</div>
+    <div class="title">EMPLOYEE ONBOARDING &amp; ID VERIFICATION FORM</div>
     <div class="notice">MANDATORY: ATTACH CLEAR COPIES OF ALL DOCUMENTS WITH THIS FORM.</div>
-    
+
     <div class="section-title">1. PERSONAL CONTACT DETAILS</div>
-   <div class="row">
+    <div class="row">
       <div class="field"><div class="field-label">Full Name:</div><div class="field-input">${
         data.full_name || ""
       }</div></div>
-      <div class="field"><div class="field-label">Date of Birth:</div><div class="field-input">${
-        data.dob || ""
-      }</div></div>
+      <div class="field"><div class="field-label">Date of Birth:</div><div class="field-input">${formatAUDate(
+        data.dob,
+      )}</div></div>
     </div>
     <div class="row">
       <div class="field"><div class="field-label">Residential Address:</div><div class="field-input">${
@@ -3425,7 +3568,7 @@ const StaffFormsScreen = ({ navigation }: any) => {
       }</div></div>
     </div>
 
-    <div class="section-title">2. PASSPORT & WORK RIGHTS</div>
+    <div class="section-title">2. PASSPORT &amp; WORK RIGHTS</div>
     <div class="row">
       <div class="field"><div class="field-label">Passport Number:</div><div class="field-input">${
         data.passport_number || ""
@@ -3433,26 +3576,29 @@ const StaffFormsScreen = ({ navigation }: any) => {
       <div class="field"><div class="field-label">Country of Issue:</div><div class="field-input">${
         data.passport_country || ""
       }</div></div>
-      <div class="field"><div class="field-label">Passport Expiry Date:</div><div class="field-input">${
-        data.passport_expiry || ""
-      }</div></div>
+      <div class="field"><div class="field-label">Passport Expiry Date:</div><div class="field-input">${formatAUDate(
+        data.passport_expiry,
+      )}</div></div>
     </div>
-<div class="checkbox-line">
- Work Rights Status:
- ${
-   data.work_rights === "citizen" ? "[✓]" : "[ ]"
- } Australian Citizen/PR &nbsp;&nbsp;
- ${data.work_rights === "student" ? "[✓]" : "[ ]"} Student Visa &nbsp;&nbsp;
- ${
-   data.work_rights === "temporary" ? "[✓]" : "[ ]"
- } Temporary Visa Holder &nbsp;&nbsp;
- ${
-   data.work_rights &&
-   !["citizen", "student", "temporary"].includes(data.work_rights)
-     ? "[✓]"
-     : "[ ]"
- } Other Visa
-</div>
+
+    <div class="checkbox-line">
+      Work Rights Status:
+      ${
+        data.work_rights === "citizen" ? "[✓]" : "[ ]"
+      } Australian Citizen/PR &nbsp;&nbsp;
+      ${
+        data.work_rights === "student" ? "[✓]" : "[ ]"
+      } Student Visa &nbsp;&nbsp;
+      ${
+        data.work_rights === "temporary" ? "[✓]" : "[ ]"
+      } Temporary Visa Holder &nbsp;&nbsp;
+      ${
+        data.work_rights &&
+        !["citizen", "student", "temporary"].includes(data.work_rights)
+          ? "[✓]"
+          : "[ ]"
+      } Other Visa
+    </div>
 
     <div class="section-title">3. 100-POINT IDENTIFICATION CHECK</div>
     <table>
@@ -3469,7 +3615,7 @@ const StaffFormsScreen = ({ navigation }: any) => {
         .join("")}
     </table>
 
-    <div class="section-title">4. BANKING, TAX & SUPERANNUATION</div>
+    <div class="section-title">4. BANKING, TAX &amp; SUPERANNUATION</div>
     <div class="row">
       <div class="field"><div class="field-label">Bank Name:</div><div class="field-input">${
         data.bank_name || ""
@@ -3481,58 +3627,62 @@ const StaffFormsScreen = ({ navigation }: any) => {
         data.account_number || ""
       }</div></div>
     </div>
-<div class="row">
-  <div class="field"><div class="field-label">Tax File Number:</div>
-    <div class="field-input">${data.tfn || ""}</div>
-  </div>
-</div>
-<div class="row">
-  <div class="field"><div class="field-label">Super Fund Name:</div>
-    <div class="field-input">${data.super_fund || ""}</div>
-  </div>
-  <div class="field"><div class="field-label">Super USI:</div>
-    <div class="field-input">${data.super_usi || ""}</div>
-  </div>
-</div>
-<div class="row">
-  <div class="field"><div class="field-label">Member Number:</div>
-    <div class="field-input">${data.super_member || ""}</div>
-  </div>
-</div>
-    <div class="section-title">5. LICENCES & CERTIFICATIONS</div>
+    <div class="row">
+      <div class="field"><div class="field-label">Tax File Number:</div><div class="field-input">${
+        data.tfn || ""
+      }</div></div>
+    </div>
+    <div class="row">
+      <div class="field"><div class="field-label">Super Fund Name:</div><div class="field-input">${
+        data.super_fund || ""
+      }</div></div>
+      <div class="field"><div class="field-label">Super USI:</div><div class="field-input">${
+        data.super_usi || ""
+      }</div></div>
+    </div>
+    <div class="row">
+      <div class="field"><div class="field-label">Member Number:</div><div class="field-input">${
+        data.super_member || ""
+      }</div></div>
+    </div>
+
+    <div class="section-title">5. LICENCES &amp; CERTIFICATIONS</div>
     <div class="row">
       <div class="field"><div class="field-label">Security licence No:</div><div class="field-input">${
         data.security_license || ""
       }</div></div>
-      <div class="field"><div class="field-label">Licence Expiry:</div><div class="field-input">${
-        data.security_license_expiry || ""
-      }</div></div>
+      <div class="field"><div class="field-label">Licence Expiry:</div><div class="field-input">${formatAUDate(
+        data.security_license_expiry,
+      )}</div></div>
     </div>
     <div class="row">
       <div class="field"><div class="field-label">First Aid Cert No:</div><div class="field-input">${
         data.first_aid_cert || ""
       }</div></div>
-      <div class="field"><div class="field-label">First Aid Expiry:</div><div class="field-input">${
-        data.first_aid_expiry || ""
-      }</div></div>
+      <div class="field"><div class="field-label">First Aid Expiry:</div><div class="field-input">${formatAUDate(
+        data.first_aid_expiry,
+      )}</div></div>
     </div>
 
     <div class="declaration">
       I declare that the information provided here is true and authentic.
     </div>
+
     <div class="signature-row">
       <div class="signature-box">
-        <div class="signature-line">${
-          data.signature
-            ? `<img src="${data.signature}" class="signature-img" />`
-            : ""
-        }</div>
+        <div class="signature-line">
+          ${
+            data.signature
+              ? `<img src="${data.signature}" class="signature-img" />`
+              : ""
+          }
+        </div>
         <div class="signature-label">Signature</div>
       </div>
       <div class="date-box">
-        <div style="height:28px; border-bottom:1px solid #666; font-size:10px; padding-top:14px;">${formatDate(
-          data.signed_date || data.date,
-        )}</div>
+        <div style="height:28px; border-bottom:1px solid #666; font-size:10px; padding-top:14px;">
+          ${formatAUDate(data.signed_date || data.date)}
+        </div>
         <div class="signature-label">Date</div>
       </div>
     </div>
@@ -3547,6 +3697,7 @@ const StaffFormsScreen = ({ navigation }: any) => {
       directory: "Cache",
       base64: false,
     });
+
     if (!result.filePath) throw new Error("Onboarding PDF generation failed");
     return result.filePath;
   };
@@ -3578,7 +3729,6 @@ const StaffFormsScreen = ({ navigation }: any) => {
       const token = await getToken();
       if (!token) throw new Error("Auth token not found");
 
-      // ✅ FIX 1: Use 'superannuation' only for the form-data GET, not for the upload
       const apiType = pdfType === "super_form" ? "superannuation" : pdfType;
 
       const formRes = await axios.get(`${BASE_URL}/api/form-data`, {
@@ -3598,39 +3748,20 @@ const StaffFormsScreen = ({ navigation }: any) => {
 
       const form = new FormData();
       form.append("user_id", String(userId));
-
-      // ✅ FIX 2: Pass pdfType as-is ('super_form', 'tfn', 'onboarding') — no conversion
       form.append("type", pdfType);
-
-      // ✅ FIX 3: Always use 'onboarding_forms' as the folder
       form.append("folder", "onboarding_forms");
-
       form.append("file", {
         uri: Platform.OS === "ios" ? pdfFilePath : `file://${pdfFilePath}`,
         type: "application/pdf",
         name: `${pdfType}_${Date.now()}.pdf`,
       } as any);
 
-      // Debug log
-      console.log(`📤 UPLOAD PAYLOAD for ${pdfType}:`);
-      // @ts-ignore
-      for (const [key, value] of form._parts) {
-        console.log(`  ${key}:`, value);
-      }
-
-      const uploadRes = await axios.post(
-        `${BASE_URL}/api/upload-staff-file`,
-        form,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "multipart/form-data",
-          },
+      await axios.post(`${BASE_URL}/api/upload-staff-file`, form, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "multipart/form-data",
         },
-      );
-
-      const uploadedUrl = uploadRes.data?.url || uploadRes.data?.data?.url;
-      console.log("✅ Upload successful:", uploadedUrl);
+      });
 
       await saveAndOpenPdf(pdfFilePath);
     } catch (error: any) {
@@ -3648,7 +3779,6 @@ const StaffFormsScreen = ({ navigation }: any) => {
   // ═══════════════════════════════════════════════════════════════════════════
   // SAVE / FETCH FLOWS
   // ═══════════════════════════════════════════════════════════════════════════
-
   const openPdf = async (url?: string) => {
     if (!url) return;
     try {
@@ -3680,11 +3810,9 @@ const StaffFormsScreen = ({ navigation }: any) => {
 
   const formatDateToDDMMYYYY = (dateStr?: string): string => {
     if (!dateStr) return "";
-
     try {
       const date = new Date(dateStr);
       if (isNaN(date.getTime())) return dateStr;
-
       const dd = String(date.getDate()).padStart(2, "0");
       const mm = String(date.getMonth() + 1).padStart(2, "0");
       const yyyy = date.getFullYear();
@@ -3693,6 +3821,7 @@ const StaffFormsScreen = ({ navigation }: any) => {
       return dateStr;
     }
   };
+
   const fetchFormData = async (id: number | string) => {
     try {
       setTabLoading(true);
@@ -3727,18 +3856,15 @@ const StaffFormsScreen = ({ navigation }: any) => {
         setTfnPrevName(formData.previous_name || "");
         setTfnAddress(formData.address || "");
         setBasisOfPayment(formData.basis_of_payment || "");
-
         setAustralianResident(convertToYesNo(formData.australian_resident));
         setClaimTaxFree(convertToYesNo(formData.claim_threshold));
         setHasDebt(convertToYesNo(formData.help_debt));
-
         setSignatureTfn(formData.signature || "");
 
         if (formData.dob) {
           setTfnDobBackend(formData.dob);
           setTfnDob(formatDateToDDMMYYYY(formData.dob));
         }
-
         if (formData.signed_date) {
           setDateTfnBackend(formData.signed_date);
           setDateTfn(formatDateToDDMMYYYY(formData.signed_date));
@@ -3755,7 +3881,6 @@ const StaffFormsScreen = ({ navigation }: any) => {
         setSuperFundUsi(formData.fund_usi || "");
         setSuperMemberNumber(formData.member_account || "");
         setSignatureSuper(formData.signature || "");
-
         setSuperConfirmation(
           formData.super_confirm === 1 || formData.super_confirm === true,
         );
@@ -3784,7 +3909,6 @@ const StaffFormsScreen = ({ navigation }: any) => {
           setOnboardDob(formatDateToDDMMYYYY(formData.dob));
         }
 
-        // work rights
         if (formData.work_rights) {
           const standard = ["citizen", "student", "temporary"];
           if (standard.includes(formData.work_rights)) {
@@ -3795,7 +3919,6 @@ const StaffFormsScreen = ({ navigation }: any) => {
           }
         }
 
-        // id checks (safe parse)
         let checks = formData.id_checks;
         if (typeof checks === "string") {
           try {
@@ -3816,11 +3939,30 @@ const StaffFormsScreen = ({ navigation }: any) => {
         setBankName(formData.bank_name || "");
         setBsb(formData.bsb || "");
         setAccountNumber(formData.account_number || "");
-        setSecurityLicence(formData.security_license || "");
+
+        // ── Security Licence: restore + lock if expiry already exists ──────
+        const savedLicence = formData.security_license || "";
+        const savedSecurityExpiry = formData.security_license_expiry || "";
+
+        setSecurityLicence(savedLicence);
+
+        if (savedSecurityExpiry) {
+          setSecurityExpiryBackend(savedSecurityExpiry);
+          setSecurityExpiry(formatDateToDDMMYYYY(savedSecurityExpiry));
+          // If both licence and expiry exist from server, treat as already verified
+          // so the expiry field stays locked (matches documents page behaviour)
+          if (savedLicence) {
+            setIsSecurityVerified(true);
+          }
+        } else {
+          setSecurityExpiry("");
+          setSecurityExpiryBackend("");
+          setIsSecurityVerified(false);
+        }
+
         setFirstAidNumber(formData.first_aid_cert || "");
         setSignatureOnboard(formData.signature || "");
 
-        // dates
         if (formData.signed_date) {
           setDateOnboardBackend(formData.signed_date);
           setDateOnboard(formatDateToDDMMYYYY(formData.signed_date));
@@ -3829,18 +3971,11 @@ const StaffFormsScreen = ({ navigation }: any) => {
           setPassportExpiryBackend(formData.passport_expiry);
           setPassportExpiry(formatDateToDDMMYYYY(formData.passport_expiry));
         }
-        if (formData.security_license_expiry) {
-          setSecurityExpiryBackend(formData.security_license_expiry);
-          setSecurityExpiry(
-            formatDateToDDMMYYYY(formData.security_license_expiry),
-          );
-        }
         if (formData.first_aid_expiry) {
           setFirstAidExpiryBackend(formData.first_aid_expiry);
           setFirstAidExpiry(formatDateToDDMMYYYY(formData.first_aid_expiry));
         }
 
-        // docs
         setPassportDoc(formData.passport_doc || "");
         setSecurityLicenseDoc(formData.security_license_doc || "");
         setFirstAidDoc(formData.first_aid_doc || "");
@@ -3853,7 +3988,6 @@ const StaffFormsScreen = ({ navigation }: any) => {
   };
 
   const resetAllFields = () => {
-    // Preserve DOB (and other profile data) when switching tabs
     const currentTfnDob = tfnDob;
     const currentTfnDobBackend = tfnDobBackend;
     const currentOnboardDob = onboardDob;
@@ -3877,7 +4011,11 @@ const StaffFormsScreen = ({ navigation }: any) => {
     setSecurityLicenseDoc("");
     setFirstAidDoc("");
 
-    // Reset only fields that should be cleared
+    // Reset verification state on tab switch / reload
+    setIsSecurityVerified(false);
+    setSecurityExpiry("");
+    setSecurityExpiryBackend("");
+
     setDateTfn("");
     setDateTfnBackend("");
     setDateSuper("");
@@ -3886,12 +4024,9 @@ const StaffFormsScreen = ({ navigation }: any) => {
     setDateOnboardBackend("");
     setPassportExpiry("");
     setPassportExpiryBackend("");
-    setSecurityExpiry("");
-    setSecurityExpiryBackend("");
     setFirstAidExpiry("");
     setFirstAidExpiryBackend("");
 
-    // Restore DOB
     if (currentTfnDob) {
       setTfnDob(currentTfnDob);
       setTfnDobBackend(currentTfnDobBackend);
@@ -3912,8 +4047,6 @@ const StaffFormsScreen = ({ navigation }: any) => {
     )}-${String(d.getDate()).padStart(2, "0")}`;
   };
 
-
-
   const handleSave = async () => {
     if (!userId || !activeStaffTab) return;
 
@@ -3933,7 +4066,6 @@ const StaffFormsScreen = ({ navigation }: any) => {
       const token = await getToken();
       const headers = { Authorization: `Bearer ${token}` };
 
-      // 1. Submit the form data based on the active tab
       if (activeStaffTab === "tfn") {
         const tfnPayload = {
           user_id: userId,
@@ -3951,7 +4083,6 @@ const StaffFormsScreen = ({ navigation }: any) => {
           signature: signatureTfn,
           date: dateTfnBackend,
         };
-        console.log("📤 TFN PAYLOAD:", JSON.stringify(tfnPayload, null, 2));
         await axios.post(`${BASE_URL}/api/tfn-declaration`, tfnPayload, {
           headers,
         });
@@ -3969,10 +4100,6 @@ const StaffFormsScreen = ({ navigation }: any) => {
           date: dateSuperBackend,
           super_confirm: superConfirmation ? 1 : 0,
         };
-        console.log(
-          "📤 SUPERANNUATION PAYLOAD:",
-          JSON.stringify(superPayload, null, 2),
-        );
         await axios.post(`${BASE_URL}/api/superannuation`, superPayload, {
           headers,
         });
@@ -4021,10 +4148,8 @@ const StaffFormsScreen = ({ navigation }: any) => {
           signature: signatureOnboard,
           date: formatDateSafe(dateOnboardBackend, "date"),
         };
-        console.log(
-          "📤 ONBOARDING PAYLOAD:",
-          JSON.stringify(onboardingPayload, null, 2),
-        );
+
+        console.log(onboardingPayload, "Onboarding Payload");
         await axios.post(`${BASE_URL}/api/onboarding`, onboardingPayload, {
           headers,
         });
@@ -4032,14 +4157,12 @@ const StaffFormsScreen = ({ navigation }: any) => {
 
       Toast.show({ type: "success", text1: "✓ Form saved successfully!" });
 
-      // 2. Immediately trigger PDF generation and the upload-staff-file API call
       const pdfType =
         activeStaffTab === "super" ? "super_form" : activeStaffTab;
       await generateUploadAndOpenPdf(
         pdfType as "tfn" | "super_form" | "onboarding",
       );
 
-      // 3. Refresh data to sync state with the server
       await fetchFormData(userId);
     } catch (err: any) {
       console.error("❌ Save/Upload Flow Error:", err);
@@ -4054,6 +4177,7 @@ const StaffFormsScreen = ({ navigation }: any) => {
       setLoading(false);
     }
   };
+
   const isFormComplete = (tab: StaffTab): boolean => {
     if (tab === "tfn") {
       return !!(
@@ -4106,6 +4230,7 @@ const StaffFormsScreen = ({ navigation }: any) => {
         onboardSuperUsi &&
         onboardMemberNumber &&
         securityLicence &&
+        // Require expiry only if verified OR manually available
         securityExpiryBackend &&
         firstAidNumber &&
         firstAidExpiryBackend
@@ -4115,7 +4240,7 @@ const StaffFormsScreen = ({ navigation }: any) => {
   };
 
   // ═══════════════════════════════════════════════════════════════════════════
-  // RENDER INTERFACE (Sub-components & UI Layout)
+  // RENDER
   // ═══════════════════════════════════════════════════════════════════════════
   if (fetching) {
     return (
@@ -4138,7 +4263,6 @@ const StaffFormsScreen = ({ navigation }: any) => {
           <ArrowLeft size={20} color="#fff" />
         </TouchableOpacity>
         <Text style={s.headerTitle}>Staffoo Verification Forms</Text>
-
         <View style={{ width: 40 }} />
       </View>
 
@@ -4166,7 +4290,7 @@ const StaffFormsScreen = ({ navigation }: any) => {
       </View>
 
       <ScrollView contentContainerStyle={s.scrollContent}>
-        {/* TFN TAB VIEW */}
+        {/* ── TFN TAB ── */}
         {activeStaffTab === "tfn" && (
           <View style={s.card}>
             <SectionLabel>Tax File Number</SectionLabel>
@@ -4297,7 +4421,7 @@ const StaffFormsScreen = ({ navigation }: any) => {
             </View>
 
             <SaveButton
-              label="Save TFN Form"
+              label="Save TFN Declaration"
               loading={loading}
               disabled={!isFormComplete(activeStaffTab)}
               onPress={handleSave}
@@ -4305,7 +4429,7 @@ const StaffFormsScreen = ({ navigation }: any) => {
           </View>
         )}
 
-        {/* SUPER TAB VIEW */}
+        {/* ── SUPER TAB ── */}
         {activeStaffTab === "super" && (
           <View style={s.card}>
             <SectionLabel>Employee Details</SectionLabel>
@@ -4447,8 +4571,9 @@ const StaffFormsScreen = ({ navigation }: any) => {
                 </Text>
               </TouchableOpacity>
             </Field>
+
             <SaveButton
-              label="Save Super Choice"
+              label="Save Superannuation"
               loading={loading}
               disabled={!isFormComplete(activeStaffTab)}
               onPress={handleSave}
@@ -4456,7 +4581,7 @@ const StaffFormsScreen = ({ navigation }: any) => {
           </View>
         )}
 
-        {/* ONBOARDING TAB VIEW */}
+        {/* ── ONBOARDING TAB ── */}
         {activeStaffTab === "onboarding" && (
           <View style={s.card}>
             <SectionLabel>1. Contact Info</SectionLabel>
@@ -4482,6 +4607,7 @@ const StaffFormsScreen = ({ navigation }: any) => {
                 </Field>
               </View>
             </View>
+
             <View style={s.row2}>
               <View style={{ flex: 1 }}>
                 <Field label="Email Address">
@@ -4533,17 +4659,17 @@ const StaffFormsScreen = ({ navigation }: any) => {
                   />
                 </Field>
               </View>
-            
             </View>
-              <View style={{ flex: 1 }}>
-                <Field label="Passport Expiry">
-                  <DateButton
-                    value={passportExpiry}
-                    placeholder="dd/mm/yyyy"
-                    onPress={() => openDatePicker("passportExp")}
-                  />
-                </Field>
-              </View>
+            <View style={{ flex: 1 }}>
+              <Field label="Passport Expiry">
+                <DateButton
+                  value={passportExpiry}
+                  placeholder="dd/mm/yyyy"
+                  onPress={() => openDatePicker("passportExp")}
+                />
+              </Field>
+            </View>
+
             <DocUploadField
               label="Upload Passport Document"
               required
@@ -4563,6 +4689,7 @@ const StaffFormsScreen = ({ navigation }: any) => {
                 setPassportDocName("");
               }}
             />
+
             <Field label="Work Rights In Australia">
               <RadioGroup
                 options={[
@@ -4609,7 +4736,7 @@ const StaffFormsScreen = ({ navigation }: any) => {
                 }
               />
               <IdCheckRow
-                label="Security License (Mandatory) - 40 Points"
+                label="Security Licence (Mandatory) - 40 Points"
                 checked={idChecks.security_license}
                 onPress={() =>
                   setIdChecks((p) => ({
@@ -4671,7 +4798,6 @@ const StaffFormsScreen = ({ navigation }: any) => {
                 maxLength={11}
               />
             </Field>
-
             <View style={s.row2}>
               <View style={{ flex: 1 }}>
                 <Field label="Super Fund Name">
@@ -4692,7 +4818,6 @@ const StaffFormsScreen = ({ navigation }: any) => {
                 </Field>
               </View>
             </View>
-
             <Field label="Member Number">
               <StyledInput
                 value={onboardMemberNumber}
@@ -4701,30 +4826,108 @@ const StaffFormsScreen = ({ navigation }: any) => {
               />
             </Field>
 
+            {/* ── Section 6: Licences ──────────────────────────────────────── */}
             <SectionLabel>6. License & Certs</SectionLabel>
-            <View style={s.row2}>
-              <View style={{ flex: 1 }}>
-                <Field label="Security licence No.">
-                  <StyledInput
+
+            {/*
+             * SECURITY LICENCE — verify-then-lock pattern
+             * ─────────────────────────────────────────────────────────────────
+             * 1. User types the licence number.
+             * 2. Tapping "Verify" calls the documents-online-verification API.
+             * 3. On success the expiry date is auto-filled and the expiry field
+             *    is locked (disabled + lock icon), identical to the Documents page.
+             * 4. If the user edits the licence number after a successful
+             *    verification, the verified state resets and the expiry clears
+             *    so they must re-verify.
+             * 5. When loading saved data from the server, if both a licence
+             *    number and an expiry already exist, the expiry field is locked
+             *    automatically (same as if just verified).
+             */}
+            <View style={{ flex: 1 }}>
+              <Field label="Security licence No.">
+                <View
+                  style={[
+                    s.secVerifyRow,
+                    isSecurityVerified && s.secVerifyRowVerified,
+                  ]}
+                >
+                  <TextInput
+                    style={s.secVerifyInput}
                     value={securityLicence}
-                    onChangeText={setSecurityLicence}
+                    onChangeText={(text: string) => {
+                      // Reset verification whenever the licence number changes
+                      setSecurityLicence(text.toUpperCase());
+                      if (isSecurityVerified) {
+                        setIsSecurityVerified(false);
+                        setSecurityExpiry("");
+                        setSecurityExpiryBackend("");
+                      }
+                    }}
                     placeholder="VIC 123456"
+                    placeholderTextColor="rgba(255,255,255,0.4)"
+                    autoCorrect={false}
+                    autoCapitalize="characters"
                   />
-                </Field>
-              </View>
-              <View style={{ flex: 1 }}>
-                <Field label="Security Licence Expiry">
-                  <DateButton
-                    value={securityExpiry}
-                    placeholder="dd/mm/yyyy"
-                    onPress={() => openDatePicker("secExp")}
-                  />
-                </Field>
-              </View>
+                  <TouchableOpacity
+                    style={[
+                      s.secVerifyBtn,
+                      verifyingSecurity && { opacity: 0.7 },
+                    ]}
+                    disabled={verifyingSecurity}
+                    onPress={handleVerifySecurityLicence}
+                  >
+                    {verifyingSecurity ? (
+                      <ActivityIndicator color="#fff" size="small" />
+                    ) : (
+                      <Text style={s.secVerifyBtnText}>
+                        {isSecurityVerified ? "Re-verify" : "Verify"}
+                      </Text>
+                    )}
+                  </TouchableOpacity>
+                </View>
+              </Field>
             </View>
 
+            {/* Security Licence Expiry — locked after verification */}
+            <View style={{ flex: 1 }}>
+              <Field label="Security Licence Expiry">
+                <TouchableOpacity
+                  style={[s.dateBtn, isSecurityVerified && s.dateBtnLocked]}
+                  // Disabled when verified — expiry is auto-filled & locked
+                  disabled={isSecurityVerified}
+                  onPress={() => {
+                    if (!isSecurityVerified) openDatePicker("secExp");
+                  }}
+                  activeOpacity={isSecurityVerified ? 1 : 0.7}
+                >
+                  <Text
+                    style={[
+                      s.dateBtnText,
+                      !securityExpiry && { color: "rgba(255,255,255,0.4)" },
+                      isSecurityVerified && { color: BRAND },
+                    ]}
+                  >
+                    {securityExpiry || "dd/mm/yyyy"}
+                  </Text>
+                  {isSecurityVerified && (
+                    <Lock size={16} color={BRAND} style={{ marginLeft: 8 }} />
+                  )}
+                </TouchableOpacity>
+              </Field>
+            </View>
+
+            {/* Verification status message */}
+            {isSecurityVerified && (
+              <View style={s.secVerifiedBadge}>
+                <Check size={14} color={BRAND_DARK} />
+                <Text style={s.secVerifiedBadgeText}>
+                  Verified — expiry auto-filled and locked
+                </Text>
+              </View>
+            )}
+
             <DocUploadField
-              label="Upload Security License Document"
+              label="Upload Security Licence Document"
               required
               fileName={securityLicenseDocName}
               uploading={securityLicenseDocUploading}
@@ -4742,6 +4945,7 @@ const StaffFormsScreen = ({ navigation }: any) => {
                 setSecurityLicenseDocName("");
               }}
             />
+
             <View style={s.row2}>
               <View style={{ flex: 1 }}>
                 <Field label="First Aid Certificate No.">
@@ -4864,7 +5068,7 @@ const StaffFormsScreen = ({ navigation }: any) => {
                 .m-signature-pad--footer { position: absolute; bottom: 0; left: 0; right: 0; height: 70px; display: flex; justify-content: space-between; align-items: center; padding: 10px 16px; background: #fff; border-top: 1px solid #e2e8f0; }
                 .m-signature-pad--footer .button { border-radius: 10px; font-size: 15px; font-weight: 600; cursor: pointer; border: none; }
                 .m-signature-pad--footer .button.clear { background: #fef2f2; color: #ef4444; }
-                .m-signature-pad--footer .button.save  { background: #2EB1E2; color: #fff;    }
+                .m-signature-pad--footer .button.save  { background: #2EB1E2; color: #fff; }
               `}
             />
           </View>
@@ -5188,6 +5392,14 @@ const s = StyleSheet.create({
     borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  // Locked state for verified expiry date field
+  dateBtnLocked: {
+    borderColor: BRAND,
+    backgroundColor: "rgba(137,231,208,0.08)",
   },
   dateBtnText: { color: "#fff", fontSize: 14 },
   sigContainer: { height: 44, justifyContent: "center" },
@@ -5408,6 +5620,54 @@ const s = StyleSheet.create({
     fontSize: 12,
     fontWeight: "600",
     textDecorationLine: "underline",
+  },
+
+  // ── Security Licence Verify-Row Styles ─────────────────────────────────────
+  secVerifyRow: {
+    flexDirection: "row",
+    borderWidth: 1,
+    borderColor: "#475569",
+    borderRadius: 10,
+    overflow: "hidden",
+  },
+  // Border turns mint-green when verified
+  secVerifyRowVerified: {
+    borderColor: BRAND,
+  },
+  secVerifyInput: {
+    flex: 1,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 14,
+    color: "#fff",
+  },
+  secVerifyBtn: {
+    backgroundColor: "#366bf0",
+    paddingHorizontal: 18,
+    justifyContent: "center",
+    alignItems: "center",
+    minWidth: 80,
+    minHeight: 44,
+  },
+  secVerifyBtnText: { color: "#fff", fontWeight: "600", fontSize: 14 },
+
+  // Verified badge shown below the expiry field
+  secVerifiedBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: BRAND,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    marginTop: 6,
+    marginBottom: 4,
+    alignSelf: "flex-start",
+    gap: 6,
+  },
+  secVerifiedBadgeText: {
+    color: BRAND_DARK,
+    fontSize: 12,
+    fontWeight: "700",
   },
 });
 

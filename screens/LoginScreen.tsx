@@ -487,7 +487,7 @@
 //   },
 // });
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -504,33 +504,33 @@ import {
   StatusBar,
   PermissionsAndroid,
   Modal,
-} from 'react-native';
+} from "react-native";
 
-import { Mail, Eye, EyeOff, Lock, Check } from 'lucide-react-native';
-import { PERMISSIONS, request, RESULTS } from 'react-native-permissions';
-import CheckBox from '@react-native-community/checkbox';
-import Toast from 'react-native-toast-message';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { loginUser } from '../services/authApi';
-import { OneSignal } from 'react-native-onesignal';
-import NetInfo from '@react-native-community/netinfo';
-import { GoogleSignin } from '@react-native-google-signin/google-signin';
-import LinearGradient from 'react-native-linear-gradient';
+import { Mail, Eye, EyeOff, Lock, Check } from "lucide-react-native";
+import { PERMISSIONS, request, RESULTS } from "react-native-permissions";
+import CheckBox from "@react-native-community/checkbox";
+import Toast from "react-native-toast-message";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { loginUser } from "../services/authApi";
+import { OneSignal } from "react-native-onesignal";
+import NetInfo from "@react-native-community/netinfo";
+import { GoogleSignin } from "@react-native-google-signin/google-signin";
+import LinearGradient from "react-native-linear-gradient";
 
-const BASE_URL = 'https://apis.staffoo.com.au/api';
-const LOGO = require('../assets/staffoo.png');
+const BASE_URL = "https://apis.staffoo.com.au/api";
+const LOGO = require("../assets/staffoo.png");
 
 const COLORS = {
-  primary: '#89E7D0',
-  primaryDark: '#4FCBB3',
-  background: '#001F3F',
-  surface: '#0B2A4A',
-  surface2: '#12243A',
-  card: 'rgba(255,255,255,0.06)',
-  border: 'rgba(255,255,255,0.08)',
-  text: '#FFFFFF',
-  textSecondary: 'rgba(255,255,255,0.75)',
-  textMuted: 'rgba(255,255,255,0.45)',
+  primary: "#89E7D0",
+  primaryDark: "#4FCBB3",
+  background: "#001F3F",
+  surface: "#0B2A4A",
+  surface2: "#12243A",
+  card: "rgba(255,255,255,0.06)",
+  border: "rgba(255,255,255,0.08)",
+  text: "#FFFFFF",
+  textSecondary: "rgba(255,255,255,0.75)",
+  textMuted: "rgba(255,255,255,0.45)",
 };
 
 type Props = { navigation: any };
@@ -539,28 +539,28 @@ export const sendNotificationTokenToServer = async (
   playerId: string,
   userId?: string,
 ): Promise<void> => {
-  console.log('📤 sendNotificationTokenToServer called');
+  console.log("📤 sendNotificationTokenToServer called");
   try {
-    const token = await AsyncStorage.getItem('@auth_token');
+    const token = await AsyncStorage.getItem("@auth_token");
     if (!token) return;
 
     const payload: any = { notification_token: playerId };
     if (userId) payload.id = userId;
 
     const response = await fetch(`${BASE_URL}/store-notification-token`, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
-        Accept: 'application/json',
+        Accept: "application/json",
       },
       body: JSON.stringify(payload),
     });
 
     if (!response.ok) throw new Error(`Server error ${response.status}`);
-    console.log('✅ Token stored on server successfully');
+    console.log("✅ Token stored on server successfully");
   } catch (error) {
-    console.error('❌ Failed to sync OneSignal token:', error);
+    console.error("❌ Failed to sync OneSignal token:", error);
   }
 };
 
@@ -571,38 +571,37 @@ export default function LoginScreen({ navigation }: Props) {
   const scale = (size: number) => (width / 375) * size;
   const [forgotLoading, setForgotLoading] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
 
   const hasRequestedLocation = useRef(false);
   const [showAccountTypeModal, setShowAccountTypeModal] = useState(false);
-  const [googleCredential, setGoogleCredential] = useState('');
-  const [selectedAccountType, setSelectedAccountType] =
-    useState<'customer' | 'staff' | 'contractor'>('customer');
+  const [googleCredential, setGoogleCredential] = useState("");
+  const [selectedAccountType, setSelectedAccountType] = useState<
+    "customer" | "staff" | "contractor"
+  >("customer");
   useEffect(() => {
     (async () => {
       try {
-        const savedEmail = await AsyncStorage.getItem('@saved_email');
-        const savedRemember = await AsyncStorage.getItem('@remember_me');
-        if (savedEmail && savedRemember === 'true') {
+        const savedEmail = await AsyncStorage.getItem("@saved_email");
+        const savedRemember = await AsyncStorage.getItem("@remember_me");
+        if (savedEmail && savedRemember === "true") {
           setEmail(savedEmail);
           setRememberMe(true);
         }
       } catch (e) {
-        console.warn('Could not restore saved credentials:', e);
+        console.warn("Could not restore saved credentials:", e);
       }
     })();
   }, []);
 
-
-
   useEffect(() => {
-    if (Platform.OS === 'android') {
+    if (Platform.OS === "android") {
       GoogleSignin.configure({
         webClientId:
-          '224693258602-a6q3lng2a3c8kte6p0llbu9iiduoiqtq.apps.googleusercontent.com',
+          "224693258602-a6q3lng2a3c8kte6p0llbu9iiduoiqtq.apps.googleusercontent.com",
         offlineAccess: true,
         forceCodeForRefreshToken: true,
       });
@@ -610,16 +609,16 @@ export default function LoginScreen({ navigation }: Props) {
   }, []);
 
   const requestLocationPermission = async () => {
-    if (Platform.OS === 'android') {
+    if (Platform.OS === "android") {
       const granted = await PermissionsAndroid.request(
         PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
         {
-          title: 'Location Permission',
+          title: "Location Permission",
           message:
-            'This app needs your location for security and shift tracking.',
-          buttonNeutral: 'Ask Me Later',
-          buttonNegative: 'Cancel',
-          buttonPositive: 'OK',
+            "This app needs your location for security and shift tracking.",
+          buttonNeutral: "Ask Me Later",
+          buttonNegative: "Cancel",
+          buttonPositive: "OK",
         },
       );
       return granted === PermissionsAndroid.RESULTS.GRANTED;
@@ -713,18 +712,18 @@ export default function LoginScreen({ navigation }: Props) {
     try {
       setLoading(true);
 
-      console.log('🚀 [GOOGLE] Starting Google Sign-In...');
+      console.log("🚀 [GOOGLE] Starting Google Sign-In...");
 
       await GoogleSignin.hasPlayServices({
         showPlayServicesUpdateDialog: true,
       });
 
-      await GoogleSignin.signOut().catch(() => { });
+      await GoogleSignin.signOut().catch(() => {});
 
       const userInfo = await GoogleSignin.signIn();
 
-      if (userInfo.type !== 'success' || !userInfo.data) {
-        throw new Error('Google sign-in failed');
+      if (userInfo.type !== "success" || !userInfo.data) {
+        throw new Error("Google sign-in failed");
       }
 
       const tokens = await GoogleSignin.getTokens();
@@ -732,23 +731,23 @@ export default function LoginScreen({ navigation }: Props) {
       const credential = tokens.accessToken;
 
       if (!credential) {
-        throw new Error('Failed to get Google credential');
+        throw new Error("Failed to get Google credential");
       }
 
-      console.log('✅ Google credential received');
+      console.log("✅ Google credential received");
 
       setGoogleCredential(credential);
 
       // Open popup like web version
       setShowAccountTypeModal(true);
     } catch (error: any) {
-      console.error('❌ Google Login Error:', error);
+      console.error("❌ Google Login Error:", error);
 
       Toast.show({
-        type: 'error',
-        text1: 'Google Login Failed',
-        text2: error.message || 'Please try again',
-        position: 'bottom',
+        type: "error",
+        text1: "Google Login Failed",
+        text2: error.message || "Please try again",
+        position: "bottom",
       });
     } finally {
       setLoading(false);
@@ -764,90 +763,83 @@ export default function LoginScreen({ navigation }: Props) {
       };
 
       console.log(
-        '📤 Sending Google Payload:',
+        "📤 Sending Google Payload:",
         JSON.stringify(payload, null, 2),
       );
 
-      const response = await fetch(
-        `${BASE_URL}/auth/google/callback`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Accept: 'application/json',
-          },
-          body: JSON.stringify(payload),
+      const response = await fetch(`${BASE_URL}/auth/google/callback`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
         },
-      );
+        body: JSON.stringify(payload),
+      });
 
       const data = await response.json();
 
       console.log(
-        '📥 Google Callback Response:',
+        "📥 Google Callback Response:",
         JSON.stringify(data, null, 2),
       );
 
       if (!response.ok) {
-        throw new Error(data?.message || 'Login failed');
+        throw new Error(data?.message || "Login failed");
       }
 
       if (!data.success) {
-        throw new Error(data?.message || 'Login failed');
+        throw new Error(data?.message || "Login failed");
       }
 
       const user = data.user;
       const token = data.token;
 
       if (!user?.id || !token) {
-        throw new Error('Invalid server response');
+        throw new Error("Invalid server response");
       }
 
       await AsyncStorage.multiSet([
-        ['@auth_token', token],
-        ['user', JSON.stringify(user)],
-        ['@user_id', String(user.id)],
-        ['@user_type', user.user_type || selectedAccountType],
+        ["@auth_token", token],
+        ["user", JSON.stringify(user)],
+        ["@user_id", String(user.id)],
+        ["@user_type", user.user_type || selectedAccountType],
       ]);
 
       try {
-        const playerId =
-          await OneSignal.User.pushSubscription.getIdAsync();
+        const playerId = await OneSignal.User.pushSubscription.getIdAsync();
 
         if (playerId) {
-          await sendNotificationTokenToServer(
-            playerId,
-            String(user.id),
-          );
+          await sendNotificationTokenToServer(playerId, String(user.id));
 
           OneSignal.login(String(user.id));
         }
       } catch (e) {
-        console.log('OneSignal Error:', e);
+        console.log("OneSignal Error:", e);
       }
 
       setShowAccountTypeModal(false);
 
       Toast.show({
-        type: 'success',
-        text1: 'Login Successful',
+        type: "success",
+        text1: "Login Successful",
         text2: `Welcome ${user.name || user.email}`,
-        position: 'bottom',
+        position: "bottom",
       });
 
       setTimeout(() => {
         navigation.reset({
           index: 0,
-          routes: [{ name: 'Profile' }],
+          routes: [{ name: "Profile" }],
         });
       }, 500);
     } catch (error: any) {
-      console.error('❌ Google Callback Error:', error);
+      console.error("❌ Google Callback Error:", error);
 
       Toast.show({
-        type: 'error',
-        text1: 'Login Failed',
-        text2: error.message || 'Please try again',
-        position: 'bottom',
+        type: "error",
+        text1: "Login Failed",
+        text2: error.message || "Please try again",
+        position: "bottom",
       });
     } finally {
       setLoading(false);
@@ -856,8 +848,8 @@ export default function LoginScreen({ navigation }: Props) {
   const handleForgotPassword = async () => {
     if (!email.trim()) {
       return Toast.show({
-        type: 'error',
-        text1: 'Enter your email first',
+        type: "error",
+        text1: "Enter your email first",
       });
     }
 
@@ -865,10 +857,10 @@ export default function LoginScreen({ navigation }: Props) {
 
     try {
       const response = await fetch(`${BASE_URL}/auth/password-reset-email`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
-          Accept: 'application/json',
+          "Content-Type": "application/json",
+          Accept: "application/json",
         },
         body: JSON.stringify({
           email: email.trim(),
@@ -877,19 +869,19 @@ export default function LoginScreen({ navigation }: Props) {
 
       if (!response.ok) {
         const errData = await response.json().catch(() => ({}));
-        throw new Error(errData?.message || 'Request failed');
+        throw new Error(errData?.message || "Request failed");
       }
 
       Toast.show({
-        type: 'success',
-        text1: 'Reset link sent',
-        text2: 'Check your email inbox',
+        type: "success",
+        text1: "Reset link sent",
+        text2: "Check your email inbox",
       });
     } catch (error: any) {
       Toast.show({
-        type: 'error',
-        text1: 'Failed',
-        text2: error.message || 'Try again later',
+        type: "error",
+        text1: "Failed",
+        text2: error.message || "Try again later",
       });
     } finally {
       setForgotLoading(false);
@@ -897,22 +889,30 @@ export default function LoginScreen({ navigation }: Props) {
   };
 
   const redirectAfterLogin = (user: any) => {
-    const type = (user.user_type || '').toLowerCase();
-    if (type === 'customer') {
-      navigation.reset({ index: 0, routes: [{ name: 'CreateJob' }] });
+    const type = (user.user_type || "").toLowerCase();
+    if (type === "customer") {
+      navigation.reset({ index: 0, routes: [{ name: "CreateJob" }] });
     } else {
-      navigation.reset({ index: 0, routes: [{ name: 'Profile' }] });
+      navigation.reset({ index: 0, routes: [{ name: "Profile" }] });
     }
   };
 
   const handleSignIn = async () => {
     if (!email.trim()) {
-      Toast.show({ type: 'error', text1: 'Email Required', position: 'bottom' });
+      Toast.show({
+        type: "error",
+        text1: "Email Required",
+        position: "bottom",
+      });
       return;
     }
 
     if (!password.trim()) {
-      Toast.show({ type: 'error', text1: 'Password Required', position: 'bottom' });
+      Toast.show({
+        type: "error",
+        text1: "Password Required",
+        position: "bottom",
+      });
       return;
     }
 
@@ -921,7 +921,7 @@ export default function LoginScreen({ navigation }: Props) {
     try {
       const netState = await NetInfo.fetch();
       if (!netState.isConnected) {
-        throw new Error('No internet connection. Please try again.');
+        throw new Error("No internet connection. Please try again.");
       }
 
       const response = await loginUser({
@@ -930,47 +930,46 @@ export default function LoginScreen({ navigation }: Props) {
       });
       const user = response;
       const token = response.token;
-      await AsyncStorage.setItem('@auth_token', token);
-      await AsyncStorage.setItem('@user_id', String(user.id));
-      const userTypeValue = user.user_type || 'staff';
-      await AsyncStorage.setItem('@user_type', userTypeValue);
-      await AsyncStorage.setItem('user', JSON.stringify(user));
+      await AsyncStorage.setItem("@auth_token", token);
+      await AsyncStorage.setItem("@user_id", String(user.id));
+      const userTypeValue = user.user_type || "staff";
+      await AsyncStorage.setItem("@user_type", userTypeValue);
+      await AsyncStorage.setItem("user", JSON.stringify(user));
       const allKeys = await AsyncStorage.getAllKeys();
-      console.log('AsyncStorage keys after login:', allKeys);
-      console.log('✅ Login Success - Saved:');
-      console.log('   • User ID   :', user.id);
-      console.log('   • User Type :', userTypeValue);
-      console.log('   • Token     :', token ? 'Saved' : 'Missing');
+      console.log("AsyncStorage keys after login:", allKeys);
+      console.log("✅ Login Success - Saved:");
+      console.log("   • User ID   :", user.id);
+      console.log("   • User Type :", userTypeValue);
+      console.log("   • Token     :", token ? "Saved" : "Missing");
       try {
-        await new Promise(r => setTimeout(r, 1200));
+        await new Promise((r) => setTimeout(r, 1200));
         const playerId = await OneSignal.User.pushSubscription.getIdAsync();
         if (playerId) {
           await sendNotificationTokenToServer(playerId, String(user.id));
           OneSignal.login(String(user.id));
         }
       } catch (e) {
-        console.log('OneSignal error:', e);
+        console.log("OneSignal error:", e);
       }
 
       Toast.show({
-        type: 'success',
-        text1: 'Login Successful',
-        position: 'bottom',
+        type: "success",
+        text1: "Login Successful",
+        position: "bottom",
       });
 
       setTimeout(() => {
         navigation.reset({
           index: 0,
-          routes: [{ name: 'Profile' }],
+          routes: [{ name: "Profile" }],
         });
       }, 500);
-
     } catch (err: any) {
       Toast.show({
-        type: 'error',
-        text1: 'Login Failed',
-        text2: err.message || 'Please try again',
-        position: 'bottom',
+        type: "error",
+        text1: "Login Failed",
+        text2: err.message || "Please try again",
+        position: "bottom",
       });
     } finally {
       setLoading(false);
@@ -981,7 +980,7 @@ export default function LoginScreen({ navigation }: Props) {
     <SafeAreaView style={styles.container}>
       <KeyboardAvoidingView
         style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
         <ScrollView
           contentContainerStyle={{
@@ -1006,7 +1005,7 @@ export default function LoginScreen({ navigation }: Props) {
             <View style={styles.inputInner}>
               <Mail size={22} color="#6B7280" />
               <TextInput
-                style={[styles.input, { color: '#111827' }]}
+                style={[styles.input, { color: "#111827" }]}
                 placeholder="Type your email"
                 placeholderTextColor="#797777"
                 value={email}
@@ -1024,7 +1023,7 @@ export default function LoginScreen({ navigation }: Props) {
             <View style={styles.inputInner}>
               <Lock size={22} color="#6B7280" />
               <TextInput
-                style={[styles.input, { color: '#111827' }]}
+                style={[styles.input, { color: "#111827" }]}
                 placeholder="Type your password"
                 placeholderTextColor="#797777"
                 value={password}
@@ -1041,10 +1040,10 @@ export default function LoginScreen({ navigation }: Props) {
             </View>
           </View>
           <TouchableOpacity
-            onPress={() => navigation.navigate('ForgotPassword', { email })}
-            style={{ alignSelf: 'flex-end', marginBottom: 10 }}
+            onPress={() => navigation.navigate("ForgotPassword", { email })}
+            style={{ alignSelf: "flex-end", marginBottom: 10 }}
           >
-            <Text style={{ color: '#89E7D0', fontSize: 13, fontWeight: '600' }}>
+            <Text style={{ color: "#89E7D0", fontSize: 13, fontWeight: "600" }}>
               Forgot Password?
             </Text>
           </TouchableOpacity>
@@ -1068,7 +1067,7 @@ export default function LoginScreen({ navigation }: Props) {
 
           <TouchableOpacity
             style={[styles.signInButton, loading && { opacity: 0.7 }]}
-           onPress={handleSignIn}
+            onPress={handleSignIn}
             disabled={loading}
           >
             {loading ? (
@@ -1084,14 +1083,14 @@ export default function LoginScreen({ navigation }: Props) {
             <View style={styles.orLine} />
           </View>
 
-          {Platform.OS === 'android' && (
+          {Platform.OS === "android" && (
             <TouchableOpacity
               style={styles.googleButton}
               onPress={handleGoogleLogin}
               disabled={loading}
             >
               <Image
-                source={require('../assets/google-img.png')}
+                source={require("../assets/google-img.png")}
                 style={{ width: 22, height: 22, marginRight: 10 }}
               />
               <Text style={styles.googleText}>Continue with Google</Text>
@@ -1099,8 +1098,8 @@ export default function LoginScreen({ navigation }: Props) {
           )}
 
           <View style={styles.signupRow}>
-            <Text style={{ color: '#fff' }}>Don't have an account? </Text>
-            <TouchableOpacity onPress={() => navigation.navigate('SignUp')}>
+            <Text style={{ color: "#fff" }}>Don't have an account? </Text>
+            <TouchableOpacity onPress={() => navigation.navigate("SignUp")}>
               <Text style={styles.signupLink}>Sign Up</Text>
             </TouchableOpacity>
           </View>
@@ -1115,7 +1114,6 @@ export default function LoginScreen({ navigation }: Props) {
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContainer}>
-
             <TouchableOpacity
               style={styles.closeButton}
               onPress={() => setShowAccountTypeModal(false)}
@@ -1123,33 +1121,31 @@ export default function LoginScreen({ navigation }: Props) {
               <Text style={styles.closeText}>✕</Text>
             </TouchableOpacity>
 
-            <Text style={styles.modalTitle}>
-              Complete Your Setup
-            </Text>
+            <Text style={styles.modalTitle}>Complete your setup</Text>
 
             <Text style={styles.modalDescription}>
-              It Looks Like You Don't Have An Account Yet. Please Select Your
-              Account Type To Securely Create Your Profile And Continue.
+              It looks like you don't have an account yet. Please select your
+              account type to securely create your profile and continue.
             </Text>
 
             <Text style={styles.accountTypeLabel}>
-              Account Type <Text style={{ color: '#E53935' }}>*</Text>
+              Account Type <Text style={{ color: "#E53935" }}>*</Text>
             </Text>
 
             <View style={styles.accountTypeRow}>
               <TouchableOpacity
                 style={[
                   styles.accountTypeBtn,
-                  selectedAccountType === 'customer' &&
-                  styles.accountTypeBtnActive,
+                  selectedAccountType === "customer" &&
+                    styles.accountTypeBtnActive,
                 ]}
-                onPress={() => setSelectedAccountType('customer')}
+                onPress={() => setSelectedAccountType("customer")}
               >
                 <Text
                   style={[
                     styles.accountTypeText,
-                    selectedAccountType === 'customer' &&
-                    styles.accountTypeTextActive,
+                    selectedAccountType === "customer" &&
+                      styles.accountTypeTextActive,
                   ]}
                 >
                   Client
@@ -1159,16 +1155,16 @@ export default function LoginScreen({ navigation }: Props) {
               <TouchableOpacity
                 style={[
                   styles.accountTypeBtn,
-                  selectedAccountType === 'staff' &&
-                  styles.accountTypeBtnActive,
+                  selectedAccountType === "staff" &&
+                    styles.accountTypeBtnActive,
                 ]}
-                onPress={() => setSelectedAccountType('staff')}
+                onPress={() => setSelectedAccountType("staff")}
               >
                 <Text
                   style={[
                     styles.accountTypeText,
-                    selectedAccountType === 'staff' &&
-                    styles.accountTypeTextActive,
+                    selectedAccountType === "staff" &&
+                      styles.accountTypeTextActive,
                   ]}
                 >
                   Staff
@@ -1178,16 +1174,16 @@ export default function LoginScreen({ navigation }: Props) {
               <TouchableOpacity
                 style={[
                   styles.accountTypeBtn,
-                  selectedAccountType === 'contractor' &&
-                  styles.accountTypeBtnActive,
+                  selectedAccountType === "contractor" &&
+                    styles.accountTypeBtnActive,
                 ]}
-                onPress={() => setSelectedAccountType('contractor')}
+                onPress={() => setSelectedAccountType("contractor")}
               >
                 <Text
                   style={[
                     styles.accountTypeText,
-                    selectedAccountType === 'contractor' &&
-                    styles.accountTypeTextActive,
+                    selectedAccountType === "contractor" &&
+                      styles.accountTypeTextActive,
                   ]}
                 >
                   Resource Partner
@@ -1203,7 +1199,6 @@ export default function LoginScreen({ navigation }: Props) {
                 Create Account & Login
               </Text>
             </TouchableOpacity>
-
           </View>
         </View>
       </Modal>
@@ -1215,21 +1210,21 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     // backgroundColor: COLORS.background,
-    backgroundColor: '#111111',
-    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
+    backgroundColor: "#111111",
+    paddingTop: Platform.OS === "android" ? StatusBar.currentHeight : 0,
   },
   logoContainer: {
     marginVertical: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   subtitle: {
     color: COLORS.textSecondary,
     marginTop: 20,
-    textAlign: 'center',
+    textAlign: "center",
   },
   label: {
-    fontWeight: '600',
+    fontWeight: "600",
     color: COLORS.text,
     marginBottom: 7,
   },
@@ -1238,8 +1233,8 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   inputInner: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingHorizontal: 16,
     height: 42,
   },
@@ -1255,54 +1250,54 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     borderWidth: 2,
     borderColor: COLORS.primary,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   orContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginVertical: 5,
   },
 
   orLine: {
     flex: 1,
     height: 1,
-    backgroundColor: '#888',
+    backgroundColor: "#888",
   },
 
   orText: {
     marginHorizontal: 10,
-    color: '#ccc',
+    color: "#ccc",
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: "500",
   },
   checkboxChecked: {
     backgroundColor: COLORS.primary,
   },
   signInButton: {
-    backgroundColor: '#0A7C6E',
+    backgroundColor: "#0A7C6E",
     borderRadius: 50,
     height: 52,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     marginVertical: 10,
   },
   signInText: {
-    color: '#ffff',
-    fontWeight: '800',
+    color: "#ffff",
+    fontWeight: "800",
     fontSize: 16,
   },
   inputContainer: {
-    backgroundColor: '#cacaca',
+    backgroundColor: "#cacaca",
     borderRadius: 10,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: "#E5E7EB",
   },
   googleButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     borderWidth: 1,
     borderColor: COLORS.border,
     backgroundColor: COLORS.card,
@@ -1312,119 +1307,117 @@ const styles = StyleSheet.create({
   },
   googleText: {
     fontSize: 15,
-    fontWeight: '600',
+    fontWeight: "600",
     color: COLORS.text,
   },
   signupRow: {
-    flexDirection: 'row',
-    justifyContent: 'center',
+    flexDirection: "row",
+    justifyContent: "center",
     marginTop: 30,
     paddingBottom: 30,
   },
   signupLink: {
     color: COLORS.primary,
-    fontWeight: '600',
+    fontWeight: "600",
   },
 
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.55)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "rgba(0,0,0,0.55)",
+    justifyContent: "center",
+    alignItems: "center",
     paddingHorizontal: 0,
   },
 
   modalContainer: {
-    width: '95%',
+    width: "95%",
     maxWidth: 650,
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
     borderRadius: 24,
     paddingHorizontal: 25,
     paddingVertical: 25,
-    paddingTop:20,
+    paddingTop: 20,
     paddingBottom: 20,
   },
 
   closeButton: {
-    position: 'absolute',
+    position: "absolute",
     right: 20,
     top: 14,
     zIndex: 99,
-    
   },
 
   closeText: {
     fontSize: 20,
-    color: '#8B8B8B',
-    fontWeight: '300',
+    color: "#8B8B8B",
+    fontWeight: "300",
   },
 
   modalTitle: {
     fontSize: 15,
-    fontWeight: '700',
-    color: '#202124',
+    fontWeight: "700",
+    color: "#202124",
     marginBottom: 5,
   },
 
   modalDescription: {
     fontSize: 12,
-    color: '#666',
+    color: "#666",
     lineHeight: 20,
     marginBottom: 20,
   },
 
   accountTypeLabel: {
     fontSize: 15,
-    fontWeight: '600',
-    color: '#333',
+    fontWeight: "600",
+    color: "#333",
     marginBottom: 10,
   },
 
   accountTypeRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    flexDirection: "row",
+    flexWrap: "wrap",
     marginBottom: 10,
   },
 
   accountTypeBtn: {
     borderWidth: 1,
-    borderColor: '#D8D8D8',
+    borderColor: "#D8D8D8",
     borderRadius: 30,
     paddingHorizontal: 10,
     paddingVertical: 8,
     marginRight: 10,
     // marginBottom: 10,
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
   },
 
   accountTypeBtnActive: {
-    backgroundColor: '#3E8E7C',
-    borderColor: '#3E8E7C',
+    backgroundColor: "#3E8E7C",
+    borderColor: "#3E8E7C",
   },
 
   accountTypeText: {
     fontSize: 14,
-    color: '#555',
-    fontWeight: '500',
+    color: "#555",
+    fontWeight: "500",
   },
 
   accountTypeTextActive: {
-    color: '#fff',
+    color: "#fff",
   },
 
   createAccountBtn: {
-    backgroundColor: '#3E8E7C',
+    backgroundColor: "#3E8E7C",
     borderRadius: 10,
     height: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     marginTop: 10,
   },
 
   createAccountBtnText: {
-    color: '#fff',
+    color: "#fff",
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: "600",
   },
-
 });

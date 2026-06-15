@@ -292,7 +292,7 @@ export default function StaffInductionScreen({
           style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}
         >
           <ActivityIndicator size="large" color={THEME_COLOR} />
-          <Text style={{ marginTop: 12 }}>Loading Inductions...</Text>
+          <Text style={{ marginTop: 12,color: 'white' }}>Loading Inductions...</Text>
         </View>
       </SafeAreaView>
     );

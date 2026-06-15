@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef } from "react";
 import {
   View,
   Text,
@@ -13,11 +13,11 @@ import {
   Keyboard,
   Modal,
   Platform,
-} from 'react-native';
+} from "react-native";
 
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import Toast from 'react-native-toast-message';
-import { getUserProfile, updateUserProfile } from '../services/authApi';
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import Toast from "react-native-toast-message";
+import { getUserProfile, updateUserProfile } from "../services/authApi";
 import {
   ArrowLeft,
   User,
@@ -32,40 +32,40 @@ import {
   Edit2,
   ChevronDown,
   Calendar,
-} from 'lucide-react-native';
-import { Image } from 'react-native';
-import { launchImageLibrary } from 'react-native-image-picker';
-import ImageResizer from 'react-native-image-resizer';
-import LinearGradient from 'react-native-linear-gradient';
-import DateTimePicker from '@react-native-community/datetimepicker';
-const GOOGLE_API_KEY = 'AIzaSyCS-DB39Kk-Z25C5GWymVGshXIALbjXPGY';
+} from "lucide-react-native";
+import { Image } from "react-native";
+import { launchImageLibrary } from "react-native-image-picker";
+import ImageResizer from "react-native-image-resizer";
+import LinearGradient from "react-native-linear-gradient";
+import DateTimePicker from "@react-native-community/datetimepicker";
+const GOOGLE_API_KEY = "AIzaSyCS-DB39Kk-Z25C5GWymVGshXIALbjXPGY";
 const COLORS = {
-  brand: '#0A7C6E',
-  brandDark: '#111111',
-  brandLight: '#021d37',
-  accent: '#89E7D0',
+  brand: "#0A7C6E",
+  brandDark: "#111111",
+  brandLight: "#021d37",
+  accent: "#89E7D0",
 
-  success: '#89E7D0',
-  error: '#EF4444',
+  success: "#89E7D0",
+  error: "#EF4444",
 
-  background: '#171d30',
-  surface: '#121722',
-  surfaceLight: '#171d30',
+  background: "#171d30",
+  surface: "#121722",
+  surfaceLight: "#171d30",
 
-  textPrimary: '#E5E7EB',
-  textSecondary: '#94A3B8',
-  textMuted: '#64748B',
+  textPrimary: "#E5E7EB",
+  textSecondary: "#94A3B8",
+  textMuted: "#64748B",
 
-  border: '#1F2A44',
+  border: "#1F2A44",
 };
 type Props = { navigation: any };
 
 export default function ProfileSetupScreen({ navigation }: Props) {
   // ==================== ALL HOOKS MUST BE HERE (TOP) ====================
-  const [fullName, setFullName] = useState('');
-  const [phoneNumber, setPhoneNumber] = useState('');
-  const [gmail, setGmail] = useState('');
-  const [originalGmail, setOriginalGmail] = useState('');
+  const [fullName, setFullName] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [gmail, setGmail] = useState("");
+  const [originalGmail, setOriginalGmail] = useState("");
   const [gender, setGender] = useState<string | null>(null);
   const [userType, setUserType] = useState<string | null>(null);
   const [residentialStatus, setResidentialStatus] = useState<string | null>(
@@ -73,36 +73,36 @@ export default function ProfileSetupScreen({ navigation }: Props) {
   );
 
   const australianToApiDate = (dateStr: string): string => {
-    if (!dateStr) return '';
+    if (!dateStr) return "";
 
-    const [day, month, year] = dateStr.split('/');
+    const [day, month, year] = dateStr.split("/");
 
-    return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+    return `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
   };
   const formatToAustralian = (date: Date): string => {
-    const day = String(date.getDate()).padStart(2, '0');
-    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, "0");
+    const month = String(date.getMonth() + 1).padStart(2, "0");
     const year = date.getFullYear();
     return `${day}/${month}/${year}`;
   };
 
   const parseAustralianToDate = (dateStr: string): Date | null => {
     if (!dateStr) return null;
-    const [day, month, year] = dateStr.split('/').map(Number);
+    const [day, month, year] = dateStr.split("/").map(Number);
     const date = new Date(year, month - 1, day);
     return isNaN(date.getTime()) ? null : date;
   };
-  const [securityLicenseNo, setSecurityLicenseNo] = useState('');
+  const [securityLicenseNo, setSecurityLicenseNo] = useState("");
   const [scrollY, setScrollY] = useState(0);
-  const [companyName, setCompanyName] = useState('');
-  const [registrationNumber, setRegistrationNumber] = useState('');
-  const [address, setAddress] = useState('');
-  const [city, setCity] = useState('');
-  const [stateValue, setStateValue] = useState('');
-  const [country, setCountry] = useState('');
+  const [companyName, setCompanyName] = useState("");
+  const [registrationNumber, setRegistrationNumber] = useState("");
+  const [address, setAddress] = useState("");
+  const [city, setCity] = useState("");
+  const [stateValue, setStateValue] = useState("");
+  const [country, setCountry] = useState("");
   const [coordinates, setCoordinates] = useState<any>(null);
-  const [acn, setAcn] = useState(''); // ← NEW
-  const [abn, setAbn] = useState('');
+  const [acn, setAcn] = useState(""); // ← NEW
+  const [abn, setAbn] = useState("");
   const [predictions, setPredictions] = useState<any[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -114,66 +114,54 @@ export default function ProfileSetupScreen({ navigation }: Props) {
   const scrollRef = useRef<ScrollView>(null);
   const addressInputRef = useRef<TextInput>(null);
 
-  const [otp, setOtp] = useState<string>('');
+  const [otp, setOtp] = useState<string>("");
   const [otpModalVisible, setOtpModalVisible] = useState(false);
   const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
-
+  const [originCountry, setOriginCountry] = useState("");
   // Custom Dropdown States
   const [showGenderModal, setShowGenderModal] = useState(false);
   const [showResidentialModal, setShowResidentialModal] = useState(false);
-  const [dateOfBirth, setDateOfBirth] = useState('');        // Now stores DD/MM/YYYY
+  const [dateOfBirth, setDateOfBirth] = useState(""); // Now stores DD/MM/YYYY
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [tempDate, setTempDate] = useState(new Date());
   const genderOptions = [
-    { label: 'Male', value: 'male' },
-    { label: 'Female', value: 'female' },
-    { label: 'Prefer Not To Say', value: 'other' },
+    { label: "Male", value: "male" },
+    { label: "Female", value: "female" },
+    { label: "Prefer Not To Say", value: "other" },
   ];
 
   const residentialOptions = [
-    { label: 'Student Visa', value: 'student_visa' },
-    { label: 'Bridging Visa', value: 'bridging_visa' },
-    { label: 'Citizen', value: 'citizen' },
-    { label: 'Permanent Residence', value: 'permanent_residence' },
-    { label: 'Visa Subclass 485', value: 'visa_485' },
+    { label: "Student Visa", value: "student_visa" },
+    { label: "Bridging Visa", value: "bridging_visa" },
+    { label: "Citizen", value: "citizen" },
+    { label: "Permanent Residence", value: "permanent_residence" },
+    { label: "Visa Subclass 485", value: "visa_485" },
   ];
 
-  // ==================== IMPROVED PHONE HANDLER ====================
-  // const handlePhoneChange = (text: string) => {
-  //   // Remove everything except digits and optional leading +
-  //   let cleaned = text.replace(/[^\d+]/g, '');
+  const getCountryCode = (countryName: string) => {
+    const countryMap: Record<string, string> = {
+      Pakistan: "PAK",
+      Australia: "AUS",
+      India: "IND",
+      Canada: "CAN",
+      "United States": "USA",
+      "United Kingdom": "GBR",
+      Germany: "DEU",
+      France: "FRA",
+      China: "CHN",
+      Japan: "JPN",
+      // add more as needed
+    };
 
-  //   // Allow +61 international format OR domestic 0...
-  //   if (cleaned.startsWith('+')) {
-  //     if (cleaned.startsWith('+61')) {
-  //       // +61 followed by 9 digits = total 12 chars
-  //       if (cleaned.length > 12) {
-  //         cleaned = cleaned.slice(0, 12);
-  //       }
-  //     } else {
-  //       // Block other country codes
-  //       cleaned = cleaned.replace(/^\+\d*/, '+61');
-  //     }
-  //   } else {
-  //     // Domestic Australian format (must start with 0)
-  //     if (cleaned.length > 0 && !cleaned.startsWith('0')) {
-  //       cleaned = '0' + cleaned;
-  //     }
-  //     // Max 10 digits for Australian numbers
-  //     if (cleaned.length > 10) {
-  //       cleaned = cleaned.slice(0, 10);
-  //     }
-  //   }
-
-  //   setPhoneNumber(cleaned);
-  // };
+    return countryMap[countryName] || countryName;
+  };
   const handlePhoneChange = (text: string) => {
     // keep only digits and one +
-    let cleaned = text.replace(/[^\d+]/g, '');
+    let cleaned = text.replace(/[^\d+]/g, "");
 
     // allow only one + at beginning
-    if (cleaned.includes('+')) {
-      cleaned = '+' + cleaned.replace(/\+/g, '').replace(/^\+/, '');
+    if (cleaned.includes("+")) {
+      cleaned = "+" + cleaned.replace(/\+/g, "").replace(/^\+/, "");
     }
 
     // =========================
@@ -181,8 +169,8 @@ export default function ProfileSetupScreen({ navigation }: Props) {
     // =========================
 
     // +92xxxxxxxxxx
-    if (cleaned.startsWith('+92')) {
-      cleaned = '+92' + cleaned.slice(3).replace(/\D/g, '');
+    if (cleaned.startsWith("+92")) {
+      cleaned = "+92" + cleaned.slice(3).replace(/\D/g, "");
 
       // total length = 13
       if (cleaned.length > 13) {
@@ -191,15 +179,15 @@ export default function ProfileSetupScreen({ navigation }: Props) {
     }
 
     // 03xxxxxxxxx
-    else if (cleaned.startsWith('03')) {
-      cleaned = cleaned.replace(/\D/g, '');
+    else if (cleaned.startsWith("03")) {
+      cleaned = cleaned.replace(/\D/g, "");
 
       // total length = 11
       if (cleaned.length > 11) {
         cleaned = cleaned.slice(0, 11);
       }
-    } else if (cleaned.startsWith('+1')) {
-      cleaned = '+1' + cleaned.slice(2).replace(/\D/g, '');
+    } else if (cleaned.startsWith("+1")) {
+      cleaned = "+1" + cleaned.slice(2).replace(/\D/g, "");
 
       // +1 + 10 digits = 12 chars total
       if (cleaned.length > 12) {
@@ -208,8 +196,8 @@ export default function ProfileSetupScreen({ navigation }: Props) {
     }
 
     // US/Canada local (10 digits)
-    else if (!cleaned.startsWith('+') && cleaned.length > 0) {
-      const digits = cleaned.replace(/\D/g, '');
+    else if (!cleaned.startsWith("+") && cleaned.length > 0) {
+      const digits = cleaned.replace(/\D/g, "");
 
       // if 10 digits, assume US/Canada format
       if (digits.length <= 10) {
@@ -222,8 +210,8 @@ export default function ProfileSetupScreen({ navigation }: Props) {
     // =========================
 
     // +61xxxxxxxxx
-    else if (cleaned.startsWith('+61')) {
-      cleaned = '+61' + cleaned.slice(3).replace(/\D/g, '');
+    else if (cleaned.startsWith("+61")) {
+      cleaned = "+61" + cleaned.slice(3).replace(/\D/g, "");
 
       // total length = 12
       if (cleaned.length > 12) {
@@ -232,8 +220,8 @@ export default function ProfileSetupScreen({ navigation }: Props) {
     }
 
     // 04xxxxxxxx
-    else if (cleaned.startsWith('0')) {
-      cleaned = cleaned.replace(/\D/g, '');
+    else if (cleaned.startsWith("0")) {
+      cleaned = cleaned.replace(/\D/g, "");
 
       // total length = 10
       if (cleaned.length > 10) {
@@ -244,7 +232,7 @@ export default function ProfileSetupScreen({ navigation }: Props) {
     // OTHER COUNTRIES
     else {
       // allow max 15 digits international standard
-      cleaned = cleaned.replace(/[^\d+]/g, '');
+      cleaned = cleaned.replace(/[^\d+]/g, "");
 
       if (cleaned.length > 15) {
         cleaned = cleaned.slice(0, 15);
@@ -256,26 +244,26 @@ export default function ProfileSetupScreen({ navigation }: Props) {
 
   // Optional: Add this for better UX (formatting with spaces)
   const formatPhoneForDisplay = (num: string): string => {
-    if (!num) return '';
+    if (!num) return "";
 
     // Australia +61
-    if (num.startsWith('+61')) {
-      return num.replace(/(\+61)(\d{3})(\d{3})(\d{3})/, '$1 $2 $3 $4').trim();
+    if (num.startsWith("+61")) {
+      return num.replace(/(\+61)(\d{3})(\d{3})(\d{3})/, "$1 $2 $3 $4").trim();
     }
 
     // Australia local
-    if (num.startsWith('0') && num.length <= 10) {
-      return num.replace(/(\d{4})(\d{3})(\d{3})/, '$1 $2 $3').trim();
+    if (num.startsWith("0") && num.length <= 10) {
+      return num.replace(/(\d{4})(\d{3})(\d{3})/, "$1 $2 $3").trim();
     }
 
     // Pakistan +92
-    if (num.startsWith('+92')) {
-      return num.replace(/(\+92)(\d{3})(\d{7})/, '$1 $2 $3').trim();
+    if (num.startsWith("+92")) {
+      return num.replace(/(\+92)(\d{3})(\d{7})/, "$1 $2 $3").trim();
     }
 
     // Pakistan local
-    if (num.startsWith('03')) {
-      return num.replace(/(\d{4})(\d{7})/, '$1 $2').trim();
+    if (num.startsWith("03")) {
+      return num.replace(/(\d{4})(\d{7})/, "$1 $2").trim();
     }
 
     return num;
@@ -285,9 +273,9 @@ export default function ProfileSetupScreen({ navigation }: Props) {
   useEffect(() => {
     const initializeProfile = async () => {
       try {
-        const storedUserRaw = await AsyncStorage.getItem('user');
+        const storedUserRaw = await AsyncStorage.getItem("user");
         if (!storedUserRaw) {
-          navigation.replace('Login');
+          navigation.replace("Login");
           return;
         }
 
@@ -298,7 +286,7 @@ export default function ProfileSetupScreen({ navigation }: Props) {
         const profileResponse = await getUserProfile(uid);
         const profile = profileResponse?.data || {};
 
-        const BASE_IMAGE_URL = 'https://apis.staffoo.com.au/storage/';
+        const BASE_IMAGE_URL = "https://apis.staffoo.com.au/storage/";
         if (profile?.staff?.profile_image) {
           setProfileImage(`${BASE_IMAGE_URL}${profile.staff.profile_image}`);
         } else if (profile?.customer?.profile_image) {
@@ -310,9 +298,9 @@ export default function ProfileSetupScreen({ navigation }: Props) {
         }
 
         setUserType(profile?.user_type ?? null);
-        setFullName(profile?.name ?? '');
-        setGmail(profile?.email ?? '');
-        setOriginalGmail(profile?.email ?? '');
+        setFullName(profile?.name ?? "");
+        setGmail(profile?.email ?? "");
+        setOriginalGmail(profile?.email ?? "");
 
         // 🔥 Get address from root OR nested objects (staff, customer, contractor)
         const currentAddress =
@@ -320,25 +308,25 @@ export default function ProfileSetupScreen({ navigation }: Props) {
           profile?.staff?.address ||
           profile?.customer?.address ||
           profile?.contractor?.address ||
-          '';
+          "";
         const currentCity =
           profile?.city ||
           profile?.staff?.city ||
           profile?.customer?.city ||
           profile?.contractor?.city ||
-          '';
+          "";
         const currentState =
           profile?.state ||
           profile?.staff?.state ||
           profile?.customer?.state ||
           profile?.contractor?.state ||
-          '';
+          "";
         const currentCountry =
           profile?.country ||
           profile?.staff?.country ||
           profile?.customer?.country ||
           profile?.contractor?.country ||
-          '';
+          "";
 
         setAddress(currentAddress);
         setCity(currentCity);
@@ -350,10 +338,10 @@ export default function ProfileSetupScreen({ navigation }: Props) {
           profile?.staff?.coordinates ||
           profile?.customer?.coordinates ||
           profile?.contractor?.coordinates ||
-          '';
+          "";
 
         if (currentCoordinates) {
-          const parts = currentCoordinates.split(',');
+          const parts = currentCoordinates.split(",");
 
           if (parts.length === 2) {
             const lat = parseFloat(parts[0]);
@@ -365,14 +353,14 @@ export default function ProfileSetupScreen({ navigation }: Props) {
           }
         }
 
-        if (profile?.user_type === 'contractor') {
-          setPhoneNumber(profile?.contractor?.phone ?? '');
-          setCompanyName(profile?.contractor?.company_name ?? '');
-          setRegistrationNumber(profile?.contractor?.registration_number ?? '');
-          setAcn(profile?.contractor?.acn ?? ''); // ← NEW
-          setAbn(profile?.contractor?.abn ?? '');
-        } else if (profile?.user_type === 'staff') {
-          setPhoneNumber(profile?.staff?.phone ?? '');
+        if (profile?.user_type === "contractor") {
+          setPhoneNumber(profile?.contractor?.phone ?? "");
+          setCompanyName(profile?.contractor?.company_name ?? "");
+          setRegistrationNumber(profile?.contractor?.registration_number ?? "");
+          setAcn(profile?.contractor?.acn ?? ""); // ← NEW
+          setAbn(profile?.contractor?.abn ?? "");
+        } else if (profile?.user_type === "staff") {
+          setPhoneNumber(profile?.staff?.phone ?? "");
           setGender(profile?.staff?.gender ?? null);
           setResidentialStatus(profile?.staff?.staff_document_type ?? null);
           // ✅ FIXED DATE LOADING
@@ -380,9 +368,12 @@ export default function ProfileSetupScreen({ navigation }: Props) {
             let dob = profile.staff.date_of_birth.trim();
 
             // Handle both YYYY-MM-DD and DD/MM/YYYY
-            if (dob.includes('-')) {
-              const [year, month, day] = dob.split('-').map(Number);
-              dob = `${String(day).padStart(2, '0')}/${String(month).padStart(2, '0')}/${year}`;
+            if (dob.includes("-")) {
+              const [year, month, day] = dob.split("-").map(Number);
+              dob = `${String(day).padStart(2, "0")}/${String(month).padStart(
+                2,
+                "0",
+              )}/${year}`;
             }
 
             setDateOfBirth(dob);
@@ -394,17 +385,17 @@ export default function ProfileSetupScreen({ navigation }: Props) {
           }
           setSecurityLicenseNo(
             profile?.staff?.security_license_no ??
-            // profile?.documents?.find(
-            //   (doc: any) => doc.document_name === 'Security License',
-            // )?.document_no ??
-            '',
+              // profile?.documents?.find(
+              //   (doc: any) => doc.document_name === 'Security License',
+              // )?.document_no ??
+              "",
           );
         } else {
-          setPhoneNumber(profile?.customer?.phone ?? '');
+          setPhoneNumber(profile?.customer?.phone ?? "");
           setGender(profile?.customer?.gender ?? null);
         }
       } catch (err) {
-        Toast.show({ type: 'error', text1: 'Could not load profile' });
+        Toast.show({ type: "error", text1: "Could not load profile" });
       } finally {
         setFetching(false);
       }
@@ -429,7 +420,7 @@ export default function ProfileSetupScreen({ navigation }: Props) {
       setPredictions(json.predictions || []);
       setShowSuggestions(true);
     } catch (err) {
-      console.log('Places API error:', err);
+      console.log("Places API error:", err);
     }
   };
 
@@ -449,15 +440,15 @@ export default function ProfileSetupScreen({ navigation }: Props) {
 
         setAddress(description);
 
-        let tempCity = '';
-        let tempState = '';
-        let tempCountry = '';
+        let tempCity = "";
+        let tempState = "";
+        let tempCountry = "";
 
         details.address_components?.forEach((comp: any) => {
-          if (comp.types.includes('locality')) tempCity = comp.long_name;
-          if (comp.types.includes('administrative_area_level_1'))
+          if (comp.types.includes("locality")) tempCity = comp.long_name;
+          if (comp.types.includes("administrative_area_level_1"))
             tempState = comp.long_name;
-          if (comp.types.includes('country')) tempCountry = comp.long_name;
+          if (comp.types.includes("country")) tempCountry = comp.long_name;
         });
 
         setCity(tempCity);
@@ -472,25 +463,25 @@ export default function ProfileSetupScreen({ navigation }: Props) {
         }
       });
     } catch (err) {
-      console.log('Place details error:', err);
+      console.log("Place details error:", err);
     }
   };
 
   const validateForm = () => {
     if (!fullName.trim()) {
-      Toast.show({ type: 'error', text1: 'Full Name is required' });
+      Toast.show({ type: "error", text1: "Full Name is required" });
       return false;
     }
     if (!gmail.trim()) {
-      Toast.show({ type: 'error', text1: 'Email is required' });
+      Toast.show({ type: "error", text1: "Email is required" });
       return false;
     }
     if (!address.trim()) {
-      Toast.show({ type: 'error', text1: 'Address is required' });
+      Toast.show({ type: "error", text1: "Address is required" });
       return false;
     }
     if (!phoneNumber) {
-      Toast.show({ type: 'error', text1: 'Phone Number is required' });
+      Toast.show({ type: "error", text1: "Phone Number is required" });
       return false;
     }
 
@@ -504,47 +495,48 @@ export default function ProfileSetupScreen({ navigation }: Props) {
 
     const isValidPhone =
       // Australia
-      (phoneNumber.startsWith('0') && phoneNumber.length === 10) ||
-      (phoneNumber.startsWith('+61') && phoneNumber.length === 12) ||
+      (phoneNumber.startsWith("0") && phoneNumber.length === 10) ||
+      (phoneNumber.startsWith("+61") && phoneNumber.length === 12) ||
       // Pakistan
-      (phoneNumber.startsWith('03') && phoneNumber.length === 11) ||
-      (phoneNumber.startsWith('+92') && phoneNumber.length === 13) ||
+      (phoneNumber.startsWith("03") && phoneNumber.length === 11) ||
+      (phoneNumber.startsWith("+92") && phoneNumber.length === 13) ||
       // US / Canada
-      (phoneNumber.startsWith('+1') && phoneNumber.length === 12) ||
-      (!phoneNumber.startsWith('+') && phoneNumber.length === 10);
+      (phoneNumber.startsWith("+1") && phoneNumber.length === 12) ||
+      (!phoneNumber.startsWith("+") && phoneNumber.length === 10);
     if (!isValidPhone) {
       Toast.show({
-        type: 'error',
-        text1: 'Please enter a valid phone number',
+        type: "error",
+        text1: "Please enter a valid phone number",
       });
       return false;
     }
 
-    if (userType === 'contractor') {
+    if (userType === "contractor") {
       if (!companyName.trim()) {
-        Toast.show({ type: 'error', text1: 'Company Name is required' });
+        Toast.show({ type: "error", text1: "Company Name is required" });
         return false;
       }
       // if (!registrationNumber.trim()) {
       //   Toast.show({ type: 'error', text1: 'Registration Number is required' });
       //   return false;
       // }
-    } if (userType === 'staff') {
+    }
+    if (userType === "staff") {
       if (!dateOfBirth.trim()) {
         Toast.show({
-          type: 'error',
-          text1: 'Date of Birth is required',
+          type: "error",
+          text1: "Date of Birth is required",
         });
         return false;
       }
 
       if (!gender) {
-        Toast.show({ type: 'error', text1: 'Gender is required' });
+        Toast.show({ type: "error", text1: "Gender is required" });
         return false;
       }
 
       if (!residentialStatus) {
-        Toast.show({ type: 'error', text1: 'Residential Status is required' });
+        Toast.show({ type: "error", text1: "Residential Status is required" });
         return false;
       }
     }
@@ -553,7 +545,7 @@ export default function ProfileSetupScreen({ navigation }: Props) {
 
   const pickImage = async () => {
     const result = await launchImageLibrary({
-      mediaType: 'photo',
+      mediaType: "photo",
       quality: 0.5, // reduce quality
     });
 
@@ -565,13 +557,13 @@ export default function ProfileSetupScreen({ navigation }: Props) {
         asset.uri!,
         800, // maxWidth
         800, // maxHeight
-        'JPEG',
+        "JPEG",
         70, // compression 0-100
       );
 
       const file = {
         uri: resizedImage.uri,
-        type: asset.type || 'image/jpeg',
+        type: asset.type || "image/jpeg",
         name: asset.fileName || `profile_${Date.now()}.jpg`,
       };
 
@@ -596,14 +588,13 @@ export default function ProfileSetupScreen({ navigation }: Props) {
         address: address.trim(),
         city: city.trim(),
         state: stateValue.trim(),
-        country: country.trim(),
-        coordinates: coordinates
-          ? `${coordinates.lat},${coordinates.lng}`
-          : '',
+
+        origin_country: getCountryCode(country.trim()),
+        coordinates: coordinates ? `${coordinates.lat},${coordinates.lng}` : "",
       };
 
       // ✅ FIXED: DOB only added if valid
-      if (userType === 'staff' && dateOfBirth?.trim()) {
+      if (userType === "staff" && dateOfBirth?.trim()) {
         const dobApi = australianToApiDate(dateOfBirth);
         if (dobApi) {
           payload.date_of_birth = dobApi;
@@ -616,7 +607,7 @@ export default function ProfileSetupScreen({ navigation }: Props) {
       }
 
       // Contractor fields
-      if (userType === 'contractor') {
+      if (userType === "contractor") {
         payload.company_name = companyName.trim();
         payload.registration_number = registrationNumber.trim();
         payload.acn = acn.trim();
@@ -624,41 +615,41 @@ export default function ProfileSetupScreen({ navigation }: Props) {
       }
 
       // Staff fields
-      else if (userType === 'staff') {
+      else if (userType === "staff") {
         payload.gender = gender;
         payload.staff_document_type = residentialStatus;
       }
 
-      console.log('🔥 FINAL PROFILE PAYLOAD:', payload);
+      console.log("🔥 FINAL PROFILE PAYLOAD:", payload);
 
       await updateUserProfile(userId, payload);
 
       // Email OTP flow
-      if (emailChanged && userType === 'customer') {
+      if (emailChanged && userType === "customer") {
         setOtpModalVisible(true);
         setLoading(false);
         return;
       }
 
       Toast.show({
-        type: 'success',
-        text1: 'Profile Updated Successfully',
+        type: "success",
+        text1: "Profile Updated Successfully",
       });
 
       setOriginalGmail(gmail.trim().toLowerCase());
-      navigation.navigate('Profile');
+      navigation.navigate("Profile");
     } catch (err: any) {
-      console.log('Update Error:', err?.response?.data || err);
+      console.log("Update Error:", err?.response?.data || err);
 
       const errorMsg =
         err?.response?.data?.error ||
         err?.response?.data?.message ||
-        'Failed to update profile';
+        "Failed to update profile";
 
       Toast.show({
-        type: 'error',
+        type: "error",
         text1: errorMsg,
-        position: 'bottom',
+        position: "bottom",
       });
     } finally {
       setLoading(false);
@@ -666,7 +657,7 @@ export default function ProfileSetupScreen({ navigation }: Props) {
   };
   const handleVerifyAndSave = async () => {
     if (otp.length !== 6) {
-      Toast.show({ type: 'error', text1: 'Please enter 6-digit OTP' });
+      Toast.show({ type: "error", text1: "Please enter 6-digit OTP" });
       return;
     }
 
@@ -681,24 +672,24 @@ export default function ProfileSetupScreen({ navigation }: Props) {
       await updateUserProfile(userId!, payload);
 
       Toast.show({
-        type: 'success',
-        text1: 'Email updated successfully!',
+        type: "success",
+        text1: "Email updated successfully!",
       });
 
       setOriginalGmail(gmail.trim().toLowerCase());
       setOtpModalVisible(false);
-      setOtp('');
+      setOtp("");
     } catch (err: any) {
       const errorMsg =
         err?.response?.data?.error ||
         err?.response?.data?.message ||
         err?.message ||
-        'Failed to verify OTP';
+        "Failed to verify OTP";
 
       Toast.show({
-        type: 'error',
+        type: "error",
         text1: errorMsg,
-        position: 'bottom',
+        position: "bottom",
         visibilityTime: 5000,
       });
     } finally {
@@ -727,7 +718,7 @@ export default function ProfileSetupScreen({ navigation }: Props) {
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
-        onScroll={e => setScrollY(e.nativeEvent.contentOffset.y)}
+        onScroll={(e) => setScrollY(e.nativeEvent.contentOffset.y)}
         scrollEventThrottle={16}
       >
         <View style={styles.header}>
@@ -743,7 +734,7 @@ export default function ProfileSetupScreen({ navigation }: Props) {
           ) : (
             <View style={styles.placeholderImage}>
               <User size={30} color="#fff" />
-              <Text style={{ fontSize: 12, color: '#fff' }}>Upload Photo</Text>
+              <Text style={{ fontSize: 12, color: "#fff" }}>Upload Photo</Text>
             </View>
           )}
 
@@ -789,9 +780,7 @@ export default function ProfileSetupScreen({ navigation }: Props) {
           </Text>
 
           <LinearGradient
-            colors={[
-              '#171d30', '#171d30'
-            ]}
+            colors={["#171d30", "#171d30"]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={styles.inputContainer}
@@ -820,7 +809,7 @@ export default function ProfileSetupScreen({ navigation }: Props) {
           </LinearGradient>
         </View>
 
-        {userType === 'contractor' && (
+        {userType === "contractor" && (
           <>
             <InputField
               icon={Building2}
@@ -851,7 +840,7 @@ export default function ProfileSetupScreen({ navigation }: Props) {
               label="ACN (Australian Company Number)"
               value={acn}
               onChange={(text: string) => {
-                const cleaned = text.replace(/\D/g, ''); // only digits
+                const cleaned = text.replace(/\D/g, ""); // only digits
                 if (cleaned.length <= 9) {
                   setAcn(cleaned);
                 }
@@ -865,7 +854,7 @@ export default function ProfileSetupScreen({ navigation }: Props) {
               label="ABN (Australian Business Number)"
               value={abn}
               onChange={(text: string) => {
-                const cleaned = text.replace(/\D/g, ''); // only digits
+                const cleaned = text.replace(/\D/g, ""); // only digits
                 if (cleaned.length <= 11) {
                   setAbn(cleaned);
                 }
@@ -876,7 +865,7 @@ export default function ProfileSetupScreen({ navigation }: Props) {
           </>
         )}
 
-        {userType === 'staff' && (
+        {userType === "staff" && (
           <>
             <TouchableOpacity
               style={styles.field}
@@ -887,7 +876,7 @@ export default function ProfileSetupScreen({ navigation }: Props) {
               </Text>
 
               <LinearGradient
-                colors={['#171d30', '#171d30']}
+                colors={["#171d30", "#171d30"]}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
                 style={styles.inputContainer}
@@ -897,12 +886,12 @@ export default function ProfileSetupScreen({ navigation }: Props) {
                 <Text
                   style={[
                     styles.input,
-                    !gender && { color: 'rgba(255,255,255,0.6)' },
+                    !gender && { color: "rgba(255,255,255,0.6)" },
                   ]}
                 >
                   {gender
-                    ? genderOptions.find(o => o.value === gender)?.label
-                    : 'Select Gender'}
+                    ? genderOptions.find((o) => o.value === gender)?.label
+                    : "Select Gender"}
                 </Text>
 
                 <ChevronDown size={20} color="#fff" />
@@ -917,17 +906,19 @@ export default function ProfileSetupScreen({ navigation }: Props) {
                 Date of Birth <Text style={styles.required}>*</Text>
               </Text>
               <LinearGradient
-                colors={['#171d30', '#171d30']}
+                colors={["#171d30", "#171d30"]}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
                 style={styles.inputContainer}
               >
                 <Calendar size={20} color="#fff" style={styles.inputIcon} />
-                <Text style={[
-                  styles.input,
-                  !dateOfBirth && { color: 'rgba(255,255,255,0.6)' }
-                ]}>
-                  {dateOfBirth || 'DD/MM/YYYY'}
+                <Text
+                  style={[
+                    styles.input,
+                    !dateOfBirth && { color: "rgba(255,255,255,0.6)" },
+                  ]}
+                >
+                  {dateOfBirth || "DD/MM/YYYY"}
                 </Text>
               </LinearGradient>
             </TouchableOpacity>
@@ -937,7 +928,7 @@ export default function ProfileSetupScreen({ navigation }: Props) {
               <DateTimePicker
                 value={tempDate}
                 mode="date"
-                display="spinner"           // Use "calendar" on newer iOS if preferred
+                display="spinner" // Use "calendar" on newer iOS if preferred
                 onChange={(event, selectedDate) => {
                   setShowDatePicker(false);
                   if (selectedDate) {
@@ -946,7 +937,7 @@ export default function ProfileSetupScreen({ navigation }: Props) {
                     setDateOfBirth(formatted);
                   }
                 }}
-                maximumDate={new Date()}     // Prevent future dates
+                maximumDate={new Date()} // Prevent future dates
               />
             )}
 
@@ -959,9 +950,7 @@ export default function ProfileSetupScreen({ navigation }: Props) {
               </Text>
 
               <LinearGradient
-                colors={[
-                  '#171d30', '#171d30'
-                ]}
+                colors={["#171d30", "#171d30"]}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
                 style={styles.gradientInput}
@@ -971,14 +960,14 @@ export default function ProfileSetupScreen({ navigation }: Props) {
                 <Text
                   style={[
                     styles.input,
-                    !residentialStatus && { color: 'rgba(255,255,255,0.6)' },
+                    !residentialStatus && { color: "rgba(255,255,255,0.6)" },
                   ]}
                 >
                   {residentialStatus
                     ? residentialOptions.find(
-                      o => o.value === residentialStatus,
-                    )?.label
-                    : 'Select Residential Status'}
+                        (o) => o.value === residentialStatus,
+                      )?.label
+                    : "Select Residential Status"}
                 </Text>
 
                 <ChevronDown size={20} color="#fff" />
@@ -996,7 +985,6 @@ export default function ProfileSetupScreen({ navigation }: Props) {
               onChange={setSecurityLicenseNo}
               placeholder="Enter Security License No."
             /> */}
-
           </>
         )}
 
@@ -1006,7 +994,7 @@ export default function ProfileSetupScreen({ navigation }: Props) {
               <Text style={styles.modalTitle}>Select Gender</Text>
               <FlatList
                 data={genderOptions}
-                keyExtractor={item => item.value}
+                keyExtractor={(item) => item.value}
                 renderItem={({ item }) => (
                   <TouchableOpacity
                     style={styles.modalItem}
@@ -1035,7 +1023,7 @@ export default function ProfileSetupScreen({ navigation }: Props) {
               <Text style={styles.modalTitle}>Select Residential Status</Text>
               <FlatList
                 data={residentialOptions}
-                keyExtractor={item => item.value}
+                keyExtractor={(item) => item.value}
                 renderItem={({ item }) => (
                   <TouchableOpacity
                     style={styles.modalItem}
@@ -1060,7 +1048,7 @@ export default function ProfileSetupScreen({ navigation }: Props) {
 
         <View
           style={styles.field}
-          onLayout={event => {
+          onLayout={(event) => {
             const { y, height } = event.nativeEvent.layout;
             setAddressLayout({ y, height });
           }}
@@ -1070,7 +1058,7 @@ export default function ProfileSetupScreen({ navigation }: Props) {
           </Text>
 
           <LinearGradient
-            colors={['#171d30', '#171d30']}
+            colors={["#171d30", "#171d30"]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={styles.inputContainer}
@@ -1083,7 +1071,7 @@ export default function ProfileSetupScreen({ navigation }: Props) {
               value={address}
               placeholder="Start typing your address..."
               placeholderTextColor="rgba(255,255,255,0.6)"
-              onChangeText={text => {
+              onChangeText={(text) => {
                 setAddress(text);
                 fetchPlaces(text);
               }}
@@ -1093,7 +1081,7 @@ export default function ProfileSetupScreen({ navigation }: Props) {
             {address.length > 0 && (
               <TouchableOpacity
                 onPress={() => {
-                  setAddress('');
+                  setAddress("");
                   setPredictions([]);
                   setShowSuggestions(false);
                   addressInputRef.current?.focus();
@@ -1110,7 +1098,7 @@ export default function ProfileSetupScreen({ navigation }: Props) {
           icon={Building2}
           label="City"
           value={city}
-          onChange={() => { }}
+          onChange={() => {}}
           editable={false}
           placeholder="City will appear here"
         />
@@ -1119,7 +1107,7 @@ export default function ProfileSetupScreen({ navigation }: Props) {
           icon={Globe}
           label="State"
           value={stateValue}
-          onChange={() => { }}
+          onChange={() => {}}
           editable={false}
           placeholder="State will appear here"
         />
@@ -1128,7 +1116,7 @@ export default function ProfileSetupScreen({ navigation }: Props) {
           icon={Globe}
           label="Country"
           value={country}
-          onChange={() => { }}
+          onChange={() => {}}
           editable={false}
           placeholder="Country will appear here"
         />
@@ -1138,12 +1126,12 @@ export default function ProfileSetupScreen({ navigation }: Props) {
           label="Coordinates"
           value={
             coordinates &&
-              typeof coordinates.lat === 'number' &&
-              typeof coordinates.lng === 'number'
+            typeof coordinates.lat === "number" &&
+            typeof coordinates.lng === "number"
               ? `${coordinates.lat.toFixed(6)}, ${coordinates.lng.toFixed(6)}`
-              : ''
+              : ""
           }
-          onChange={() => { }}
+          onChange={() => {}}
           editable={false}
           placeholder="Coordinates will appear here"
         />
@@ -1163,7 +1151,7 @@ export default function ProfileSetupScreen({ navigation }: Props) {
 
         <TouchableOpacity
           style={styles.deleteButton}
-          onPress={() => navigation.navigate('DeleteProfileVerification')}
+          onPress={() => navigation.navigate("DeleteProfileVerification")}
           activeOpacity={0.8}
         >
           <Text style={styles.deleteButtonText}>Delete Profile</Text>
@@ -1173,12 +1161,12 @@ export default function ProfileSetupScreen({ navigation }: Props) {
       {showSuggestions && predictions.length > 0 && (
         <FlatList
           data={predictions}
-          keyExtractor={item => item.place_id}
+          keyExtractor={(item) => item.place_id}
           keyboardShouldPersistTaps="handled"
           style={[
             styles.suggestionsList,
             {
-              position: 'absolute',
+              position: "absolute",
               top: addressLayout.y - scrollY + addressLayout.height + 30,
               left: 24,
               right: 24,
@@ -1212,8 +1200,8 @@ export default function ProfileSetupScreen({ navigation }: Props) {
           <View style={styles.otpModalContainer}>
             <Text style={styles.modalTitle}>Verify Email Change</Text>
             <Text style={styles.modalSubtitle}>
-              Enter the OTP sent to{' '}
-              <Text style={{ fontWeight: 'bold' }}>{gmail}</Text>
+              Enter the OTP sent to{" "}
+              <Text style={{ fontWeight: "bold" }}>{gmail}</Text>
             </Text>
 
             <TextInput
@@ -1232,13 +1220,11 @@ export default function ProfileSetupScreen({ navigation }: Props) {
                 style={styles.cancelModalBtn}
                 onPress={() => {
                   setOtpModalVisible(false);
-                  setOtp('');
+                  setOtp("");
                 }}
               >
                 <Text style={styles.cancelModalText}>Cancel</Text>
               </TouchableOpacity>
-
-
 
               <TouchableOpacity
                 style={[
@@ -1254,9 +1240,6 @@ export default function ProfileSetupScreen({ navigation }: Props) {
                   <Text style={styles.verifyModalText}>Verify & Save</Text>
                 )}
               </TouchableOpacity>
-
-
-
             </View>
           </View>
         </View>
@@ -1271,15 +1254,15 @@ const InputField = ({
   value,
   onChange,
   editable = true,
-  placeholder = '',
-  keyboardType = 'default',
+  placeholder = "",
+  keyboardType = "default",
   gradient = true,
 }: any) => (
   <View style={styles.field}>
     <Text style={styles.label}>{label}</Text>
 
     <LinearGradient
-      colors={['#171d30', '#171d30']}
+      colors={["#171d30", "#171d30"]}
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}
       style={styles.inputContainer}
@@ -1321,8 +1304,8 @@ const styles = StyleSheet.create({
   },
 
   gradientInput: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     borderRadius: 14,
     height: 47,
   },
@@ -1331,21 +1314,21 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     height: 52,
     borderWidth: 1,
-    borderColor: '#EF4444',
+    borderColor: "#EF4444",
     borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
 
   deleteButtonText: {
-    color: '#EF4444',
+    color: "#EF4444",
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     paddingVertical: 14,
     // backgroundColor: COLORS.surface,
     marginHorizontal: 5,
@@ -1357,20 +1340,20 @@ const styles = StyleSheet.create({
 
   screenTitle: {
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: "600",
     color: COLORS.textPrimary,
   },
 
   headerTitle: {
     fontSize: 15,
-    fontWeight: '700',
+    fontWeight: "700",
     color: COLORS.textPrimary,
   },
 
   imageContainer: {
-    alignSelf: 'center',
+    alignSelf: "center",
     marginBottom: 5,
-    position: 'relative',
+    position: "relative",
   },
 
   profileImage: {
@@ -1386,22 +1369,22 @@ const styles = StyleSheet.create({
     height: 110,
     borderRadius: 55,
     backgroundColor: COLORS.surface,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     borderWidth: 1,
     borderColor: COLORS.border,
   },
 
   editIcon: {
-    position: 'absolute',
+    position: "absolute",
     bottom: 5,
     right: 5,
     backgroundColor: COLORS.brand,
     width: 32,
     height: 32,
     borderRadius: 16,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     elevation: 5,
   },
 
@@ -1411,18 +1394,18 @@ const styles = StyleSheet.create({
 
   label: {
     fontSize: 13,
-    fontWeight: '600',
+    fontWeight: "600",
     color: COLORS.textSecondary,
     marginBottom: 5,
   },
 
   inputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     borderRadius: 50,
     borderWidth: 1,
     // borderColor: COLORS.border,
-    borderColor: '#5d5c5ccc',
+    borderColor: "#5d5c5ccc",
     height: 42,
   },
 
@@ -1439,14 +1422,14 @@ const styles = StyleSheet.create({
 
   required: {
     color: COLORS.error,
-    fontWeight: '700',
+    fontWeight: "700",
   },
 
   continueButton: {
-    backgroundColor: '#0A7C6E',
+    backgroundColor: "#0A7C6E",
     paddingVertical: 16,
     borderRadius: 14,
-    alignItems: 'center',
+    alignItems: "center",
     marginTop: 15,
   },
 
@@ -1455,13 +1438,13 @@ const styles = StyleSheet.create({
   },
 
   buttonText: {
-    color: '#fff',
+    color: "#fff",
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: "700",
   },
 
   suggestionsList: {
-    position: 'absolute',
+    position: "absolute",
     top: 50,
     left: 24,
     right: 24,
@@ -1469,13 +1452,13 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.surface,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#cccccc',
+    borderColor: "#cccccc",
     // zIndex: 1000,
   },
 
   suggestionItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingVertical: 14,
     paddingHorizontal: 16,
     borderBottomWidth: 1,
@@ -1489,25 +1472,25 @@ const styles = StyleSheet.create({
 
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.7)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "rgba(0,0,0,0.7)",
+    justifyContent: "center",
+    alignItems: "center",
   },
 
   customModal: {
-    width: '85%',
+    width: "85%",
     backgroundColor: COLORS.surface,
     borderRadius: 16,
     padding: 16,
-    maxHeight: '50%',
+    maxHeight: "50%",
     borderWidth: 1,
     borderColor: COLORS.border,
   },
 
   modalTitle: {
     fontSize: 18,
-    fontWeight: '700',
-    textAlign: 'center',
+    fontWeight: "700",
+    textAlign: "center",
     marginBottom: 16,
     color: COLORS.textPrimary,
   },
@@ -1527,22 +1510,22 @@ const styles = StyleSheet.create({
   cancelBtn: {
     marginTop: 12,
     padding: 14,
-    alignItems: 'center',
+    alignItems: "center",
     backgroundColor: COLORS.surfaceLight,
     borderRadius: 12,
   },
 
   cancelText: {
     color: COLORS.textSecondary,
-    fontWeight: '600',
+    fontWeight: "600",
   },
 
   otpModalContainer: {
-    width: '88%',
+    width: "88%",
     backgroundColor: COLORS.surface,
     borderRadius: 20,
     padding: 22,
-    alignItems: 'center',
+    alignItems: "center",
     borderWidth: 1,
     borderColor: COLORS.border,
   },
@@ -1550,18 +1533,18 @@ const styles = StyleSheet.create({
   modalSubtitle: {
     fontSize: 12,
     color: COLORS.textSecondary,
-    textAlign: 'center',
+    textAlign: "center",
     marginBottom: 18,
   },
 
   otpInput: {
-    width: '100%',
+    width: "100%",
     height: 50,
     borderWidth: 1,
     borderColor: COLORS.border,
     borderRadius: 12,
     fontSize: 14,
-    textAlign: 'center',
+    textAlign: "center",
     marginBottom: 20,
     backgroundColor: COLORS.brandDark,
     color: COLORS.textPrimary,
@@ -1569,8 +1552,8 @@ const styles = StyleSheet.create({
   },
 
   modalButtonRow: {
-    flexDirection: 'row',
-    width: '100%',
+    flexDirection: "row",
+    width: "100%",
     gap: 12,
   },
 
@@ -1579,13 +1562,13 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     backgroundColor: COLORS.surfaceLight,
     borderRadius: 12,
-    alignItems: 'center',
+    alignItems: "center",
   },
 
   cancelModalText: {
     color: COLORS.textSecondary,
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: "600",
   },
 
   verifyModalBtn: {
@@ -1593,13 +1576,13 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     backgroundColor: COLORS.brand,
     borderRadius: 12,
-    alignItems: 'center',
+    alignItems: "center",
   },
 
   verifyModalText: {
     color: COLORS.brandDark,
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: "700",
   },
 
   btnDisabled: {

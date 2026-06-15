@@ -1,53 +1,54 @@
 // AppNavigator.tsx
-import React, { useState, useEffect } from 'react';
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import React, { useState, useEffect } from "react";
+import { createNativeStackNavigator } from "@react-navigation/native-stack";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 // Screens
-import OnboardingScreen from '../screens/OnboardingScreen';
-import LoginScreen from '../screens/LoginScreen';
-import SignUpScreen from '../screens/SignUpScreen';
-import ForgotPasswordScreen from '../screens/ForgotPasswordScreen';
-import SplashScreen from '../screens/SplashScreen';
+import OnboardingScreen from "../screens/OnboardingScreen";
+import LoginScreen from "../screens/LoginScreen";
+import SignUpScreen from "../screens/SignUpScreen";
+import ForgotPasswordScreen from "../screens/ForgotPasswordScreen";
+import SplashScreen from "../screens/SplashScreen";
 // import MainDrawer from '../screens/MainDrawer';
-import FilterScreen from '../screens/FilterScreen';
-import ProfileSetupScreen from '../screens/ProfileSetupScreen';
+import FilterScreen from "../screens/FilterScreen";
+import ProfileSetupScreen from "../screens/ProfileSetupScreen";
 
-import NotificationScreen from '../screens/NotificationScreen';
-import ProfileScreen from '../screens/ProfileScreen';
-import JobDetailScreen from '../screens/JobDetailScreen';
-import AllJobsScreen from '../screens/AllJobsScreen';
-import ApplicationsScreen from '../screens/ApplicationsScreen';
-import ViewApplicationScreen from '../screens/ViewApplicationScreen';
-import MessageScreen from '../screens/MessageScreen';
-import MessageDetailScreen from '../screens/MessageDetailScreen';
-import ApplyJobScreen from '../screens/ApplyJobScreen';
-import SuccessScreen from '../screens/SuccessScreen';
-import DocumentsScreen from '../screens/DocumentsScreen';
-import AccountsScreen from '../screens/AccountsScreen';
+import NotificationScreen from "../screens/NotificationScreen";
+import ProfileScreen from "../screens/ProfileScreen";
+import JobDetailScreen from "../screens/JobDetailScreen";
+import AllJobsScreen from "../screens/AllJobsScreen";
+import ApplicationsScreen from "../screens/ApplicationsScreen";
+import ViewApplicationScreen from "../screens/ViewApplicationScreen";
+import MessageScreen from "../screens/MessageScreen";
+import MessageDetailScreen from "../screens/MessageDetailScreen";
+import ApplyJobScreen from "../screens/ApplyJobScreen";
+import SuccessScreen from "../screens/SuccessScreen";
+import DocumentsScreen from "../screens/DocumentsScreen";
+import AccountsScreen from "../screens/AccountsScreen";
 // import ChargeRatesScreen from '../screens/ChargeRatesScreen';
 // import PayRatesScreen from '../screens/PayRatesScreen';
-import CreateJobScreen from '../screens/CreateJobScreen';
-import ReviewConfirmScreen from '../screens/ReviewConfirmScreen';
-import StaffShifts from '../screens/StaffShifts';
-import SignInDetails from '../screens/SignInDetails';
-import OngoingShift from '../screens/OngoingShift';
-import CreateIncidentReport from '../screens/CreateIncidentReport';
-import CreateFootPatrol from '../screens/CreateFootPatrol';
-import AsapJobDetails from '../screens/AsapJobDetails';
-import PaymentHistoryScreen from '../screens/PaymentHistoryScreen';
-import PaymentMethodsScreen from '../screens/PaymentMethodsScreen';
-import LeaveManagementScreen from '../screens/LeaveManagementScreen';
-import HomeScreen from '../screens/HomeScreen';
-import PayslipScreen from '../screens/PayslipScreen';
-import JobPaymentHistory from '../screens/JobPaymentHistory';
-import StaffInduction from '../screens/StaffInduction';
-import InductionQuestionsScreen from '../screens/InductionQuestionScreen';
-import StaffFormsScreen from '../screens/StaffFormsScreen';
-import TestScreen from '../screens/TestScreen';
-import StaffManagement from '../screens/StaffManagement';
-import PoliciesScreen from '../screens/PoliciesScreen';
-import DeleteProfileVerification from '../screens/DeleteProfileVerification';
+import CreateJobScreen from "../screens/CreateJobScreen";
+import ReviewConfirmScreen from "../screens/ReviewConfirmScreen";
+import StaffShifts from "../screens/StaffShifts";
+import SignInDetails from "../screens/SignInDetails";
+import OngoingShift from "../screens/OngoingShift";
+import CreateIncidentReport from "../screens/CreateIncidentReport";
+import CreateFootPatrol from "../screens/CreateFootPatrol";
+import AsapJobDetails from "../screens/AsapJobDetails";
+import PaymentHistoryScreen from "../screens/PaymentHistoryScreen";
+import PaymentMethodsScreen from "../screens/PaymentMethodsScreen";
+import LeaveManagementScreen from "../screens/LeaveManagementScreen";
+import HomeScreen from "../screens/HomeScreen";
+import PayslipScreen from "../screens/PayslipScreen";
+import JobPaymentHistory from "../screens/JobPaymentHistory";
+import StaffInduction from "../screens/StaffInduction";
+import InductionQuestionsScreen from "../screens/InductionQuestionScreen";
+import StaffFormsScreen from "../screens/StaffFormsScreen";
+import TestScreen from "../screens/TestScreen";
+import StaffManagement from "../screens/StaffManagement";
+import PoliciesScreen from "../screens/PoliciesScreen";
+import DeleteProfileVerification from "../screens/DeleteProfileVerification";
+import CoverJobsScreen from "../screens/CoverJobsScreen";
 
 // import InductionQuestionScreen from '../screens/InductionQuestionScreen';
 
@@ -112,6 +113,7 @@ export type RootStackParamList = {
   Induction: undefined;
   StaffForms: undefined;
   InductionQuestions: undefined;
+  CoverJobs: undefined;
   Main: undefined;
 };
 
@@ -127,28 +129,28 @@ export default function AppNavigator() {
     const bootstrapAsync = async () => {
       try {
         const [hasSeenOnboarding, authToken, userStr] = await Promise.all([
-          AsyncStorage.getItem('hasSeenOnboarding'),
-          AsyncStorage.getItem('@auth_token'),
-          AsyncStorage.getItem('@user'),
+          AsyncStorage.getItem("hasSeenOnboarding"),
+          AsyncStorage.getItem("@auth_token"),
+          AsyncStorage.getItem("@user"),
         ]);
 
-        console.log('[BOOTSTRAP] hasSeenOnboarding:', hasSeenOnboarding);
-        console.log('[BOOTSTRAP] authToken exists:', !!authToken);
-        console.log('[BOOTSTRAP] user exists:', !!userStr);
+        console.log("[BOOTSTRAP] hasSeenOnboarding:", hasSeenOnboarding);
+        console.log("[BOOTSTRAP] authToken exists:", !!authToken);
+        console.log("[BOOTSTRAP] user exists:", !!userStr);
 
         if (authToken) {
-          console.log('User is logged in → going to Main');
-          setInitialRoute('Profile');
-        } else if (hasSeenOnboarding === 'true') {
-          console.log('Seen onboarding → going to Login');
-          setInitialRoute('Login');
+          console.log("User is logged in → going to Main");
+          setInitialRoute("Profile");
+        } else if (hasSeenOnboarding === "true") {
+          console.log("Seen onboarding → going to Login");
+          setInitialRoute("Login");
         } else {
-          console.log('First time → going to Onboarding');
-          setInitialRoute('Onboarding');
+          console.log("First time → going to Onboarding");
+          setInitialRoute("Onboarding");
         }
       } catch (e) {
-        console.error('[BOOTSTRAP ERROR]', e);
-        setInitialRoute('Onboarding');
+        console.error("[BOOTSTRAP ERROR]", e);
+        setInitialRoute("Onboarding");
       } finally {
         setIsLoading(false);
       }
@@ -164,7 +166,7 @@ export default function AppNavigator() {
   return (
     <Stack.Navigator
       initialRouteName={initialRoute!}
-      screenOptions={{ headerShown: false, animation: 'slide_from_right' }}
+      screenOptions={{ headerShown: false, animation: "slide_from_right" }}
     >
       <Stack.Screen name="Onboarding" component={OnboardingScreen} />
       <Stack.Screen name="Login" component={LoginScreen} />
@@ -207,6 +209,7 @@ export default function AppNavigator() {
       <Stack.Screen name="Policies" component={PoliciesScreen} />
       <Stack.Screen name="Test" component={TestScreen} />
       <Stack.Screen name="StaffManagement" component={StaffManagement} />
+      <Stack.Screen name="CoverJobs" component={CoverJobsScreen} />
       <Stack.Screen
         name="DeleteProfileVerification"
         component={DeleteProfileVerification}

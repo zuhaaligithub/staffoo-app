@@ -4,7 +4,7 @@ import React, {
   useEffect,
   useMemo,
   useCallback,
-} from 'react';
+} from "react";
 import {
   View,
   Text,
@@ -17,8 +17,8 @@ import {
   ActivityIndicator,
   Modal,
   FlatList,
-} from 'react-native';
-import { ChevronDown, ChevronUp, UserCheck } from 'lucide-react-native';
+} from "react-native";
+import { ChevronDown, ChevronUp, UserCheck } from "lucide-react-native";
 import {
   ChevronLeft,
   ChevronRight,
@@ -27,60 +27,60 @@ import {
   MapPin,
   FileText,
   CalendarDays,
-} from 'lucide-react-native';
-import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet';
-import BottomTab from './BottomTab';
-import Toast from 'react-native-toast-message';
+} from "lucide-react-native";
+import BottomSheet, { BottomSheetView } from "@gorhom/bottom-sheet";
+import BottomTab from "./BottomTab";
+import Toast from "react-native-toast-message";
 import {
   getUserProfile,
   getContractorStaff,
   postGuardJobs,
-} from '../services/authApi';
-import { useFocusEffect } from '@react-navigation/native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Picker } from '@react-native-picker/picker';
-import LinearGradient from 'react-native-linear-gradient';
+} from "../services/authApi";
+import { useFocusEffect } from "@react-navigation/native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { Picker } from "@react-native-picker/picker";
+import LinearGradient from "react-native-linear-gradient";
 const COLORS = {
-  primary: '#89E7D0',
-  primaryDark: '#0A7C6E',
+  primary: "#89E7D0",
+  primaryDark: "#0A7C6E",
 
-  background: '#001F3F',
-  surface: '#0A2A4D',
-  surface2: '#12243A',
+  background: "#001F3F",
+  surface: "#0A2A4D",
+  surface2: "#12243A",
 
-  card: '#FFFFFF',
-  cardBorder: '#DCE6F2',
+  card: "#FFFFFF",
+  cardBorder: "#DCE6F2",
 
-  text: '#001F3F',
-  textSecondary: '#475569',
-  textMuted: '#64748B',
+  text: "#001F3F",
+  textSecondary: "#475569",
+  textMuted: "#64748B",
 
-  success: '#22C55E',
-  warning: '#F59E0B',
-  danger: '#EF4444',
+  success: "#22C55E",
+  warning: "#F59E0B",
+  danger: "#EF4444",
 
-  border: '#E2E8F0',
+  border: "#E2E8F0",
 };
 
 export default function StaffShifts({ navigation, route }: any) {
   const bottomSheetRef = useRef<BottomSheet>(null);
   // FIX 1: snapPoints must be memoized and stable
-  const snapPoints = useMemo(() => ['75%', '80%'], []);
+  const snapPoints = useMemo(() => ["75%", "80%"], []);
 
   const [notificationJob, setNotificationJob] = useState<any>(null);
-  const [activeTab, setActiveTab] = useState('Accepted');
+  const [activeTab, setActiveTab] = useState("Accepted");
   const [todayShifts, setTodayShifts] = useState<any[]>([]);
   const [weekShifts, setWeekShifts] = useState<any[]>([]);
   const [loadingToday, setLoadingToday] = useState(false);
   const [loadingWeek, setLoadingWeek] = useState(false);
-  const [userType, setUserType] = useState<string>('');
+  const [userType, setUserType] = useState<string>("");
   const [staffList, setStaffList] = useState<any[]>([]);
   const [selectedStaff, setSelectedStaff] = useState<number | null>(null);
   const [loadingStaff, setLoadingStaff] = useState(false);
   const [loadingProfile, setLoadingProfile] = useState(true);
   const [userId, setUserId] = useState<number>(0);
   const [userDocuments, setUserDocuments] = useState<any[]>([]);
-  const [userName, setUserName] = useState('');
+  const [userName, setUserName] = useState("");
   const [user, setUser] = useState<any>(null);
   const [profileImage, setProfileImage] = useState<string | null>(null);
   const [showStaffDropdown, setShowStaffDropdown] = useState(false);
@@ -90,8 +90,8 @@ export default function StaffShifts({ navigation, route }: any) {
   useEffect(() => {
     const loadUser = async () => {
       try {
-        const userStr = await AsyncStorage.getItem('user');
-        const cachedImage = await AsyncStorage.getItem('profileImage');
+        const userStr = await AsyncStorage.getItem("user");
+        const cachedImage = await AsyncStorage.getItem("profileImage");
 
         if (userStr) {
           const parsedUser = JSON.parse(userStr);
@@ -100,14 +100,14 @@ export default function StaffShifts({ navigation, route }: any) {
           if (cachedImage) {
             setProfileImage(cachedImage);
           } else if (parsedUser?.staff?.profile_image) {
-            const BASE_IMAGE_URL = 'https://apis.staffoo.com.au/storage/';
+            const BASE_IMAGE_URL = "https://apis.staffoo.com.au/storage/";
             setProfileImage(
               `${BASE_IMAGE_URL}${parsedUser.staff.profile_image}`,
             );
           }
         }
       } catch (e) {
-        console.log('User load error', e);
+        console.log("User load error", e);
       }
     };
     loadUser();
@@ -116,13 +116,13 @@ export default function StaffShifts({ navigation, route }: any) {
   useEffect(() => {
     const getUser = async () => {
       try {
-        const userJson = await AsyncStorage.getItem('user');
+        const userJson = await AsyncStorage.getItem("user");
         if (userJson) {
           const parsedUser = JSON.parse(userJson);
-          setUserName(parsedUser?.user?.data?.name || '');
+          setUserName(parsedUser?.user?.data?.name || "");
         }
       } catch (error) {
-        console.log('User load error:', error);
+        console.log("User load error:", error);
       }
     };
     getUser();
@@ -132,37 +132,37 @@ export default function StaffShifts({ navigation, route }: any) {
     if (!notif) return {};
 
     console.log(
-      '[EXTRACT DEBUG] Full notification:',
+      "[EXTRACT DEBUG] Full notification:",
       JSON.stringify(notif, null, 2),
     );
 
     // 1. STAFF – deepest path
     if (notif?.additionalData?.roster?.roster?.id) {
-      console.log('[EXTRACT] STAFF deep path: additionalData.roster.roster');
+      console.log("[EXTRACT] STAFF deep path: additionalData.roster.roster");
       return notif.additionalData.roster.roster;
     }
 
     // 2. STAFF – flatter
     if (notif?.additionalData?.roster?.id) {
-      console.log('[EXTRACT] STAFF flat path: additionalData.roster');
+      console.log("[EXTRACT] STAFF flat path: additionalData.roster");
       return notif.additionalData.roster;
     }
 
     // 3. CONTRACTOR path
     if (notif?.roster?.roster?.id) {
-      console.log('[EXTRACT] CONTRACTOR path: roster.roster');
+      console.log("[EXTRACT] CONTRACTOR path: roster.roster");
       return notif.roster.roster;
     }
 
     // 4. Direct job
     if (notif?.id && notif?.start) {
-      console.log('[EXTRACT] Direct job path');
+      console.log("[EXTRACT] Direct job path");
       return notif;
     }
 
     // 5. Deep search fallback
     const deepSearch = (obj: any): any => {
-      if (!obj || typeof obj !== 'object') return null;
+      if (!obj || typeof obj !== "object") return null;
       if (obj.start && obj.end && (obj.site || obj.address)) return obj;
       for (const key in obj) {
         const found = deepSearch(obj[key]);
@@ -173,57 +173,54 @@ export default function StaffShifts({ navigation, route }: any) {
 
     const found = deepSearch(notif);
     if (found) {
-      console.log('[EXTRACT] Deep search success');
+      console.log("[EXTRACT] Deep search success");
       return found;
     }
 
-    console.log('[EXTRACT] Final fallback');
+    console.log("[EXTRACT] Final fallback");
     return notif;
   };
 
   const formatDate = (val: any) => {
-    if (!val) return '—';
+    if (!val) return "—";
 
     // remove time if exists
-    const clean = String(val).split('T')[0].split(' ')[0];
+    const clean = String(val).split("T")[0].split(" ")[0];
 
-    const parts = clean.includes('-')
-      ? clean.split('-')
-      : clean.split('/');
+    const parts = clean.includes("-") ? clean.split("-") : clean.split("/");
 
-    if (parts.length !== 3) return '—';
+    if (parts.length !== 3) return "—";
 
     let [y, m, d] = parts;
 
     // detect if already DD/MM/YYYY or YYYY/MM/DD
     if (y.length === 4) {
       // YYYY-MM-DD → convert to DD/MM/YYYY
-      return `${d.padStart(2, '0')}/${m.padStart(2, '0')}/${y}`;
+      return `${d.padStart(2, "0")}/${m.padStart(2, "0")}/${y}`;
     } else {
       // fallback for DD/MM/YYYY input
-      return `${y.padStart(2, '0')}/${m.padStart(2, '0')}/${d}`;
+      return `${y.padStart(2, "0")}/${m.padStart(2, "0")}/${d}`;
     }
   };
 
-
   const formatTime = (val: any) => {
-    if (!val) return '—';
+    if (!val) return "—";
     const str = String(val).trim();
-    const parts = str.split(' ');
+    const parts = str.split(" ");
     const time = parts[1] || parts[0];
 
-    if (time && time.includes(':')) {
+    if (time && time.includes(":")) {
       return time.slice(0, 5);
     }
 
-    return '—';
+    return "—";
   };
 
   useEffect(() => {
     const fetchProfile = async () => {
       setLoadingProfile(true);
       try {
-        const stored = await AsyncStorage.getItem('user');
+        const stored = await AsyncStorage.getItem("user");
         if (!stored) return;
 
         const parsed = JSON.parse(stored);
@@ -233,26 +230,26 @@ export default function StaffShifts({ navigation, route }: any) {
         setUserId(idFromStorage);
 
         const res = await getUserProfile(idFromStorage);
-        console.log('[Profile API Response]:', res);
+        console.log("[Profile API Response]:", res);
 
         if (res?.success && res?.data) {
           const fresh = res.data;
           setUserDocuments(fresh.documents || []);
-          const type = (fresh.user_type || '').trim().toLowerCase();
+          const type = (fresh.user_type || "").trim().toLowerCase();
           setUserType(type);
-          console.log('[Fresh user_type from API]:', type);
+          console.log("[Fresh user_type from API]:", type);
         } else {
-          const fallback = (parsed.user_type || '').trim().toLowerCase();
+          const fallback = (parsed.user_type || "").trim().toLowerCase();
           setUserType(fallback);
         }
       } catch (err) {
-        console.error('[Profile Error]:', err);
-        Toast.show({ type: 'error', text1: 'Failed to load profile' });
+        console.error("[Profile Error]:", err);
+        Toast.show({ type: "error", text1: "Failed to load profile" });
 
-        const stored = await AsyncStorage.getItem('user');
+        const stored = await AsyncStorage.getItem("user");
         if (stored) {
           const parsed = JSON.parse(stored);
-          setUserType((parsed.user_type || '').trim().toLowerCase());
+          setUserType((parsed.user_type || "").trim().toLowerCase());
         }
       } finally {
         setLoadingProfile(false);
@@ -263,7 +260,7 @@ export default function StaffShifts({ navigation, route }: any) {
   }, []);
 
   useEffect(() => {
-    if (userType !== 'contractor' || !notificationJob || !userId) return;
+    if (userType !== "contractor" || !notificationJob || !userId) return;
 
     const loadStaff = async () => {
       setLoadingStaff(true);
@@ -273,7 +270,7 @@ export default function StaffShifts({ navigation, route }: any) {
           setStaffList(res.guards);
         }
       } catch (err) {
-        console.error('[Staff Load Error]:', err);
+        console.error("[Staff Load Error]:", err);
       } finally {
         setLoadingStaff(false);
       }
@@ -286,7 +283,7 @@ export default function StaffShifts({ navigation, route }: any) {
   useEffect(() => {
     if (route?.params?.notificationJob && userType) {
       console.log(
-        '[DEBUG] Setting notificationJob from route.params:',
+        "[DEBUG] Setting notificationJob from route.params:",
         route.params.notificationJob,
       );
       setNotificationJob(route.params.notificationJob);
@@ -300,17 +297,17 @@ export default function StaffShifts({ navigation, route }: any) {
       const checkPending = async () => {
         try {
           const pending = await AsyncStorage.getItem(
-            '@pending_asap_notification',
+            "@pending_asap_notification",
           );
           if (pending && userType) {
             const job = JSON.parse(pending);
-            console.log('[DEBUG] Pending notification from storage:', job);
+            console.log("[DEBUG] Pending notification from storage:", job);
             setNotificationJob(job);
             setSheetOpen(true);
-            await AsyncStorage.removeItem('@pending_asap_notification');
+            await AsyncStorage.removeItem("@pending_asap_notification");
           }
         } catch (err) {
-          console.error('[Pending Notification Error]:', err);
+          console.error("[Pending Notification Error]:", err);
         }
       };
       checkPending();
@@ -318,8 +315,8 @@ export default function StaffShifts({ navigation, route }: any) {
   );
 
   const getInitials = (name: string): string => {
-    if (!name) return 'U';
-    const parts = name.trim().split(' ').filter(Boolean);
+    if (!name) return "U";
+    const parts = name.trim().split(" ").filter(Boolean);
     if (parts.length === 1) return parts[0][0].toUpperCase();
     return parts[0][0].toUpperCase() + parts[parts.length - 1][0].toUpperCase();
   };
@@ -332,14 +329,14 @@ export default function StaffShifts({ navigation, route }: any) {
   };
 
   const handleAccept = () => {
-    if (userType === 'contractor' && !selectedStaff) {
-      Toast.show({ type: 'error', text1: 'Please select a staff member' });
+    if (userType === "contractor" && !selectedStaff) {
+      Toast.show({ type: "error", text1: "Please select a staff member" });
       return;
     }
 
-    navigation.navigate('AsapJobDetails', {
+    navigation.navigate("AsapJobDetails", {
       job: notificationJob,
-      staff_id: userType === 'contractor' ? selectedStaff : undefined,
+      staff_id: userType === "contractor" ? selectedStaff : undefined,
     });
 
     bottomSheetRef.current?.close();
@@ -348,7 +345,7 @@ export default function StaffShifts({ navigation, route }: any) {
   };
 
   const handleDecline = () => {
-    console.log('Job Declined:', notificationJob);
+    console.log("Job Declined:", notificationJob);
     bottomSheetRef.current?.close();
     setSheetOpen(false);
   };
@@ -358,20 +355,20 @@ export default function StaffShifts({ navigation, route }: any) {
       const fetchShifts = async () => {
         setLoadingToday(true);
         try {
-          const todayRes = await postGuardJobs('confirmed', 'today');
+          const todayRes = await postGuardJobs("confirmed", "today");
           setTodayShifts(todayRes?.data?.today || todayRes?.data || []);
         } catch (err) {
-          Toast.show({ type: 'error', text1: "Failed to load today's shifts" });
+          Toast.show({ type: "error", text1: "Failed to load today's shifts" });
         } finally {
           setLoadingToday(false);
         }
 
         setLoadingWeek(true);
         try {
-          const weekRes = await postGuardJobs('confirmed', 'week');
+          const weekRes = await postGuardJobs("confirmed", "week");
           setWeekShifts(weekRes?.data?.week || weekRes?.data || []);
         } catch (err) {
-          Toast.show({ type: 'error', text1: 'Failed to load week shifts' });
+          Toast.show({ type: "error", text1: "Failed to load week shifts" });
         } finally {
           setLoadingWeek(false);
         }
@@ -382,23 +379,23 @@ export default function StaffShifts({ navigation, route }: any) {
   );
 
   const renderShiftCard = (shift: any, index: number, isToday = false) => {
-    const isConfirmed = shift.job_status?.toLowerCase() === 'confirmed';
+    const isConfirmed = shift.job_status?.toLowerCase() === "confirmed";
     const signinStatus = Number(shift.signin_status ?? 0);
     let onPress = () => {
-      Toast.show({ type: 'info', text1: 'Action not available' });
+      Toast.show({ type: "info", text1: "Action not available" });
     };
 
     let showButton = false;
-    let buttonText = '';
+    let buttonText = "";
     let buttonStyle: any = {};
-    let textColor = '';
+    let textColor = "";
     let disabled = false;
 
     if (isToday && isConfirmed && signinStatus === 0) {
       showButton = true;
-      buttonText = 'Sign In';
+      buttonText = "Sign In";
       buttonStyle = styles.signInButton;
-      textColor = '#92400e';
+      textColor = "#92400e";
 
       const guardUserId = shift.guard?.user_id ?? shift.user_id;
       const isUserAdmin = Number(guardUserId) === 1;
@@ -414,27 +411,27 @@ export default function StaffShifts({ navigation, route }: any) {
       if (hasMissingDocs) {
         onPress = () => {
           Toast.show({
-            type: 'error',
-            text1: 'Incomplete Profile',
+            type: "error",
+            text1: "Incomplete Profile",
             text2:
-              'Please add your documents first then you can sign-in into job',
+              "Please add your documents first then you can sign-in into job",
           });
         };
         buttonStyle = [styles.signInButton, { opacity: 0.5 }];
       } else {
-        onPress = () => navigation.navigate('SignIn', { shift });
+        onPress = () => navigation.navigate("SignIn", { shift });
       }
     } else if (isToday && isConfirmed && signinStatus === 1) {
       showButton = true;
-      buttonText = 'Ongoing';
+      buttonText = "Ongoing";
       buttonStyle = styles.ongoingButton;
-      textColor = '#166534';
-      onPress = () => navigation.navigate('Ongoing', { currentShift: shift });
+      textColor = "#166534";
+      onPress = () => navigation.navigate("Ongoing", { currentShift: shift });
     } else if (!isToday) {
       showButton = true;
-      buttonText = 'Upcoming';
+      buttonText = "Upcoming";
       buttonStyle = styles.viewButton;
-      textColor = '#6b7280';
+      textColor = "#6b7280";
       disabled = true;
     }
 
@@ -447,9 +444,12 @@ export default function StaffShifts({ navigation, route }: any) {
             </View>
             <Text style={styles.rowText}>
               {formatDate(shift.start) ||
-                `${String(shift.job_start_day || '—').padStart(2, '0')}/${String(
-                  shift.job_start_month || '—',
-                ).padStart(2, '0')}/${shift.job_start_year || '—'}`}
+                `${String(shift.job_start_day || "—").padStart(
+                  2,
+                  "0",
+                )}/${String(shift.job_start_month || "—").padStart(2, "0")}/${
+                  shift.job_start_year || "—"
+                }`}
             </Text>
           </View>
 
@@ -469,7 +469,7 @@ export default function StaffShifts({ navigation, route }: any) {
           </View>
           <View style={styles.addressContainer}>
             <Text style={styles.addressText} numberOfLines={3}>
-              {shift.site?.address || 'No address available'}
+              {shift.site?.address || "No address available"}
             </Text>
           </View>
         </View>
@@ -480,16 +480,16 @@ export default function StaffShifts({ navigation, route }: any) {
           </View>
           <Text style={styles.documentText}>
             {shift.instructions_file
-              ? 'Click to view instructions'
-              : 'No instruction file'}
+              ? "Click to view instructions"
+              : "No instruction file"}
           </Text>
         </TouchableOpacity>
 
-        <View style={[styles.rowBetween, { alignItems: 'flex-start' }]}>
+        <View style={[styles.rowBetween, { alignItems: "flex-start" }]}>
           <View style={{ flex: 1, paddingRight: 16 }}>
             <Text style={styles.detailsLabel}>Instructions / Notes</Text>
             <Text style={styles.detailsValue}>
-              {shift.site?.site_description || 'No site description'}
+              {shift.site?.site_description || "No site description"}
             </Text>
           </View>
 
@@ -513,25 +513,25 @@ export default function StaffShifts({ navigation, route }: any) {
       </View>
     );
   };
-  const capitalizeName = (name: string = '') => {
+  const capitalizeName = (name: string = "") => {
     return name
       .toLowerCase()
-      .split(' ')
+      .split(" ")
       .filter(Boolean)
-      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(' ');
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(" ");
   };
 
   const jobData = extractJobData(notificationJob);
 
   useEffect(() => {
     if (notificationJob) {
-      console.log('[DEBUG] notificationJob received:', notificationJob);
-      console.log('[DEBUG] Extracted jobData:', jobData);
-      console.log('[DEBUG] start:', jobData?.start);
-      console.log('[DEBUG] end:', jobData?.end);
+      console.log("[DEBUG] notificationJob received:", notificationJob);
+      console.log("[DEBUG] Extracted jobData:", jobData);
+      console.log("[DEBUG] start:", jobData?.start);
+      console.log("[DEBUG] end:", jobData?.end);
       console.log(
-        '[DEBUG] address:',
+        "[DEBUG] address:",
         jobData?.site?.address || jobData?.address,
       );
     }
@@ -555,14 +555,14 @@ export default function StaffShifts({ navigation, route }: any) {
           <View style={styles.header}>
             <TouchableOpacity
               style={styles.headerLeft}
-              onPress={() => navigation.navigate('Profile')}
+              onPress={() => navigation.navigate("Profile")}
             >
               {profileImage ? (
                 <Image source={{ uri: profileImage }} style={styles.avatar} />
               ) : (
                 <View style={styles.initialsAvatar}>
                   <Text style={styles.initialsText}>
-                    {getInitials(user?.name || 'User')}
+                    {getInitials(user?.name || "User")}
                   </Text>
                 </View>
               )}
@@ -571,7 +571,7 @@ export default function StaffShifts({ navigation, route }: any) {
                 <View style={styles.nameRow}>
                   <Text style={styles.greeting}>
                     {/* {user?.name || 'User Name'} */}
-                    {capitalizeName(user?.name || 'User Name')} 👋
+                    {capitalizeName(user?.name || "User Name")} 👋
                   </Text>
                 </View>
                 <Text style={styles.staffName}>Welcome to Staffoo</Text>
@@ -619,7 +619,7 @@ export default function StaffShifts({ navigation, route }: any) {
         {loadingToday || loadingWeek ? (
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color="#10B981" />
-            <Text style={styles.loadingText}>Loading shifts...</Text>
+            <Text style={styles.loadingText}>Loading Shifts...</Text>
           </View>
         ) : (
           <>
@@ -661,8 +661,8 @@ export default function StaffShifts({ navigation, route }: any) {
         handleIndicatorStyle={styles.sheetHandle}
         enableDynamicSizing={false}
         android_keyboardInputMode="adjustResize"
-        onChange={index => {
-          console.log('[BottomSheet] index changed to:', index);
+        onChange={(index) => {
+          console.log("[BottomSheet] index changed to:", index);
           if (index === -1) {
             handleSheetClose();
           }
@@ -689,24 +689,24 @@ export default function StaffShifts({ navigation, route }: any) {
             <Text style={styles.addressInSheet} numberOfLines={4}>
               {jobData?.site?.address ||
                 jobData?.address ||
-                'No address available'}
+                "No address available"}
             </Text>
           </View>
 
           <View style={styles.infoRow}>
             <Text style={styles.infoTextt}>
-              Total Hours: {jobData?.hours ?? '—'}
+              Total Hours: {jobData?.hours ?? "—"}
             </Text>
           </View>
 
-          {userType === 'contractor' && (
+          {userType === "contractor" && (
             <View style={{ marginVertical: 10 }}>
               <Text style={styles.assignLabel}>Assign to Staff Member</Text>
 
               {loadingStaff ? (
                 <ActivityIndicator size="small" color="#10B981" />
               ) : staffList.length === 0 ? (
-                <Text style={{ color: '#DC2626', padding: 10 }}>
+                <Text style={{ color: "#DC2626", padding: 10 }}>
                   No staff available
                 </Text>
               ) : (
@@ -722,9 +722,9 @@ export default function StaffShifts({ navigation, route }: any) {
 
                       <Text style={styles.dropdownText} numberOfLines={1}>
                         {selectedStaff
-                          ? staffList.find(s => s.id === selectedStaff)?.name ||
-                          `Staff #${selectedStaff}`
-                          : 'Select staff member'}
+                          ? staffList.find((s) => s.id === selectedStaff)
+                              ?.name || `Staff #${selectedStaff}`
+                          : "Select staff member"}
                       </Text>
                     </View>
 
@@ -746,7 +746,7 @@ export default function StaffShifts({ navigation, route }: any) {
 
                         <FlatList
                           data={staffList}
-                          keyExtractor={item => item.id.toString()}
+                          keyExtractor={(item) => item.id.toString()}
                           renderItem={({ item }) => (
                             <TouchableOpacity
                               style={styles.staffItem}
@@ -780,11 +780,11 @@ export default function StaffShifts({ navigation, route }: any) {
             <TouchableOpacity
               style={[
                 styles.acceptButton,
-                userType === 'contractor' &&
-                !selectedStaff &&
-                styles.disabledButton,
+                userType === "contractor" &&
+                  !selectedStaff &&
+                  styles.disabledButton,
               ]}
-              disabled={userType === 'contractor' && !selectedStaff}
+              disabled={userType === "contractor" && !selectedStaff}
               onPress={handleAccept}
             >
               <Text style={styles.buttonText}>ACCEPT</Text>
@@ -819,7 +819,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     // backgroundColor: COLORS.background,
-    backgroundColor: '#111111',
+    backgroundColor: "#111111",
     paddingTop: 40,
   },
   scrollContainer: {
@@ -829,21 +829,21 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.background,
   },
   signInButton: {
-    backgroundColor: '#FEF3C7',
+    backgroundColor: "#FEF3C7",
   },
   signedInButton: {
-    backgroundColor: '#dcfce7',
+    backgroundColor: "#dcfce7",
   },
   viewButton: {
-    backgroundColor: '#E2E8F0',
+    backgroundColor: "#E2E8F0",
   },
   scrollContent: {
     paddingHorizontal: 16,
     paddingBottom: 100,
   },
   headerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 14,
   },
   avatar: {
@@ -851,47 +851,47 @@ const styles = StyleSheet.create({
     height: 52,
     borderRadius: 26,
   },
-  nameRow: { flexDirection: 'row', alignItems: 'center' },
+  nameRow: { flexDirection: "row", alignItems: "center" },
   welcome: {
     fontSize: 13.5,
-    color: '#666',
+    color: "#666",
     marginTop: 2,
   },
   tabsWrapper: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    justifyContent: "space-between",
     paddingVertical: 5,
   },
-  name: { fontSize: 18, fontWeight: '700', color: '#000' },
+  name: { fontSize: 18, fontWeight: "700", color: "#000" },
   tabItem: {
     flex: 1,
     marginHorizontal: 6,
     paddingVertical: 12,
     borderRadius: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#E9ECF5',
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#E9ECF5",
   },
 
   activeShadow: {
     elevation: 18,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.25,
     shadowRadius: 8,
     zIndex: 10,
   },
   weekSelector: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     gap: 30,
     marginBottom: 10,
   },
   cardTop: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     paddingVertical: 7,
     paddingHorizontal: 10,
     borderRadius: 12,
@@ -901,30 +901,30 @@ const styles = StyleSheet.create({
     width: 50,
     height: 50,
     borderRadius: 25,
-    backgroundColor: '#bee1ee',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "#bee1ee",
+    justifyContent: "center",
+    alignItems: "center",
     marginRight: 0,
   },
   initialsText: {
-    color: '#2c7f71',
+    color: "#2c7f71",
     fontSize: 18,
-    fontWeight: '700',
+    fontWeight: "700",
   },
   weekButton: {
-    backgroundColor: '#10B981',
+    backgroundColor: "#10B981",
     paddingHorizontal: 24,
     paddingVertical: 10,
     borderRadius: 20,
   },
   weekText: {
-    color: 'white',
-    fontWeight: '700',
+    color: "white",
+    fontWeight: "700",
     fontSize: 15.5,
   },
   sectionHeader: {
     fontSize: 18,
-    fontWeight: '700',
+    fontWeight: "700",
     marginTop: 10,
     marginBottom: 9,
     paddingHorizontal: 4,
@@ -941,59 +941,59 @@ const styles = StyleSheet.create({
 
     borderWidth: 1,
 
-    shadowColor: '#0A7C6E',
+    shadowColor: "#0A7C6E",
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.08,
     shadowRadius: 10,
     elevation: 4,
   },
   rowBetween: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     marginBottom: 2,
   },
   rowItem: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
+    flexDirection: "row",
+    alignItems: "flex-start",
     gap: 8,
     marginBottom: 5,
   },
   rowText: {
     fontSize: 13,
     color: COLORS.text,
-    fontWeight: '500',
-    alignItems: 'center',
+    fontWeight: "500",
+    alignItems: "center",
     marginTop: 10,
   },
   iconBgGrey: {
     width: 38,
     height: 38,
     borderRadius: 12,
-    backgroundColor: '#EEF2FF',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "#EEF2FF",
+    justifyContent: "center",
+    alignItems: "center",
   },
   disabledButton: {
     opacity: 0.5,
-    backgroundColor: '#6EE7B7',
+    backgroundColor: "#6EE7B7",
   },
   directionSquare: {
-    backgroundColor: '#dbeafe',
+    backgroundColor: "#dbeafe",
     paddingHorizontal: 14,
     paddingVertical: 10,
     borderRadius: 8,
   },
   directionText: {
     fontSize: 12,
-    fontWeight: '600',
-    color: '#1d4ed8',
+    fontWeight: "600",
+    color: "#1d4ed8",
   },
   addressText: {
     fontSize: 13,
     color: COLORS.textSecondary,
     flex: 1,
-    flexWrap: 'wrap',
+    flexWrap: "wrap",
     marginTop: 10,
   },
   addressContainer: {
@@ -1002,14 +1002,14 @@ const styles = StyleSheet.create({
   },
   documentText: {
     fontSize: 12,
-    color: '#1e293b',
-    fontWeight: '500',
+    color: "#1e293b",
+    fontWeight: "500",
     marginTop: 10,
   },
   detailsLabel: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#475569',
+    fontWeight: "600",
+    color: "#475569",
     marginBottom: 3,
   },
   detailsValue: {
@@ -1022,46 +1022,46 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderRadius: 12,
     minWidth: 90,
-    alignItems: 'center',
+    alignItems: "center",
   },
   ongoingButton: {
-    backgroundColor: '#DCFCE7',
+    backgroundColor: "#DCFCE7",
   },
   actionButtonText: {
     fontSize: 11,
-    fontWeight: '700',
+    fontWeight: "700",
   },
   placeholder: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     minHeight: 300,
     paddingVertical: 40,
   },
   loadingContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     marginTop: 100,
   },
   loadingText: {
     marginTop: 16,
     fontSize: 16,
-    color: '#666',
+    color: "#666",
   },
   emptyText: {
-    textAlign: 'center',
+    textAlign: "center",
     marginTop: 25,
     fontSize: 12,
-    color: '#777',
+    color: "#777",
   },
   sheetBackground: {
-    backgroundColor: '#c3e3eb',
+    backgroundColor: "#c3e3eb",
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
   },
   sheetHandle: {
-    backgroundColor: '#d1d5db',
+    backgroundColor: "#d1d5db",
     width: 42,
     height: 5,
     borderRadius: 999,
@@ -1073,42 +1073,42 @@ const styles = StyleSheet.create({
   },
   cardTitle: {
     fontSize: 24,
-    fontWeight: 'bold',
-    color: '#111',
+    fontWeight: "bold",
+    color: "#111",
     marginBottom: 6,
   },
   addressInSheet: {
     fontSize: 14,
-    fontWeight: '500',
-    color: '#1F2937',
+    fontWeight: "500",
+    color: "#1F2937",
   },
   assignLabel: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#1F2937',
+    fontWeight: "600",
+    color: "#1F2937",
     marginBottom: 6,
   },
   newRequest: {
     fontSize: 20,
-    color: '#10B981',
-    fontWeight: '700',
+    color: "#10B981",
+    fontWeight: "700",
     marginBottom: 15,
   },
   infoRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginBottom: 15,
     gap: 16,
   },
   infoText: {
     fontSize: 12,
-    color: '#111',
-    fontWeight: '500',
+    color: "#111",
+    fontWeight: "500",
   },
   infoTextt: {
     fontSize: 16,
-    color: '#111',
-    fontWeight: '700',
+    color: "#111",
+    fontWeight: "700",
   },
   buttonContainer: {
     gap: 5,
@@ -1119,35 +1119,35 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.success,
     paddingVertical: 12,
     borderRadius: 14,
-    alignItems: 'center',
+    alignItems: "center",
   },
   declineButton: {
     backgroundColor: COLORS.danger,
     paddingVertical: 12,
     borderRadius: 14,
-    alignItems: 'center',
+    alignItems: "center",
   },
   cancelButton: {
     backgroundColor: COLORS.textMuted,
     paddingVertical: 12,
     borderRadius: 14,
-    alignItems: 'center',
+    alignItems: "center",
   },
   buttonText: {
-    color: 'white',
+    color: "white",
     fontSize: 12,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   pickerContainer: {
     borderWidth: 1,
-    borderColor: '#D1D5DB',
+    borderColor: "#D1D5DB",
     borderRadius: 10,
-    backgroundColor: '#F9FAFB',
-    overflow: 'hidden',
+    backgroundColor: "#F9FAFB",
+    overflow: "hidden",
   },
   buttonRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    justifyContent: "space-between",
     gap: 12,
     marginTop: 20,
   },
@@ -1156,21 +1156,21 @@ const styles = StyleSheet.create({
   },
   greeting: {
     fontSize: 16,
-    color: '#fff',
-    fontWeight: '700',
+    color: "#fff",
+    fontWeight: "700",
   },
   staffName: {
     fontSize: 14,
-    color: '#fff',
-    fontWeight: '500',
+    color: "#fff",
+    fontWeight: "500",
   },
   notificationIcon: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#ffffff30',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "#ffffff30",
+    justifyContent: "center",
+    alignItems: "center",
   },
   notificationText: {
     fontSize: 18,
@@ -1178,24 +1178,24 @@ const styles = StyleSheet.create({
 
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "center",
+    alignItems: "center",
   },
 
   dropdownModal: {
-    width: '85%',
-    backgroundColor: '#fff',
+    width: "85%",
+    backgroundColor: "#fff",
     borderRadius: 16,
     padding: 16,
-    maxHeight: '60%',
+    maxHeight: "60%",
   },
 
   modalTitle: {
     fontSize: 18,
-    fontWeight: '700',
-    color: '#1E2937',
-    textAlign: 'center',
+    fontWeight: "700",
+    color: "#1E2937",
+    textAlign: "center",
     marginBottom: 16,
   },
 
@@ -1203,58 +1203,58 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     paddingHorizontal: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#F1F5F9',
+    borderBottomColor: "#F1F5F9",
   },
 
   staffNameText: {
     fontSize: 16,
-    color: '#1E2937',
+    color: "#1E2937",
   },
 
   cancelButtonModal: {
     marginTop: 12,
     paddingVertical: 14,
-    backgroundColor: '#F1F5F9',
+    backgroundColor: "#F1F5F9",
     borderRadius: 12,
-    alignItems: 'center',
+    alignItems: "center",
   },
 
   cancelText: {
-    color: '#64748B',
-    fontWeight: '600',
+    color: "#64748B",
+    fontWeight: "600",
     fontSize: 16,
   },
   customDropdown: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: '#F8FAFC',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: "#F8FAFC",
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: "#E2E8F0",
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 14,
     // marginTop: 8,
-    width: '100%', // 🔥 IMPORTANT (prevents overflow)
-    overflow: 'hidden', // 🔥 keeps icon inside card
+    width: "100%", // 🔥 IMPORTANT (prevents overflow)
+    overflow: "hidden", // 🔥 keeps icon inside card
   },
 
   dropdownContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     flex: 1, // 🔥 important for text truncation
     gap: 12,
   },
 
   dropdownText: {
     fontSize: 15,
-    color: '#1E2937',
+    color: "#1E2937",
     flexShrink: 1, // 🔥 prevents pushing icon outside
   },
 
   iconRight: {
     marginLeft: 10,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
 });

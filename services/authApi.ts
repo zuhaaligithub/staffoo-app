@@ -1,16 +1,16 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import axios from 'axios';
-import { Platform } from 'react-native';
-import { ChargeRate, ChargeRateFormData } from '../navigation/types';
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import axios from "axios";
+import { Platform } from "react-native";
+import { ChargeRate, ChargeRateFormData } from "../navigation/types";
 
-export const BASE_URL = 'https://apis.staffoo.com.au/api';
+export const BASE_URL = "https://apis.staffoo.com.au/api";
 
 export interface UserData {
   id: number | string;
   token: string;
   name: string;
   email: string;
-  user_type: 'staff' | 'contractor';
+  user_type: "staff" | "contractor";
   phone?: string;
   // Add more fields if your profile returns them
 }
@@ -30,19 +30,19 @@ export interface ProfileUpdatePayload {
   address?: string;
   city?: string;
   state?: string;
-  country?: string;
+  origin_country?: string; // 👈 ADD THIS
   coordinates?: string;
   company_name?: string;
   registration_number?: string;
-  acn?: string; // ← Add this
+  acn?: string;
   abn?: string;
-  date_of_birth?: string; // ← Add this
+  date_of_birth?: string;
 }
 
 export const getAuthToken = async (): Promise<string | null> => {
-  let token = await AsyncStorage.getItem('@auth_token');
-  if (!token) token = await AsyncStorage.getItem('auth_token');
-  if (!token) token = await AsyncStorage.getItem('@token');
+  let token = await AsyncStorage.getItem("@auth_token");
+  if (!token) token = await AsyncStorage.getItem("auth_token");
+  if (!token) token = await AsyncStorage.getItem("@token");
   return token;
 };
 
@@ -51,36 +51,36 @@ export interface UserData {
   token: string;
   name: string;
   email: string;
-  user_type: 'staff' | 'contractor';
+  user_type: "staff" | "contractor";
   phone?: string;
 }
 
 export const saveAuthToken = async (token: string): Promise<void> => {
-  await AsyncStorage.setItem('@auth_token', token);
+  await AsyncStorage.setItem("@auth_token", token);
 };
 
 const saveUser = async (user: UserData): Promise<void> => {
-  await AsyncStorage.setItem('user', JSON.stringify(user));
+  await AsyncStorage.setItem("user", JSON.stringify(user));
 };
 
 export const loginUser = async (payload: LoginPayload): Promise<UserData> => {
   const endpoint = `${BASE_URL}/login`;
 
-  console.log('[LOGIN REQUEST]', payload);
+  console.log("[LOGIN REQUEST]", payload);
 
   try {
     const res = await fetch(endpoint, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
-        Accept: 'application/json',
+        "Content-Type": "application/json",
+        Accept: "application/json",
       },
       body: JSON.stringify(payload),
     });
 
     const data = await res.json().catch(() => null);
 
-    console.log('[LOGIN RESPONSE]', data);
+    console.log("[LOGIN RESPONSE]", data);
 
     if (!res.ok) {
       throw new Error(
@@ -89,7 +89,7 @@ export const loginUser = async (payload: LoginPayload): Promise<UserData> => {
     }
 
     if (!data?.token || !data?.user?.data?.id) {
-      throw new Error('Invalid login response format');
+      throw new Error("Invalid login response format");
     }
 
     const userInfo = data.user.data;
@@ -97,24 +97,24 @@ export const loginUser = async (payload: LoginPayload): Promise<UserData> => {
     const userData: UserData = {
       id: userInfo.id,
       token: data.token,
-      name: userInfo.name || '',
-      email: userInfo.email || '',
+      name: userInfo.name || "",
+      email: userInfo.email || "",
       user_type: userInfo.user_type,
       phone: userInfo.staff?.phone,
     };
 
     await saveAuthToken(data.token);
-    await AsyncStorage.setItem('user', JSON.stringify(userData));
+    await AsyncStorage.setItem("user", JSON.stringify(userData));
 
-    console.log('[LOGIN SUCCESS]');
+    console.log("[LOGIN SUCCESS]");
 
     return userData;
   } catch (error: any) {
-    console.error('[LOGIN ERROR]', error.message);
+    console.error("[LOGIN ERROR]", error.message);
 
-    if (error.message === 'Network request failed') {
+    if (error.message === "Network request failed") {
       throw new Error(
-        'Cannot reach the server. Check your internet connection or server URL.',
+        "Cannot reach the server. Check your internet connection or server URL.",
       );
     }
 
@@ -126,7 +126,7 @@ export const updateCoordinates = async (
   userId: string | number,
   payload: any,
 ) => {
-  const token = await AsyncStorage.getItem('@auth_token');
+  const token = await AsyncStorage.getItem("@auth_token");
 
   const res = await axios.post(
     `${BASE_URL}/update-coordinates/${userId}`,
@@ -134,7 +134,7 @@ export const updateCoordinates = async (
     {
       headers: {
         Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
     },
   );
@@ -144,38 +144,38 @@ export const updateCoordinates = async (
 
 export const getUserProfile = async (userId: string | number) => {
   try {
-    console.log('🔹 getUserProfile called with ID:', userId);
+    console.log("🔹 getUserProfile called with ID:", userId);
 
     const token = await getAuthToken();
 
     if (!token) {
-      const err: any = new Error('No authentication token');
+      const err: any = new Error("No authentication token");
       err.status = 401;
       throw err;
     }
 
     const endpoint = `${BASE_URL}/user-edit/${userId}`;
-    console.log('🔹 Calling endpoint:', endpoint);
+    console.log("🔹 Calling endpoint:", endpoint);
 
     const response = await axios.get(endpoint, {
       headers: {
         Authorization: `Bearer ${token}`,
-        Accept: 'application/json',
+        Accept: "application/json",
       },
     });
 
-    console.log('✅ Profile API Response:', response.data);
+    console.log("✅ Profile API Response:", response.data);
 
     return response.data;
   } catch (error: any) {
     console.log(
-      '❌ getUserProfile error:',
+      "❌ getUserProfile error:",
       error?.response?.data || error.message,
     );
 
     // 🔥 Handle 401 properly
     if (error?.response?.status === 401) {
-      const err: any = new Error('Unauthorized');
+      const err: any = new Error("Unauthorized");
       err.status = 401;
       throw err;
     }
@@ -188,7 +188,7 @@ export const getUserProfile = async (userId: string | number) => {
     }
 
     // 🔥 Network / unknown error
-    const err: any = new Error(error.message || 'Failed to fetch profile');
+    const err: any = new Error(error.message || "Failed to fetch profile");
     err.status = error?.response?.status || 500;
     throw err;
   }
@@ -197,38 +197,38 @@ export const getUserTransactions = async (userId: number) => {
   const token = await getAuthToken();
 
   if (!token) {
-    throw new Error('No authentication token found');
+    throw new Error("No authentication token found");
   }
 
   const endpoint = `${BASE_URL}/user-transactions/${userId}`;
 
-  console.log('🔹 Transactions API:', endpoint);
+  console.log("🔹 Transactions API:", endpoint);
 
   try {
     const response = await axios.get(endpoint, {
       headers: {
         Authorization: `Bearer ${token}`,
-        Accept: 'application/json',
+        Accept: "application/json",
       },
     });
 
-    console.log('✅ Transactions Response:', response.data);
+    console.log("✅ Transactions Response:", response.data);
 
     return response.data;
   } catch (error: any) {
     console.error(
-      '❌ Transactions error:',
+      "❌ Transactions error:",
       error.response?.data || error.message,
     );
 
     if (error.response?.status === 401) {
-      throw new Error('Session expired. Please login again.');
+      throw new Error("Session expired. Please login again.");
     }
 
     throw new Error(
       error.response?.data?.message ||
-      error.message ||
-      'Failed to fetch transactions',
+        error.message ||
+        "Failed to fetch transactions",
     );
   }
 };
@@ -239,7 +239,7 @@ export const updateUserProfile = async (
 ) => {
   const token = await getAuthToken();
   if (!token) {
-    throw new Error('No authentication token found');
+    throw new Error("No authentication token found");
   }
 
   const endpoint = `${BASE_URL}/user-update/${userId}`;
@@ -247,46 +247,49 @@ export const updateUserProfile = async (
   const formData = new FormData();
 
   // ==================== BASIC FIELDS ====================
-  if (payload.name) formData.append('name', payload.name);
-  if (payload.phone) formData.append('phone', payload.phone);
-  if (payload.email) formData.append('email', payload.email);
-  if (payload.email_otp) formData.append('email_otp', payload.email_otp);
+  if (payload.name) formData.append("name", payload.name);
+  if (payload.phone) formData.append("phone", payload.phone);
+  if (payload.email) formData.append("email", payload.email);
+  if (payload.email_otp) formData.append("email_otp", payload.email_otp);
 
-  if (payload.gender) formData.append('gender', payload.gender);
+  if (payload.gender) formData.append("gender", payload.gender);
 
   if (payload.staff_document_type)
-    formData.append('staff_document_type', payload.staff_document_type);
+    formData.append("staff_document_type", payload.staff_document_type);
 
   // ==================== 🔥 FIX: DATE OF BIRTH ====================
   if (payload.date_of_birth) {
-    formData.append('date_of_birth', payload.date_of_birth);
+    formData.append("date_of_birth", payload.date_of_birth);
   }
 
   // ==================== ADDRESS ====================
-  if (payload.address) formData.append('address', payload.address);
-  if (payload.city) formData.append('city', payload.city);
-  if (payload.state) formData.append('state', payload.state);
-  if (payload.country) formData.append('country', payload.country);
-  if (payload.coordinates)
-    formData.append('coordinates', payload.coordinates);
+  if (payload.address) formData.append("address", payload.address);
+  if (payload.city) formData.append("city", payload.city);
+  if (payload.state) formData.append("state", payload.state);
+
+  if (payload.origin_country) {
+    formData.append("origin_country", payload.origin_country);
+  }
+
+  if (payload.coordinates) formData.append("coordinates", payload.coordinates);
 
   // ==================== CONTRACTOR ====================
   if (payload.company_name)
-    formData.append('company_name', payload.company_name);
+    formData.append("company_name", payload.company_name);
 
   if (payload.registration_number)
-    formData.append('registration_number', payload.registration_number);
+    formData.append("registration_number", payload.registration_number);
 
-  if (payload.acn) formData.append('acn', payload.acn);
-  if (payload.abn) formData.append('abn', payload.abn);
+  if (payload.acn) formData.append("acn", payload.acn);
+  if (payload.abn) formData.append("abn", payload.abn);
 
   // ==================== PROFILE IMAGE ====================
   if (payload.profile_image) {
-    formData.append('profile_image', payload.profile_image);
+    formData.append("profile_image", payload.profile_image);
   }
 
   // ==================== LOGGING ====================
-  console.log('[UPDATE PROFILE] Sending to:', endpoint);
+  console.log("[UPDATE PROFILE] Sending to:", endpoint);
 
   const logData: Record<string, any> = {
     name: payload.name,
@@ -302,27 +305,27 @@ export const updateUserProfile = async (
     address: payload.address,
     city: payload.city,
     state: payload.state,
-    country: payload.country,
+    origin_country: payload.origin_country,
     coordinates: payload.coordinates,
   };
 
-  console.log('[UPDATE PROFILE] FormData contents:', logData);
+  console.log("[UPDATE PROFILE] FormData contents:", logData);
 
   try {
     const response = await axios.post(endpoint, formData, {
       headers: {
         Authorization: `Bearer ${token}`,
-        'Content-Type': 'multipart/form-data',
-        Accept: 'application/json',
+        "Content-Type": "multipart/form-data",
+        Accept: "application/json",
       },
       timeout: 15000,
     });
 
-    console.log('[UPDATE PROFILE] ← Success:', response.data);
+    console.log("[UPDATE PROFILE] ← Success:", response.data);
     return response.data;
   } catch (error: any) {
     console.error(
-      '[UPDATE PROFILE] Full Error:',
+      "[UPDATE PROFILE] Full Error:",
       error?.response?.data || error,
     );
 
@@ -331,7 +334,7 @@ export const updateUserProfile = async (
       error?.response?.data?.error ||
       error?.response?.data?.errors?.[0] ||
       error.message ||
-      'Failed to update profile';
+      "Failed to update profile";
 
     throw new Error(errorMessage);
   }
@@ -339,37 +342,37 @@ export const updateUserProfile = async (
 
 export const uploadFile = async (file: any) => {
   try {
-    const token = await AsyncStorage.getItem('@auth_token');
+    const token = await AsyncStorage.getItem("@auth_token");
 
     if (!token) {
-      throw new Error('No authentication token found');
+      throw new Error("No authentication token found");
     }
 
     const formData = new FormData();
-    const localUri: string = file.uri || file.path || '';
-    const normalizedUri = localUri.startsWith('file://') ||
-      localUri.startsWith('content://')
-      ? localUri
-      : `file://${localUri}`;
+    const localUri: string = file.uri || file.path || "";
+    const normalizedUri =
+      localUri.startsWith("file://") || localUri.startsWith("content://")
+        ? localUri
+        : `file://${localUri}`;
 
-    formData.append('file', {
+    formData.append("file", {
       uri: normalizedUri,
       name:
         file.name ||
         file.fileName ||
-        `file_${Date.now()}.${file.type?.split('/')[1] || 'pdf'}`,
-      type: file.type || file.mimeType || 'application/octet-stream',
+        `file_${Date.now()}.${file.type?.split("/")[1] || "pdf"}`,
+      type: file.type || file.mimeType || "application/octet-stream",
     } as any);
 
-    formData.append('folder', 'staff_documents');
+    formData.append("folder", "staff_documents");
 
-    console.log('[UPLOAD PAYLOAD - EXACT FIELDS SENT]:', {
+    console.log("[UPLOAD PAYLOAD - EXACT FIELDS SENT]:", {
       file: {
-        name: file.name || file.fileName || 'auto-generated',
-        type: file.type || 'unknown',
-        uriPreview: file.uri.substring(0, 60) + '...',
+        name: file.name || file.fileName || "auto-generated",
+        type: file.type || "unknown",
+        uriPreview: file.uri.substring(0, 60) + "...",
       },
-      folder: 'staff_documents',
+      folder: "staff_documents",
     });
 
     const response = await axios.post(`${BASE_URL}/upload-file`, formData, {
@@ -379,10 +382,10 @@ export const uploadFile = async (file: any) => {
       timeout: 90000,
     });
 
-    console.log('[UPLOAD SUCCESS]', response.data);
+    console.log("[UPLOAD SUCCESS]", response.data);
     return response.data;
   } catch (error: any) {
-    console.error('[UPLOAD ERROR]', {
+    console.error("[UPLOAD ERROR]", {
       message: error.message,
       status: error.response?.status,
       backendResponse: error.response?.data,
@@ -392,13 +395,13 @@ export const uploadFile = async (file: any) => {
       error?.response?.data?.message ||
       error?.response?.data?.error ||
       error.message ||
-      'Failed to upload file';
+      "Failed to upload file";
 
     throw new Error(errMsg);
   }
 };
 
-export type UserType = 'customer' | 'contractor' | 'staff';
+export type UserType = "customer" | "contractor" | "staff";
 
 export interface RegisterPayload {
   user_type: UserType;
@@ -419,7 +422,7 @@ export interface RegisterResponse {
       id: number | string;
       name: string;
       email: string;
-      user_type: 'staff' | 'contractor';
+      user_type: "staff" | "contractor";
       staff?: {
         phone?: string;
       };
@@ -432,26 +435,26 @@ export const registerUser = async (
   payload: RegisterPayload,
 ): Promise<UserData> => {
   if (!payload.user_type) {
-    throw new Error('user_type is required');
+    throw new Error("user_type is required");
   }
 
   const endpoint = `${BASE_URL}/register/user`;
 
-  console.log('[REGISTER] →', endpoint, payload);
+  console.log("[REGISTER] →", endpoint, payload);
 
   try {
     const res = await fetch(endpoint, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
-        Accept: 'application/json',
+        "Content-Type": "application/json",
+        Accept: "application/json",
       },
       body: JSON.stringify(payload),
     });
 
     const data = await res.json();
 
-    console.log('[REGISTER RESPONSE]', data);
+    console.log("[REGISTER RESPONSE]", data);
 
     if (!res.ok) {
       if (res.status === 422 && data?.errors) {
@@ -459,7 +462,7 @@ export const registerUser = async (
         throw new Error(
           Array.isArray(firstError)
             ? String(firstError[0])
-            : 'Validation failed',
+            : "Validation failed",
         );
       }
 
@@ -474,8 +477,8 @@ export const registerUser = async (
       data?.data?.staff || data?.data?.contractor || data?.data?.customer || {};
 
     if (!receivedToken || !userInfo?.id) {
-      console.log('[REGISTER STRUCTURE ERROR]', data);
-      throw new Error('Invalid registration response format');
+      console.log("[REGISTER STRUCTURE ERROR]", data);
+      throw new Error("Invalid registration response format");
     }
 
     const userData: UserData = {
@@ -484,17 +487,17 @@ export const registerUser = async (
       name: userInfo.name || payload.name,
       email: userInfo.email || payload.email,
       user_type: userInfo.user_type || payload.user_type,
-      phone: extraInfo.phone || userInfo.phone || payload.phone || '',
+      phone: extraInfo.phone || userInfo.phone || payload.phone || "",
     };
 
     await saveAuthToken(receivedToken);
-    await AsyncStorage.setItem('user', JSON.stringify(userData));
+    await AsyncStorage.setItem("user", JSON.stringify(userData));
 
-    console.log('[REGISTER SUCCESS]', userData);
+    console.log("[REGISTER SUCCESS]", userData);
 
     return userData;
   } catch (error: any) {
-    console.error('[REGISTER ERROR]', error?.message || error);
+    console.error("[REGISTER ERROR]", error?.message || error);
     throw error;
   }
 };
@@ -510,13 +513,13 @@ export const createChargeRate = async (
   payload: ChargeRateFormData,
 ): Promise<ChargeRate> => {
   const token = await getAuthToken();
-  if (!token) throw new Error('No authentication token found');
+  if (!token) throw new Error("No authentication token found");
 
   const res = await axios.post(`${BASE_URL}/charge_rate/store`, payload, {
     headers: {
       Authorization: `Bearer ${token}`,
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
+      Accept: "application/json",
+      "Content-Type": "application/json",
     },
   });
 
@@ -528,13 +531,13 @@ export const updateChargeRate = async (
   payload: ChargeRateFormData,
 ): Promise<ChargeRate> => {
   const token = await getAuthToken();
-  if (!token) throw new Error('No authentication token found');
+  if (!token) throw new Error("No authentication token found");
 
   const res = await axios.post(`${BASE_URL}/charge_rate/update`, payload, {
     headers: {
       Authorization: `Bearer ${token}`,
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
+      Accept: "application/json",
+      "Content-Type": "application/json",
     },
   });
 
@@ -548,10 +551,10 @@ interface ChargeRateResponse {
 
 export const getAllChargeRates = async (): Promise<ChargeRateResponse> => {
   const token = await getAuthToken();
-  if (!token) throw new Error('No authentication token found');
+  if (!token) throw new Error("No authentication token found");
 
   const res = await axios.get(`${BASE_URL}/get-all-chargerates`, {
-    headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
+    headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
   });
 
   return res.data; // { success: true, data: [...] }
@@ -560,14 +563,14 @@ export const getAllChargeRates = async (): Promise<ChargeRateResponse> => {
 
 export const removeChargeRate = async (payload: { chargerate_id: number }) => {
   const token = await getAuthToken();
-  if (!token) throw new Error('No authentication token found');
+  if (!token) throw new Error("No authentication token found");
 
   const endpoint = `${BASE_URL}/charge_rate/remove`;
   const res = await axios.post(endpoint, payload, {
     headers: {
       Authorization: `Bearer ${token}`,
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
+      Accept: "application/json",
+      "Content-Type": "application/json",
     },
   });
 
@@ -577,69 +580,69 @@ export const removeChargeRate = async (payload: { chargerate_id: number }) => {
 
 export const createPayRate = async (payload: PayRate) => {
   const token = await getAuthToken();
-  if (!token) throw new Error('No authentication token found');
+  if (!token) throw new Error("No authentication token found");
 
   const endpoint = `${BASE_URL}/payrate/store`;
   const res = await axios.post(endpoint, payload, {
-    headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
+    headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
   });
   return res.data;
 };
 
 export const updatePayRate = async (id: number, payload: PayRate) => {
   const token = await getAuthToken();
-  if (!token) throw new Error('No authentication token found');
+  if (!token) throw new Error("No authentication token found");
 
   const endpoint = `${BASE_URL}/payrate/update`;
   const res = await axios.post(endpoint, payload, {
-    headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
+    headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
   });
   return res.data;
 };
 
 export const getAllPayRates = async () => {
   const token = await getAuthToken();
-  if (!token) throw new Error('No authentication token found');
+  if (!token) throw new Error("No authentication token found");
 
   const endpoint = `${BASE_URL}/get-all-payrates`;
   const res = await axios.get(endpoint, {
-    headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
+    headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
   });
   return res.data;
 };
 
 export const getPayRate = async (id: number) => {
   const token = await getAuthToken();
-  if (!token) throw new Error('No authentication token found');
+  if (!token) throw new Error("No authentication token found");
 
   const endpoint = `${BASE_URL}/get-payrate/${id}`;
   const res = await axios.get(endpoint, {
-    headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
+    headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
   });
   return res.data;
 };
 
 export const getAllArchivedPayRates = async () => {
   const token = await getAuthToken();
-  if (!token) throw new Error('No authentication token found');
+  if (!token) throw new Error("No authentication token found");
 
   const endpoint = `${BASE_URL}/get-all-archive-payrates`;
   const res = await axios.get(endpoint, {
-    headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
+    headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
   });
   return res.data;
 };
 
 export const removePayRate = async (payload: { payrate_id: number }) => {
   const token = await getAuthToken();
-  if (!token) throw new Error('No authentication token found');
+  if (!token) throw new Error("No authentication token found");
 
   const endpoint = `${BASE_URL}/payrate/remove`;
   const res = await axios.post(endpoint, payload, {
     headers: {
       Authorization: `Bearer ${token}`,
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
+      Accept: "application/json",
+      "Content-Type": "application/json",
     },
   });
 
@@ -697,7 +700,7 @@ export interface JobPostPayload {
 
   shifts: JobShift[];
 
-  payment_option: 'full' | 'split';
+  payment_option: "full" | "split";
 
   job_location_state: string;
 
@@ -728,33 +731,33 @@ export const postJob = async (
   payload: JobPostPayload,
 ): Promise<JobPostResponse> => {
   const token = await getAuthToken();
-  if (!token) throw new Error('No authentication token found');
+  if (!token) throw new Error("No authentication token found");
 
   const endpoint = `${BASE_URL}/job-post`;
 
-  console.log('[JOB POST REQUEST] →', endpoint);
-  console.log('[PAYLOAD SENT]', JSON.stringify(payload, null, 2));
+  console.log("[JOB POST REQUEST] →", endpoint);
+  console.log("[PAYLOAD SENT]", JSON.stringify(payload, null, 2));
 
   try {
     const response = await axios.post<JobPostResponse>(endpoint, payload, {
       headers: {
         Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-        Accept: 'application/json',
+        "Content-Type": "application/json",
+        Accept: "application/json",
       },
       timeout: 30000,
     });
 
-    console.log('[JOB POST RESPONSE]', response.status, response.data);
+    console.log("[JOB POST RESPONSE]", response.status, response.data);
     return response.data;
   } catch (error: any) {
-    console.error('[JOB POST ERROR]', {
+    console.error("[JOB POST ERROR]", {
       status: error.response?.status,
       data: error.response?.data,
       message: error.message,
     });
     const errMessage =
-      error?.response?.data?.message || error.message || 'Failed to create job';
+      error?.response?.data?.message || error.message || "Failed to create job";
     throw new Error(errMessage);
   }
 };
@@ -764,32 +767,32 @@ export const createPaymentMethod = async (
   cardPayload: any,
 ): Promise<{ id: string }> => {
   const token = await getAuthToken();
-  if (!token) throw new Error('No authentication token found');
+  if (!token) throw new Error("No authentication token found");
 
   try {
     const res = await axios.post(`${BASE_URL}/payment_methods`, cardPayload, {
       headers: {
         Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-        Accept: 'application/json',
+        "Content-Type": "application/json",
+        Accept: "application/json",
       },
       timeout: 20000,
     });
 
     // Expect backend to return { id: 'pm_...' } or similar
     if (!res.data || !res.data.id)
-      throw new Error('Invalid response from create-payment-method');
+      throw new Error("Invalid response from create-payment-method");
 
     return { id: res.data.id };
   } catch (error: any) {
     console.error(
-      '[CREATE PAYMENT METHOD ERROR]',
+      "[CREATE PAYMENT METHOD ERROR]",
       error.response?.data || error.message,
     );
     throw new Error(
       error.response?.data?.message ||
-      error.message ||
-      'Failed to create payment method',
+        error.message ||
+        "Failed to create payment method",
     );
   }
 };
@@ -797,14 +800,14 @@ export const createPaymentMethod = async (
 // Call the Staffoo payment hold endpoint
 export const holdPayment = async (holdPayload: Record<string, any>) => {
   const token = await getAuthToken();
-  if (!token) throw new Error('No authentication token found');
+  if (!token) throw new Error("No authentication token found");
 
   try {
     const res = await axios.post(`${BASE_URL}/payment/hold`, holdPayload, {
       headers: {
         Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-        Accept: 'application/json',
+        "Content-Type": "application/json",
+        Accept: "application/json",
       },
       timeout: 20000,
     });
@@ -812,23 +815,23 @@ export const holdPayment = async (holdPayload: Record<string, any>) => {
     return res.data;
   } catch (error: any) {
     console.error(
-      '[HOLD PAYMENT ERROR]',
+      "[HOLD PAYMENT ERROR]",
       error.response?.data || error.message,
     );
     throw new Error(
       error.response?.data?.message ||
-      error.message ||
-      'Failed to hold payment',
+        error.message ||
+        "Failed to hold payment",
     );
   }
 };
 // get-all-jobs
 export const getAllJobs = async (): Promise<ChargeRateResponse> => {
   const token = await getAuthToken();
-  if (!token) throw new Error('No authentication token found');
+  if (!token) throw new Error("No authentication token found");
 
   const res = await axios.get(`${BASE_URL}/get-all-jobs`, {
-    headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
+    headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
   });
 
   return res.data;
@@ -836,14 +839,14 @@ export const getAllJobs = async (): Promise<ChargeRateResponse> => {
 
 export const getContractorStaff = async (userId: number) => {
   const token = await getAuthToken();
-  if (!token) throw new Error('No authentication token found');
+  if (!token) throw new Error("No authentication token found");
 
   const res = await axios.get(
     `${BASE_URL}/get-contractor-active-staff/${userId}`,
     {
       headers: {
         Authorization: `Bearer ${token}`,
-        Accept: 'application/json',
+        Accept: "application/json",
       },
     },
   );
@@ -853,25 +856,25 @@ export const getContractorStaff = async (userId: number) => {
 
 // Helper to get logged-in user data (including guard_id / user id)
 export const getCurrentUser = async () => {
-  const userJson = await AsyncStorage.getItem('user');
+  const userJson = await AsyncStorage.getItem("user");
   if (!userJson) return null;
   return JSON.parse(userJson);
 };
 
 export const postGuardJobs = async (
-  type: 'confirmed',
-  duration: 'today' | 'week',
+  type: "confirmed",
+  duration: "today" | "week",
   extraPayload: Record<string, any> = {}, // optional extra fields
 ) => {
   try {
     const token = await getAuthToken();
     if (!token) {
-      throw new Error('No authentication token found. Please login again.');
+      throw new Error("No authentication token found. Please login again.");
     }
 
     const user = await getCurrentUser();
     if (!user || !user.id) {
-      throw new Error('User ID not found. Please login again.');
+      throw new Error("User ID not found. Please login again.");
     }
 
     const guard_id = user.id; // this is the guard_id (logged-in user's ID)
@@ -883,44 +886,44 @@ export const postGuardJobs = async (
       ...extraPayload, // any other fields you want to send
     };
 
-    console.log('[POST Guard Jobs] URL:', endpoint);
-    console.log('[POST Guard Jobs] Payload:', payload);
+    console.log("[POST Guard Jobs] URL:", endpoint);
+    console.log("[POST Guard Jobs] Payload:", payload);
 
     const response = await axios.post(endpoint, payload, {
       headers: {
         Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-        Accept: 'application/json',
+        "Content-Type": "application/json",
+        Accept: "application/json",
       },
     });
 
-    console.log('[POST Guard Jobs] Success:', response.data);
+    console.log("[POST Guard Jobs] Success:", response.data);
 
     return response.data;
   } catch (error: any) {
     console.error(
-      '[POST Guard Jobs] Error:',
+      "[POST Guard Jobs] Error:",
       error.response?.data || error.message,
     );
 
     if (error.response?.status === 401) {
       // Token expired or invalid → logout
-      await AsyncStorage.removeItem('@auth_token');
-      await AsyncStorage.removeItem('user');
-      throw new Error('Session expired. Please login again.');
+      await AsyncStorage.removeItem("@auth_token");
+      await AsyncStorage.removeItem("user");
+      throw new Error("Session expired. Please login again.");
     }
 
     throw new Error(
       error.response?.data?.message ||
-      error.message ||
-      'Failed to post guard jobs',
+        error.message ||
+        "Failed to post guard jobs",
     );
   }
 };
 
 export const confirmJob = async (jobId: number) => {
   const token = await getAuthToken();
-  if (!token) throw new Error('No auth token');
+  if (!token) throw new Error("No auth token");
 
   const response = await axios.post(
     `${BASE_URL}job/confirm/${jobId}`,
@@ -928,7 +931,7 @@ export const confirmJob = async (jobId: number) => {
     {
       headers: {
         Authorization: `Bearer ${token}`,
-        Accept: 'application/json',
+        Accept: "application/json",
       },
     },
   );
@@ -953,39 +956,39 @@ export const signInShift = async (
 ): Promise<any> => {
   const token = await getAuthToken();
   if (!token) {
-    throw new Error('No authentication token found. Please login again.');
+    throw new Error("No authentication token found. Please login again.");
   }
 
   const endpoint = `${BASE_URL}/signin/${shiftId}`;
 
-  console.log('[SIGN-IN REQUEST] →', endpoint, payload);
+  console.log("[SIGN-IN REQUEST] →", endpoint, payload);
 
   try {
     const response = await axios.post(endpoint, payload, {
       headers: {
         Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-        Accept: 'application/json',
+        "Content-Type": "application/json",
+        Accept: "application/json",
       },
       timeout: 45000, // 45 seconds – selfies can be slow to upload
     });
 
-    console.log('[SIGN-IN RESPONSE]', response.data);
+    console.log("[SIGN-IN RESPONSE]", response.data);
     return response.data;
   } catch (error: any) {
     console.error(
-      '[SIGN-IN ERROR]',
+      "[SIGN-IN ERROR]",
       error.response?.data || error.message || error,
     );
 
     if (error.response?.status === 401) {
-      throw new Error('Session expired. Please login again.');
+      throw new Error("Session expired. Please login again.");
     }
 
     const msg =
       error.response?.data?.message ||
       error.response?.data?.error ||
-      'Failed to sign in shift';
+      "Failed to sign in shift";
 
     throw new Error(msg);
   }
@@ -993,40 +996,40 @@ export const signInShift = async (
 
 export const getContractor = async (params?: Record<string, any>) => {
   const token = await getAuthToken();
-  if (!token) throw new Error('No authentication token found.');
+  if (!token) throw new Error("No authentication token found.");
 
   try {
     const response = await axios.get(`${BASE_URL}/admin/get-contractors`, {
       params: params || {},
       headers: {
         Authorization: `Bearer ${token}`,
-        Accept: 'application/json',
+        Accept: "application/json",
       },
     });
 
     return response.data;
   } catch (error: any) {
     console.error(
-      '❌ getContractor (admin) error:',
+      "❌ getContractor (admin) error:",
       error.response?.data || error.message,
     );
     if (error.response?.status === 401)
-      throw new Error('Session expired. Please login again.');
+      throw new Error("Session expired. Please login again.");
     if (error.response?.data?.message)
       throw new Error(error.response?.data?.message);
-    throw new Error(error.message || 'Failed to fetch contractors');
+    throw new Error(error.message || "Failed to fetch contractors");
   }
 };
 
 export const postWithAuth = async (url: string, payload: any) => {
-  const token = await AsyncStorage.getItem('@auth_token'); // your token key
-  if (!token) throw new Error('No authentication token found.');
+  const token = await AsyncStorage.getItem("@auth_token"); // your token key
+  if (!token) throw new Error("No authentication token found.");
 
   const response = await fetch(url, {
-    method: 'POST',
+    method: "POST",
     headers: {
-      'Content-Type': 'application/json',
-      Accept: 'application/json',
+      "Content-Type": "application/json",
+      Accept: "application/json",
       Authorization: `Bearer ${token}`,
     },
     body: JSON.stringify(payload),
@@ -1034,58 +1037,58 @@ export const postWithAuth = async (url: string, payload: any) => {
 
   const data = await response.json();
   if (!response.ok) {
-    throw new Error(data.message || data.error || 'Request failed');
+    throw new Error(data.message || data.error || "Request failed");
   }
   return data;
 };
 
 export const getLeaveDetails = async (userId: string | number) => {
   try {
-    console.log('🔹 getUserProfile called with ID:', userId);
+    console.log("🔹 getUserProfile called with ID:", userId);
 
     const token = await getAuthToken();
     if (!token) {
-      throw new Error('No authentication token found');
+      throw new Error("No authentication token found");
     }
 
     const endpoint = `${BASE_URL}/getLeaveDetails/${userId}`;
 
-    console.log('🔹 Calling endpoint:', endpoint);
+    console.log("🔹 Calling endpoint:", endpoint);
 
     const response = await axios.get(endpoint, {
       headers: {
         Authorization: `Bearer ${token}`,
-        Accept: 'application/json',
+        Accept: "application/json",
       },
     });
 
-    console.log('✅ Profile API Response:', response.data);
+    console.log("✅ Profile API Response:", response.data);
 
     return response.data;
   } catch (error: any) {
     console.log(
-      '❌ getUserProfile error:',
+      "❌ getUserProfile error:",
       error.response?.data || error.message,
     );
 
     if (error.response?.status === 401) {
-      throw new Error('Session expired. Please login again.');
+      throw new Error("Session expired. Please login again.");
     }
 
     if (error.response?.data?.message) {
       throw new Error(error.response.data.message);
     }
 
-    throw new Error(error.message || 'Failed to fetch profile');
+    throw new Error(error.message || "Failed to fetch profile");
   }
 };
 
 export const getChargeRate = async (): Promise<ChargeRateResponse> => {
   const token = await getAuthToken();
-  if (!token) throw new Error('No authentication token found');
+  if (!token) throw new Error("No authentication token found");
 
   const res = await axios.get(`${BASE_URL}/get-chargerates`, {
-    headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
+    headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
   });
 
   return res.data;
@@ -1094,7 +1097,7 @@ export const getChargeRate = async (): Promise<ChargeRateResponse> => {
 export const getCustomers = async (params?: Record<string, any>) => {
   const token = await getAuthToken();
   if (!token) {
-    throw new Error('No authentication token found');
+    throw new Error("No authentication token found");
   }
 
   const endpoint = `${BASE_URL}/admin/get-customers`;
@@ -1104,26 +1107,26 @@ export const getCustomers = async (params?: Record<string, any>) => {
       params: params || {},
       headers: {
         Authorization: `Bearer ${token}`,
-        Accept: 'application/json',
+        Accept: "application/json",
       },
     });
 
     return response.data;
   } catch (error: any) {
     console.error(
-      '❌ getCustomers error:',
+      "❌ getCustomers error:",
       error.response?.data || error.message,
     );
 
     if (error.response?.status === 401) {
-      throw new Error('Session expired. Please login again.');
+      throw new Error("Session expired. Please login again.");
     }
 
     if (error.response?.data?.message) {
       throw new Error(error.response.data.message);
     }
 
-    throw new Error(error.message || 'Failed to fetch customers');
+    throw new Error(error.message || "Failed to fetch customers");
   }
 };
 
@@ -1132,7 +1135,7 @@ export const getCustomers = async (params?: Record<string, any>) => {
 export const getContractors = async (userId: string | number) => {
   const token = await getAuthToken();
   if (!token) {
-    throw new Error('No authentication token found. Please login again.');
+    throw new Error("No authentication token found. Please login again.");
   }
 
   const endpoint = `${BASE_URL}/get-contractor-staff/${userId}`;
@@ -1141,28 +1144,28 @@ export const getContractors = async (userId: string | number) => {
     const response = await axios.get(endpoint, {
       headers: {
         Authorization: `Bearer ${token}`, // ← Token in Authorization header (correct)
-        Accept: 'application/json',
-        'Content-Type': 'application/json',
+        Accept: "application/json",
+        "Content-Type": "application/json",
       },
     });
 
-    console.log('✅ getContractors success:', response.data);
+    console.log("✅ getContractors success:", response.data);
     return response.data;
   } catch (error: any) {
     console.error(
-      '❌ getContractors error:',
+      "❌ getContractors error:",
       error.response?.data || error.message,
     );
 
     if (error.response?.status === 401) {
-      throw new Error('Session expired. Please login again.');
+      throw new Error("Session expired. Please login again.");
     }
 
     const errorMsg =
       error.response?.data?.message ||
       error.response?.data?.error ||
       error.message ||
-      'Failed to fetch contractors';
+      "Failed to fetch contractors";
 
     throw new Error(errorMsg);
   }
@@ -1171,7 +1174,7 @@ export const getContractors = async (userId: string | number) => {
 export const getStaff = async (params?: Record<string, any>) => {
   const token = await getAuthToken();
   if (!token) {
-    throw new Error('No authentication token found');
+    throw new Error("No authentication token found");
   }
 
   const endpoint = `${BASE_URL}/admin/get-staff`;
@@ -1181,29 +1184,29 @@ export const getStaff = async (params?: Record<string, any>) => {
       params: params || {},
       headers: {
         Authorization: `Bearer ${token}`,
-        Accept: 'application/json',
+        Accept: "application/json",
       },
     });
 
     return response.data;
   } catch (error: any) {
-    console.error('❌ getStaff error:', error.response?.data || error.message);
+    console.error("❌ getStaff error:", error.response?.data || error.message);
 
     if (error.response?.status === 401) {
-      throw new Error('Session expired. Please login again.');
+      throw new Error("Session expired. Please login again.");
     }
 
     if (error.response?.data?.message) {
       throw new Error(error.response.data.message);
     }
 
-    throw new Error(error.message || 'Failed to fetch staff');
+    throw new Error(error.message || "Failed to fetch staff");
   }
 };
 
 export const readAllMessages = async (id: number | string) => {
   const token = await getAuthToken();
-  if (!token) throw new Error('No authentication token found');
+  if (!token) throw new Error("No authentication token found");
 
   const endpoint = `${BASE_URL}/messages/read-all/${id}`;
 
@@ -1214,7 +1217,7 @@ export const readAllMessages = async (id: number | string) => {
       {
         headers: {
           Authorization: `Bearer ${token}`,
-          Accept: 'application/json',
+          Accept: "application/json",
         },
       },
     );
@@ -1222,22 +1225,22 @@ export const readAllMessages = async (id: number | string) => {
     return response.data;
   } catch (error: any) {
     console.error(
-      '❌ readAllMessages error:',
+      "❌ readAllMessages error:",
       error.response?.data || error.message,
     );
     if (error.response?.status === 401)
-      throw new Error('Session expired. Please login again.');
+      throw new Error("Session expired. Please login again.");
     throw new Error(
       error.response?.data?.message ||
-      error.message ||
-      'Failed to mark messages as read',
+        error.message ||
+        "Failed to mark messages as read",
     );
   }
 };
 
 export const getConversation = async (id: number | string) => {
   const token = await getAuthToken();
-  if (!token) throw new Error('No authentication token found');
+  if (!token) throw new Error("No authentication token found");
 
   const endpoint = `${BASE_URL}/messages/conversation/${id}`;
 
@@ -1245,29 +1248,29 @@ export const getConversation = async (id: number | string) => {
     const response = await axios.get(endpoint, {
       headers: {
         Authorization: `Bearer ${token}`,
-        Accept: 'application/json',
+        Accept: "application/json",
       },
     });
 
     return response.data;
   } catch (error: any) {
     console.error(
-      '❌ getConversation error:',
+      "❌ getConversation error:",
       error.response?.data || error.message,
     );
     if (error.response?.status === 401)
-      throw new Error('Session expired. Please login again.');
+      throw new Error("Session expired. Please login again.");
     throw new Error(
       error.response?.data?.message ||
-      error.message ||
-      'Failed to fetch conversation',
+        error.message ||
+        "Failed to fetch conversation",
     );
   }
 };
 
 export const getConversations = async () => {
   const token = await getAuthToken();
-  if (!token) throw new Error('No authentication token found');
+  if (!token) throw new Error("No authentication token found");
 
   const endpoint = `${BASE_URL}/messages/conversations`;
 
@@ -1275,22 +1278,22 @@ export const getConversations = async () => {
     const response = await axios.get(endpoint, {
       headers: {
         Authorization: `Bearer ${token}`,
-        Accept: 'application/json',
+        Accept: "application/json",
       },
     });
 
     return response.data;
   } catch (error: any) {
     console.error(
-      '❌ getConversations error:',
+      "❌ getConversations error:",
       error.response?.data || error.message,
     );
     if (error.response?.status === 401)
-      throw new Error('Session expired. Please login again.');
+      throw new Error("Session expired. Please login again.");
     throw new Error(
       error.response?.data?.message ||
-      error.message ||
-      'Failed to fetch conversations',
+        error.message ||
+        "Failed to fetch conversations",
     );
   }
 };
@@ -1300,7 +1303,7 @@ export const sendMessage = async (payload: {
   message: string;
 }) => {
   const token = await getAuthToken();
-  if (!token) throw new Error('No authentication token found');
+  if (!token) throw new Error("No authentication token found");
 
   const endpoint = `${BASE_URL}/messages/send`;
 
@@ -1308,30 +1311,30 @@ export const sendMessage = async (payload: {
     const response = await axios.post(endpoint, payload, {
       headers: {
         Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-        Accept: 'application/json',
+        "Content-Type": "application/json",
+        Accept: "application/json",
       },
     });
 
     return response.data;
   } catch (error: any) {
     console.error(
-      '❌ sendMessage error:',
+      "❌ sendMessage error:",
       error.response?.data || error.message,
     );
     if (error.response?.status === 401)
-      throw new Error('Session expired. Please login again.');
+      throw new Error("Session expired. Please login again.");
     throw new Error(
       error.response?.data?.message ||
-      error.message ||
-      'Failed to send message',
+        error.message ||
+        "Failed to send message",
     );
   }
 };
 
 export const deleteMessage = async (id: number | string) => {
   const token = await getAuthToken();
-  if (!token) throw new Error('No authentication token found');
+  if (!token) throw new Error("No authentication token found");
 
   const endpoint = `${BASE_URL}/messages/${id}`;
 
@@ -1339,33 +1342,33 @@ export const deleteMessage = async (id: number | string) => {
     const response = await axios.delete(endpoint, {
       headers: {
         Authorization: `Bearer ${token}`,
-        Accept: 'application/json',
+        Accept: "application/json",
       },
     });
 
     return response.data;
   } catch (error: any) {
     console.error(
-      '❌ deleteMessage error:',
+      "❌ deleteMessage error:",
       error.response?.data || error.message,
     );
     if (error.response?.status === 401)
-      throw new Error('Session expired. Please login again.');
+      throw new Error("Session expired. Please login again.");
     throw new Error(
       error.response?.data?.message ||
-      error.message ||
-      'Failed to delete message',
+        error.message ||
+        "Failed to delete message",
     );
   }
 };
 
 export const logoutUser = async () => {
   try {
-    const token = await AsyncStorage.getItem('@auth_token');
-    const userId = await AsyncStorage.getItem('@user_id');
+    const token = await AsyncStorage.getItem("@auth_token");
+    const userId = await AsyncStorage.getItem("@user_id");
 
     if (!token || !userId) {
-      throw new Error('Missing token or userId');
+      throw new Error("Missing token or userId");
     }
 
     const response = await axios.post(
@@ -1374,19 +1377,19 @@ export const logoutUser = async () => {
       {
         headers: {
           Authorization: `Bearer ${token}`,
-          Accept: 'application/json',
+          Accept: "application/json",
           user_id: userId, // ✅ ADD THIS
           // or 'user_id': userId  ← depends on backend
         },
       },
     );
 
-    console.log('[LOGOUT SUCCESS]', response.data);
+    console.log("[LOGOUT SUCCESS]", response.data);
 
     return response.data;
   } catch (error: any) {
-    console.error('[LOGOUT ERROR]', error.response?.data || error.message);
+    console.error("[LOGOUT ERROR]", error.response?.data || error.message);
 
-    throw new Error(error?.response?.data?.message || 'Logout failed');
+    throw new Error(error?.response?.data?.message || "Logout failed");
   }
 };

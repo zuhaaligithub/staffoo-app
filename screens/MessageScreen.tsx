@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -12,42 +12,42 @@ import {
   ActivityIndicator,
   TextInput,
   Platform,
-} from 'react-native';
-import { ChevronLeft, Search } from 'lucide-react-native';
-import { CheckCheck } from 'lucide-react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import axios from 'axios';
-import BottomTab from './BottomTab';
-import { getConversations } from '../services/authApi';
-import LinearGradient from 'react-native-linear-gradient';
+} from "react-native";
+import { ChevronLeft, Search } from "lucide-react-native";
+import { CheckCheck } from "lucide-react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import axios from "axios";
+import BottomTab from "./BottomTab";
+import { getConversations } from "../services/authApi";
+import LinearGradient from "react-native-linear-gradient";
 
-const BASE_URL = 'https://apis.staffoo.com.au/api';
+const BASE_URL = "https://apis.staffoo.com.au/api";
 const COLORS = {
   // 🌿 Primary Brand
-  primary: '#89E7D0', // mint accent
-  primaryDark: '#4FCBB3',
+  primary: "#89E7D0", // mint accent
+  primaryDark: "#4FCBB3",
 
   // 🌙 Background system (clean dark navy)
-  background: '#001F3F',
-  surface: '#20b72c',
-  surface2: '#12243A',
+  background: "#001F3F",
+  surface: "#20b72c",
+  surface2: "#12243A",
 
   // ✨ Card / Glass
-  card: 'rgba(255,255,255,0.06)',
-  cardBorder: 'rgba(255,255,255,0.08)',
+  card: "rgba(255,255,255,0.06)",
+  cardBorder: "rgba(255,255,255,0.08)",
 
   // ✍️ Text
-  text: '#FFFFFF',
-  textSecondary: 'rgba(255,255,255,0.7)',
-  textMuted: 'rgba(255,255,255,0.5)',
+  text: "#FFFFFF",
+  textSecondary: "rgba(255,255,255,0.7)",
+  textMuted: "rgba(255,255,255,0.5)",
 
   // 🔴🟡🟢 Status
-  success: '#22C55E',
-  warning: '#F59E0B',
-  danger: '#EF4444',
+  success: "#22C55E",
+  warning: "#F59E0B",
+  danger: "#EF4444",
 
   // Border
-  border: 'rgba(255,255,255,0.08)',
+  border: "rgba(255,255,255,0.08)",
 };
 type ChatUser = {
   id: string | number;
@@ -63,14 +63,14 @@ type ChatUser = {
 type Props = { navigation: any };
 
 const formatMessageRuntime = (value?: string | number | Date) => {
-  if (!value) return '';
+  if (!value) return "";
   const d = new Date(value);
-  if (isNaN(d.getTime())) return '';
+  if (isNaN(d.getTime())) return "";
 
   const now = new Date();
   const diffSec = Math.floor((now.getTime() - d.getTime()) / 1000);
 
-  if (diffSec < 10) return 'Just now';
+  if (diffSec < 10) return "Just now";
   if (diffSec < 60) return `${diffSec}s`;
   const diffMin = Math.floor(diffSec / 60);
   if (diffMin < 60) return `${diffMin}m`;
@@ -81,12 +81,12 @@ const formatMessageRuntime = (value?: string | number | Date) => {
   const isYesterday = d.toDateString() === yesterday.toDateString();
 
   const hour = d.getHours();
-  const minute = String(d.getMinutes()).padStart(2, '0');
-  const ampm = hour >= 12 ? 'PM' : 'AM';
+  const minute = String(d.getMinutes()).padStart(2, "0");
+  const ampm = hour >= 12 ? "PM" : "AM";
   const hour12 = ((hour + 11) % 12) + 1;
 
   if (isToday) return `${hour12}:${minute} ${ampm}`;
-  if (isYesterday) return 'Yesterday';
+  if (isYesterday) return "Yesterday";
   return d.toLocaleDateString();
 };
 
@@ -107,15 +107,15 @@ const getLatestMessageItem = (item: any) => {
 
 const getMessageText = (item: any) => {
   const last = getLatestMessageItem(item);
-  if (!last) return '';
-  if (typeof last === 'string') return last;
+  if (!last) return "";
+  if (typeof last === "string") return last;
   return (
     last.message ||
     last.text ||
     last.body ||
     last.note ||
     last.description ||
-    ''
+    ""
   );
 };
 
@@ -129,13 +129,13 @@ const getMessageTimestamp = (item: any) => {
     item?.last_message_time ||
     item?.updated_at ||
     item?.created_at ||
-    ''
+    ""
   );
 };
 
 const getChatUnreadCount = (item: any) => {
-  if (typeof item.unread_count === 'number') return item.unread_count;
-  if (typeof item.unread === 'number') return item.unread;
+  if (typeof item.unread_count === "number") return item.unread_count;
+  if (typeof item.unread === "number") return item.unread;
   const messagesArray = item.messages?.data || item.messages || item.data;
   if (Array.isArray(messagesArray)) {
     return messagesArray.filter(
@@ -151,7 +151,7 @@ export default function MessageScreen({ navigation }: Props) {
   const [chats, setChats] = useState<ChatUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
 
   // Main function: Call getConversations() + filter Admin chats
   const fetchChats = async () => {
@@ -172,18 +172,18 @@ export default function MessageScreen({ navigation }: Props) {
 
           // Only show if it's Admin (adjust this condition if needed)
           const isAdmin =
-            user?.user_type === 'admin' ||
-            user?.email?.toLowerCase().includes('admin') ||
-            user?.name?.toLowerCase().includes('admin') ||
+            user?.user_type === "admin" ||
+            user?.email?.toLowerCase().includes("admin") ||
+            user?.name?.toLowerCase().includes("admin") ||
             item?.is_admin === true;
 
           if (!isAdmin) return null;
 
           return {
             id: user?.id ?? item?.id,
-            name: user?.name || user?.full_name || 'Admin',
+            name: user?.name || user?.full_name || "Admin",
             avatar: user?.avatar ? { uri: user.avatar } : undefined,
-            lastMessage: getMessageText(item) || 'No messages yet',
+            lastMessage: getMessageText(item) || "No messages yet",
             timeRaw: getMessageTimestamp(item),
             unread: getChatUnreadCount(item),
             online: user?.is_online || false,
@@ -194,7 +194,7 @@ export default function MessageScreen({ navigation }: Props) {
 
       setChats(formatted);
     } catch (err: any) {
-      console.error('Failed to fetch conversations:', err);
+      console.error("Failed to fetch conversations:", err);
       setChats([]);
     } finally {
       setLoading(false);
@@ -206,11 +206,11 @@ export default function MessageScreen({ navigation }: Props) {
   }, []);
 
   useEffect(() => {
-    const unsub = navigation.addListener('focus', fetchChats);
+    const unsub = navigation.addListener("focus", fetchChats);
     return unsub;
   }, [navigation]);
 
-  const filteredChats = chats.filter(chat =>
+  const filteredChats = chats.filter((chat) =>
     chat.name.toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
@@ -253,22 +253,22 @@ export default function MessageScreen({ navigation }: Props) {
         {loading && chats.length === 0 ? (
           <View style={styles.center}>
             <ActivityIndicator size="large" color="#0A7C6E" />
-            <Text style={styles.loadingText}>Loading conversations...</Text>
+            <Text style={styles.loadingText}>Loading Conversations...</Text>
           </View>
         ) : filteredChats.length === 0 ? (
           <View style={styles.center}>
             <Text style={styles.emptyText}>
               {searchQuery
-                ? 'No matching conversations found'
-                : 'No conversations yet'}
+                ? "No matching conversations found"
+                : "No conversations yet"}
             </Text>
           </View>
         ) : (
-          filteredChats.map(chat => (
+          filteredChats.map((chat) => (
             <TouchableOpacity
               key={chat.id}
               onPress={() => {
-                navigation.navigate('MessageDetail', {
+                navigation.navigate("MessageDetail", {
                   chatId: chat.id,
                   name: chat.name,
                 });
@@ -276,11 +276,11 @@ export default function MessageScreen({ navigation }: Props) {
             >
               <LinearGradient
                 colors={[
-                  'rgba(255, 255, 255, 0.42)',
-                  'rgba(255, 255, 255, 0.35)',
-                  'rgba(255, 255, 255, 0.22)',
-                  'rgba(255, 255, 255, 0.12)',
-                  'rgba(255, 255, 255, 0.25)',
+                  "rgba(255, 255, 255, 0.42)",
+                  "rgba(255, 255, 255, 0.35)",
+                  "rgba(255, 255, 255, 0.22)",
+                  "rgba(255, 255, 255, 0.12)",
+                  "rgba(255, 255, 255, 0.25)",
                 ]}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
@@ -293,7 +293,7 @@ export default function MessageScreen({ navigation }: Props) {
                     ) : (
                       <View style={styles.avatarInitial}>
                         <Text style={styles.avatarInitialText}>
-                          {chat.name?.charAt(0)?.toUpperCase() || 'A'}
+                          {chat.name?.charAt(0)?.toUpperCase() || "A"}
                         </Text>
                       </View>
                     )}
@@ -301,12 +301,12 @@ export default function MessageScreen({ navigation }: Props) {
 
                   <View style={styles.chatInfo}>
                     <View
-                      style={{ flexDirection: 'row', alignItems: 'center' }}
+                      style={{ flexDirection: "row", alignItems: "center" }}
                     >
                       <Text style={styles.chatName}>{chat.name}</Text>
                       <Text
                         style={{
-                          color: '#0A7C6E',
+                          color: "#0A7C6E",
                           fontSize: 13,
                           marginLeft: 4,
                         }}
@@ -315,7 +315,7 @@ export default function MessageScreen({ navigation }: Props) {
                       </Text>
                     </View>
                     <Text style={styles.lastMessage} numberOfLines={1}>
-                      {chat.lastMessage || 'No messages yet'}
+                      {chat.lastMessage || "No messages yet"}
                     </Text>
                   </View>
 
@@ -348,14 +348,14 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     // backgroundColor: COLORS.background,
-     backgroundColor: '#111111',
-     paddingTop: Platform.OS === 'android' ? 20 : 0,
+    backgroundColor: "#111111",
+    paddingTop: Platform.OS === "android" ? 20 : 0,
   },
 
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     paddingHorizontal: 20,
     paddingVertical: 14,
     // backgroundColor: COLORS.surface2,
@@ -368,15 +368,15 @@ const styles = StyleSheet.create({
 
   screenTitle: {
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: "600",
     color: COLORS.text,
   },
   // siteCardInner:{padding:16},
 
   searchContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#ffff',
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#ffff",
     margin: 16,
     borderRadius: 12,
     paddingHorizontal: 14,
@@ -397,8 +397,8 @@ const styles = StyleSheet.create({
 
   center: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     paddingTop: 100,
   },
 
@@ -412,18 +412,18 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   chatItems: {
-  flexDirection: 'row',
-  alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
 
-  paddingHorizontal: 16,
-  paddingVertical: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 16,
 
-  width: '100%',
-},
+    width: "100%",
+  },
 
   chatItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
 
     // paddingHorizontal: 14,
     // paddingVertical: 14,
@@ -436,11 +436,11 @@ const styles = StyleSheet.create({
     // borderWidth: 1,
     // borderColor: 'rgba(255,255,255,0.15)',
 
-    overflow: 'hidden',
+    overflow: "hidden",
   },
 
   avatarContainer: {
-    position: 'relative',
+    position: "relative",
   },
 
   avatar: {
@@ -454,14 +454,14 @@ const styles = StyleSheet.create({
     height: 54,
     borderRadius: 27,
     backgroundColor: COLORS.primaryDark,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
 
   avatarInitialText: {
     color: COLORS.text,
     fontSize: 20,
-    fontWeight: '700',
+    fontWeight: "700",
   },
 
   chatInfo: {
@@ -471,7 +471,7 @@ const styles = StyleSheet.create({
 
   chatName: {
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: "700",
     color: COLORS.text,
   },
 
@@ -482,7 +482,7 @@ const styles = StyleSheet.create({
   },
 
   rightColumn: {
-    alignItems: 'flex-end',
+    alignItems: "flex-end",
     minWidth: 70,
   },
 
@@ -496,8 +496,8 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     minWidth: 22,
     height: 22,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     paddingHorizontal: 6,
     marginTop: 4,
   },
@@ -505,6 +505,6 @@ const styles = StyleSheet.create({
   unreadCount: {
     color: COLORS.text,
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: "600",
   },
 });

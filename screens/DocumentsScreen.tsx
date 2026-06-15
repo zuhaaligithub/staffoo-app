@@ -1188,28 +1188,38 @@ const normalizeDobToISO = (value?: string | null): string => {
 const LazyImage = ({ uri, style }: { uri: string; style: any }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
-  useEffect(() => {
-    const t = setTimeout(() => setLoading(false), 10000);
-    return () => clearTimeout(t);
-  }, []);
-  if (error) return null;
+
   return (
     <View style={[style, { justifyContent: "center", alignItems: "center" }]}>
       <Image
-        source={{ uri, cache: "force-cache" }}
+        source={{ uri }}
         style={[style, { position: "absolute", top: 0, left: 0 }]}
         resizeMode="cover"
         onLoadStart={() => {
           setLoading(true);
           setError(false);
         }}
-        onLoad={() => setLoading(false)}
+        onLoad={() => {
+          setLoading(false);
+          setError(false);
+        }}
         onError={() => {
           setLoading(false);
           setError(true);
         }}
       />
-      {loading && <ActivityIndicator color={THEME.teal} size="small" />}
+
+      {loading && !error && (
+        <ActivityIndicator color={THEME.teal} size="small" />
+      )}
+
+      {error && (
+        <View style={styles.errorPreviewContainer}>
+          <FileText size={48} color="#ff6b6b" />
+          <Text style={styles.errorPreviewText}>File Not Found</Text>
+          {/* <Text style={styles.errorPreviewSubtext}>404 or removed</Text> */}
+        </View>
+      )}
     </View>
   );
 };
@@ -1526,6 +1536,40 @@ export default function DocumentsScreen({ navigation }: Props) {
     }
   };
 
+  // ─── Parse Expiry Date - Enhanced for multiple formats ─────────────────────
+  const parseApiExpiryDate = (value: string): Date | null => {
+    if (!value) return null;
+
+    // DD/MM/YYYY
+    const ddmmyyyy = value.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+    if (ddmmyyyy) {
+      const [, dd, mm, yyyy] = ddmmyyyy;
+      const d = new Date(Number(yyyy), Number(mm) - 1, Number(dd));
+      return isNaN(d.getTime()) ? null : d;
+    }
+
+    // DD-MM-YYYY (New format from Visa check)
+    const ddmmyyyyDash = value.match(/^(\d{1,2})-(\d{1,2})-(\d{4})$/);
+    if (ddmmyyyyDash) {
+      const [, dd, mm, yyyy] = ddmmyyyyDash;
+      const d = new Date(Number(yyyy), Number(mm) - 1, Number(dd));
+      return isNaN(d.getTime()) ? null : d;
+    }
+
+    // YYYY-MM-DD
+    const yyyymmdd = value.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+    if (yyyymmdd) {
+      const [, yyyy, mm, dd] = yyyymmdd;
+      const d = new Date(Number(yyyy), Number(mm) - 1, Number(dd));
+      return isNaN(d.getTime()) ? null : d;
+    }
+
+    // Fallback
+    const d = new Date(value);
+    return isNaN(d.getTime()) ? null : d;
+  };
+
+  // ─── Handle Verify Document - Updated ─────────────────────────────────────
   const handleVerifyDocument = async () => {
     if (!selectedDocType) {
       Toast.show({
@@ -1555,14 +1599,11 @@ export default function DocumentsScreen({ navigation }: Props) {
       setVerifying(true);
       setExpiryError("");
       const token = await AsyncStorage.getItem("@auth_token");
-
       let response;
 
       if (isVisa) {
-        // ── VISA: hits /visa-check with passport + identity details ──────────
+        // ── VISA VERIFICATION ─────────────────────────────────────
         let profile = userProfile;
-
-        // Safety net: if profile wasn't loaded yet for some reason, fetch now.
         if (!profile) {
           const uid = userId || (await AsyncStorage.getItem("@user_id"));
           if (uid) {
@@ -1586,7 +1627,6 @@ export default function DocumentsScreen({ navigation }: Props) {
 
         const { given_name, family_name } = splitName(profile?.name);
         const countryCode = getCountryCode(profile?.country);
-
         const rawDob =
           profile?.dob ||
           profile?.date_of_birth ||
@@ -1607,7 +1647,6 @@ export default function DocumentsScreen({ navigation }: Props) {
           setVerifying(false);
           return;
         }
-
         if (!countryCode) {
           Toast.show({
             type: "error",
@@ -1626,11 +1665,6 @@ export default function DocumentsScreen({ navigation }: Props) {
           dob,
         };
 
-        console.log(
-          "VISA VERIFY REQUEST PAYLOAD:",
-          JSON.stringify(payload, null, 2),
-        );
-
         response = await axios.post(`${BASE_URL}/admin/visa-check`, payload, {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -1638,16 +1672,11 @@ export default function DocumentsScreen({ navigation }: Props) {
           },
         });
       } else {
-        // ── SECURITY LICENSE (or other verifiable types) ─────────────────────
+        // Security License verification...
         const payload = {
           document_type: selectedDocType.label,
           license_number: documentNumber.trim(),
         };
-
-        console.log(
-          "DOC VERIFY REQUEST PAYLOAD:",
-          JSON.stringify(payload, null, 2),
-        );
 
         response = await axios.post(
           `${Api_Url}/documents-online-verification-staffoo`,
@@ -1676,21 +1705,24 @@ export default function DocumentsScreen({ navigation }: Props) {
         return;
       }
 
+      // ── NEW: Support for expired_at in nested data ─────────────────────
       const expiryRaw =
         data?.expiry ||
         data?.expiry_date ||
         data?.document_expiry ||
+        data?.expired_at || // ← New
         data?.data?.expiry ||
         data?.data?.expiry_date ||
-        data?.data?.document_expiry;
+        data?.data?.document_expiry ||
+        data?.data?.expired_at; // ← New (Most important)
 
       if (expiryRaw) {
         const dateObj = parseApiExpiryDate(expiryRaw);
-
         if (dateObj) {
           setExpirationDate(dateObj);
           setIsVerified(true);
           setShowExpiryPicker(false);
+
           Toast.show({
             type: "success",
             text1: data?.message || "Document verified successfully",
@@ -1700,21 +1732,18 @@ export default function DocumentsScreen({ navigation }: Props) {
         }
       }
 
+      // Fallback if no expiry found
       setIsVerified(false);
       setExpirationDate(null);
       setExpiryError("Could not process expiration date from verification");
       Toast.show({
         type: "error",
-        text1: "Verification failed to parse expiry date",
+        text1: "Verification successful but expiry date not found",
         position: "bottom",
       });
     } catch (error: any) {
       console.log("=== VERIFY ERROR ===");
       console.log(JSON.stringify(error?.response?.data, null, 2));
-      console.log("=== VERIFY ERROR STATUS ===");
-      console.log(error?.response?.status);
-      console.log("=== VERIFY ERROR MESSAGE ===");
-      console.log(error?.message);
 
       setIsVerified(false);
       setExpirationDate(null);
@@ -1866,8 +1895,20 @@ export default function DocumentsScreen({ navigation }: Props) {
     const fileMime = selectedFile?.type || null;
     const fileName =
       selectedFile?.name || uploadedFilePath?.split("/").pop() || "Document";
+
+    if (!fileUri) {
+      return (
+        <View style={styles.imagePlaceholder}>
+          <View style={styles.errorPreviewContainer}>
+            <CloudUpload size={48} color={THEME.textMuted} />
+            <Text style={styles.previewText}>No file uploaded yet</Text>
+          </View>
+        </View>
+      );
+    }
+
     const isImage = isImageFile(fileUri, fileMime);
-    if (!fileUri) return null;
+
     if (isImage) {
       return (
         <View style={styles.imagePlaceholder}>
@@ -1875,6 +1916,8 @@ export default function DocumentsScreen({ navigation }: Props) {
         </View>
       );
     }
+
+    // PDF / DOC / Other files
     return (
       <View style={styles.docPreviewCard}>
         <View style={styles.docPreviewIconWrap}>
@@ -1899,6 +1942,7 @@ export default function DocumentsScreen({ navigation }: Props) {
 
   const renderFilledCard = (item: Document) => {
     const status = getExpiryStatus(item.document_expiry);
+    const fileUrl = getFileUrl(item.file);
     const isImg = isImageFile(item.file);
     const ext = item.file?.split(".").pop()?.toUpperCase() || "";
 
@@ -1913,7 +1957,6 @@ export default function DocumentsScreen({ navigation }: Props) {
           <View style={styles.docIconBox}>
             <FileText size={22} color={THEME.teal} />
           </View>
-
           <View style={{ flex: 1, marginHorizontal: 12 }}>
             <Text style={styles.cardDocName} numberOfLines={1}>
               {getDisplayName(item.document_name)}
@@ -1935,13 +1978,19 @@ export default function DocumentsScreen({ navigation }: Props) {
           <Text style={styles.infoLabel}>Document Number</Text>
           <Text style={styles.infoValue}>{item.document_no || "—"}</Text>
         </View>
-
         <View style={styles.infoRow}>
           <Text style={styles.infoLabel}>Expiration Date</Text>
           <Text style={styles.infoValue}>
             {formatAUDate(item.document_expiry)}
           </Text>
         </View>
+
+        {/* File Status */}
+        {!item.file && (
+          <Text style={{ color: "#ff6b6b", fontSize: 12, marginTop: 8 }}>
+            File missing (404)
+          </Text>
+        )}
 
         <View style={styles.cardActionsRow}>
           <TouchableOpacity
@@ -2460,7 +2509,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   uploadTriggerText: { color: "#fff", fontSize: 12, fontWeight: "600" },
-
+  previewText: { color: "#fff" },
   docPreviewCard: {
     width: "100%",
     padding: 16,
@@ -2579,4 +2628,28 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   saveButtonText: { color: "#fff", fontSize: 15, fontWeight: "bold" },
+  errorPreviewContainer: {
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 20,
+    backgroundColor: "rgba(0,0,0,0.3)",
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "rgba(138, 135, 135, 0.2)",
+    width: "100%",
+    height: "100%",
+  },
+
+  errorPreviewText: {
+    color: "#ff6b6b",
+    fontSize: 16,
+    fontWeight: "600",
+    marginTop: 12,
+  },
+
+  errorPreviewSubtext: {
+    color: THEME.textMuted,
+    fontSize: 13,
+    marginTop: 4,
+  },
 });
