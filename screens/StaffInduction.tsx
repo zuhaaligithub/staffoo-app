@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from "react";
 import {
   SafeAreaView,
   ScrollView,
@@ -11,37 +11,37 @@ import {
   StyleSheet,
   Image,
   ActivityIndicator,
-} from 'react-native';
-import { ArrowLeft, Award, CheckCircle, Clock } from 'lucide-react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { getAuthToken } from '../services/authApi';
+} from "react-native";
+import { ArrowLeft, Award, CheckCircle, Clock } from "lucide-react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { getAuthToken } from "../services/authApi";
 
-const THEME_COLOR = '#0A7C6E';
-const BASE_URL = 'https://apis.staffoo.com.au/api';
+const THEME_COLOR = "#0A7C6E";
+const BASE_URL = "https://apis.staffoo.com.au/api";
 
 const COLORS = {
-  primary: '#89E7D0',
-  primaryDark: '#4FCBB3',
+  primary: "#89E7D0",
+  primaryDark: "#4FCBB3",
 
-  background: '#001F3F',
-  surface: '#0B1F3A',
-  surface2: '#12243A',
+  background: "#001F3F",
+  surface: "#0B1F3A",
+  surface2: "#12243A",
 
-  card: 'rgba(255,255,255,0.06)',
-  border: 'rgba(255,255,255,0.08)',
+  card: "rgba(255,255,255,0.06)",
+  border: "rgba(255,255,255,0.08)",
 
-  text: '#FFFFFF',
-  textSecondary: 'rgba(255,255,255,0.7)',
-  textMuted: 'rgba(255,255,255,0.5)',
+  text: "#FFFFFF",
+  textSecondary: "rgba(255,255,255,0.7)",
+  textMuted: "rgba(255,255,255,0.5)",
 
-  success: '#22C55E',
-  warning: '#F59E0B',
-  danger: '#EF4444',
+  success: "#22C55E",
+  warning: "#F59E0B",
+  danger: "#EF4444",
 };
 
 // ✅ GLOBAL HELPER
 const isCompleted = (status: string) =>
-  ['completed', 'passed'].includes(status);
+  ["completed", "passed"].includes(status);
 
 export default function StaffInductionScreen({
   navigation,
@@ -62,7 +62,7 @@ export default function StaffInductionScreen({
   }, []);
 
   useEffect(() => {
-    const unsubscribe = navigation.addListener('focus', () => {
+    const unsubscribe = navigation.addListener("focus", () => {
       loadUserAndInductions();
     });
     return unsubscribe;
@@ -74,13 +74,13 @@ export default function StaffInductionScreen({
       setError(null);
 
       // ✅ Get cached values
-      const cachedUserId = await AsyncStorage.getItem('@user_id');
-      const cachedUser = await AsyncStorage.getItem('user');
+      const cachedUserId = await AsyncStorage.getItem("@user_id");
+      const cachedUser = await AsyncStorage.getItem("user");
       const token = await getAuthToken();
 
       // ✅ Check token
       if (!token) {
-        setError('Session expired. Please login again.');
+        setError("Session expired. Please login again.");
         setLoading(false);
         return;
       }
@@ -92,7 +92,7 @@ export default function StaffInductionScreen({
         const parsedUser = JSON.parse(cachedUser);
 
         console.log(
-          'INDUCTION USER DATA:',
+          "INDUCTION USER DATA:",
           JSON.stringify(parsedUser, null, 2),
         );
 
@@ -112,18 +112,18 @@ export default function StaffInductionScreen({
         // ✅ Handle profile image by user type
         let imageUri: string | null = null;
 
-        if (parsedUser?.user_type === 'staff') {
+        if (parsedUser?.user_type === "staff") {
           imageUri = parsedUser?.staff?.profile_image;
-        } else if (parsedUser?.user_type === 'contractor') {
+        } else if (parsedUser?.user_type === "contractor") {
           imageUri = parsedUser?.contractor?.profile_image;
-        } else if (parsedUser?.user_type === 'customer') {
+        } else if (parsedUser?.user_type === "customer") {
           imageUri =
             parsedUser?.customer?.profile_image || parsedUser?.profile_image;
         }
 
         // ✅ Set profile image
         if (imageUri) {
-          const fullImage = imageUri.startsWith('http')
+          const fullImage = imageUri.startsWith("http")
             ? imageUri
             : `https://apis.staffoo.com.au/storage/${imageUri}`;
 
@@ -133,7 +133,7 @@ export default function StaffInductionScreen({
 
       // ✅ Final validation
       if (!userId) {
-        setError('User ID not found. Please login again.');
+        setError("User ID not found. Please login again.");
         setLoading(false);
         return;
       }
@@ -141,9 +141,9 @@ export default function StaffInductionScreen({
       // ✅ Fetch inductions
       await fetchInductions(userId, token);
     } catch (err) {
-      console.log('LOAD INDUCTION ERROR:', err);
+      console.log("LOAD INDUCTION ERROR:", err);
 
-      setError('Failed to load data');
+      setError("Failed to load data");
       setLoading(false);
     }
   };
@@ -151,10 +151,10 @@ export default function StaffInductionScreen({
   const fetchInductions = async (userId: string, token: string) => {
     try {
       const response = await fetch(`${BASE_URL}/get-questionnaire/${userId}`, {
-        method: 'GET',
+        method: "GET",
         headers: {
           Authorization: `Bearer ${token}`,
-          Accept: 'application/json',
+          Accept: "application/json",
         },
       });
 
@@ -178,60 +178,64 @@ export default function StaffInductionScreen({
         .map((item: any) => ({
           id: item.id,
           title: item.title,
-          subtitle: item.sub_heading?.[0] || 'Mandatory',
-          status: item.status || 'pending',
+          subtitle: item.sub_heading?.[0] || "Mandatory",
+          status: item.status || "pending",
           questions: item.questionnaire?.length || 0,
           date: item.created_at
-            ? new Date(item.created_at).toLocaleDateString('en-AU', {
-              day: 'numeric',
-              month: 'short',
-              year: 'numeric',
-            })
-            : 'Recently Added',
+            ? new Date(item.created_at).toLocaleDateString("en-AU", {
+                day: "numeric",
+                month: "short",
+                year: "numeric",
+              })
+            : "Recently Added",
           questionnaire: item.questionnaire,
           created_at: item.created_at,
         }));
 
       setInductions(formatted);
     } catch (err) {
-      setError('Failed to load inductions');
+      setError("Failed to load inductions");
       setInductions([]);
     } finally {
       setLoading(false);
     }
   };
 
-  const capitalizeText = (text: string = '') => {
+  const capitalizeText = (text: string = "") => {
     return text
       .toLowerCase()
-      .split(' ')
+      .split(" ")
       .filter(Boolean)
-      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(' ');
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(" ");
   };
 
   const getInitials = (name: string) => {
-    if (!name) return 'U';
-    const parts = name.trim().split(' ').filter(Boolean);
+    if (!name) return "U";
+    const parts = name.trim().split(" ").filter(Boolean);
     if (parts.length === 1) return parts[0][0].toUpperCase();
     return parts[0][0].toUpperCase() + parts[parts.length - 1][0].toUpperCase();
   };
 
   const handleStartInduction = (item: any) => {
     if (isCompleted(item.status)) {
-      Alert.alert('Completed', 'You have already finished this induction.');
+      Alert.alert("Completed", "You have already finished this induction.");
       return;
     }
 
+    const inductionTitle = capitalizeText(item.title || "Induction");
+
     Alert.alert(
-      item.title,
-      `This induction contains ${item.questions} questions.\n\nReady to start?`,
+      inductionTitle,
+      `This induction contains ${item.questions} ${
+        item.questions === 1 ? "question" : "questions"
+      }.\n\nReady to start?`,
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: "Cancel", style: "cancel" },
         {
-          text: 'Start Now',
+          text: "Start Now",
           onPress: () =>
-            navigation.navigate('InductionQuestions', {
+            navigation.navigate("InductionQuestions", {
               inductionId: item.id,
             }),
         },
@@ -257,13 +261,11 @@ export default function StaffInductionScreen({
         )}
 
         <View style={styles.iconContainer}>
-          <Award size={32} color={done ? '#21954c' : THEME_COLOR} />
+          <Award size={32} color={done ? "#21954c" : THEME_COLOR} />
         </View>
 
         <View style={styles.listContent}>
-          <Text style={styles.listTitle}>
-            {capitalizeText(item.title)}
-          </Text>
+          <Text style={styles.listTitle}>{capitalizeText(item.title)}</Text>
           <Text style={styles.listSubtitle}>
             {item.subtitle} • {item.date}
           </Text>
@@ -289,10 +291,12 @@ export default function StaffInductionScreen({
     return (
       <SafeAreaView style={styles.container}>
         <View
-          style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}
+          style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
         >
           <ActivityIndicator size="large" color={THEME_COLOR} />
-          <Text style={{ marginTop: 12,color: 'white' }}>Loading Inductions...</Text>
+          <Text style={{ marginTop: 12, color: "white" }}>
+            Loading Inductions...
+          </Text>
         </View>
       </SafeAreaView>
     );
@@ -316,17 +320,18 @@ export default function StaffInductionScreen({
           <Text style={styles.greeting}>
             {capitalizeText(
               user?.name ||
-              user?.staff?.name ||
-              user?.contractor?.name ||
-              user?.customer?.name ||
-              'User',
-            )} 👋
+                user?.staff?.name ||
+                user?.contractor?.name ||
+                user?.customer?.name ||
+                "User",
+            )}{" "}
+            👋
           </Text>
 
           <Text style={styles.staffName}>Staff Induction Program</Text>
         </View>
 
-        <TouchableOpacity onPress={() => navigation.navigate('Profile')}>
+        <TouchableOpacity onPress={() => navigation.navigate("Profile")}>
           {profileImage ? (
             <Image source={{ uri: profileImage }} style={styles.avatarSmall} />
           ) : (
@@ -334,10 +339,10 @@ export default function StaffInductionScreen({
               <Text style={styles.initialsTextSmall}>
                 {getInitials(
                   user?.name ||
-                  user?.staff?.name ||
-                  user?.contractor?.name ||
-                  user?.customer?.name ||
-                  'U',
+                    user?.staff?.name ||
+                    user?.contractor?.name ||
+                    user?.customer?.name ||
+                    "U",
                 )}
               </Text>
             </View>
@@ -346,7 +351,7 @@ export default function StaffInductionScreen({
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        {error && <Text style={{ color: 'red' }}>{error}</Text>}
+        {error && <Text style={{ color: "red" }}>{error}</Text>}
 
         {/* RECENT CARD */}
         {recentInduction && (
@@ -358,7 +363,7 @@ export default function StaffInductionScreen({
             onPress={() => handleStartInduction(recentInduction)}
           >
             <View style={styles.recentIcon}>
-              <Award size={48} color={recentDone ? '#195f33' : THEME_COLOR} />
+              <Award size={48} color={recentDone ? "#195f33" : THEME_COLOR} />
             </View>
 
             <View style={styles.recentContent}>
@@ -385,17 +390,17 @@ export default function StaffInductionScreen({
               ) : (
                 <View
                   style={{
-                    flexDirection: 'row',
+                    flexDirection: "row",
                     marginTop: 12,
-                    alignItems: 'center',
+                    alignItems: "center",
                   }}
                 >
                   <CheckCircle size={18} color="#22c55e" />
                   <Text
                     style={{
                       marginLeft: 6,
-                      color: '#22c55e',
-                      fontWeight: '700',
+                      color: "#22c55e",
+                      fontWeight: "700",
                     }}
                   >
                     Completed
@@ -408,11 +413,10 @@ export default function StaffInductionScreen({
 
         <Text style={styles.sectionTitle}>All Inductions</Text>
         {inductions.length === 0 && !loading && (
-          <View style={{ alignItems: 'center', marginTop: 40 }}>
-            <Text style={{ fontSize: 16, fontWeight: '600', color: '#64748b' }}>
+          <View style={{ alignItems: "center", marginTop: 40 }}>
+            <Text style={{ fontSize: 16, fontWeight: "600", color: "#64748b" }}>
               No Induction Found
             </Text>
-
           </View>
         )}
         <FlatList
@@ -431,13 +435,13 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     // backgroundColor: COLORS.background,
-    backgroundColor: '#111111',
+    backgroundColor: "#111111",
     paddingTop: 25,
   },
   headerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
 
     paddingHorizontal: 16,
     paddingVertical: 14,
@@ -455,14 +459,14 @@ const styles = StyleSheet.create({
     width: 42,
     height: 42,
     borderRadius: 12,
-    backgroundColor: '#cedff0',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "#cedff0",
+    justifyContent: "center",
+    alignItems: "center",
   },
   headerTitleContainer: { flex: 1, marginLeft: 14 },
   greeting: {
     fontSize: 18,
-    fontWeight: '700',
+    fontWeight: "700",
     color: COLORS.text,
   },
 
@@ -477,35 +481,35 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: '#424749',
-    alignItems: 'center',
-    justifyContent: 'center',
+    backgroundColor: "#424749",
+    alignItems: "center",
+    justifyContent: "center",
   },
-  initialsTextSmall: { color: '#fff', fontSize: 16, fontWeight: '700' },
+  initialsTextSmall: { color: "#fff", fontSize: 16, fontWeight: "700" },
 
   scrollContent: { padding: 20 },
   sectionTitle: {
     fontSize: 18,
-    fontWeight: '700',
-    color: '#fff',
+    fontWeight: "700",
+    color: "#fff",
     marginBottom: 12,
-    marginTop: 10
+    marginTop: 10,
   },
   completedCardBorder: {
     borderWidth: 1,
-    borderColor: '#22c55e',
+    borderColor: "#22c55e",
   },
 
   recentCard: {
     // backgroundColor: COLORS.surface,
     borderRadius: 22,
     padding: 18,
-    flexDirection: 'row',
+    flexDirection: "row",
 
     borderWidth: 1,
     borderColor: COLORS.border,
 
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOpacity: 0.25,
     shadowRadius: 12,
     elevation: 8,
@@ -515,27 +519,27 @@ const styles = StyleSheet.create({
     height: 70,
     borderRadius: 18,
 
-    backgroundColor: 'rgba(137, 231, 208, 0.08)',
+    backgroundColor: "rgba(137, 231, 208, 0.08)",
     borderWidth: 1,
     borderColor: COLORS.border,
 
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     marginRight: 16,
   },
   recentContent: { flex: 1 },
-  recentSubtitle: { color: THEME_COLOR, fontSize: 15, fontWeight: '600' },
+  recentSubtitle: { color: THEME_COLOR, fontSize: 15, fontWeight: "600" },
   recentTitle: {
     fontSize: 17,
-    fontWeight: '700',
-    color: '#fff',
+    fontWeight: "700",
+    color: "#fff",
     marginVertical: 6,
   },
-  recentDate: { color: '#64748b', fontSize: 12 },
+  recentDate: { color: "#64748b", fontSize: 12 },
   questionsCount: {
-    color: '#fff',
+    color: "#fff",
     fontSize: 13,
-    fontWeight: '600',
+    fontWeight: "600",
     marginTop: 4,
   },
   startButton: {
@@ -544,18 +548,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     borderRadius: 14,
     marginTop: 12,
-    alignSelf: 'flex-start',
+    alignSelf: "flex-start",
   },
 
   startButtonText: {
-    color: '#001F3F',
-    fontWeight: '800',
+    color: "#001F3F",
+    fontWeight: "800",
     fontSize: 14,
   },
 
   listCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
 
     backgroundColor: COLORS.card,
 
@@ -569,16 +573,16 @@ const styles = StyleSheet.create({
   },
   completedBorder: {
     borderWidth: 1,
-    borderColor: '#22c55e',
+    borderColor: "#22c55e",
   },
 
   pendingBorder: {
     borderWidth: 1.8,
-    borderColor: '#ef4444',
+    borderColor: "#ef4444",
   },
 
   tickTopRight: {
-    position: 'absolute',
+    position: "absolute",
     top: 10,
     right: 10,
     zIndex: 10,
@@ -588,60 +592,58 @@ const styles = StyleSheet.create({
     height: 52,
     borderRadius: 16,
 
-    backgroundColor: 'rgba(137, 231, 208, 0.08)',
+    backgroundColor: "rgba(137, 231, 208, 0.08)",
     borderWidth: 1,
     borderColor: COLORS.border,
 
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     marginRight: 14,
   },
   listContent: { flex: 1 },
-  listTitle: { fontSize: 16, fontWeight: '700', color: '#fff' },
-  listSubtitle: { fontSize: 13, color: '#64748b', marginTop: 4 },
+  listTitle: { fontSize: 16, fontWeight: "700", color: "#fff" },
+  listSubtitle: { fontSize: 13, color: "#64748b", marginTop: 4 },
   questionsText: {
     fontSize: 13,
-    color: '#fff',
-    fontWeight: '600',
+    color: "#fff",
+    fontWeight: "600",
     marginTop: 6,
   },
 
-
   completedText: {
     color: COLORS.success,
-    fontWeight: '700',
+    fontWeight: "700",
     marginLeft: 6,
   },
-
 
   pendingText: {
     color: COLORS.warning,
-    fontWeight: '700',
+    fontWeight: "700",
     marginLeft: 6,
   },
   completedBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginTop: 8,
 
-    backgroundColor: 'rgba(34,197,94,0.1)',
+    backgroundColor: "rgba(34,197,94,0.1)",
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 12,
 
-    alignSelf: 'flex-start', // ✅ only content width
+    alignSelf: "flex-start", // ✅ only content width
   },
 
   pendingBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginTop: 8,
 
-    backgroundColor: 'rgba(245,158,11,0.1)',
+    backgroundColor: "rgba(245,158,11,0.1)",
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 12,
 
-    alignSelf: 'flex-start', // ✅ only content width
+    alignSelf: "flex-start", // ✅ only content width
   },
 });

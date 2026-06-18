@@ -259,12 +259,12 @@ export default function AsapJobDetails({ route, navigation }: any) {
             {formatTime(roster?.start, roster?.end)}
           </Text>
         </View>
-        <View style={styles.row}>
+        {/* <View style={styles.row}>
           <Briefcase size={20} color={COLORS.primaryDark} />
           <Text style={styles.text}>
             {roster?.job_title || 'ASAP Security'}
           </Text>
-        </View>
+        </View> */}
         <View style={styles.row}>
           <Building2 size={20} color={COLORS.primaryDark} />
           <Text style={styles.text}>

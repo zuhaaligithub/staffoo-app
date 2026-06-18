@@ -369,6 +369,9 @@ export default function ProfileScreen({ navigation }: Props) {
 
   const getProfileSections = (userType: string | undefined) => {
     const type = userType?.toLowerCase().trim();
+    console.log("Current User ID:", user?.id);
+    const targetUserId = Number(user?.user_id);
+    const isSuperStaff = targetUserId === 1;
 
     const allSections = [
       {
@@ -427,12 +430,6 @@ export default function ProfileScreen({ navigation }: Props) {
       },
 
       {
-        title: "Cover Jobs",
-        icon: <Briefcase size={20} color="#00A99D" />, // Import Briefcase from lucide-react-native
-        iconBg: "rgba(0,169,157,0.15)",
-        route: "CoverJobs",
-      },
-      {
         title: "Log Out",
         icon: <LogOut size={20} color={COLORS.danger} />,
         iconBg: COLORS.dangerBg,
@@ -448,27 +445,46 @@ export default function ProfileScreen({ navigation }: Props) {
       // },
     ];
 
+    // if (type === "staff") {
+    //   return allSections.filter((s) =>
+    //     [
+    //       "Personal Information",
+    //       "Documents",
+    //       "Verification Forms",
+    //       "Induction",
+    //       "Privacy Policy",
+    //       "Cover Jobs",
+    //       "Log Out",
+    //       // 'Delete Profile',
+    //     ].includes(s.title),
+    //   );
+    // }
+
     if (type === "staff") {
-      return allSections.filter((s) =>
-        [
-          "Personal Information",
-          "Documents",
-          "Verification Forms",
-          "Induction",
-          "Privacy Policy",
-          "Cover Jobs",
-          "Log Out",
-          // 'Delete Profile',
-        ].includes(s.title),
-      );
+      const staffTabs = [
+        "Personal Information",
+        "Documents",
+        "Induction",
+        "Privacy Policy",
+
+        "Log Out",
+      ];
+
+      // Now it will correctly check the user_id from the bottom of your response
+      if (isSuperStaff) {
+        staffTabs.splice(2, 0, "Verification Forms");
+      }
+
+      return allSections.filter((s) => staffTabs.includes(s.title));
     }
+
     if (type === "contractor") {
       return allSections.filter((s) =>
         [
           "Personal Information",
           "Documents",
           "Staff Management",
-          "Cover Jobs",
+
           "Log Out",
           // 'Delete Profile',
         ].includes(s.title),
@@ -593,8 +609,8 @@ export default function ProfileScreen({ navigation }: Props) {
               </TouchableOpacity>
             </View>
 
-            {/* Avatar + Info */}
             <View style={styles.profileInfoContainer}>
+              {/* AVATAR */}
               <TouchableOpacity
                 style={styles.avatarWrapper}
                 onPress={pickImage}
@@ -614,6 +630,7 @@ export default function ProfileScreen({ navigation }: Props) {
                 )}
               </TouchableOpacity>
 
+              {/* NAME + EMAIL + STATUS */}
               <View style={styles.nameSection}>
                 <Text style={styles.greeting}>
                   {capitalizeName(
@@ -626,91 +643,103 @@ export default function ProfileScreen({ navigation }: Props) {
                   👋
                 </Text>
 
-                {/* {user?.user_type && (
-                  <View style={styles.typeBadge}>
-                    <Text style={styles.typeBadgeText}>
-                      {getUserTypeLabel(user.user_type)}
-                    </Text>
-                  </View>
-                )} */}
+                {!!user?.email && (
+                  <Text style={styles.emailText}>{user.email}</Text>
+                )}
 
-                <View style={styles.statusRow}>
-                  <View
-                    style={[
-                      styles.statusChip,
-                      {
-                        borderColor: user?.is_active
-                          ? "rgba(52,200,138,0.25)"
-                          : "rgba(248,113,113,0.25)",
-                      },
-                    ]}
-                  >
+                {user?.user_type !== "customer" && (
+                  <View style={styles.statusRow}>
                     <View
                       style={[
-                        styles.statusDot,
+                        styles.statusChip,
                         {
-                          backgroundColor: user?.is_active
-                            ? COLORS.success
-                            : COLORS.danger,
-                        },
-                      ]}
-                    />
-                    <Text
-                      style={[
-                        styles.statusChipText,
-                        {
-                          color: user?.is_active
-                            ? COLORS.success
-                            : COLORS.danger,
+                          borderColor: user?.is_active
+                            ? "rgba(52,200,138,0.25)"
+                            : "rgba(248,113,113,0.25)",
                         },
                       ]}
                     >
-                      {user?.is_active ? "Active" : "Inactive"}
-                    </Text>
-                  </View>
+                      <View
+                        style={[
+                          styles.statusDot,
+                          {
+                            backgroundColor: user?.is_active
+                              ? COLORS.success
+                              : COLORS.danger,
+                          },
+                        ]}
+                      />
+                      <Text
+                        style={[
+                          styles.statusChipText,
+                          {
+                            color: user?.is_active
+                              ? COLORS.success
+                              : COLORS.danger,
+                          },
+                        ]}
+                      >
+                        {user?.is_active ? "Active" : "Inactive"}
+                      </Text>
+                    </View>
 
-                  <View
-                    style={[
-                      styles.statusChip,
-                      { borderColor: "rgba(96,165,250,0.25)" },
-                    ]}
-                  >
-                    <View
-                      style={[styles.statusDot, { backgroundColor: "#60A5FA" }]}
-                    />
-                    <Text style={[styles.statusChipText, { color: "#60A5FA" }]}>
-                      {completionPercentage}% Done
-                    </Text>
+                    {/* <View
+                      style={[
+                        styles.statusChip,
+                        { borderColor: "rgba(96,165,250,0.25)" },
+                      ]}
+                    >
+                      <View
+                        style={[
+                          styles.statusDot,
+                          { backgroundColor: "#60A5FA" },
+                        ]}
+                      />
+                      <Text
+                        style={[styles.statusChipText, { color: "#60A5FA" }]}
+                      >
+                        {completionPercentage}%
+                      </Text>
+                    </View> */}
                   </View>
+                )}
+              </View>
+            </View>
+
+            {/* ✅ INFO TEXT (BOTTOM OF HEADER) */}
+            {user?.user_type === "customer" && (
+              <Text style={styles.infoTextBottom}>
+                Keep your profile information up to date to ensure it stays
+                accurate and complete.
+              </Text>
+            )}
+            {user?.user_type !== "customer" && (
+              <View style={styles.progressSection}>
+                <View style={styles.progressLabelRow}>
+                  <Text style={styles.progressLabel}>Profile Completion</Text>
+                  <Text style={styles.progressValue}>
+                    {completionPercentage}%
+                  </Text>
+                </View>
+
+                <View style={styles.progressBarBg}>
+                  <LinearGradient
+                    colors={[COLORS.primary, "#34D1C5"]}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 0 }}
+                    style={[
+                      styles.progressBarFill,
+                      { width: `${completionPercentage}%` as any },
+                    ]}
+                  />
                 </View>
               </View>
-            </View>
-
-            {/* Progress Bar */}
-            <View style={styles.progressSection}>
-              <View style={styles.progressLabelRow}>
-                <Text style={styles.progressLabel}>Profile Completion</Text>
-                <Text style={styles.progressValue}>
-                  {completionPercentage}%
-                </Text>
-              </View>
-              <View style={styles.progressBarBg}>
-                <LinearGradient
-                  colors={[COLORS.primary, "#34D1C5"]}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                  style={[
-                    styles.progressBarFill,
-                    { width: `${completionPercentage}%` as any },
-                  ]}
-                />
-              </View>
-            </View>
+            )}
           </View>
         </LinearGradient>
 
         {/* ── Incomplete Warning ── */}
-        {!isProfileComplete && (
+        {user?.user_type !== "customer" && !isProfileComplete && (
           <View style={styles.warningCard}>
             <AlertCircle size={16} color={COLORS.warning} />
             <Text style={styles.warningText}>
@@ -857,6 +886,10 @@ const styles = StyleSheet.create({
     borderWidth: 2.5,
     borderColor: COLORS.primary,
   },
+  infoTextBottom: {
+    fontSize: 12,
+    color: "#6B7280",
+  },
 
   initialsAvatar: {
     width: 86,
@@ -873,7 +906,12 @@ const styles = StyleSheet.create({
     fontSize: 28,
     fontWeight: "700",
   },
-
+  infoText: {
+    fontSize: 13,
+    color: "#6B7280",
+    marginTop: 8,
+    lineHeight: 18,
+  },
   editBadge: {
     marginTop: 6,
     backgroundColor: "rgba(0,169,157,0.15)",
@@ -921,6 +959,12 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     gap: 8,
     flexWrap: "wrap",
+  },
+  emailText: {
+    fontSize: 13,
+    color: "#94A3B8",
+    marginTop: 2,
+    marginBottom: 6,
   },
   statusChip: {
     flexDirection: "row",

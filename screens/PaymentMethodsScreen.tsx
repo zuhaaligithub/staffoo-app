@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -8,33 +8,27 @@ import {
   FlatList,
   Alert,
   ActivityIndicator,
-} from 'react-native';
-import { ChevronLeft, Plus, CreditCard } from 'lucide-react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import axios from 'axios';
+  Dimensions,
+} from "react-native";
+import { ChevronLeft, Plus } from "lucide-react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import axios from "axios";
 
-const BASE_URL = 'https://apis.staffoo.com.au/api';
+const BASE_URL = "https://apis.staffoo.com.au/api";
+const { height: SCREEN_HEIGHT } = Dimensions.get("window");
+
 const COLORS = {
-  primary: '#89E7D0',
-  primaryDark: '#4FCBB3',
-
-  background: '#001F3F',
-  surface: '#12243A',
-
-  card: 'rgba(255,255,255,0.06)',
-  cardBorder: 'rgba(255,255,255,0.08)',
-
-  text: '#FFFFFF',
-  textSecondary: 'rgba(255,255,255,0.7)',
-  textMuted: 'rgba(255,255,255,0.5)',
-
-  success: '#22C55E',
-  danger: '#EF4444',
-  border: 'rgba(255,255,255,0.08)',
+  primary: "#89E7D0",
+  background: "#111111",
+  surface: "#12243A",
+  text: "#FFFFFF",
+  textSecondary: "rgba(255,255,255,0.7)",
+  border: "rgba(255,255,255,0.08)",
 };
+
 type Card = {
   card_holder_name: string;
-  card_number: string; // clean digits from backend
+  card_number: string;
   expiry_month: string;
   expiry_year: string;
 };
@@ -47,30 +41,17 @@ export default function PaymentMethodsScreen({ navigation }: Props) {
   const [cards, setCards] = useState<Card[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const formatCardNumber = (digits: string) => {
-    return (
-      digits
-        .replace(/\D/g, '')
-        .match(/.{1,4}/g)
-        ?.join(' ') || digits
-    );
-  };
-
   const fetchCards = async () => {
     try {
       setLoading(true);
+      const token = await AsyncStorage.getItem("@auth_token");
+      if (!token) throw new Error("No auth token");
 
-      const token = await AsyncStorage.getItem('@auth_token');
-      if (!token) throw new Error('No auth token');
-
-      // ✅ Get logged-in user
-      const userStr = await AsyncStorage.getItem('user');
-      if (!userStr) throw new Error('User session not found');
+      const userStr = await AsyncStorage.getItem("user");
+      if (!userStr) throw new Error("User session not found");
 
       const user = JSON.parse(userStr);
-      const USER_ID = user.id;
-
-      const res = await axios.get(`${BASE_URL}/user-edit/${USER_ID}`, {
+      const res = await axios.get(`${BASE_URL}/user-edit/${user.id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -81,21 +62,15 @@ export default function PaymentMethodsScreen({ navigation }: Props) {
 
       const raw = res.data.data.customer.bank_details;
       let parsed: any[] = [];
-
       try {
         parsed = JSON.parse(raw);
       } catch (e) {
-        console.warn('Invalid bank_details JSON');
+        console.warn("Invalid bank_details JSON");
       }
-
-      if (Array.isArray(parsed)) {
-        setCards(parsed);
-      } else {
-        setCards([]);
-      }
+      setCards(Array.isArray(parsed) ? parsed : []);
     } catch (err) {
-      console.error('Load cards error:', err);
-      Alert.alert('Error', 'Could not load payment methods');
+      console.error("Load cards error:", err);
+      Alert.alert("Error", "Could not load payment methods");
     } finally {
       setLoading(false);
     }
@@ -106,30 +81,40 @@ export default function PaymentMethodsScreen({ navigation }: Props) {
   }, []);
 
   const handleAddNew = () => {
-    navigation.navigate('PaymentHistory', {
-      onCardAdded: fetchCards, // refresh list
+    navigation.navigate("PaymentHistory", {
+      onCardAdded: fetchCards,
     });
   };
 
   const renderCard = ({ item }: { item: Card }) => {
-    const last4 = item.card_number.slice(-4);
-    const formatted = formatCardNumber(item.card_number);
-    const shortFormatted = last4
-      ? `•••• •••• •••• ${last4}`
-      : '•••• •••• •••• ••••';
-
+    const last4 = item.card_number.replace(/\D/g, "").slice(-4);
     return (
-      <View style={styles.cardItem}>
-       <CreditCard size={28} color={COLORS.primary} />
-        <View style={styles.cardInfo}>
-          <Text style={styles.cardName}>
-            {item.card_holder_name.toUpperCase()}
-          </Text>
-          <Text style={styles.cardNumber}>{shortFormatted}</Text>
-          <Text style={styles.expiry}>
-            Expires {item.expiry_month.padStart(2, '0')}/
-            {item.expiry_year.padStart(2, '0')}
-          </Text>
+      <View style={styles.creditCard}>
+        <View style={styles.cardTop}>
+          <View style={styles.chipContainer}>
+            <View style={styles.chip}>
+              <View style={styles.chipInner} />
+              <View style={styles.chipShine} />
+            </View>
+          </View>
+          <Text style={styles.cardBrand}>VISA</Text>
+        </View>
+
+        <Text style={styles.cardNumberLarge}>•••• •••• •••• {last4}</Text>
+
+        <View style={styles.cardBottom}>
+          <View>
+            <Text style={styles.cardLabel}>CARD HOLDER</Text>
+            <Text style={styles.cardValue}>
+              {item.card_holder_name.toUpperCase()}
+            </Text>
+          </View>
+          <View>
+            <Text style={styles.cardLabel}>EXPIRES</Text>
+            <Text style={styles.cardValue}>
+              {item.expiry_month.padStart(2, "0")}/{item.expiry_year.slice(-2)}
+            </Text>
+          </View>
         </View>
       </View>
     );
@@ -137,31 +122,43 @@ export default function PaymentMethodsScreen({ navigation }: Props) {
 
   return (
     <SafeAreaView style={styles.container}>
+      {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <ChevronLeft size={28} color="#fff" />
         </TouchableOpacity>
-        <Text style={styles.title}>Payment Methods</Text>
+        <Text style={styles.title}>Payment Details</Text>
         <View style={{ width: 28 }} />
       </View>
 
-      <View style={styles.content}>
-        {cards.length === 0 ? (
+      <Text style={styles.subtitle}>Your Saved Cards</Text>
+
+      {/* Single Scrollable Container with Fixed Height */}
+      <View style={styles.cardsWrapper}>
+        {loading ? (
+          <ActivityIndicator
+            size="large"
+            color={COLORS.primary}
+            style={{ flex: 1 }}
+          />
+        ) : cards.length === 0 ? (
           <Text style={styles.emptyText}>No payment methods added yet</Text>
         ) : (
           <FlatList
             data={cards}
             renderItem={renderCard}
             keyExtractor={(_, index) => `card-${index}`}
-            contentContainerStyle={{ paddingBottom: 100 }}
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={styles.listContent}
           />
         )}
-
-        <TouchableOpacity style={styles.addButton} onPress={handleAddNew}>
-        <Plus size={20} color={COLORS.text} />
-          <Text style={styles.addButtonText}>Add Payment Method</Text>
-        </TouchableOpacity>
       </View>
+
+      {/* Add New Card Button */}
+      <TouchableOpacity style={styles.addButton} onPress={handleAddNew}>
+        <Plus size={20} color="#fff" style={{ marginRight: 8 }} />
+        <Text style={styles.addButtonText}>Add New Card</Text>
+      </TouchableOpacity>
     </SafeAreaView>
   );
 }
@@ -169,98 +166,145 @@ export default function PaymentMethodsScreen({ navigation }: Props) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    // backgroundColor: COLORS.background,
-     backgroundColor: '#111111',
-     paddingTop: 20,
+    backgroundColor: "#111111",
+    paddingTop:20
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingHorizontal: 16,
     paddingVertical: 16,
-
     marginHorizontal: 16,
-    marginTop: 10,
-
-    // backgroundColor: COLORS.surface,
-    borderRadius: 16,
-
-    borderWidth: 1,
-    borderColor: COLORS.border,
+  
   },
   title: {
     fontSize: 20,
-    fontWeight: '700',
-    color: COLORS.text,
+    fontWeight: "700",
+    color: "#FFFFFF",
   },
-  content: {
-    flex: 1,
-    padding: 16,
-  },
-  emptyText: {
-    textAlign: 'center',
-    marginTop: 80,
-    fontSize: 16,
-    color: COLORS.textSecondary,
-  },
-  cardItem: {
-    flexDirection: 'row',
-
-    backgroundColor: COLORS.card,
-    borderRadius: 18,
-
-    padding: 16,
-    marginBottom: 12,
-
-    borderWidth: 1,
-    borderColor: COLORS.cardBorder,
-
-    alignItems: 'center',
-
-    overflow: 'hidden',
-  },
-  cardInfo: { marginLeft: 16, flex: 1 },
-  cardName: {
-    fontSize: 17,
-    fontWeight: '700',
-    color: COLORS.text,
-  },
-  cardNumber: {
+  subtitle: {
     fontSize: 15,
-    color: COLORS.textSecondary,
-    marginTop: 4,
+    color: "rgba(255,255,255,0.7)",
+    marginTop: 14,
+    marginBottom: 8,
+    fontWeight: "700",
+    paddingHorizontal: 20,
+  },
+
+  /* ==================== MAIN CARDS CONTAINER ==================== */
+  cardsWrapper: {
+    flex: 1,
+    marginHorizontal: 16,
+    backgroundColor: "rgba(255,255,255,0.03)",
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.08)",
+    overflow: "hidden",
+    maxHeight: SCREEN_HEIGHT * 0.70, // Fixed reasonable height
+  },
+
+  listContent: {
+    padding: 10,
+    paddingBottom: 20,
+  },
+
+  emptyText: {
+    textAlign: "center",
+    marginTop: 50,
+    fontSize: 16,
+    color: "rgba(255,255,255,0.7)",
+  },
+
+  creditCard: {
+    backgroundColor: "#173F73",
+    borderRadius: 10,
+    padding: 14,
+    marginBottom: 9,
+    minHeight: 100,
+    justifyContent: "space-between",
+  },
+  cardTop: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  chipContainer: { width: 48, height: 35 },
+  chip: {
+    width: "100%",
+    height: "100%",
+    backgroundColor: "#D4AF37",
+    borderRadius: 10,
+    overflow: "hidden",
+    borderWidth: 1,
+    borderColor: "#f6d365",
+  },
+  chipInner: {
+    ...StyleSheet.absoluteFillObject,
+    margin: 5,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.3)",
+  },
+  chipShine: {
+    position: "absolute",
+    top: 6,
+    left: 8,
+    width: 30,
+    height: 12,
+    backgroundColor: "rgba(255,255,255,0.35)",
+    borderRadius: 20,
+  },
+  cardBrand: {
+    color: "#fff",
+    fontSize: 22,
+    fontWeight: "700",
+  },
+  cardNumberLarge: {
+    color: "#fff",
+    fontSize: 20,
+    fontWeight: "600",
+    letterSpacing: 2,
+    marginVertical: 10,
+  },
+  cardBottom: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+  },
+  cardLabel: {
+    color: "rgba(255,255,255,0.7)",
+    fontSize: 10,
     letterSpacing: 1,
   },
-  expiry: {
-    fontSize: 13,
-    color: COLORS.textMuted,
+  cardValue: {
+    color: "#fff",
+    fontSize: 15,
+    fontWeight: "600",
     marginTop: 4,
   },
+
+  /* Add Button */
   addButton: {
-    position: 'absolute',
-    bottom: 32,
-    left: 24,
-    right: 24,
-
-    backgroundColor: '#0A7C6E',
-
+    position: "absolute",
+    bottom: 30,
+    left: 20,
+    right: 20,
+    backgroundColor: "#0A7C6E",
     borderRadius: 16,
     paddingVertical: 16,
-
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-
-    shadowColor: COLORS.primaryDark,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    elevation: 8,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
-    shadowRadius: 10,
-    elevation: 6,
+    shadowRadius: 6,
+    zIndex: 10,
   },
   addButtonText: {
-    color: COLORS.text,
+    color: "#fff",
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: "700",
   },
 });

@@ -206,7 +206,7 @@ export default function CreateFootPatrol({
       includeBase64: false,
     };
 
-    Alert.alert('Add Photo', 'Choose source', [
+    Alert.alert('Add Photo', '', [
       { text: 'Camera', onPress: () => launchCamera(options, handleImage) },
       // { text: 'Gallery', onPress: () => launchImageLibrary(options, handleImage) },
       { text: 'Cancel', style: 'cancel' },

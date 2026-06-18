@@ -225,7 +225,7 @@ export default function MessageScreen({ navigation }: Props) {
       <StatusBar barStyle="dark-content" backgroundColor="#fff" />
 
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation?.goBack()}>
+        <TouchableOpacity   onPress={() => navigation.navigate("Profile")}>
           <ChevronLeft size={22} color="#fff" />
         </TouchableOpacity>
         <Text style={styles.screenTitle}>Messages</Text>

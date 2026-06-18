@@ -127,7 +127,7 @@ export default function ProfileSetupScreen({ navigation }: Props) {
   const genderOptions = [
     { label: "Male", value: "male" },
     { label: "Female", value: "female" },
-    { label: "Prefer Not To Say", value: "other" },
+    { label: "Prefer not to say", value: "other" },
   ];
 
   const residentialOptions = [
@@ -285,36 +285,47 @@ export default function ProfileSetupScreen({ navigation }: Props) {
         setGmail(profile?.email ?? "");
         setOriginalGmail(profile?.email ?? "");
 
-        // 🔥 Get address from root OR nested objects (staff, customer, contractor)
+        // 🔥 Get address from root OR nested objects
         const currentAddress =
           profile?.address ||
           profile?.staff?.address ||
           profile?.customer?.address ||
           profile?.contractor?.address ||
           "";
+
         const currentCity =
           profile?.city ||
           profile?.staff?.city ||
           profile?.customer?.city ||
           profile?.contractor?.city ||
           "";
+
         const currentState =
           profile?.state ||
           profile?.staff?.state ||
           profile?.customer?.state ||
           profile?.contractor?.state ||
           "";
-        const currentCountry =
-          profile?.country ||
-          profile?.staff?.country ||
-          profile?.customer?.country ||
-          profile?.contractor?.country ||
-          "";
+
+        // Country Handling - Show Full Name in UI
+        let currentCountry =
+          profile?.user_type === "staff"
+            ? profile?.staff?.origin_country || profile?.country || ""
+            : profile?.country ||
+              profile?.customer?.country ||
+              profile?.contractor?.country ||
+              "";
+
+        // Convert short code (PAK, AUS, etc.) to full name for display
+        let displayCountry = currentCountry?.trim();
+        if (displayCountry && countryCodeToName[displayCountry]) {
+          displayCountry = countryCodeToName[displayCountry];
+        }
 
         setAddress(currentAddress);
         setCity(currentCity);
         setStateValue(currentState);
-        setCountry(currentCountry);
+        setCountry(displayCountry); // ← Only set full name once
 
         const currentCoordinates =
           profile?.coordinates ||
@@ -528,6 +539,7 @@ export default function ProfileSetupScreen({ navigation }: Props) {
     }
     return true;
   };
+  // Country mappings
   const countryMap: Record<string, string> = {
     Pakistan: "PAK",
     Australia: "AUS",
@@ -537,8 +549,13 @@ export default function ProfileSetupScreen({ navigation }: Props) {
     "United Kingdom": "GBR",
   };
 
-  // Map common 2-letter ISO codes to full country names (used when Google returns short_name)
   const countryCodeToName: Record<string, string> = {
+    PAK: "Pakistan",
+    AUS: "Australia",
+    IND: "India",
+    CAN: "Canada",
+    USA: "United States",
+    GBR: "United Kingdom",
     PK: "Pakistan",
     AU: "Australia",
     IN: "India",
@@ -592,7 +609,10 @@ export default function ProfileSetupScreen({ navigation }: Props) {
         city: city.trim(),
         state: stateValue.trim(),
 
-        origin_country: countryMap[country.trim()] || "",
+        origin_country:
+          countryMap[country.trim()] ||
+          countryCodeToName[country.trim()] || // safety
+          country.trim(),
         coordinates: coordinates ? `${coordinates.lat},${coordinates.lng}` : "",
       };
 
@@ -1049,6 +1069,7 @@ export default function ProfileSetupScreen({ navigation }: Props) {
           </View>
         </Modal>
 
+        {/* ==================== ADDRESS SECTION ==================== */}
         <View
           style={styles.field}
           onLayout={(event) => {
@@ -1059,7 +1080,6 @@ export default function ProfileSetupScreen({ navigation }: Props) {
           <Text style={styles.label}>
             Address <Text style={styles.required}>*</Text>
           </Text>
-
           <LinearGradient
             colors={["#171d30", "#171d30"]}
             start={{ x: 0, y: 0 }}
@@ -1067,7 +1087,6 @@ export default function ProfileSetupScreen({ navigation }: Props) {
             style={styles.inputContainer}
           >
             <MapPin size={20} color="#fff" style={styles.inputIcon} />
-
             <TextInput
               ref={addressInputRef}
               style={styles.input}
@@ -1080,7 +1099,6 @@ export default function ProfileSetupScreen({ navigation }: Props) {
               }}
               autoCorrect={false}
             />
-
             {address.length > 0 && (
               <TouchableOpacity
                 onPress={() => {
@@ -1097,47 +1115,42 @@ export default function ProfileSetupScreen({ navigation }: Props) {
           </LinearGradient>
         </View>
 
-        <InputField
-          icon={Building2}
-          label="City"
-          value={city}
-          onChange={() => {}}
-          editable={false}
-          placeholder="City will appear here"
-        />
+     
+        {(userType === "staff" ||
+          userType === "customer" ||
+          userType === "contractor") && (
+          <>
+            {/* Only show Country for Staff */}
+            {userType === "staff" && (
+              <InputField
+                icon={Globe}
+                label="Country of Origin"
+                value={country}
+                onChange={() => {}}
+                editable={false}
+                placeholder="Country will appear here"
+              />
+            )}
 
-        <InputField
-          icon={Globe}
-          label="State"
-          value={stateValue}
-          onChange={() => {}}
-          editable={false}
-          placeholder="State will appear here"
-        />
-
-        <InputField
-          icon={Globe}
-          label="Country"
-          value={country}
-          onChange={() => {}}
-          editable={false}
-          placeholder="Country will appear here"
-        />
-
-        <InputField
-          icon={Navigation}
-          label="Coordinates"
-          value={
-            coordinates &&
-            typeof coordinates.lat === "number" &&
-            typeof coordinates.lng === "number"
-              ? `${coordinates.lat.toFixed(6)}, ${coordinates.lng.toFixed(6)}`
-              : ""
-          }
-          onChange={() => {}}
-          editable={false}
-          placeholder="Coordinates will appear here"
-        />
+            {/* Coordinates - kept for all types (useful for location) */}
+            <InputField
+              icon={Navigation}
+              label="Coordinates"
+              value={
+                coordinates &&
+                typeof coordinates.lat === "number" &&
+                typeof coordinates.lng === "number"
+                  ? `${coordinates.lat.toFixed(6)}, ${coordinates.lng.toFixed(
+                      6,
+                    )}`
+                  : ""
+              }
+              onChange={() => {}}
+              editable={false}
+              placeholder="Coordinates will appear here"
+            />
+          </>
+        )}
 
         <TouchableOpacity
           style={[styles.continueButton, loading && styles.buttonDisabled]}

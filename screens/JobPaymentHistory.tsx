@@ -178,7 +178,7 @@ export default function JobPaymentHistory({ navigation, route }: Props) {
         <View style={styles.siteCardInner}>
           <View style={styles.rowBetween}>
             <Text style={styles.amount}>
-              ${parseFloat(item.amount || '0').toFixed(2)} {item.currency}
+              ${parseFloat(item.total_amount || '0').toFixed(2)} {item.currency}
             </Text>
 
             <Text

@@ -75,7 +75,7 @@ export default function PaymentHistoryScreen({ navigation, route }: Props) {
     name.trim().length >= 2 &&
     cardNumber.replace(/\D/g, "").length >= 15 &&
     expMonth.length === 2 &&
-    expYear.length === 2 &&
+    expYear.length === 4 &&
     cvv.length >= 3;
 
   const handleSave = async () => {
@@ -226,8 +226,8 @@ export default function PaymentHistoryScreen({ navigation, route }: Props) {
               <View style={styles.expirySection}>
                 <Text style={styles.labelSmall}>EXPIRES</Text>
                 <Text style={styles.valueText}>
-                  {expMonth.padStart(2, "0") || "MM"}/
-                  {expYear.padStart(2, "0") || "YY"}
+                {expMonth.padStart(2, "0") || "MM"}/
+{expYear ? expYear.slice(-2) : "YY"}
                 </Text>
               </View>
             </View>
@@ -238,7 +238,7 @@ export default function PaymentHistoryScreen({ navigation, route }: Props) {
           <View style={styles.field}>
             <Text style={styles.label}>
               {" "}
-              Name <Text style={styles.required}>*</Text>
+              Name On Card <Text style={styles.required}>*</Text>
             </Text>
             <TextInput
               style={styles.input}
@@ -260,7 +260,7 @@ export default function PaymentHistoryScreen({ navigation, route }: Props) {
               onChangeText={handleCardChange}
               keyboardType="numeric"
               maxLength={19}
-              placeholder="4242 4242 4242 4242"
+              placeholder="0000 0000 0000 0000"
               placeholderTextColor="#9ca3af"
             />
           </View>
@@ -291,11 +291,11 @@ export default function PaymentHistoryScreen({ navigation, route }: Props) {
                 style={styles.input}
                 value={expYear}
                 onChangeText={(t) =>
-                  setExpYear(t.replace(/\D/g, "").slice(0, 2))
+                  setExpYear(t.replace(/\D/g, "").slice(0, 4))
                 }
                 keyboardType="numeric"
-                maxLength={2}
-                placeholder="YY"
+                maxLength={4}
+                placeholder="YYYY"
                 placeholderTextColor="#9ca3af"
               />
             </View>

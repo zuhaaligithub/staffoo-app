@@ -36,6 +36,7 @@ import {
   PlusCircle,
   ExternalLink,
   Calendar as CalendarIcon,
+  Mail,
 } from "lucide-react-native";
 import LinearGradient from "react-native-linear-gradient";
 import Toast from "react-native-toast-message";
@@ -79,6 +80,241 @@ const ALLOWED_FILE_TYPES = [
   "application/msword",
   "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
 ];
+// ─── Full Country List for Dropdown ─────────────────────────────────────
+const COUNTRIES = [
+  { name: "Afghanistan", code: "AF" },
+  { name: "Albania", code: "AL" },
+  { name: "Algeria", code: "DZ" },
+  { name: "American Samoa", code: "AS" },
+  { name: "Andorra", code: "AD" },
+  { name: "Angola", code: "AO" },
+  { name: "Anguilla", code: "AI" },
+  { name: "Antarctica", code: "AQ" },
+  { name: "Antigua and Barbuda", code: "AG" },
+  { name: "Argentina", code: "AR" },
+  { name: "Armenia", code: "AM" },
+  { name: "Aruba", code: "AW" },
+  { name: "Australia", code: "AU" },
+  { name: "Austria", code: "AT" },
+  { name: "Azerbaijan", code: "AZ" },
+  { name: "Bahamas", code: "BS" },
+  { name: "Bahrain", code: "BH" },
+  { name: "Bangladesh", code: "BD" },
+  { name: "Barbados", code: "BB" },
+  { name: "Belarus", code: "BY" },
+  { name: "Belgium", code: "BE" },
+  { name: "Belize", code: "BZ" },
+  { name: "Benin", code: "BJ" },
+  { name: "Bermuda", code: "BM" },
+  { name: "Bhutan", code: "BT" },
+  { name: "Bolivia", code: "BO" },
+  { name: "Bosnia and Herzegovina", code: "BA" },
+  { name: "Botswana", code: "BW" },
+  { name: "Brazil", code: "BR" },
+  { name: "British Indian Ocean Territory", code: "IO" },
+  { name: "Brunei Darussalam", code: "BN" },
+  { name: "Bulgaria", code: "BG" },
+  { name: "Burkina Faso", code: "BF" },
+  { name: "Burundi", code: "BI" },
+  { name: "Cambodia", code: "KH" },
+  { name: "Cameroon", code: "CM" },
+  { name: "Canada", code: "CA" },
+  { name: "Cape Verde", code: "CV" },
+  { name: "Cayman Islands", code: "KY" },
+  { name: "Central African Republic", code: "CF" },
+  { name: "Chad", code: "TD" },
+  { name: "Chile", code: "CL" },
+  { name: "China", code: "CN" },
+  { name: "Colombia", code: "CO" },
+  { name: "Comoros", code: "KM" },
+  { name: "Congo", code: "CG" },
+  { name: "Congo, Democratic Republic", code: "CD" },
+  { name: "Cook Islands", code: "CK" },
+  { name: "Costa Rica", code: "CR" },
+  { name: "Côte D'Ivoire", code: "CI" },
+  { name: "Croatia", code: "HR" },
+  { name: "Cuba", code: "CU" },
+  { name: "Cyprus", code: "CY" },
+  { name: "Czech Republic", code: "CZ" },
+  { name: "Denmark", code: "DK" },
+  { name: "Djibouti", code: "DJ" },
+  { name: "Dominica", code: "DM" },
+  { name: "Dominican Republic", code: "DO" },
+  { name: "Ecuador", code: "EC" },
+  { name: "Egypt", code: "EG" },
+  { name: "El Salvador", code: "SV" },
+  { name: "Equatorial Guinea", code: "GQ" },
+  { name: "Eritrea", code: "ER" },
+  { name: "Estonia", code: "EE" },
+  { name: "Ethiopia", code: "ET" },
+  { name: "Falkland Islands", code: "FK" },
+  { name: "Faroe Islands", code: "FO" },
+  { name: "Fiji", code: "FJ" },
+  { name: "Finland", code: "FI" },
+  { name: "France", code: "FR" },
+  { name: "French Guiana", code: "GF" },
+  { name: "French Polynesia", code: "PF" },
+  { name: "Gabon", code: "GA" },
+  { name: "Gambia", code: "GM" },
+  { name: "Georgia", code: "GE" },
+  { name: "Germany", code: "DE" },
+  { name: "Ghana", code: "GH" },
+  { name: "Gibraltar", code: "GI" },
+  { name: "Greece", code: "GR" },
+  { name: "Greenland", code: "GL" },
+  { name: "Grenada", code: "GD" },
+  { name: "Guadeloupe", code: "GP" },
+  { name: "Guam", code: "GU" },
+  { name: "Guatemala", code: "GT" },
+  { name: "Guinea", code: "GN" },
+  { name: "Guinea-Bissau", code: "GW" },
+  { name: "Guyana", code: "GY" },
+  { name: "Haiti", code: "HT" },
+  { name: "Holy See (Vatican City State)", code: "VA" },
+  { name: "Honduras", code: "HN" },
+  { name: "Hong Kong", code: "HK" },
+  { name: "Hungary", code: "HU" },
+  { name: "Iceland", code: "IS" },
+  { name: "India", code: "IN" },
+  { name: "Indonesia", code: "ID" },
+  { name: "Iran", code: "IR" },
+  { name: "Iraq", code: "IQ" },
+  { name: "Ireland", code: "IE" },
+  { name: "Israel", code: "IL" },
+  { name: "Italy", code: "IT" },
+  { name: "Jamaica", code: "JM" },
+  { name: "Japan", code: "JP" },
+  { name: "Jordan", code: "JO" },
+  { name: "Kazakhstan", code: "KZ" },
+  { name: "Kenya", code: "KE" },
+  { name: "Kiribati", code: "KI" },
+  { name: "Korea, Democratic People's Republic", code: "KP" },
+  { name: "Korea, Republic of", code: "KR" },
+  { name: "Kuwait", code: "KW" },
+  { name: "Kyrgyzstan", code: "KG" },
+  { name: "Lao People's Democratic Republic", code: "LA" },
+  { name: "Latvia", code: "LV" },
+  { name: "Lebanon", code: "LB" },
+  { name: "Lesotho", code: "LS" },
+  { name: "Liberia", code: "LR" },
+  { name: "Libyan Arab Jamahiriya", code: "LY" },
+  { name: "Liechtenstein", code: "LI" },
+  { name: "Lithuania", code: "LT" },
+  { name: "Luxembourg", code: "LU" },
+  { name: "Macao", code: "MO" },
+  { name: "Macedonia", code: "MK" },
+  { name: "Madagascar", code: "MG" },
+  { name: "Malawi", code: "MW" },
+  { name: "Malaysia", code: "MY" },
+  { name: "Maldives", code: "MV" },
+  { name: "Mali", code: "ML" },
+  { name: "Malta", code: "MT" },
+  { name: "Marshall Islands", code: "MH" },
+  { name: "Martinique", code: "MQ" },
+  { name: "Mauritania", code: "MR" },
+  { name: "Mauritius", code: "MU" },
+  { name: "Mayotte", code: "YT" },
+  { name: "Mexico", code: "MX" },
+  { name: "Micronesia", code: "FM" },
+  { name: "Moldova", code: "MD" },
+  { name: "Monaco", code: "MC" },
+  { name: "Mongolia", code: "MN" },
+  { name: "Montenegro", code: "ME" },
+  { name: "Montserrat", code: "MS" },
+  { name: "Morocco", code: "MA" },
+  { name: "Mozambique", code: "MZ" },
+  { name: "Myanmar", code: "MM" },
+  { name: "Namibia", code: "NA" },
+  { name: "Nauru", code: "NR" },
+  { name: "Nepal", code: "NP" },
+  { name: "Netherlands", code: "NL" },
+  { name: "Netherlands Antilles", code: "AN" },
+  { name: "New Caledonia", code: "NC" },
+  { name: "New Zealand", code: "NZ" },
+  { name: "Nicaragua", code: "NI" },
+  { name: "Niger", code: "NE" },
+  { name: "Nigeria", code: "NG" },
+  { name: "Niue", code: "NU" },
+  { name: "Norfolk Island", code: "NF" },
+  { name: "Northern Mariana Islands", code: "MP" },
+  { name: "Norway", code: "NO" },
+  { name: "Oman", code: "OM" },
+  { name: "Pakistan", code: "PK" },
+  { name: "Palau", code: "PW" },
+  { name: "Palestinian Territory", code: "PS" },
+  { name: "Panama", code: "PA" },
+  { name: "Papua New Guinea", code: "PG" },
+  { name: "Paraguay", code: "PY" },
+  { name: "Peru", code: "PE" },
+  { name: "Philippines", code: "PH" },
+  { name: "Pitcairn", code: "PN" },
+  { name: "Poland", code: "PL" },
+  { name: "Portugal", code: "PT" },
+  { name: "Puerto Rico", code: "PR" },
+  { name: "Qatar", code: "QA" },
+  { name: "Réunion", code: "RE" },
+  { name: "Romania", code: "RO" },
+  { name: "Russian Federation", code: "RU" },
+  { name: "Rwanda", code: "RW" },
+  { name: "Saint Helena", code: "SH" },
+  { name: "Saint Kitts and Nevis", code: "KN" },
+  { name: "Saint Lucia", code: "LC" },
+  { name: "Saint Pierre and Miquelon", code: "PM" },
+  { name: "Saint Vincent and the Grenadines", code: "VC" },
+  { name: "Samoa", code: "WS" },
+  { name: "San Marino", code: "SM" },
+  { name: "Sao Tome and Principe", code: "ST" },
+  { name: "Saudi Arabia", code: "SA" },
+  { name: "Senegal", code: "SN" },
+  { name: "Serbia", code: "RS" },
+  { name: "Seychelles", code: "SC" },
+  { name: "Sierra Leone", code: "SL" },
+  { name: "Singapore", code: "SG" },
+  { name: "Slovakia", code: "SK" },
+  { name: "Slovenia", code: "SI" },
+  { name: "Solomon Islands", code: "SB" },
+  { name: "Somalia", code: "SO" },
+  { name: "South Africa", code: "ZA" },
+  { name: "South Georgia", code: "GS" },
+  { name: "Spain", code: "ES" },
+  { name: "Sri Lanka", code: "LK" },
+  { name: "Sudan", code: "SD" },
+  { name: "Suriname", code: "SR" },
+  { name: "Swaziland", code: "SZ" },
+  { name: "Sweden", code: "SE" },
+  { name: "Switzerland", code: "CH" },
+  { name: "Syrian Arab Republic", code: "SY" },
+  { name: "Taiwan", code: "TW" },
+  { name: "Tajikistan", code: "TJ" },
+  { name: "Tanzania", code: "TZ" },
+  { name: "Thailand", code: "TH" },
+  { name: "Timor-Leste", code: "TL" },
+  { name: "Togo", code: "TG" },
+  { name: "Tokelau", code: "TK" },
+  { name: "Tonga", code: "TO" },
+  { name: "Trinidad and Tobago", code: "TT" },
+  { name: "Tunisia", code: "TN" },
+  { name: "Turkey", code: "TR" },
+  { name: "Turkmenistan", code: "TM" },
+  { name: "Turks and Caicos Islands", code: "TC" },
+  { name: "Tuvalu", code: "TV" },
+  { name: "Uganda", code: "UG" },
+  { name: "Ukraine", code: "UA" },
+  { name: "United Arab Emirates", code: "AE" },
+  { name: "United Kingdom", code: "GB" },
+  { name: "United States", code: "US" },
+  { name: "Uruguay", code: "UY" },
+  { name: "Uzbekistan", code: "UZ" },
+  { name: "Vanuatu", code: "VU" },
+  { name: "Venezuela", code: "VE" },
+  { name: "Viet Nam", code: "VN" },
+  { name: "Virgin Islands, British", code: "VG" },
+  { name: "Virgin Islands, U.S.", code: "VI" },
+  { name: "Wallis and Futuna", code: "WF" },
+  { name: "Yemen", code: "YE" },
+  { name: "Zambia", code: "ZM" },
+  { name: "Zimbabwe", code: "ZW" },
+];
 
 // STRICT: ONLY these exact document names will show the verify button
 const VERIFIABLE_DOCUMENT_NAMES = [
@@ -87,7 +323,52 @@ const VERIFIABLE_DOCUMENT_NAMES = [
   "security licence",
 ];
 
-// ─── Display name map — same as DocumentsScreen ───────────────────────────────
+// ─── ALLOWED DOCUMENT TYPES — only these appear in the documents tab ──────────
+const ALLOWED_DOC_NAMES: string[] = [
+  "passport",
+  "visa",
+  "driver license front",
+  "driver license back",
+  "driver licence front",
+  "driver licence back",
+  "security license",
+  "security licence",
+  "working with children",
+  "working with children check",
+  "wwcc",
+  "employment application form",
+  "application form",
+  "tfn declaration",
+  "superannuation form",
+  "first aid",
+  "first aid certificate",
+  "cpr",
+  "cpr certificate",
+  "vaccination",
+  "vaccination certificate",
+  "citizen ship",
+  "medicare",
+  "birth certificate",
+  "white card",
+  "police check",
+];
+
+// ─── Residential status → snake_case map ─────────────────────────────────────
+const RESIDENTIAL_STATUS_MAP: Record<string, string> = {
+  "Student Visa": "student_visa",
+  "Bridging Visa": "bridging_visa",
+  Citizen: "citizen",
+  "Permanent Residence": "permanent_residence",
+  "Visa Subclass 485": "visa_subclass_485",
+  Other: "other",
+};
+
+// Reverse map: snake_case → display label
+const RESIDENTIAL_STATUS_REVERSE: Record<string, string> = Object.fromEntries(
+  Object.entries(RESIDENTIAL_STATUS_MAP).map(([k, v]) => [v, k]),
+);
+
+// ─── Display name map ─────────────────────────────────────────────────────────
 const DOCUMENT_DISPLAY_NAME: Record<string, string> = {
   passport: "Passport",
   visa: "Visa",
@@ -126,6 +407,19 @@ const getDisplayName = (docName?: string): string => {
   return DOCUMENT_DISPLAY_NAME[key] || docName;
 };
 
+// ─── Helper: check if a document name is in the allowed list ─────────────────
+const isAllowedDocument = (docName?: string): boolean => {
+  if (!docName) return false;
+  const key = docName
+    .toLowerCase()
+    .replace(/[\s_]+/g, " ")
+    .trim();
+  return ALLOWED_DOC_NAMES.some((allowed) => {
+    const a = allowed.replace(/[\s_]+/g, " ").trim();
+    return key === a || key.includes(a) || a.includes(key);
+  });
+};
+
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 interface StaffMember {
@@ -159,7 +453,14 @@ interface AddStaffForm {
   gender: string;
   residential_status: string;
   address: string;
+  date_of_birth?: string; // DD/MM/YYYY for payload
+  origin_country?: string;
+  city?: string;
+  state?: string;
+  country?: string;
+  coordinates?: string;
 }
+
 interface EditStaffForm {
   name: string;
   email: string;
@@ -168,6 +469,13 @@ interface EditStaffForm {
   gender: string;
   residential_status: string;
   address: string;
+  password?: string;
+  date_of_birth?: string; // DD/MM/YYYY for payload
+  origin_country?: string;
+  city?: string;
+  state?: string;
+  country?: string;
+  coordinates?: string;
 }
 
 const EMPTY_ADD_FORM: AddStaffForm = {
@@ -179,7 +487,14 @@ const EMPTY_ADD_FORM: AddStaffForm = {
   gender: "",
   residential_status: "",
   address: "",
+  date_of_birth: undefined,
+  origin_country: undefined,
+  city: undefined,
+  state: undefined,
+  country: undefined,
+  coordinates: undefined,
 };
+
 const EMPTY_EDIT_FORM: EditStaffForm = {
   name: "",
   email: "",
@@ -188,6 +503,13 @@ const EMPTY_EDIT_FORM: EditStaffForm = {
   gender: "",
   residential_status: "",
   address: "",
+  password: undefined,
+  date_of_birth: undefined,
+  origin_country: undefined,
+  city: undefined,
+  state: undefined,
+  country: undefined,
+  coordinates: undefined,
 };
 
 const residentialOptions = [
@@ -231,7 +553,7 @@ const getExpiryStatus = (
   return "ok";
 };
 
-// Formats date strings (YYYY-MM-DD) or Date objects into Australian format (DD/MM/YYYY)
+// Formats date strings (YYYY-MM-DD or DD/MM/YYYY) or Date objects into Australian format (DD/MM/YYYY)
 const formatAUDate = (dateSource?: string | Date | null): string => {
   if (!dateSource) return "—";
 
@@ -241,6 +563,9 @@ const formatAUDate = (dateSource?: string | Date | null): string => {
     const year = dateSource.getFullYear();
     return `${day}/${month}/${year}`;
   }
+
+  // Already DD/MM/YYYY
+  if (/^\d{2}\/\d{2}\/\d{4}$/.test(dateSource)) return dateSource;
 
   const [year, month, day] = dateSource.split("-");
   if (!year || !month || !day) return dateSource;
@@ -282,8 +607,42 @@ const isVerifiableDocType = (opts: {
   const result = VERIFIABLE_DOCUMENT_NAMES.some(
     (keyword) => docName === keyword || docName.includes(keyword),
   );
-  console.log(`[VERIFY CHECK] Document: "${docName}", Verifiable: ${result}`);
   return result;
+};
+
+// ─── Google Places: extract address components ────────────────────────────────
+const extractAddressComponents = (
+  components: any[],
+): {
+  city: string;
+  state: string;
+  country: string;
+  countryCode: string;
+} => {
+  let city = "";
+  let state = "";
+  let country = "";
+  let countryCode = "";
+
+  components.forEach((component: any) => {
+    const types: string[] = component.types || [];
+    if (
+      types.includes("locality") ||
+      types.includes("postal_town") ||
+      types.includes("sublocality_level_1")
+    ) {
+      if (!city) city = component.long_name;
+    }
+    if (types.includes("administrative_area_level_1")) {
+      state = component.short_name.toLowerCase();
+    }
+    if (types.includes("country")) {
+      country = component.long_name;
+      countryCode = component.short_name; // e.g. "AU", "NZ"
+    }
+  });
+
+  return { city, state, country, countryCode };
 };
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
@@ -408,6 +767,20 @@ export default function StaffManagement({ navigation }: Props) {
     null,
   );
 
+  // ── DOB Calendar (Add) ────────────────────────────────────────────────────
+  const [showAddDobCalendar, setShowAddDobCalendar] = useState(false);
+  const [addDobCalendarMonth, setAddDobCalendarMonth] = useState(
+    new Date(2000, 0, 1),
+  );
+  const [addDobSelected, setAddDobSelected] = useState<Date | null>(null);
+
+  // ── DOB Calendar (Edit) ───────────────────────────────────────────────────
+  const [showEditDobCalendar, setShowEditDobCalendar] = useState(false);
+  const [editDobCalendarMonth, setEditDobCalendarMonth] = useState(
+    new Date(2000, 0, 1),
+  );
+  const [editDobSelected, setEditDobSelected] = useState<Date | null>(null);
+
   // ── Document upload modal ─────────────────────────────────────────────────
   const [docModalVisible, setDocModalVisible] = useState(false);
   const [selectedDocType, setSelectedDocType] = useState<{
@@ -426,18 +799,17 @@ export default function StaffManagement({ navigation }: Props) {
   const [fileError, setFileError] = useState("");
   const [docNumberError, setDocNumberError] = useState("");
   const [expiryError, setExpiryError] = useState("");
-
+  // ── Country Dropdown States ───────────────────────────────────────────────
+  const [showCountryDropdown, setShowCountryDropdown] = useState(false);
+  const [showEditCountryDropdown, setShowEditCountryDropdown] = useState(false);
   // ── Online verification (Visa / Security License) ─────────────────────────
   const [verifying, setVerifying] = useState(false);
   const [isVerified, setIsVerified] = useState(false);
 
-  // STRICT: ONLY Visa and Security License documents need online verification
   const needsVerification = selectedDocType
     ? isVerifiableDocType(selectedDocType)
     : false;
 
-  // Lock expiry field ONLY for verifiable docs (Security License & Visa)
-  // Matches DocumentsScreen: isExpiryLocked = needsVerification (always locked once verifiable)
   const isExpiryLocked = needsVerification;
 
   useEffect(() => {
@@ -521,15 +893,94 @@ export default function StaffManagement({ navigation }: Props) {
     } catch {}
   };
 
-  const selectPlace = (description: string, isAdd: boolean) => {
+  // ─── Select place + auto-fill country, city, state, coordinates ──────────
+
+  const selectPlace = async (
+    description: string,
+    placeId: string,
+    isAdd: boolean,
+  ) => {
     Keyboard.dismiss();
-    isAdd
-      ? (setAddForm((p) => ({ ...p, address: description })),
-        setShowAddSuggestions(false),
-        setAddPredictions([]))
-      : (setEditForm((p) => ({ ...p, address: description })),
-        setShowEditSuggestions(false),
-        setEditPredictions([]));
+
+    // Update address immediately
+    if (isAdd) {
+      setAddForm((p) => ({ ...p, address: description }));
+      setShowAddSuggestions(false);
+      setAddPredictions([]);
+    } else {
+      setEditForm((p) => ({ ...p, address: description }));
+      setShowEditSuggestions(false);
+      setEditPredictions([]);
+    }
+
+    // Fetch place details for components + coordinates
+    try {
+      const detailRes = await fetch(
+        `https://maps.googleapis.com/maps/api/place/details/json?place_id=${placeId}&fields=address_components,geometry&key=${GOOGLE_API_KEY}`,
+      );
+      const detailJson = await detailRes.json();
+      const result = detailJson?.result;
+      if (!result) return;
+
+      const { city, state, country, countryCode } = extractAddressComponents(
+        result.address_components || [],
+      );
+
+      const lat = result.geometry?.location?.lat;
+      const lng = result.geometry?.location?.lng;
+      const coordinates = lat && lng ? `${lat},${lng}` : undefined;
+
+      if (isAdd) {
+        setAddForm((p) => ({
+          ...p,
+          city: city || p.city,
+          state: state || p.state,
+          country: country || p.country,
+          origin_country: countryCode || p.origin_country,
+          coordinates: coordinates || p.coordinates,
+        }));
+      } else {
+        setEditForm((p) => ({
+          ...p,
+          city: city || p.city,
+          state: state || p.state,
+          country: country || p.country,
+          origin_country: countryCode || p.origin_country,
+          coordinates: coordinates || p.coordinates,
+        }));
+      }
+    } catch (err) {
+      console.log("Place details error:", err);
+    }
+  };
+
+  // ─── DOB Calendar helpers ─────────────────────────────────────────────────
+
+  const buildDobCalendarGrid = (month: Date): (Date | null)[] => {
+    const year = month.getFullYear();
+    const mo = month.getMonth();
+    const firstDay = new Date(year, mo, 1).getDay();
+    const daysInMonth = new Date(year, mo + 1, 0).getDate();
+    const cells: (Date | null)[] = [];
+    for (let i = 0; i < firstDay; i++) cells.push(null);
+    for (let d = 1; d <= daysInMonth; d++) cells.push(new Date(year, mo, d));
+    return cells;
+  };
+
+  const changeDobMonth = (dir: "prev" | "next", isAdd: boolean) => {
+    if (isAdd) {
+      setAddDobCalendarMonth((prev) => {
+        const n = new Date(prev);
+        n.setMonth(prev.getMonth() + (dir === "next" ? 1 : -1));
+        return n;
+      });
+    } else {
+      setEditDobCalendarMonth((prev) => {
+        const n = new Date(prev);
+        n.setMonth(prev.getMonth() + (dir === "next" ? 1 : -1));
+        return n;
+      });
+    }
   };
 
   // ─── Validation ───────────────────────────────────────────────────────────
@@ -538,32 +989,47 @@ export default function StaffManagement({ navigation }: Props) {
 
   const validateAdd = () => {
     const e: any = {};
+
     if (!addForm.name.trim()) e.name = "Full name is required";
     if (!addForm.email.trim()) e.email = "Email is required";
     else if (!/^\S+@\S+\.\S+$/.test(addForm.email)) e.email = "Invalid email";
+
     if (!addForm.password.trim()) e.password = "Password is required";
     else if (addForm.password.length < 6) e.password = "Min 6 characters";
+
     if (!addForm.phone.trim()) e.phone = "Phone is required";
     else if (!ausPhoneRegex.test(addForm.phone.replace(/[\s()+-]/g, "")))
       e.phone = "Must be a valid Australian phone number";
-    if (!addForm.security_license_no.trim())
-      e.security_license_no = "License no. required";
+
     if (!addForm.address.trim()) e.address = "Address is required";
+
+    // NEW: Mandatory fields
+    if (!addForm.date_of_birth) e.date_of_birth = "Date of Birth is required";
+    if (!addForm.origin_country?.trim())
+      e.origin_country = "Country of Origin is required";
+
     setAddErrors(e);
     return Object.keys(e).length === 0;
   };
 
   const validateEdit = () => {
     const e: any = {};
+
     if (!editForm.name.trim()) e.name = "Full name is required";
     if (!editForm.email.trim()) e.email = "Email is required";
     else if (!/^\S+@\S+\.\S+$/.test(editForm.email)) e.email = "Invalid email";
+
     if (!editForm.phone.trim()) e.phone = "Phone is required";
     else if (!ausPhoneRegex.test(editForm.phone.replace(/[\s()+-]/g, "")))
       e.phone = "Must be a valid Australian phone number";
-    if (!editForm.security_license_no.trim())
-      e.security_license_no = "License no. required";
+
     if (!editForm.address.trim()) e.address = "Address is required";
+
+    // NEW: Mandatory fields
+    if (!editForm.date_of_birth) e.date_of_birth = "Date of Birth is required";
+    if (!editForm.origin_country?.trim())
+      e.origin_country = "Country of Origin is required";
+
     setEditErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -576,33 +1042,64 @@ export default function StaffManagement({ navigation }: Props) {
       setAddLoading(true);
       const headers = await getAuthHeaders();
       const userId = await getMyUserId();
-      await axios.post(
-        `${BASE_URL}/admin/create-staff`,
-        { ...addForm, user_id: userId },
-        { headers },
+
+      const payload: any = {
+        name: addForm.name,
+        email: addForm.email,
+        password: addForm.password,
+        phone: addForm.phone,
+        gender: addForm.gender,
+        address: addForm.address,
+        user_id: userId,
+      };
+
+      // staff_document_type → snake_case
+      if (addForm.residential_status) {
+        payload.staff_document_type =
+          RESIDENTIAL_STATUS_MAP[addForm.residential_status] ||
+          addForm.residential_status.toLowerCase().replace(/\s+/g, "_");
+      }
+
+      // Date of birth — DD/MM/YYYY
+      if (addForm.date_of_birth) {
+        payload.date_of_birth = addForm.date_of_birth;
+      }
+      console.log("====================================");
+      console.log("UPDATE STAFF PAYLOAD");
+      console.log(JSON.stringify(payload, null, 2));
+      console.log("====================================");
+      // Auto-filled from address
+      if (addForm.origin_country)
+        payload.origin_country = addForm.origin_country;
+      if (addForm.city) payload.city = addForm.city;
+      if (addForm.state) payload.state = addForm.state;
+      if (addForm.country) payload.country = addForm.country;
+      if (addForm.coordinates) payload.coordinates = addForm.coordinates;
+
+      console.log(
+        "🚀 Payload being sent to /admin/create-staff:",
+        JSON.stringify(payload, null, 2),
       );
+
+      await axios.post(`${BASE_URL}/admin/create-staff`, payload, { headers });
       Alert.alert("Success", "Staff added successfully.");
       setShowAddModal(false);
       setAddForm(EMPTY_ADD_FORM);
+      setAddDobSelected(null);
       setAddErrors({});
       getStaff();
-    } catch (error: any) {
-      const msg =
-        error?.response?.data?.message ||
-        error?.response?.data?.error ||
-        error?.message ||
-        "";
-      if (
-        msg.toLowerCase().includes("email") ||
-        msg.toLowerCase().includes("duplicate")
-      ) {
-        Alert.alert(
-          "Email Already Exists",
-          "Please use a different email address.",
-        );
-      } else {
-        Alert.alert("Error", msg || "Failed to add staff.");
+    } catch (e: any) {
+      console.log("API ERROR:", e?.response?.data);
+
+      const errorData = e?.response?.data;
+
+      let errorMessage = errorData?.message || "Failed to update staff.";
+
+      if (errorData?.errors?.password?.length) {
+        errorMessage = errorData.errors.password[0];
       }
+
+      Alert.alert("Error", errorMessage);
     } finally {
       setAddLoading(false);
     }
@@ -613,65 +1110,149 @@ export default function StaffManagement({ navigation }: Props) {
   const openEditModal = (item: StaffMember) => {
     const raw = rawStaff.find((g) => g.id.toString() === item.id);
     if (!raw) return;
-    const residentialStatus = raw.staff?.staff_document_type || "";
+
+    // residential_status: API may return snake_case, convert back to display label
+    const rawResidential =
+      raw.staff?.staff_document_type || raw.staff_document_type || "";
+    const residentialDisplay =
+      RESIDENTIAL_STATUS_REVERSE[rawResidential] || rawResidential;
+
+    // DOB handling
+    const rawDob = raw.staff?.date_of_birth || raw.staff?.dob || raw.dob || "";
+    let dobDisplay = "";
+    let dobDate: Date | null = null;
+
+    if (rawDob) {
+      dobDate = parseApiExpiryDate(rawDob);
+      dobDisplay = dobDate ? formatAUDate(dobDate) : "";
+    }
+
     setEditingStaffId(item.id);
     setCurrentStaffUserId(raw.id);
+    setEditDobSelected(dobDate);
+
+    // Set calendar to selected DOB if exists, otherwise current month
+    if (dobDate) {
+      setEditDobCalendarMonth(dobDate);
+    } else {
+      setEditDobCalendarMonth(new Date()); // Current month/year
+    }
+
     setEditForm({
       name: raw.name || "",
       email: raw.email || "",
       phone: raw.staff?.phone || raw.phone || "",
       security_license_no: raw.staff?.security_license_no || "",
       gender: normalizeGender(raw.staff?.gender || raw.gender),
-      residential_status: residentialStatus,
+      residential_status: residentialDisplay,
       address: raw.address || "",
+      password: undefined,
+      date_of_birth: dobDisplay || undefined,
+
+      origin_country:
+        raw.staff?.origin_country || raw.origin_country || raw.country || "",
+      city: raw.city || "",
+      state: raw.state || "",
+      country: raw.country || "",
+      coordinates: raw.coordinates || raw.current_coordinates || "",
     });
+
     setStaffDocuments(raw.documents || []);
-    setResidentialStatusSaved(!!residentialStatus);
+    setResidentialStatusSaved(!!rawResidential);
     setActiveModalTab("personal");
     setEditErrors({});
     setShowEditModal(true);
   };
 
-  // ─── Update staff ─────────────────────────────────────────────────────────
-
   const updateStaff = async () => {
     if (!editingStaffId || !validateEdit()) return;
+
     try {
       setEditLoading(true);
       const headers = await getAuthHeaders();
       const userId = await getMyUserId();
+
+      const payload: any = {
+        name: editForm.name,
+        email: editForm.email,
+        phone: editForm.phone,
+        security_license_no: editForm.security_license_no,
+        gender: editForm.gender,
+        address: editForm.address,
+        user_id: userId,
+      };
+
+      // ─── Add Conditional Fields ─────────────────────────────────────
+      if (editForm.residential_status) {
+        payload.staff_document_type =
+          RESIDENTIAL_STATUS_MAP[editForm.residential_status] ||
+          editForm.residential_status.toLowerCase().replace(/\s+/g, "_");
+      }
+
+      if (editForm.date_of_birth) {
+        payload.date_of_birth = editForm.date_of_birth;
+      }
+
+      if (editForm.origin_country) {
+        payload.origin_country = editForm.origin_country;
+      }
+      if (editForm.city) {
+        payload.city = editForm.city;
+      }
+      if (editForm.state) {
+        payload.state = editForm.state;
+      }
+      if (editForm.country) {
+        payload.country = editForm.country;
+      }
+      if (editForm.coordinates) {
+        payload.coordinates = editForm.coordinates;
+      }
+
+      if (editForm.password?.trim()) {
+        payload.password = editForm.password;
+      }
+
+      // ─── Log AFTER all fields are added ─────────────────────────────
+      console.log("====================================");
+      console.log("UPDATE STAFF PAYLOAD (FINAL)");
+      console.log(JSON.stringify(payload, null, 2));
+      console.log("====================================");
+
       await axios.put(
         `${BASE_URL}/admin/update-staff/${editingStaffId}`,
-        {
-          name: editForm.name,
-          email: editForm.email,
-          phone: editForm.phone,
-          security_license_no: editForm.security_license_no,
-          gender: editForm.gender,
-          staff_document_type: editForm.residential_status,
-          address: editForm.address,
-          user_id: userId,
-        },
+        payload,
         { headers },
       );
+
+      console.log("✅ Staff updated successfully");
+
+      // Refresh data
+      const refreshResponse = await axios.get(
+        `${BASE_URL}/get-contractor-staff/${userId}`,
+        { headers },
+      );
+
+      const apiData = refreshResponse.data?.guards || [];
+      setRawStaff(apiData);
+
+      const thisStaff = apiData.find((g: any) => g.id === currentStaffUserId);
+      if (thisStaff) {
+        setStaffDocuments(thisStaff.documents || []);
+      }
+
       setResidentialStatusSaved(true);
       setEditErrors({});
-      getStaff();
-      Alert.alert(
-        "Success",
-        "Staff updated. You can now manage their documents.",
-        [
-          {
-            text: "Go to Documents",
-            onPress: () => setActiveModalTab("documents"),
-          },
-          {
-            text: "OK",
-            onPress: () => setShowEditModal(false),
-          },
-        ],
-      );
+
+      Alert.alert("Success", "Staff updated successfully.", [
+        { text: "OK", onPress: () => setShowEditModal(false) },
+        {
+          text: "Go to Documents",
+          onPress: () => setActiveModalTab("documents"),
+        },
+      ]);
     } catch (e: any) {
+      console.log("❌ Update staff error:", e?.response?.data || e.message);
       Alert.alert(
         "Error",
         e?.response?.data?.message || "Failed to update staff.",
@@ -680,7 +1261,6 @@ export default function StaffManagement({ navigation }: Props) {
       setEditLoading(false);
     }
   };
-
   // ─── Delete staff ─────────────────────────────────────────────────────────
 
   const deleteStaff = (id: string, name: string) => {
@@ -706,41 +1286,51 @@ export default function StaffManagement({ navigation }: Props) {
 
   // ─── Dynamic Document Definitions & Merged List ───────────────────────────
 
+  // Replace the current DYNAMIC_DOC_TYPES with this:
   const DYNAMIC_DOC_TYPES = useMemo(() => {
     const typesMap = new Map<
       string,
       { label: string; value: string; category: string }
     >();
 
-    rawStaff.forEach((guard: any) => {
-      if (Array.isArray(guard.documents)) {
-        guard.documents.forEach((doc: any) => {
-          const docName = doc.document_name || "";
-          const normalizedKey = docName.toLowerCase().replace(/[\s_]+/g, "");
-          if (docName && !typesMap.has(normalizedKey)) {
-            typesMap.set(normalizedKey, {
-              label: docName,
-              value: docName,
-              category: doc.document_category || "contractor_staff",
-            });
-          }
-        });
-      }
-    });
+    // Only use documents from the CURRENT staff
+    if (Array.isArray(staffDocuments)) {
+      staffDocuments.forEach((doc: any) => {
+        const docName = doc.document_name || "";
+        const normalizedKey = docName.toLowerCase().replace(/[\s_]+/g, "");
+
+        if (
+          docName &&
+          !typesMap.has(normalizedKey) &&
+          isAllowedDocument(docName)
+        ) {
+          typesMap.set(normalizedKey, {
+            label: docName,
+            value: docName,
+            category: doc.document_category || "contractor_staff",
+          });
+        }
+      });
+    }
 
     return Array.from(typesMap.values());
-  }, [rawStaff]);
+  }, [staffDocuments]); // ← changed dependency
 
   const mergedDocList = useMemo((): Array<
     StaffDocument & {
       _reqDef?: { label: string; value: string; category: string };
     }
   > => {
+    // Only include documents that are in the allowed list
+    const filteredDocs = staffDocuments.filter((doc) =>
+      isAllowedDocument(doc.document_name || doc.document_type),
+    );
+
     const result: Array<
       StaffDocument & {
         _reqDef?: { label: string; value: string; category: string };
       }
-    > = staffDocuments.map((doc) => {
+    > = filteredDocs.map((doc) => {
       const reqDef = DYNAMIC_DOC_TYPES.find((r) => {
         const rVal = r.value.toLowerCase().replace(/[\s_]+/g, "");
         const dName = (doc.document_name || "")
@@ -755,7 +1345,7 @@ export default function StaffManagement({ navigation }: Props) {
     });
 
     DYNAMIC_DOC_TYPES.forEach((req) => {
-      const alreadyPresent = staffDocuments.some((d) => {
+      const alreadyPresent = filteredDocs.some((d) => {
         const rVal = req.value.toLowerCase().replace(/[\s_]+/g, "");
         const dName = (d.document_name || "")
           .toLowerCase()
@@ -842,7 +1432,6 @@ export default function StaffManagement({ navigation }: Props) {
 
       if (existingDoc.file) setUploadedFilePath(existingDoc.file);
 
-      // For verifiable docs: mark verified if both number and expiry exist
       if (isVerifiable) {
         setIsVerified(
           !!(existingDoc.document_no && existingDoc.document_expiry),
@@ -851,7 +1440,6 @@ export default function StaffManagement({ navigation }: Props) {
         setIsVerified(true);
       }
     } else {
-      // New document
       if (isVerifiable) {
         setIsVerified(false);
         setExpirationDate(null);
@@ -911,7 +1499,7 @@ export default function StaffManagement({ navigation }: Props) {
     }
   };
 
-  // ─── Online document verification — mirrors DocumentsScreen exactly ────────
+  // ─── Online document verification ────────────────────────────────────────
 
   const handleVerifyDocument = async () => {
     if (!selectedDocType) {
@@ -950,11 +1538,7 @@ export default function StaffManagement({ navigation }: Props) {
       let response;
 
       if (isVisa) {
-        // Visa verification
-        const payload = {
-          passport: documentNumber.trim(),
-        };
-        console.log("VISA VERIFY PAYLOAD:", JSON.stringify(payload, null, 2));
+        const payload = { passport: documentNumber.trim() };
         response = await axios.post(`${BASE_URL}/admin/visa-check`, payload, {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -962,16 +1546,11 @@ export default function StaffManagement({ navigation }: Props) {
           },
         });
       } else {
-        // Security License verification — same endpoint as DocumentsScreen
         const payload = {
           document_type: selectedDocType.label,
           license_number: documentNumber.trim(),
           user_id: Number(currentStaffUserId),
         };
-        console.log(
-          "SEC LICENSE VERIFY PAYLOAD:",
-          JSON.stringify(payload, null, 2),
-        );
         response = await axios.post(
           `${Api_Url}/documents-online-verification-staffoo`,
           payload,
@@ -983,8 +1562,6 @@ export default function StaffManagement({ navigation }: Props) {
           },
         );
       }
-
-      console.log("VERIFY RESPONSE:", JSON.stringify(response?.data, null, 2));
 
       const data = response?.data;
 
@@ -999,7 +1576,6 @@ export default function StaffManagement({ navigation }: Props) {
         return;
       }
 
-      // Extract expiry from response — same field-search logic as DocumentsScreen
       const expiryRaw =
         data?.expiry ||
         data?.expiry_date ||
@@ -1010,7 +1586,6 @@ export default function StaffManagement({ navigation }: Props) {
 
       if (expiryRaw) {
         const dateObj = parseApiExpiryDate(expiryRaw);
-
         if (dateObj) {
           setExpirationDate(dateObj);
           setCurrentCalendarMonth(dateObj);
@@ -1034,11 +1609,6 @@ export default function StaffManagement({ navigation }: Props) {
         position: "bottom",
       });
     } catch (error: any) {
-      console.log("=== VERIFY ERROR ===");
-      console.log(JSON.stringify(error?.response?.data, null, 2));
-      console.log("Status:", error?.response?.status);
-      console.log("Message:", error?.message);
-
       setIsVerified(false);
       setExpirationDate(null);
       Toast.show({
@@ -1070,7 +1640,6 @@ export default function StaffManagement({ navigation }: Props) {
     }
 
     if (needsVerification) {
-      // ONLY Visa & Security License must be verified online first
       if (!isVerified || !expirationDate) {
         Toast.show({
           type: "error",
@@ -1158,7 +1727,6 @@ export default function StaffManagement({ navigation }: Props) {
       });
       setDocModalVisible(false);
 
-      // Refresh staff to get updated documents
       const userId = await getMyUserId();
       const headers = await getAuthHeaders();
       const response = await axios.get(
@@ -1255,7 +1823,6 @@ export default function StaffManagement({ navigation }: Props) {
             <FileText size={22} color={COLORS.primary} />
           </View>
           <View style={{ flex: 1, marginHorizontal: 12 }}>
-            {/* Display name matches DocumentsScreen */}
             <Text style={docStyles.cardDocName} numberOfLines={1}>
               {getDisplayName(item.document_name)}
             </Text>
@@ -1338,7 +1905,6 @@ export default function StaffManagement({ navigation }: Props) {
           <FileText size={22} color={COLORS.textMuted} />
         </View>
         <View style={{ flex: 1, marginHorizontal: 12 }}>
-          {/* Display name matches DocumentsScreen */}
           <Text style={[docStyles.cardDocName, { color: COLORS.textMuted }]}>
             {getDisplayName(item.document_name)}
           </Text>
@@ -1407,6 +1973,92 @@ export default function StaffManagement({ navigation }: Props) {
     }
   };
 
+  // ─── Render: DOB inline calendar ─────────────────────────────────────────
+
+  const renderDobCalendar = (isAdd: boolean) => {
+    const calMonth = isAdd ? addDobCalendarMonth : editDobCalendarMonth;
+    const selectedDob = isAdd ? addDobSelected : editDobSelected;
+    const grid = buildDobCalendarGrid(calMonth);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    return (
+      <View style={dobCalStyles.inlineCalendar}>
+        <View style={dobCalStyles.calendarHeaderRow}>
+          <Text style={dobCalStyles.calendarMonthHeading}>
+            {calMonth
+              .toLocaleString("default", { month: "long", year: "numeric" })
+              .toUpperCase()}
+          </Text>
+          <View style={{ flexDirection: "row", gap: 12 }}>
+            <TouchableOpacity
+              onPress={() => changeDobMonth("prev", isAdd)}
+              style={dobCalStyles.monthArrow}
+            >
+              <ChevronLeft size={20} color="#111" />
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => changeDobMonth("next", isAdd)}
+              style={dobCalStyles.monthArrow}
+            >
+              <ChevronRight size={20} color="#111" />
+            </TouchableOpacity>
+          </View>
+        </View>
+        <View style={dobCalStyles.weekDaysRow}>
+          {["SU", "MO", "TU", "WE", "TH", "FR", "SA"].map((d, i) => (
+            <Text key={i} style={dobCalStyles.weekDayLabel}>
+              {d}
+            </Text>
+          ))}
+        </View>
+        <View style={dobCalStyles.daysGrid}>
+          {grid.map((date, idx) => {
+            if (!date) return <View key={idx} style={dobCalStyles.dayCell} />;
+            // DOB must be in the past
+            const isFuture = date > today;
+            const isSelected =
+              selectedDob && date.toDateString() === selectedDob.toDateString();
+            return (
+              <TouchableOpacity
+                key={idx}
+                disabled={isFuture}
+                style={[
+                  dobCalStyles.dayCell,
+                  isSelected && dobCalStyles.dayCellSelected,
+                  isFuture && dobCalStyles.dayCellDisabled,
+                ]}
+                onPress={() => {
+                  if (isFuture) return;
+                  const formatted = formatAUDate(date); // DD/MM/YYYY
+                  if (isAdd) {
+                    setAddDobSelected(date);
+                    setAddForm((p) => ({ ...p, date_of_birth: formatted }));
+                    setShowAddDobCalendar(false);
+                  } else {
+                    setEditDobSelected(date);
+                    setEditForm((p) => ({ ...p, date_of_birth: formatted }));
+                    setShowEditDobCalendar(false);
+                  }
+                }}
+              >
+                <Text
+                  style={[
+                    dobCalStyles.dayText,
+                    isSelected && dobCalStyles.dayTextSelected,
+                    isFuture && dobCalStyles.dayTextDisabled,
+                  ]}
+                >
+                  {date.getDate()}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+      </View>
+    );
+  };
+
   // ─── Render: personal info form ───────────────────────────────────────────
 
   const renderPersonalForm = (isAdd: boolean) => {
@@ -1423,6 +2075,10 @@ export default function StaffManagement({ navigation }: Props) {
     const setShowResidential = isAdd
       ? setShowAddResidentialDropdown
       : setShowEditResidentialDropdown;
+    const showDobCal = isAdd ? showAddDobCalendar : showEditDobCalendar;
+    const setShowDobCal = isAdd
+      ? setShowAddDobCalendar
+      : setShowEditDobCalendar;
 
     return (
       <KeyboardAvoidingView
@@ -1466,23 +2122,44 @@ export default function StaffManagement({ navigation }: Props) {
             </>
           )}
 
+          {!isAdd && (
+            <FormField
+              placeholder="New Password (optional)"
+              value={(form as EditStaffForm).password || ""}
+              onChangeText={(t) => setForm((p: any) => ({ ...p, password: t }))}
+              secureTextEntry
+            />
+          )}
+
+          <TouchableOpacity
+            style={styles.selectBox}
+            activeOpacity={0.8}
+            onPress={() => {
+              Keyboard.dismiss();
+              setShowDobCal(!showDobCal);
+            }}
+          >
+            <Text
+              style={{
+                color: form.date_of_birth ? COLORS.text : COLORS.textMuted,
+                fontSize: 14,
+              }}
+            >
+              {form.date_of_birth || "Date of Birth *"}
+            </Text>
+            <CalendarIcon size={20} color={COLORS.primary} />
+          </TouchableOpacity>
+          {errors.date_of_birth && (
+            <Text style={styles.errorText}>{errors.date_of_birth}</Text>
+          )}
+          {showDobCal && renderDobCalendar(isAdd)}
+
           <FormField
             placeholder="Phone *"
             value={form.phone}
             onChangeText={(t) => setForm((p: any) => ({ ...p, phone: t }))}
           />
           {errors.phone && <Text style={styles.errorText}>{errors.phone}</Text>}
-
-          <FormField
-            placeholder="Security License No *"
-            value={form.security_license_no}
-            onChangeText={(t) =>
-              setForm((p: any) => ({ ...p, security_license_no: t }))
-            }
-          />
-          {errors.security_license_no && (
-            <Text style={styles.errorText}>{errors.security_license_no}</Text>
-          )}
 
           {/* Residential Status — inline dropdown */}
           <View>
@@ -1530,6 +2207,64 @@ export default function StaffManagement({ navigation }: Props) {
             )}
           </View>
 
+          <View>
+            
+            <TouchableOpacity
+              style={styles.selectBox}
+              activeOpacity={0.8}
+              onPress={() => {
+                Keyboard.dismiss();
+                const setDropdown = isAdd
+                  ? setShowCountryDropdown
+                  : setShowEditCountryDropdown;
+                setDropdown((prev: boolean) => !prev);
+              }}
+            >
+              <Text
+                style={{
+                  color: form.origin_country ? COLORS.text : COLORS.textMuted,
+                  fontSize: 14,
+                }}
+              >
+                {form.origin_country || "Country of Origin *"}
+              </Text>
+              <ChevronDown size={20} color={COLORS.textSecondary} />
+            </TouchableOpacity>
+            {errors.origin_country && (
+              <Text style={styles.errorText}>{errors.origin_country}</Text>
+            )}
+
+            {/* Dropdown List */}
+            {(isAdd ? showCountryDropdown : showEditCountryDropdown) && (
+              <View style={styles.inlineDropdown}>
+                <ScrollView style={{ maxHeight: 250 }} nestedScrollEnabled>
+                  {COUNTRIES.map((country) => (
+                    <TouchableOpacity
+                      key={country.code}
+                      style={styles.dropdownItem}
+                      onPress={() => {
+                        setForm((p: any) => ({
+                          ...p,
+                          origin_country: country.name,
+                        }));
+                        // Close dropdown
+                        if (isAdd) setShowCountryDropdown(false);
+                        else setShowEditCountryDropdown(false);
+                      }}
+                    >
+                      <Text style={styles.dropdownItemText}>
+                        {country.name}
+                      </Text>
+                      {form.origin_country === country.name && (
+                        <Check size={18} color={COLORS.primary} />
+                      )}
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
+            )}
+          </View>
+
           {/* Address autocomplete */}
           <View>
             <TextInput
@@ -1552,7 +2287,9 @@ export default function StaffManagement({ navigation }: Props) {
                   <TouchableOpacity
                     key={pred.place_id}
                     style={styles.suggestionItem}
-                    onPress={() => selectPlace(pred.description, isAdd)}
+                    onPress={() =>
+                      selectPlace(pred.description, pred.place_id, isAdd)
+                    }
                   >
                     <MapPin size={14} color={COLORS.primary} />
                     <Text style={styles.suggestionText} numberOfLines={2}>
@@ -1563,28 +2300,77 @@ export default function StaffManagement({ navigation }: Props) {
               </View>
             )}
           </View>
+          {/* ── Coordinates (Read-only, auto-filled from address) ── */}
+          <View>
+            <View
+              style={[styles.selectBox, { backgroundColor: COLORS.surface }]}
+            >
+              <Text
+                style={{
+                  color: form.coordinates ? COLORS.text : COLORS.textMuted,
+                  fontSize: 14,
+                  flex: 1,
+                }}
+              >
+                {form.coordinates || "Will be auto-filled from address"}
+              </Text>
+            </View>
+          </View>
 
-          {/* Gender */}
+          {/* Auto-filled fields display (read-only hint) */}
+          {(form as any).city || (form as any).country ? (
+            <View style={styles.autoFillRow}>
+              {(form as any).city ? (
+                <View style={styles.autoFillChip}>
+                  <Text style={styles.autoFillChipText}>
+                    City: {(form as any).city}
+                  </Text>
+                </View>
+              ) : null}
+              {(form as any).state ? (
+                <View style={styles.autoFillChip}>
+                  <Text style={styles.autoFillChipText}>
+                    State: {(form as any).state?.toUpperCase()}
+                  </Text>
+                </View>
+              ) : null}
+              {(form as any).country ? (
+                <View style={styles.autoFillChip}>
+                  <Text style={styles.autoFillChipText}>
+                    Country: {(form as any).country}
+                  </Text>
+                </View>
+              ) : null}
+            </View>
+          ) : null}
+
           <View style={styles.genderBlock}>
             <Text style={styles.label}>Gender</Text>
             <View style={styles.genderOptions}>
-              {["Male", "Female", "Other"].map((g) => (
+              {[
+                { label: "Male", value: "male" },
+                { label: "Female", value: "female" },
+                { label: "Prefer not to say", value: "other" },
+              ].map((g) => (
                 <TouchableOpacity
-                  key={g}
+                  key={g.value}
                   style={[
                     styles.genderOption,
-                    form.gender === g && styles.genderOptionActive,
+                    form.gender?.toLowerCase() === g.value &&
+                      styles.genderOptionActive,
                   ]}
-                  onPress={() => setForm((p: any) => ({ ...p, gender: g }))}
+                  onPress={() =>
+                    setForm((p: any) => ({ ...p, gender: g.value }))
+                  }
                 >
                   <Text
                     style={
-                      form.gender === g
+                      form.gender?.toLowerCase() === g.value
                         ? styles.genderOptionTextActive
                         : styles.genderOptionText
                     }
                   >
-                    {g}
+                    {g.label}
                   </Text>
                 </TouchableOpacity>
               ))}
@@ -1601,32 +2387,15 @@ export default function StaffManagement({ navigation }: Props) {
 
   const renderItem = ({ item }: { item: StaffMember }) => (
     <View style={styles.card}>
-      <View style={styles.cardHeader}>
-        <View style={styles.avatar}>
-          <User size={24} color="#14E6C9" />
-        </View>
-        <View style={styles.userInfo}>
+      <View style={styles.cardHeader}></View>
+      <View style={styles.userInfo}>
+        <View style={styles.infoRow}>
+          <User size={16} color="#64748B" />
           <Text style={styles.name}>{capitalizeWords(item.name)}</Text>
-          <Text style={styles.email}>{item.email}</Text>
         </View>
-        <View
-          style={[
-            styles.statusBadge,
-            item.status === "Pending"
-              ? styles.pendingBadge
-              : styles.activeBadge,
-          ]}
-        >
-          <Text
-            style={[
-              styles.statusText,
-              item.status === "Pending"
-                ? styles.pendingText
-                : styles.activeText,
-            ]}
-          >
-            {item.status}
-          </Text>
+        <View style={styles.infoRow}>
+          <Mail size={16} color="#64748B" />
+          <Text style={styles.email}>{item.email}</Text>
         </View>
       </View>
       <View style={styles.infoRow}>
@@ -1678,6 +2447,8 @@ export default function StaffManagement({ navigation }: Props) {
           onPress={() => {
             setAddForm(EMPTY_ADD_FORM);
             setAddErrors({});
+            setAddDobSelected(null);
+            setAddDobCalendarMonth(new Date());
             setShowAddModal(true);
           }}
         >
@@ -1790,9 +2561,9 @@ export default function StaffManagement({ navigation }: Props) {
                       ]}
                     >
                       Documents
-                      {staffDocuments.length > 0
+                      {/* {staffDocuments.length > 0
                         ? ` (${staffDocuments.length})`
-                        : ""}
+                        : ""} */}
                     </Text>
                   </TouchableOpacity>
                 )}
@@ -1851,7 +2622,6 @@ export default function StaffManagement({ navigation }: Props) {
           <View style={docStyles.modalContent}>
             <View style={docStyles.modalHeader}>
               <Text style={docStyles.modalTitle}>
-                {/* Display name from map — same as DocumentsScreen */}
                 {getDisplayName(
                   selectedDocType?.label || selectedDocType?.value,
                 )}
@@ -1900,7 +2670,7 @@ export default function StaffManagement({ navigation }: Props) {
                 ) : null}
               </View>
 
-              {/* Document type — informational, same style as DocumentsScreen */}
+              {/* Document type */}
               <Text style={docStyles.fieldLabel}>DOCUMENT TYPE</Text>
               <View style={docStyles.dropdownSelector}>
                 <Text style={docStyles.dropdownText}>
@@ -1917,7 +2687,6 @@ export default function StaffManagement({ navigation }: Props) {
                 DOCUMENT NUMBER *
               </Text>
 
-              {/* STRICT: Show verify button ONLY for Visa and Security License */}
               {needsVerification ? (
                 <View style={{ flexDirection: "row" }}>
                   <TextInput
@@ -1938,7 +2707,6 @@ export default function StaffManagement({ navigation }: Props) {
                       const formatted = t.toUpperCase();
                       setDocumentNumber(formatted);
                       if (formatted.trim()) setDocNumberError("");
-                      // Any change invalidates previous verification
                       setIsVerified(false);
                       setExpirationDate(null);
                       setExpiryError("");
@@ -1974,7 +2742,6 @@ export default function StaffManagement({ navigation }: Props) {
                 <Text style={docStyles.errorText}>{docNumberError}</Text>
               ) : null}
 
-              {/* Helper text — only while a verifiable doc isn't verified yet */}
               {needsVerification && !isVerified && (
                 <Text style={docStyles.inputHelpText}>
                   Tap "Verify" to validate this document and auto-fill its
@@ -1982,7 +2749,7 @@ export default function StaffManagement({ navigation }: Props) {
                 </Text>
               )}
 
-              {/* Expiry date — STRICTLY locked for Security License & Visa (mirrors DocumentsScreen) */}
+              {/* Expiry date */}
               <Text style={[docStyles.fieldLabel, { marginTop: 18 }]}>
                 EXPIRATION DATE *
               </Text>
@@ -2029,7 +2796,7 @@ export default function StaffManagement({ navigation }: Props) {
                 <Text style={docStyles.errorText}>{expiryError}</Text>
               ) : null}
 
-              {/* Inline calendar — only for non-locked documents */}
+              {/* Inline calendar for expiry */}
               {showInlineCalendar && !isExpiryLocked && (
                 <View style={docStyles.inlineCalendar}>
                   <View style={docStyles.calendarHeaderRow}>
@@ -2123,7 +2890,6 @@ export default function StaffManagement({ navigation }: Props) {
             </TouchableOpacity>
           </View>
         </View>
-        {/* Toast inside modal so it appears above modal content */}
         <Toast />
       </Modal>
     </SafeAreaView>
@@ -2181,30 +2947,19 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.card,
     borderRadius: 20,
     padding: 14,
-    marginBottom: 16,
+    marginBottom: 10,
     borderWidth: 1,
     borderColor: COLORS.cardBorder,
   },
-  cardHeader: { flexDirection: "row", alignItems: "center", marginBottom: 10 },
-  avatar: {
-    width: 58,
-    height: 58,
-    borderRadius: 29,
-    backgroundColor: COLORS.primaryGlow,
-    justifyContent: "center",
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: COLORS.primaryBorder,
-    marginRight: 14,
-  },
+  cardHeader: { flexDirection: "row", alignItems: "center" },
   userInfo: { flex: 1 },
-  name: { color: COLORS.text, fontSize: 17, fontWeight: "700" },
-  email: { color: COLORS.textSecondary, fontSize: 13, marginTop: 4 },
-  infoRow: { flexDirection: "row", alignItems: "center", marginBottom: 10 },
+  name: { color: COLORS.text, fontSize: 17, fontWeight: "700", marginLeft: 10 },
+  email: { color: COLORS.text, fontSize: 14, marginLeft: 10 },
+  infoRow: { flexDirection: "row", alignItems: "center", marginBottom: 7 },
   infoText: {
     color: COLORS.textSecondary,
     marginLeft: 10,
-    fontSize: 14,
+    fontSize: 12,
     flex: 1,
   },
   statusBadge: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 30 },
@@ -2259,7 +3014,6 @@ const styles = StyleSheet.create({
     borderColor: COLORS.cardBorder,
     overflow: "hidden",
     flex: 1,
-    marginTop: "auto",
   },
   modalHeaderRow: {
     flexDirection: "row",
@@ -2347,6 +3101,27 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   suggestionText: { color: COLORS.text, flex: 1, fontSize: 13, lineHeight: 18 },
+  autoFillRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    marginTop: 2,
+    marginBottom: 4,
+    paddingHorizontal: 4,
+  },
+  autoFillChip: {
+    backgroundColor: "rgba(0,169,157,0.1)",
+    borderWidth: 1,
+    borderColor: "rgba(0,169,157,0.3)",
+    borderRadius: 20,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+  },
+  autoFillChipText: {
+    color: COLORS.primary,
+    fontSize: 11,
+    fontWeight: "600",
+  },
   genderBlock: {},
   genderOptions: {
     flexDirection: "row",
@@ -2393,6 +3168,58 @@ const styles = StyleSheet.create({
   },
   saveText: { color: COLORS.text, fontWeight: "700" },
   buttonDisabled: { opacity: 0.6 },
+});
+
+// ─── DOB Calendar Styles ──────────────────────────────────────────────────────
+
+const dobCalStyles = StyleSheet.create({
+  inlineCalendar: {
+    backgroundColor: "#fff",
+    borderRadius: 14,
+    padding: 14,
+    marginTop: 8,
+    marginBottom: 4,
+  },
+  calendarHeaderRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 12,
+  },
+  calendarMonthHeading: { color: "#111", fontWeight: "bold", fontSize: 14 },
+  monthArrow: {
+    width: 34,
+    height: 34,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#f0f0f0",
+    borderRadius: 17,
+  },
+  weekDaysRow: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+    marginBottom: 6,
+  },
+  weekDayLabel: {
+    color: "#777",
+    fontSize: 11,
+    fontWeight: "bold",
+    width: (width - 80) / 7,
+    textAlign: "center",
+  },
+  daysGrid: { flexDirection: "row", flexWrap: "wrap" },
+  dayCell: {
+    width: (width - 80) / 7,
+    height: 38,
+    justifyContent: "center",
+    alignItems: "center",
+    marginVertical: 2,
+  },
+  dayCellSelected: { backgroundColor: COLORS.primary, borderRadius: 19 },
+  dayCellDisabled: { opacity: 0.25 },
+  dayText: { color: "#111", fontSize: 13, fontWeight: "500" },
+  dayTextSelected: { color: "#fff", fontWeight: "bold" },
+  dayTextDisabled: { color: "#aaa" },
 });
 
 // ─── Document Tab / Modal Styles ──────────────────────────────────────────────

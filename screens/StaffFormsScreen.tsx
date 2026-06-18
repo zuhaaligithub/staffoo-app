@@ -4840,6 +4840,7 @@ const StaffFormsScreen = ({ navigation }: any) => {
         signatureTfn
       );
     }
+
     if (tab === "super") {
       return !!(
         (superFullName || autoFullName) &&
@@ -4853,34 +4854,44 @@ const StaffFormsScreen = ({ navigation }: any) => {
         superConfirmation
       );
     }
+
     if (tab === "onboarding") {
       const isOtherVisaComplete =
         workRights === "other" ? !!otherVisaType.trim() : true;
+
       return !!(
-        (onboardFullName || autoFullName) &&
-        onboardDobBackend &&
-        onboardAddress &&
-        onboardMobile &&
-        onboardEmail &&
-        passportNumber &&
-        passportCountry &&
-        passportExpiryBackend &&
-        workRights &&
-        isOtherVisaComplete &&
-        signatureOnboard &&
-        bankName &&
-        bsb &&
-        accountNumber &&
-        onboardTfn &&
-        onboardSuperFundName &&
-        onboardSuperUsi &&
-        onboardMemberNumber &&
-        securityLicence &&
-        securityExpiryBackend &&
-        firstAidNumber &&
-        firstAidExpiryBackend
+        // Existing fields
+        (
+          (onboardFullName || autoFullName) &&
+          onboardDobBackend &&
+          onboardAddress &&
+          onboardMobile &&
+          onboardEmail &&
+          passportNumber &&
+          passportCountry &&
+          passportExpiryBackend &&
+          workRights &&
+          isOtherVisaComplete &&
+          signatureOnboard &&
+          bankName &&
+          bsb &&
+          accountNumber &&
+          onboardTfn &&
+          onboardSuperFundName &&
+          onboardSuperUsi &&
+          onboardMemberNumber &&
+          securityLicence &&
+          securityExpiryBackend &&
+          firstAidNumber &&
+          firstAidExpiryBackend &&
+          // NEW: Make attachments mandatory
+          passportDoc?.trim() &&
+          securityLicenseDoc?.trim() &&
+          firstAidDoc?.trim()
+        )
       );
     }
+
     return false;
   };
 
@@ -4937,6 +4948,8 @@ const StaffFormsScreen = ({ navigation }: any) => {
       <ScrollView
         contentContainerStyle={s.scrollContent}
         keyboardShouldPersistTaps="handled"
+        nestedScrollEnabled={true} // ← THIS FIXES THE ERROR
+        showsVerticalScrollIndicator={true}
       >
         {/* ── TFN TAB ── */}
         {activeStaffTab === "tfn" && (
@@ -5014,32 +5027,39 @@ const StaffFormsScreen = ({ navigation }: any) => {
 
             <SectionLabel>Residential Address</SectionLabel>
             {/* ── TFN Address with Google Places ── */}
-            <Field label="Residential Address">
+            {/* <Field label="Residential Address">
               <StyledInput
                 value={tfnAddress}
                 onChangeText={handleTfnAddressChange}
                 placeholder="Start typing your address..."
               />
+            </Field> */}
+            <Field label="Residential Address">
+              <StyledInput
+                value={tfnAddress}
+                onChangeText={handleTfnAddressChange}
+                placeholder="Start typing your address..."
+                multiline={true}
+                numberOfLines={3}
+                textAlignVertical="top"
+                // style={{ minHeight: 70, textAlign: "left" }}
+              />
             </Field>
             {showTfnSuggestions && tfnAddressSuggestions.length > 0 && (
               <View style={s.suggestionsContainer}>
-                <FlatList
-                  data={tfnAddressSuggestions}
-                  keyExtractor={(item) => item.place_id}
-                  keyboardShouldPersistTaps="handled"
-                  renderItem={({ item }) => (
-                    <TouchableOpacity
-                      style={s.suggestionItem}
-                      onPress={() => {
-                        setTfnAddress(item.description);
-                        setTfnAddressSuggestions([]);
-                        setShowTfnSuggestions(false);
-                      }}
-                    >
-                      <Text style={s.suggestionText}>{item.description}</Text>
-                    </TouchableOpacity>
-                  )}
-                />
+                {tfnAddressSuggestions.map((item) => (
+                  <TouchableOpacity
+                    key={item.place_id}
+                    style={s.suggestionItem}
+                    onPress={() => {
+                      setTfnAddress(item.description);
+                      setTfnAddressSuggestions([]);
+                      setShowTfnSuggestions(false);
+                    }}
+                  >
+                    <Text style={s.suggestionText}>{item.description}</Text>
+                  </TouchableOpacity>
+                ))}
               </View>
             )}
 
@@ -5313,30 +5333,28 @@ const StaffFormsScreen = ({ navigation }: any) => {
                 value={onboardAddress}
                 onChangeText={handleOnboardAddressChange}
                 placeholder="Start typing your address..."
+                multiline={true}
+                numberOfLines={3}
+                textAlignVertical="top"
               />
             </Field>
             {showOnboardSuggestions && onboardAddressSuggestions.length > 0 && (
               <View style={s.suggestionsContainer}>
-                <FlatList
-                  data={onboardAddressSuggestions}
-                  keyExtractor={(item) => item.place_id}
-                  keyboardShouldPersistTaps="handled"
-                  renderItem={({ item }) => (
-                    <TouchableOpacity
-                      style={s.suggestionItem}
-                      onPress={() => {
-                        setOnboardAddress(item.description);
-                        setOnboardAddressSuggestions([]);
-                        setShowOnboardSuggestions(false);
-                      }}
-                    >
-                      <Text style={s.suggestionText}>{item.description}</Text>
-                    </TouchableOpacity>
-                  )}
-                />
+                {onboardAddressSuggestions.map((item) => (
+                  <TouchableOpacity
+                    key={item.place_id}
+                    style={s.suggestionItem}
+                    onPress={() => {
+                      setOnboardAddress(item.description);
+                      setOnboardAddressSuggestions([]);
+                      setShowOnboardSuggestions(false);
+                    }}
+                  >
+                    <Text style={s.suggestionText}>{item.description}</Text>
+                  </TouchableOpacity>
+                ))}
               </View>
             )}
-
             <SectionLabel>2. Passport & Work Rights</SectionLabel>
             <View style={s.row3}>
               <View style={{ flex: 1 }}>
@@ -5596,14 +5614,14 @@ const StaffFormsScreen = ({ navigation }: any) => {
               </Field>
             </View>
 
-            {isSecurityVerified && (
+            {/* {isSecurityVerified && (
               <View style={s.secVerifiedBadge}>
                 <Check size={14} color={BRAND_DARK} />
                 <Text style={s.secVerifiedBadgeText}>
                   Verified — expiry auto-filled and locked
                 </Text>
               </View>
-            )}
+            )} */}
 
             <DocUploadField
               label="Upload Security Licence Document"
@@ -6328,14 +6346,14 @@ const s = StyleSheet.create({
     color: "#fff",
   },
   secVerifyBtn: {
-    backgroundColor: "#366bf0",
+    backgroundColor: "#89E7D0",
     paddingHorizontal: 18,
     justifyContent: "center",
     alignItems: "center",
     minWidth: 80,
     minHeight: 44,
   },
-  secVerifyBtnText: { color: "#fff", fontWeight: "600", fontSize: 14 },
+  secVerifyBtnText: { color: "#111111", fontWeight: "700", fontSize: 12 },
   secVerifiedBadge: {
     flexDirection: "row",
     alignItems: "center",
