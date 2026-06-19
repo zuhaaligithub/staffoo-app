@@ -43,7 +43,6 @@ import { useFocusEffect } from "@react-navigation/native";
 import LinearGradient from "react-native-linear-gradient";
 
 const ONESIGNAL_APP_ID = "79041c59-5506-4e56-9de4-8a6619f85e1d";
-const { width } = Dimensions.get("window");
 
 type Props = {
   navigation: any;
@@ -57,7 +56,11 @@ type AsapJobData = {
   address?: string;
   [key: string]: any;
 };
+const { width } = Dimensions.get("window");
 
+const isSmall = width < 375;
+const isTablet = width >= 768;
+const isSmallMobile = width < 375;
 // ─── Brand Palette (matches Staffoo portal) ───────────────────────────────────
 const COLORS = {
   background: "#030508",
@@ -93,6 +96,7 @@ export default function ProfileScreen({ navigation }: Props) {
   const subscriptionChangeHandlerRef = useRef<
     ((event: any) => Promise<void>) | null
   >(null);
+
   const [imageFile, setImageFile] = useState<any>(null);
   const BASE_URL = "https://apis.staffoo.com.au/api";
   const GOOGLE_API_KEY = "AIzaSyCS-DB39Kk-Z25C5GWymVGshXIALbjXPGY";
@@ -795,7 +799,7 @@ export default function ProfileScreen({ navigation }: Props) {
   );
 }
 
-const CARD_WIDTH = (width - 48) / 3;
+const CARD_WIDTH = (width - 36) / 3;
 
 const styles = StyleSheet.create({
   safeArea: {
@@ -1054,12 +1058,12 @@ const styles = StyleSheet.create({
     textTransform: "uppercase",
   },
 
-  /* ── Grid ── */
   gridContainer: {
     flexDirection: "row",
     flexWrap: "wrap",
+    justifyContent: "space-between",
     paddingHorizontal: 12,
-    gap: 12,
+    gap: 5,
   },
 
   cardWrapper: {
@@ -1076,9 +1080,6 @@ const styles = StyleSheet.create({
     borderColor: COLORS.cardBorder,
     justifyContent: "center",
     alignItems: "center",
-    paddingHorizontal: 8,
-    gap: 8,
-    overflow: "hidden",
   },
 
   cardDanger: {
@@ -1105,10 +1106,11 @@ const styles = StyleSheet.create({
 
   cardLabel: {
     color: "#CBD5E1",
-    fontSize: 11.5,
+    fontSize: 10.5,
     fontWeight: "600",
     textAlign: "center",
     lineHeight: 15,
+    marginTop: 8,
   },
 
   cardLabelDanger: {

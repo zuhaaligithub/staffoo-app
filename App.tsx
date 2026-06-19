@@ -1,27 +1,28 @@
-import React, { useEffect, useRef } from 'react';
-import { StyleSheet, StatusBar, Alert, Platform } from 'react-native';
-import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import React, { useEffect, useRef } from "react";
+import { StyleSheet, StatusBar, Alert, Platform } from "react-native";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 import {
   NavigationContainer,
   NavigationContainerRef,
-} from '@react-navigation/native';
-import Toast from 'react-native-toast-message';
-import { LogLevel, OneSignal } from 'react-native-onesignal';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { StripeProvider } from '@stripe/stripe-react-native';
+} from "@react-navigation/native";
+import Toast from "react-native-toast-message";
+import { LogLevel, OneSignal } from "react-native-onesignal";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { StripeProvider } from "@stripe/stripe-react-native";
 // import { STRIPE_PUBLISHABLE_KEY } from '@env';
 
-import AppNavigator from './navigation/AppNavigator';
-import CallOverlay from './screens/CallOverlay';
-import { useEchoCallListener } from './useCallManagerRN';
+import AppNavigator from "./navigation/AppNavigator";
+import CallOverlay from "./screens/CallOverlay";
+import { useEchoCallListener } from "./useCallManagerRN";
 
-const ONESIGNAL_APP_ID = '79041c59-5506-4e56-9de4-8a6619f85e1d';
-const PENDING_ASAP_NOTIFICATION_KEY = '@pending_asap_notification';
+const ONESIGNAL_APP_ID = "79041c59-5506-4e56-9de4-8a6619f85e1d";
+const PENDING_ASAP_NOTIFICATION_KEY = "@pending_asap_notification";
 
 export let navigationRef: NavigationContainerRef<any> | null = null;
 
 export default function App() {
-  const STRIPE_PUBLISHABLE_KEY = "pk_test_51TBYBwDb535HMVUZHtQiPJGDYYZex0gIGvFWtuKR9FRage5WxqqzkLDvKBUpq4MfPkWhgDDM7z3WZrURpwWFBkbo005rxvV6q9"
+  const STRIPE_PUBLISHABLE_KEY =
+    "pk_test_51TBYBwDb535HMVUZHtQiPJGDYYZex0gIGvFWtuKR9FRage5WxqqzkLDvKBUpq4MfPkWhgDDM7z3WZrURpwWFBkbo005rxvV6q9";
   useEchoCallListener();
   const userTypeRef = useRef<string | null>(null);
 
@@ -32,14 +33,14 @@ export default function App() {
   useEffect(() => {
     const loadUserTypeAndRequestPermission = async () => {
       try {
-        const stored = await AsyncStorage.getItem('@user_type');
+        const stored = await AsyncStorage.getItem("@user_type");
         userTypeRef.current = stored;
 
-        if (stored === 'staff' || stored === 'contractor') {
+        if (stored === "staff" || stored === "contractor") {
           requestBackgroundLocationPermission();
         }
       } catch (err) {
-        console.warn('Error loading user type:', err);
+        console.warn("Error loading user type:", err);
       }
     };
 
@@ -66,11 +67,11 @@ export default function App() {
       };
 
       clickHandlerRef.current = handleClick;
-      OneSignal.Notifications.addEventListener('click', handleClick);
+      OneSignal.Notifications.addEventListener("click", handleClick);
 
       // Foreground handler
       const handleForeground = (event: any) => {
-        if (userTypeRef.current === 'customer') {
+        if (userTypeRef.current === "customer") {
           event.preventDefault();
           return;
         }
@@ -80,7 +81,7 @@ export default function App() {
 
       foregroundHandlerRef.current = handleForeground;
       OneSignal.Notifications.addEventListener(
-        'foregroundWillDisplay',
+        "foregroundWillDisplay",
         handleForeground,
       );
     };
@@ -90,31 +91,65 @@ export default function App() {
     return () => {
       if (clickHandlerRef.current)
         OneSignal.Notifications.removeEventListener(
-          'click',
+          "click",
           clickHandlerRef.current,
         );
 
       if (foregroundHandlerRef.current)
         OneSignal.Notifications.removeEventListener(
-          'foregroundWillDisplay',
+          "foregroundWillDisplay",
           foregroundHandlerRef.current,
         );
     };
+  }, []);
+
+  const handledRef = useRef(false);
+
+  useEffect(() => {
+    const checkPendingNotification = async () => {
+      try {
+        const pending = await AsyncStorage.getItem(
+          "@pending_asap_notification",
+        );
+
+        if (!pending || !navigationRef?.isReady()) return;
+
+        const notificationJob = JSON.parse(pending);
+
+        navigationRef.navigate("StaffShifts", {
+          notificationJob,
+        });
+
+        await AsyncStorage.removeItem("@pending_asap_notification");
+      } catch (e) {
+        console.log("Pending notification error:", e);
+      }
+    };
+
+    const interval = setInterval(() => {
+      if (navigationRef?.isReady() && !handledRef.current) {
+        handledRef.current = true;
+        checkPendingNotification();
+        clearInterval(interval);
+      }
+    }, 300);
+
+    return () => clearInterval(interval);
   }, []);
 
   // ─── Notification open handler ───
   const handleNotificationOpen = async (notification: any) => {
     if (!notification) return;
 
-    if (userTypeRef.current === 'customer') {
-      console.log('[Notification] Ignored for customer');
+    if (userTypeRef.current === "customer") {
+      console.log("[Notification] Ignored for customer");
       return;
     }
 
     const additionalData = notification?.additionalData ?? {};
     const pageName = additionalData?.page;
 
-    if (pageName !== 'asap-job-list') return;
+    if (pageName !== "asap-job-list") return;
 
     const rosterWrapper = additionalData?.roster ?? {};
     const rawRoster = rosterWrapper?.roster ?? {};
@@ -133,7 +168,7 @@ export default function App() {
     };
 
     if (navigationRef?.isReady()) {
-      navigationRef.navigate('StaffShifts', { notificationJob });
+      navigationRef.navigate("StaffShifts", { notificationJob });
     } else {
       await AsyncStorage.setItem(
         PENDING_ASAP_NOTIFICATION_KEY,
@@ -152,7 +187,7 @@ export default function App() {
         urlScheme="your-url-scheme"
       >
         <NavigationContainer
-          ref={ref => {
+          ref={(ref) => {
             navigationRef = ref;
           }}
         >

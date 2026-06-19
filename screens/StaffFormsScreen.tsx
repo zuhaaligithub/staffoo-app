@@ -4918,14 +4918,14 @@ const StaffFormsScreen = ({ navigation }: any) => {
         <TouchableOpacity onPress={() => navigation.goBack()} style={s.backBtn}>
           <ArrowLeft size={20} color="#fff" />
         </TouchableOpacity>
-        <Text style={s.headerTitle}>Staffoo Verification Forms</Text>
+        <Text style={s.headerTitle}>Staff Verification Forms</Text>
         <View style={{ width: 40 }} />
       </View>
 
       {/* ── Tab Bar ── */}
       <View style={s.tabBar}>
         {[
-          { key: "onboarding", label: "Employee Onboarding", Icon: BadgeCheck },
+          { key: "onboarding", label: "Onboarding", Icon: BadgeCheck },
           { key: "tfn", label: "TFN Declaration", Icon: FileText },
           { key: "super", label: "Superannuation", Icon: Building2 },
         ].map((tab) => {
@@ -5222,7 +5222,7 @@ const StaffFormsScreen = ({ navigation }: any) => {
               </View>
             </View>
 
-            <Field label="Confirmation">
+            <Field label="Declaration">
               <TouchableOpacity
                 style={{
                   flexDirection: "row",

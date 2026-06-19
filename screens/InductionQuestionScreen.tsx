@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from "react";
 import {
   SafeAreaView,
   ScrollView,
@@ -11,13 +11,13 @@ import {
   StatusBar,
   ActivityIndicator,
   TextInput,
-} from 'react-native';
-import { ChevronLeft, X, Check } from 'lucide-react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useRoute, useNavigation } from '@react-navigation/native';
+} from "react-native";
+import { ChevronLeft, X, Check } from "lucide-react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useRoute, useNavigation } from "@react-navigation/native";
 
-const { width } = Dimensions.get('window');
-const BASE_URL = 'https://apis.staffoo.com.au/api';
+const { width } = Dimensions.get("window");
+const BASE_URL = "https://apis.staffoo.com.au/api";
 
 type Question = {
   id?: number;
@@ -38,30 +38,30 @@ type InductionData = {
 };
 const COLORS = {
   // 🌿 Primary Brand
-  primary: '#89E7D0', // mint accent
-  primaryDark: '#4FCBB3',
+  primary: "#89E7D0", // mint accent
+  primaryDark: "#4FCBB3",
 
   // 🌙 Background system (clean dark navy)
-  background: '#001F3F',
-  surface: '#20b72c',
-  surface2: '#12243A',
+  background: "#001F3F",
+  surface: "#20b72c",
+  surface2: "#12243A",
 
   // ✨ Card / Glass
-  card: 'rgba(255,255,255,0.06)',
-  cardBorder: 'rgba(255,255,255,0.08)',
+  card: "rgba(255,255,255,0.06)",
+  cardBorder: "rgba(255,255,255,0.08)",
 
   // ✍️ Text
-  text: '#FFFFFF',
-  textSecondary: 'rgba(255,255,255,0.7)',
-  textMuted: 'rgba(255,255,255,0.5)',
+  text: "#FFFFFF",
+  textSecondary: "rgba(255,255,255,0.7)",
+  textMuted: "rgba(255,255,255,0.5)",
 
   // 🔴🟡🟢 Status
-  success: '#22C55E',
-  warning: '#F59E0B',
-  danger: '#EF4444',
+  success: "#22C55E",
+  warning: "#F59E0B",
+  danger: "#EF4444",
 
   // Border
-  border: 'rgba(255,255,255,0.08)',
+  border: "rgba(255,255,255,0.08)",
 };
 type RouteParams = {
   inductionId: number | string;
@@ -78,7 +78,7 @@ export default function InductionQuestionsScreen() {
   const [questions, setQuestions] = useState<Question[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedOption, setSelectedOption] = useState<number | null>(null);
-  const [shortAnswer, setShortAnswer] = useState<string>('');
+  const [shortAnswer, setShortAnswer] = useState<string>("");
   const [userAnswers, setUserAnswers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -96,12 +96,12 @@ export default function InductionQuestionsScreen() {
         <View
           style={{
             flex: 1,
-            justifyContent: 'center',
-            alignItems: 'center',
+            justifyContent: "center",
+            alignItems: "center",
             padding: 20,
           }}
         >
-          <Text style={{ fontSize: 18, color: 'red', textAlign: 'center' }}>
+          <Text style={{ fontSize: 18, color: "red", textAlign: "center" }}>
             Error: Induction ID not found
           </Text>
           <TouchableOpacity
@@ -115,13 +115,13 @@ export default function InductionQuestionsScreen() {
     );
   }
 
-  const capitalizeText = (text: string = '') => {
+  const capitalizeText = (text: string = "") => {
     return text
       .toLowerCase()
-      .split(' ')
+      .split(" ")
       .filter(Boolean)
-      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(' ');
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(" ");
   };
 
   useEffect(() => {
@@ -130,7 +130,7 @@ export default function InductionQuestionsScreen() {
 
   const loadUserAndFetchQuestions = async () => {
     try {
-      const cachedUser = await AsyncStorage.getItem('user');
+      const cachedUser = await AsyncStorage.getItem("user");
       if (cachedUser) {
         const parsedUser = JSON.parse(cachedUser);
         const uid = parsedUser?.id || parsedUser?.user?.id;
@@ -138,55 +138,54 @@ export default function InductionQuestionsScreen() {
       }
       await fetchInductionQuestions();
     } catch (err) {
-      console.error('Error loading user:', err);
+      console.error("Error loading user:", err);
       await fetchInductionQuestions();
     }
   };
-
 
   const fetchInductionQuestions = async () => {
     try {
       setLoading(true);
       setError(null);
 
-      const token = await AsyncStorage.getItem('@auth_token');
+      const token = await AsyncStorage.getItem("@auth_token");
 
-      const cachedUser = await AsyncStorage.getItem('user');
+      const cachedUser = await AsyncStorage.getItem("user");
       const parsedUser = cachedUser ? JSON.parse(cachedUser) : null;
 
       const userId =
         parsedUser?.id || parsedUser?.user?.id || parsedUser?.guard_id;
 
       if (!token) {
-        Alert.alert('Session Expired', 'Please login again');
+        Alert.alert("Session Expired", "Please login again");
         return;
       }
 
       if (!userId) {
-        setError('User ID not found');
+        setError("User ID not found");
         return;
       }
 
       const response = await fetch(
         `${BASE_URL}/get-questionnaire/${userId}`, // ✅ FIX HERE
         {
-          method: 'GET',
+          method: "GET",
           headers: {
             Authorization: `Bearer ${token}`,
-            Accept: 'application/json',
+            Accept: "application/json",
           },
         },
       );
 
       const data = await response.json();
-      console.log('📦 API Response:', JSON.stringify(data, null, 2));
+      console.log("📦 API Response:", JSON.stringify(data, null, 2));
 
       if (
         !data.success ||
         !Array.isArray(data.data) ||
         data.data.length === 0
       ) {
-        setError('No questions found');
+        setError("No questions found");
         setLoading(false);
         return;
       }
@@ -194,7 +193,7 @@ export default function InductionQuestionsScreen() {
       const inductionData = data.data[0];
 
       if (!inductionData?.questionnaire?.length) {
-        setError('No questionnaire found in this induction');
+        setError("No questionnaire found in this induction");
         setLoading(false);
         return;
       }
@@ -204,33 +203,33 @@ export default function InductionQuestionsScreen() {
 
       const initialAnswers = inductionData.questionnaire.map(() => ({
         selectedOption: null,
-        shortAnswer: '',
+        shortAnswer: "",
       }));
 
       setUserAnswers(initialAnswers);
     } catch (err) {
-      console.error('❌ Fetch Error:', err);
-      setError('Failed to load questions');
+      console.error("❌ Fetch Error:", err);
+      setError("Failed to load questions");
     } finally {
       setLoading(false);
     }
   };
   const getOptions = (q: Question) => {
     if (
-      q.type?.toLowerCase().includes('true') ||
-      q.type?.toLowerCase().includes('false')
+      q.type?.toLowerCase().includes("true") ||
+      q.type?.toLowerCase().includes("false")
     ) {
       return [
-        { label: 'True', value: '1' },
-        { label: 'False', value: '2' },
+        { label: "True", value: "1" },
+        { label: "False", value: "2" },
       ];
     }
 
     const opts = [];
-    if (q.optiona) opts.push({ label: q.optiona, value: '1' });
-    if (q.optionb) opts.push({ label: q.optionb, value: '2' });
-    if (q.optionc) opts.push({ label: q.optionc, value: '3' });
-    if (q.optiond) opts.push({ label: q.optiond, value: '4' });
+    if (q.optiona) opts.push({ label: q.optiona, value: "1" });
+    if (q.optionb) opts.push({ label: q.optionb, value: "2" });
+    if (q.optionc) opts.push({ label: q.optionc, value: "3" });
+    if (q.optiond) opts.push({ label: q.optiond, value: "4" });
 
     return opts;
   };
@@ -256,7 +255,7 @@ export default function InductionQuestionsScreen() {
     let totalGradedQuestions = 0;
 
     questions.forEach((question, index) => {
-      if (question.type === 'MCQs' || question.type === 'True/False') {
+      if (question.type === "MCQs" || question.type === "True/False") {
         totalGradedQuestions++;
 
         const userAnswer = userAnswers[index];
@@ -275,43 +274,49 @@ export default function InductionQuestionsScreen() {
 
     return Math.round(percentage);
   };
+  const formatQuestionText = (text: string = "") => {
+    if (!text) return "";
 
+    return (
+      text.trim().replace(/\s+/g, " ").charAt(0).toUpperCase() + text.slice(1)
+    );
+  };
   const submitInduction = async () => {
     if (!userId) {
-      Alert.alert('Error', 'User ID not found');
+      Alert.alert("Error", "User ID not found");
       return;
     }
 
     try {
       setSubmitting(true);
-      const token = await AsyncStorage.getItem('@auth_token');
+      const token = await AsyncStorage.getItem("@auth_token");
 
       if (!token) {
-        Alert.alert('Session Expired', 'Please login again');
+        Alert.alert("Session Expired", "Please login again");
         return;
       }
 
       const marks = calculateMarks();
 
       const submitFormData = new FormData();
-      submitFormData.append('guard_id', userId);
-      submitFormData.append('marks', marks.toString());
-      submitFormData.append('questionnaire_id', inductionId.toString());
+      submitFormData.append("guard_id", userId);
+      submitFormData.append("marks", marks.toString());
+      submitFormData.append("questionnaire_id", inductionId.toString());
 
-      console.log('====================================');
-      console.log('Submitting induction questionnaire...');
-      console.log('userId:', userId);
-      console.log('inductionId:', inductionId);
-      console.log('marks:', marks);
-      console.log('====================================');
+      console.log("====================================");
+      console.log("Submitting induction questionnaire...");
+      console.log("userId:", userId);
+      console.log("inductionId:", inductionId);
+      console.log("marks:", marks);
+      console.log("====================================");
 
       const submitResponse = await fetch(
         `${BASE_URL}/submit-guard-questionnaire`,
         {
-          method: 'POST',
+          method: "POST",
           headers: {
             Authorization: `Bearer ${token}`,
-            Accept: 'application/json',
+            Accept: "application/json",
           },
           body: submitFormData,
         },
@@ -321,66 +326,66 @@ export default function InductionQuestionsScreen() {
 
       if (submitData.success) {
         const statusFormData = new FormData();
-        statusFormData.append('guard_id', userId);
-        statusFormData.append('id', inductionId.toString());
+        statusFormData.append("guard_id", userId);
+        statusFormData.append("id", inductionId.toString());
         // statusFormData.append('type', 'induction');
 
-        console.log('Updating induction read status...');
-        console.log('userId:', userId);
-        console.log('inductionId:', inductionId);
-        console.log('====================================');
+        console.log("Updating induction read status...");
+        console.log("userId:", userId);
+        console.log("inductionId:", inductionId);
+        console.log("====================================");
         await fetch(`${BASE_URL}/update-induction-read-status`, {
-          method: 'POST',
+          method: "POST",
           headers: {
             Authorization: `Bearer ${token}`,
-            Accept: 'application/json',
+            Accept: "application/json",
           },
           body: statusFormData,
         });
 
         if (marks > 80) {
           Alert.alert(
-            '🎉 Congratulations!',
-            'Induction certificate submitted successfully!',
-            [{ text: 'Done', onPress: () => navigation.goBack() }],
+            "🎉 Congratulations!",
+            "Induction certificate submitted successfully!",
+            [{ text: "Done", onPress: () => navigation.goBack() }],
           );
         } else {
           Alert.alert(
-            '⚠️ Not Eligible',
-            'You are not eligible for the induction card. Please re-attempt the test again!',
-            [{ text: 'Retry', onPress: () => navigation.goBack() }],
+            "⚠️ Not Eligible",
+            "You are not eligible for the induction card. Please re-attempt the test again!",
+            [{ text: "Retry", onPress: () => navigation.goBack() }],
           );
         }
       } else {
-        Alert.alert('Error', submitData.message || 'Submission failed');
+        Alert.alert("Error", submitData.message || "Submission failed");
       }
     } catch (err) {
-      console.error('❌ Submission Error:', err);
-      Alert.alert('Error', 'Failed to submit induction');
+      console.error("❌ Submission Error:", err);
+      Alert.alert("Error", "Failed to submit induction");
     } finally {
       setSubmitting(false);
     }
   };
 
   const handleNext = () => {
-    if (currentQuestion.type === 'Short Question') {
+    if (currentQuestion.type === "Short Question") {
       if (!shortAnswer.trim()) {
-        Alert.alert('Required', 'Please enter your answer');
+        Alert.alert("Required", "Please enter your answer");
         return;
       }
     } else {
       if (selectedOption === null) {
-        Alert.alert('Required', 'Please select an option');
+        Alert.alert("Required", "Please select an option");
         return;
       }
     }
 
     if (currentIndex < questions.length - 1) {
-      setCurrentIndex(prev => prev + 1);
+      setCurrentIndex((prev) => prev + 1);
 
       const nextAnswer = userAnswers[currentIndex + 1];
       setSelectedOption(nextAnswer?.selectedOption ?? null);
-      setShortAnswer(nextAnswer?.shortAnswer ?? '');
+      setShortAnswer(nextAnswer?.shortAnswer ?? "");
     } else {
       submitInduction();
     }
@@ -390,7 +395,7 @@ export default function InductionQuestionsScreen() {
     return (
       <SafeAreaView style={styles.container}>
         <View
-          style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}
+          style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
         >
           <ActivityIndicator size="large" color={COLORS.primary} />
           <Text style={{ marginTop: 12, color: COLORS.text }}>
@@ -407,13 +412,13 @@ export default function InductionQuestionsScreen() {
         <View
           style={{
             flex: 1,
-            justifyContent: 'center',
-            alignItems: 'center',
+            justifyContent: "center",
+            alignItems: "center",
             padding: 20,
           }}
         >
-          <Text style={{ fontSize: 18, color: 'red', textAlign: 'center' }}>
-            {error || 'No questions available'}
+          <Text style={{ fontSize: 18, color: "red", textAlign: "center" }}>
+            {error || "No questions available"}
           </Text>
           <TouchableOpacity
             style={styles.nextButton}
@@ -426,15 +431,12 @@ export default function InductionQuestionsScreen() {
     );
   }
 
-  const isShortQuestion = currentQuestion.type === 'Short Question';
+  const isShortQuestion = currentQuestion.type === "Short Question";
   const options = !isShortQuestion ? getOptions(currentQuestion) : [];
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar
-        barStyle="light-content"
-        backgroundColor={COLORS.background}
-      />
+      <StatusBar barStyle="light-content" backgroundColor={COLORS.background} />
 
       {/* Header */}
       <View style={styles.header}>
@@ -443,7 +445,7 @@ export default function InductionQuestionsScreen() {
             onPress={() => navigation.goBack()}
             style={styles.iconButton}
           >
-            <ChevronLeft size={28} color={COLORS.text} />
+            <ChevronLeft size={24} color={COLORS.text} />
           </TouchableOpacity>
 
           <Text style={styles.questionCounter}>
@@ -454,8 +456,7 @@ export default function InductionQuestionsScreen() {
             onPress={() => navigation.goBack()}
             style={styles.iconButton}
           >
-
-            <X size={28} color={COLORS.text} />
+            <X size={24} color={COLORS.text} />
           </TouchableOpacity>
         </View>
 
@@ -466,13 +467,18 @@ export default function InductionQuestionsScreen() {
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <Text style={styles.inductionTitle}>
-          {capitalizeText(induction?.title || '')}
+          {formatQuestionText(induction?.title || "")}
         </Text>
 
         <View style={styles.questionCard}>
-          <Text style={styles.questionText}>{capitalizeText(currentQuestion.question)}</Text>
+          <Text style={styles.questionText}>
+            {formatQuestionText(currentQuestion.question)}
+          </Text>
           <View style={styles.questionTypeBadge}>
-            <Text style={styles.questionTypeText}>  {capitalizeText(currentQuestion.type)}</Text>
+            <Text style={styles.questionTypeText}>
+              {" "}
+              {capitalizeText(currentQuestion.type)}
+            </Text>
           </View>
         </View>
 
@@ -530,7 +536,7 @@ export default function InductionQuestionsScreen() {
           style={[
             styles.nextButton,
             (isShortQuestion ? !shortAnswer.trim() : selectedOption === null) &&
-            styles.disabledButton,
+              styles.disabledButton,
           ]}
           onPress={handleNext}
           disabled={
@@ -543,8 +549,8 @@ export default function InductionQuestionsScreen() {
           ) : (
             <Text style={styles.nextButtonText}>
               {currentIndex === questions.length - 1
-                ? 'Finish Induction'
-                : 'Next Question'}
+                ? "Finish Induction"
+                : "Next Question"}
             </Text>
           )}
         </TouchableOpacity>
@@ -557,29 +563,29 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     // backgroundColor: COLORS.background,
-    backgroundColor: '#111111',
-    paddingTop: 25,
+    backgroundColor: "#111111",
+    paddingTop: 30,
   },
 
   header: {
-    paddingBottom: 20,
+    paddingBottom: 15,
     paddingHorizontal: 20,
     backgroundColor: COLORS.surface2,
-    borderBottomLeftRadius: 30,
-    borderBottomRightRadius: 30,
-    borderTopLeftRadius: 30,
-    borderTopRightRadius: 30,
+    borderBottomLeftRadius: 20,
+    borderBottomRightRadius: 20,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
     marginHorizontal: 10,
-    paddingTop: 10,
+    paddingTop: 7,
     borderWidth: 1,
     borderColor: COLORS.border,
   },
 
   headerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 15,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 10,
   },
 
   iconButton: {
@@ -588,29 +594,29 @@ const styles = StyleSheet.create({
 
   questionCounter: {
     color: COLORS.text,
-    fontSize: 18,
-    fontWeight: '700',
+    fontSize: 14,
+    fontWeight: "700",
   },
 
   progressContainer: {
     height: 8,
-    backgroundColor: 'rgba(255,255,255,0.08)',
+    backgroundColor: "rgba(255,255,255,0.08)",
     borderRadius: 4,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
 
   progressBar: {
-    height: '100%',
+    height: "100%",
     backgroundColor: COLORS.primary,
     borderRadius: 4,
   },
 
   inductionTitle: {
     fontSize: 22,
-    fontWeight: '700',
+    fontWeight: "700",
     color: COLORS.text,
-    textAlign: 'center',
-    marginVertical: 15,
+    textAlign: "center",
+    marginVertical: 10,
   },
 
   scrollContent: {
@@ -622,34 +628,34 @@ const styles = StyleSheet.create({
   questionCard: {
     backgroundColor: COLORS.card,
     borderRadius: 24,
-    padding: 24,
+    padding: 12,
     marginBottom: 24,
     borderWidth: 1,
     borderColor: COLORS.cardBorder,
   },
 
   questionText: {
-    fontSize: 18,
-    lineHeight: 30,
+    fontSize: 16,
+    lineHeight: 20,
     color: COLORS.text,
-    fontWeight: '600',
+    fontWeight: "600",
   },
 
   questionTypeBadge: {
-    backgroundColor: 'rgba(137,231,208,0.15)',
+    backgroundColor: "rgba(137,231,208,0.15)",
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 10,
-    alignSelf: 'flex-start',
+    alignSelf: "flex-start",
     marginTop: 14,
     borderWidth: 1,
-    borderColor: 'rgba(137,231,208,0.25)',
+    borderColor: "rgba(137,231,208,0.25)",
   },
 
   questionTypeText: {
     color: COLORS.primary,
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: "700",
   },
 
   shortAnswerContainer: {
@@ -665,7 +671,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: COLORS.border,
     minHeight: 140,
-    textAlignVertical: 'top',
+    textAlignVertical: "top",
   },
 
   optionsContainer: {
@@ -674,20 +680,20 @@ const styles = StyleSheet.create({
 
   optionButton: {
     backgroundColor: COLORS.card,
-    borderRadius: 18,
-    padding: 18,
+    borderRadius: 50,
+    padding: 10,
     borderWidth: 1,
     borderColor: COLORS.border,
   },
 
   selectedOption: {
     borderColor: COLORS.primary,
-    backgroundColor: 'rgba(137,231,208,0.12)',
+    backgroundColor: "rgba(137,231,208,0.12)",
   },
 
   optionContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
   },
 
   checkbox: {
@@ -707,12 +713,12 @@ const styles = StyleSheet.create({
     height: 26,
     borderRadius: 13,
     backgroundColor: COLORS.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
 
   optionText: {
-    fontSize: 16.5,
+    fontSize: 14,
     color: COLORS.textSecondary,
     flex: 1,
     lineHeight: 24,
@@ -720,34 +726,34 @@ const styles = StyleSheet.create({
 
   selectedOptionText: {
     color: COLORS.text,
-    fontWeight: '700',
+    fontWeight: "700",
   },
 
   footer: {
-    position: 'absolute',
+    position: "absolute",
     bottom: 0,
     left: 0,
     right: 0,
     backgroundColor: COLORS.surface2,
-    padding: 20,
+    padding: 18,
     borderTopWidth: 1,
     borderTopColor: COLORS.border,
   },
 
   nextButton: {
     backgroundColor: COLORS.primary,
-    paddingVertical: 18,
+    paddingVertical: 14,
     borderRadius: 18,
-    alignItems: 'center',
+    alignItems: "center",
   },
 
   disabledButton: {
-    backgroundColor: 'rgba(255,255,255,0.2)',
+    backgroundColor: "rgba(255,255,255,0.2)",
   },
 
   nextButtonText: {
     color: COLORS.background,
     fontSize: 18,
-    fontWeight: '700',
+    fontWeight: "700",
   },
 });

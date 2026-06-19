@@ -518,7 +518,7 @@ export default function CreateFootPatrol({
               value={patrollingDetails}
               onChangeText={setPatrollingDetails}
             />
-            <View style={styles.aiButtons}>
+            {/* <View style={styles.aiButtons}>
               <TouchableOpacity
                 style={styles.spellBtn}
                 onPress={() => correctText(patrollingDetails, 'Correct this')}
@@ -536,7 +536,7 @@ export default function CreateFootPatrol({
               >
                 <Text style={styles.btnText}>Change with AI</Text>
               </TouchableOpacity>
-            </View>
+            </View> */}
           </View>
         )}
 

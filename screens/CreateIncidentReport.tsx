@@ -760,7 +760,7 @@ export default function CreateIncidentReport({
                 value={incidentDetails}
                 onChangeText={setIncidentDetails}
               />
-              <View style={styles.aiButtons}>
+              {/* <View style={styles.aiButtons}>
                 <TouchableOpacity
                   style={styles.spellBtn}
                   onPress={() => correctText(incidentDetails, "Correct this")}
@@ -778,7 +778,7 @@ export default function CreateIncidentReport({
                 >
                   <Text style={styles.btnText}>Change with AI</Text>
                 </TouchableOpacity>
-              </View>
+              </View> */}
             </View>
           )}
 
