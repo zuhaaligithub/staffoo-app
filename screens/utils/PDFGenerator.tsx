@@ -226,7 +226,7 @@ const generateInvoicePDF = async (
         )}</span></div>
       </div>
     </div>
-    <div class="page-footer">Thank you for choosing Staffo Facility Services.<br/>https://app.staffoo.com.au</div>
+    <div class="page-footer">Thank you for choosing Staffoo Facility Services.<br/>https://app.staffoo.com.au</div>
   </body></html>`;
 
   const result = await generatePDF({
@@ -309,12 +309,12 @@ const generateShiftReportPDF = async (
     <div style="text-align:right;font-size:15px;font-weight:bold;color:#0d6efd;margin-top:10px;">
       Total Hours: ${totalHours} hrs
     </div>
-    <div class="page-footer">Thank you for choosing Staffo Facility Services.<br/>https://app.staffoo.com.au</div>
+    <div class="page-footer">Thank you for choosing Staffoo Facility Services.<br/>https://app.staffoo.com.au</div>
   </body></html>`;
 
   const result = await generatePDF({
     html,
-    fileName: `ShiftReport_${siteName || 'Staffo'}_${new Date()
+    fileName: `ShiftReport_${siteName || 'Staffoo'}_${new Date()
       .toISOString()
       .slice(0, 10)}`,
     directory: outputDir(),

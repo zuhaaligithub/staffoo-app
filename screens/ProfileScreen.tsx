@@ -743,7 +743,7 @@ export default function ProfileScreen({ navigation }: Props) {
         </LinearGradient>
 
         {/* ── Incomplete Warning ── */}
-        {user?.user_type !== "customer" && !isProfileComplete && (
+        {/* {user?.user_type !== "customer" && !isProfileComplete && (
           <View style={styles.warningCard}>
             <AlertCircle size={16} color={COLORS.warning} />
             <Text style={styles.warningText}>
@@ -751,7 +751,7 @@ export default function ProfileScreen({ navigation }: Props) {
               {completionPercentage}% done
             </Text>
           </View>
-        )}
+        )} */}
 
         {/* ── Section Grid ── */}
         <View style={styles.sectionHeader}>

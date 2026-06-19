@@ -219,7 +219,7 @@ export default function StaffInductionScreen({
 
   const handleStartInduction = (item: any) => {
     if (isCompleted(item.status)) {
-      Alert.alert("Completed", "You have already finished this induction.");
+      Alert.alert("Completed", "You have already passed this induction.");
       return;
     }
 

@@ -181,7 +181,7 @@ export default function PaymentHistoryScreen({ navigation, route }: Props) {
       </View>
 
       <Text style={styles.headersubTitle}>
-        Your Payment Details Are Encrypted And Securely Stored.
+        Your payment details are encrypted and securely stored.
       </Text>
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
@@ -268,7 +268,7 @@ export default function PaymentHistoryScreen({ navigation, route }: Props) {
           <View style={styles.row}>
             <View style={styles.halfField}>
               <Text style={styles.label}>
-                Exp Month <Text style={styles.required}>*</Text>
+                Expiry Month <Text style={styles.required}>*</Text>
               </Text>
               <TextInput
                 style={styles.input}
@@ -285,7 +285,7 @@ export default function PaymentHistoryScreen({ navigation, route }: Props) {
 
             <View style={styles.halfField}>
               <Text style={styles.label}>
-                Exp Year <Text style={styles.required}>*</Text>
+                Expiry Year <Text style={styles.required}>*</Text>
               </Text>
               <TextInput
                 style={styles.input}

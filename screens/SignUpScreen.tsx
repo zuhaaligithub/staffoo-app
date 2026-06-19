@@ -1209,7 +1209,7 @@ Confidentiality: Personnel must protect all customer site data, access codes, an
 Part 5: Contact Information
 For support or administrative inquiries, please contact Capital Services Pty Ltd:
 Admin Office: 21 Tanglewood Bvd, Truganina VIC 3029
-Email: [staffoo.com.au]
+Email: [admin@staffoo.com.au]
 Phone: [1800782366]`;
 
 export default function SignUpScreen({ navigation }: { navigation: any }) {

@@ -373,7 +373,7 @@ export default function HomeScreen({ navigation }: any) {
 
           {displayedSites.length === 0 ? (
             <Text style={{ paddingVertical: 20, color: '#666' }}>
-              No sites found for this week.
+              No shift found.
             </Text>
           ) : (
             displayedSites.map((site: any) => {
