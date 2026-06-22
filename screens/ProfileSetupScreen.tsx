@@ -38,30 +38,89 @@ import { launchImageLibrary } from "react-native-image-picker";
 import ImageResizer from "react-native-image-resizer";
 import LinearGradient from "react-native-linear-gradient";
 import DateTimePicker from "@react-native-community/datetimepicker";
+
 const GOOGLE_API_KEY = "AIzaSyCS-DB39Kk-Z25C5GWymVGshXIALbjXPGY";
+
 const COLORS = {
   brand: "#0A7C6E",
   brandDark: "#111111",
   brandLight: "#021d37",
   accent: "#89E7D0",
-
   success: "#89E7D0",
   error: "#EF4444",
-
   background: "#171d30",
   surface: "#121722",
   surfaceLight: "#171d30",
-
   textPrimary: "#E5E7EB",
   textSecondary: "#94A3B8",
   textMuted: "#64748B",
-
   border: "#1F2A44",
 };
+
 type Props = { navigation: any };
 
+// Country list is loaded dynamically from the REST Countries API and
+// a small resolver that maps codes or names to display names lives inside
+// the component (so it can access the loaded list).
+
+// ─── Date helpers ──────────────────────────────────────────────────────────────
+const australianToApiDate = (dateStr: string): string => {
+  if (!dateStr) return "";
+  const [day, month, year] = dateStr.split("/");
+  return `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
+};
+
+const formatToAustralian = (date: Date): string => {
+  const day = String(date.getDate()).padStart(2, "0");
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const year = date.getFullYear();
+  return `${day}/${month}/${year}`;
+};
+
+const parseAustralianToDate = (dateStr: string): Date | null => {
+  if (!dateStr) return null;
+  const [day, month, year] = dateStr.split("/").map(Number);
+  const date = new Date(year, month - 1, day);
+  return isNaN(date.getTime()) ? null : date;
+};
+
+// ─── InputField ────────────────────────────────────────────────────────────────
+const InputField = ({
+  icon: Icon,
+  label,
+  value,
+  onChange,
+  editable = true,
+  placeholder = "",
+  keyboardType = "default",
+}: any) => (
+  <View style={styles.field}>
+    <Text style={styles.label}>{label}</Text>
+    <LinearGradient
+      colors={["#171d30", "#171d30"]}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+      style={styles.inputContainer}
+    >
+      <Icon size={20} color="#fff" style={styles.inputIcon} />
+      <TextInput
+        style={styles.input}
+        value={value}
+        onChangeText={onChange}
+        placeholder={placeholder}
+        placeholderTextColor="rgba(255,255,255,0.6)"
+        editable={editable}
+        keyboardType={keyboardType}
+        autoCapitalize="sentences"
+        returnKeyType="done"
+        onSubmitEditing={Keyboard.dismiss}
+      />
+    </LinearGradient>
+  </View>
+);
+
+// ─── Main Component ────────────────────────────────────────────────────────────
 export default function ProfileSetupScreen({ navigation }: Props) {
-  // ==================== ALL HOOKS MUST BE HERE (TOP) ====================
   const [fullName, setFullName] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
   const [gmail, setGmail] = useState("");
@@ -71,27 +130,6 @@ export default function ProfileSetupScreen({ navigation }: Props) {
   const [residentialStatus, setResidentialStatus] = useState<string | null>(
     null,
   );
-
-  const australianToApiDate = (dateStr: string): string => {
-    if (!dateStr) return "";
-
-    const [day, month, year] = dateStr.split("/");
-
-    return `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
-  };
-  const formatToAustralian = (date: Date): string => {
-    const day = String(date.getDate()).padStart(2, "0");
-    const month = String(date.getMonth() + 1).padStart(2, "0");
-    const year = date.getFullYear();
-    return `${day}/${month}/${year}`;
-  };
-
-  const parseAustralianToDate = (dateStr: string): Date | null => {
-    if (!dateStr) return null;
-    const [day, month, year] = dateStr.split("/").map(Number);
-    const date = new Date(year, month - 1, day);
-    return isNaN(date.getTime()) ? null : date;
-  };
   const [securityLicenseNo, setSecurityLicenseNo] = useState("");
   const [scrollY, setScrollY] = useState(0);
   const [companyName, setCompanyName] = useState("");
@@ -99,9 +137,16 @@ export default function ProfileSetupScreen({ navigation }: Props) {
   const [address, setAddress] = useState("");
   const [city, setCity] = useState("");
   const [stateValue, setStateValue] = useState("");
+
+  // `country` always stores the FULL name (e.g. "Australia") for display & payload
   const [country, setCountry] = useState("");
+
+  // `originCountry` stores the FULL name (e.g. "Pakistan") for display & payload
+  // Only used for staff
+  const [originCountry, setOriginCountry] = useState("");
+
   const [coordinates, setCoordinates] = useState<any>(null);
-  const [acn, setAcn] = useState(""); // ← NEW
+  const [acn, setAcn] = useState("");
   const [abn, setAbn] = useState("");
   const [predictions, setPredictions] = useState<any[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -117,13 +162,83 @@ export default function ProfileSetupScreen({ navigation }: Props) {
   const [otp, setOtp] = useState<string>("");
   const [otpModalVisible, setOtpModalVisible] = useState(false);
   const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
-  const [originCountry, setOriginCountry] = useState("");
-  // Custom Dropdown States
+
+  const [showCountryModal, setShowCountryModal] = useState(false);
+  const [countrySearch, setCountrySearch] = useState("");
+  const [countries, setCountries] = useState<
+    Array<{ name: string; code: string }>
+  >([]);
+  const [countriesLoading, setCountriesLoading] = useState(false);
+
+  useEffect(() => {
+    let mounted = true;
+    const fetchCountries = async () => {
+      try {
+        setCountriesLoading(true);
+        const res = await fetch(
+          "https://restcountries.com/v3.1/all?fields=name,cca3,cca2",
+        );
+        const json = await res.json();
+        const list = (json || [])
+          .map((c: any) => ({
+            name: c.name?.common || "",
+            code: c.cca3 || c.cca2 || "",
+          }))
+          .filter((c: any) => c.name && c.code)
+          .sort((a: any, b: any) => a.name.localeCompare(b.name));
+        if (mounted) setCountries(list);
+      } catch (err) {
+        console.warn("Failed to load countries", err);
+      } finally {
+        if (mounted) setCountriesLoading(false);
+      }
+    };
+    fetchCountries();
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  // Helper: resolve any country string (code or full name) → full name
+  const countryCodeToNameFallback: Record<string, string> = {
+    PAK: "Pakistan",
+    AUS: "Australia",
+    IND: "India",
+    CAN: "Canada",
+    USA: "United States",
+    GBR: "United Kingdom",
+    PK: "Pakistan",
+    AU: "Australia",
+    IN: "India",
+    CA: "Canada",
+    US: "United States",
+    GB: "United Kingdom",
+  };
+
+  const resolveCountryName = (input: string): string => {
+    if (!input) return "";
+    const trimmed = input.trim();
+    // try countries list first
+    const byName = countries.find(
+      (c) => c.name.toLowerCase() === trimmed.toLowerCase(),
+    );
+    if (byName) return byName.name;
+    const byCode = countries.find(
+      (c) => c.code.toLowerCase() === trimmed.toLowerCase(),
+    );
+    if (byCode) return byCode.name;
+    // fallback to small mapping
+    if (countryCodeToNameFallback[trimmed.toUpperCase()])
+      return countryCodeToNameFallback[trimmed.toUpperCase()];
+    return trimmed;
+  };
+
   const [showGenderModal, setShowGenderModal] = useState(false);
   const [showResidentialModal, setShowResidentialModal] = useState(false);
-  const [dateOfBirth, setDateOfBirth] = useState(""); // Now stores DD/MM/YYYY
+  const [dateOfBirth, setDateOfBirth] = useState("");
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [tempDate, setTempDate] = useState(new Date());
+
   const genderOptions = [
     { label: "Male", value: "male" },
     { label: "Female", value: "female" },
@@ -138,121 +253,41 @@ export default function ProfileSetupScreen({ navigation }: Props) {
     { label: "Visa Subclass 485", value: "visa_485" },
   ];
 
+  // ─── Phone handler ──────────────────────────────────────────────────────────
   const handlePhoneChange = (text: string) => {
-    // keep only digits and one +
     let cleaned = text.replace(/[^\d+]/g, "");
 
-    // allow only one + at beginning
     if (cleaned.includes("+")) {
       cleaned = "+" + cleaned.replace(/\+/g, "").replace(/^\+/, "");
     }
 
-    // =========================
-    // PAKISTAN
-    // =========================
-
-    // +92xxxxxxxxxx
     if (cleaned.startsWith("+92")) {
       cleaned = "+92" + cleaned.slice(3).replace(/\D/g, "");
-
-      // total length = 13
-      if (cleaned.length > 13) {
-        cleaned = cleaned.slice(0, 13);
-      }
-    }
-
-    // 03xxxxxxxxx
-    else if (cleaned.startsWith("03")) {
+      if (cleaned.length > 13) cleaned = cleaned.slice(0, 13);
+    } else if (cleaned.startsWith("03")) {
       cleaned = cleaned.replace(/\D/g, "");
-
-      // total length = 11
-      if (cleaned.length > 11) {
-        cleaned = cleaned.slice(0, 11);
-      }
+      if (cleaned.length > 11) cleaned = cleaned.slice(0, 11);
     } else if (cleaned.startsWith("+1")) {
       cleaned = "+1" + cleaned.slice(2).replace(/\D/g, "");
-
-      // +1 + 10 digits = 12 chars total
-      if (cleaned.length > 12) {
-        cleaned = cleaned.slice(0, 12);
-      }
-    }
-
-    // US/Canada local (10 digits)
-    else if (!cleaned.startsWith("+") && cleaned.length > 0) {
-      const digits = cleaned.replace(/\D/g, "");
-
-      // if 10 digits, assume US/Canada format
-      if (digits.length <= 10) {
-        cleaned = digits.slice(0, 10);
-      }
-    }
-
-    // =========================
-    // AUSTRALIA
-    // =========================
-
-    // +61xxxxxxxxx
-    else if (cleaned.startsWith("+61")) {
+      if (cleaned.length > 12) cleaned = cleaned.slice(0, 12);
+    } else if (cleaned.startsWith("+61")) {
       cleaned = "+61" + cleaned.slice(3).replace(/\D/g, "");
-
-      // total length = 12
-      if (cleaned.length > 12) {
-        cleaned = cleaned.slice(0, 12);
-      }
-    }
-
-    // 04xxxxxxxx
-    else if (cleaned.startsWith("0")) {
+      if (cleaned.length > 12) cleaned = cleaned.slice(0, 12);
+    } else if (cleaned.startsWith("0")) {
       cleaned = cleaned.replace(/\D/g, "");
-
-      // total length = 10
-      if (cleaned.length > 10) {
-        cleaned = cleaned.slice(0, 10);
-      }
-    }
-
-    // OTHER COUNTRIES
-    else {
-      // allow max 15 digits international standard
+      if (cleaned.length > 10) cleaned = cleaned.slice(0, 10);
+    } else if (!cleaned.startsWith("+") && cleaned.length > 0) {
+      const digits = cleaned.replace(/\D/g, "");
+      if (digits.length <= 10) cleaned = digits.slice(0, 10);
+    } else {
       cleaned = cleaned.replace(/[^\d+]/g, "");
-
-      if (cleaned.length > 15) {
-        cleaned = cleaned.slice(0, 15);
-      }
+      if (cleaned.length > 15) cleaned = cleaned.slice(0, 15);
     }
 
     setPhoneNumber(cleaned);
   };
 
-  // Optional: Add this for better UX (formatting with spaces)
-  const formatPhoneForDisplay = (num: string): string => {
-    if (!num) return "";
-
-    // Australia +61
-    if (num.startsWith("+61")) {
-      return num.replace(/(\+61)(\d{3})(\d{3})(\d{3})/, "$1 $2 $3 $4").trim();
-    }
-
-    // Australia local
-    if (num.startsWith("0") && num.length <= 10) {
-      return num.replace(/(\d{4})(\d{3})(\d{3})/, "$1 $2 $3").trim();
-    }
-
-    // Pakistan +92
-    if (num.startsWith("+92")) {
-      return num.replace(/(\+92)(\d{3})(\d{7})/, "$1 $2 $3").trim();
-    }
-
-    // Pakistan local
-    if (num.startsWith("03")) {
-      return num.replace(/(\d{4})(\d{7})/, "$1 $2").trim();
-    }
-
-    return num;
-  };
-
-  // useEffect must also be at top level
+  // ─── Load profile ───────────────────────────────────────────────────────────
   useEffect(() => {
     const initializeProfile = async () => {
       try {
@@ -270,6 +305,8 @@ export default function ProfileSetupScreen({ navigation }: Props) {
         const profile = profileResponse?.data || {};
 
         const BASE_IMAGE_URL = "https://apis.staffoo.com.au/storage/";
+
+        // Profile Image
         if (profile?.staff?.profile_image) {
           setProfileImage(`${BASE_IMAGE_URL}${profile.staff.profile_image}`);
         } else if (profile?.customer?.profile_image) {
@@ -285,48 +322,64 @@ export default function ProfileSetupScreen({ navigation }: Props) {
         setGmail(profile?.email ?? "");
         setOriginalGmail(profile?.email ?? "");
 
-        // 🔥 Get address from root OR nested objects
-        const currentAddress =
+        // Address fields
+        setAddress(
           profile?.address ||
-          profile?.staff?.address ||
-          profile?.customer?.address ||
-          profile?.contractor?.address ||
-          "";
-
-        const currentCity =
+            profile?.staff?.address ||
+            profile?.customer?.address ||
+            profile?.contractor?.address ||
+            "",
+        );
+        setCity(
           profile?.city ||
-          profile?.staff?.city ||
-          profile?.customer?.city ||
-          profile?.contractor?.city ||
-          "";
-
-        const currentState =
+            profile?.staff?.city ||
+            profile?.customer?.city ||
+            profile?.contractor?.city ||
+            "",
+        );
+        setStateValue(
           profile?.state ||
-          profile?.staff?.state ||
-          profile?.customer?.state ||
-          profile?.contractor?.state ||
+            profile?.staff?.state ||
+            profile?.customer?.state ||
+            profile?.contractor?.state ||
+            "",
+        );
+
+        // ── Country (residential / address country) → always store full name ──
+        const residentialCountryRaw =
+          profile?.country ||
+          profile?.customer?.country ||
+          profile?.contractor?.country ||
+          profile?.staff?.country ||
           "";
+        setCountry(resolveCountryName(residentialCountryRaw));
 
-        // Country Handling - Show Full Name in UI
-        let currentCountry =
-          profile?.user_type === "staff"
-            ? profile?.staff?.origin_country || profile?.country || ""
-            : profile?.country ||
-              profile?.customer?.country ||
-              profile?.contractor?.country ||
-              "";
-
-        // Convert short code (PAK, AUS, etc.) to full name for display
-        let displayCountry = currentCountry?.trim();
-        if (displayCountry && countryCodeToName[displayCountry]) {
-          displayCountry = countryCodeToName[displayCountry];
+        // ── Origin country (staff only) → always store full name ──
+        if (profile?.user_type === "staff") {
+          const originRaw = profile?.staff?.origin_country || "";
+          let originCode = originRaw?.trim() || "";
+          let originName = resolveCountryName(originRaw);
+          // If we have the countries list, try to normalize to code+name
+          if (countries && countries.length > 0) {
+            const byCode = countries.find(
+              (c) => c.code.toLowerCase() === originRaw.trim().toLowerCase(),
+            );
+            const byName = countries.find(
+              (c) => c.name.toLowerCase() === originRaw.trim().toLowerCase(),
+            );
+            if (byCode) {
+              originCode = byCode.code;
+              originName = byCode.name;
+            } else if (byName) {
+              originCode = byName.code;
+              originName = byName.name;
+            }
+          }
+          setOriginCountry(originCode);
+          setCountry(originName);
         }
 
-        setAddress(currentAddress);
-        setCity(currentCity);
-        setStateValue(currentState);
-        setCountry(displayCountry); // ← Only set full name once
-
+        // Coordinates
         const currentCoordinates =
           profile?.coordinates ||
           profile?.staff?.coordinates ||
@@ -336,32 +389,29 @@ export default function ProfileSetupScreen({ navigation }: Props) {
 
         if (currentCoordinates) {
           const parts = currentCoordinates.split(",");
-
           if (parts.length === 2) {
             const lat = parseFloat(parts[0]);
             const lng = parseFloat(parts[1]);
-
             if (!isNaN(lat) && !isNaN(lng)) {
               setCoordinates({ lat, lng });
             }
           }
         }
 
+        // Type-specific fields
         if (profile?.user_type === "contractor") {
           setPhoneNumber(profile?.contractor?.phone ?? "");
           setCompanyName(profile?.contractor?.company_name ?? "");
           setRegistrationNumber(profile?.contractor?.registration_number ?? "");
-          setAcn(profile?.contractor?.acn ?? ""); // ← NEW
+          setAcn(profile?.contractor?.acn ?? "");
           setAbn(profile?.contractor?.abn ?? "");
         } else if (profile?.user_type === "staff") {
           setPhoneNumber(profile?.staff?.phone ?? "");
           setGender(profile?.staff?.gender ?? null);
           setResidentialStatus(profile?.staff?.staff_document_type ?? null);
-          // ✅ FIXED DATE LOADING
+
           if (profile?.staff?.date_of_birth) {
             let dob = profile.staff.date_of_birth.trim();
-
-            // Handle both YYYY-MM-DD and DD/MM/YYYY
             if (dob.includes("-")) {
               const [year, month, day] = dob.split("-").map(Number);
               dob = `${String(day).padStart(2, "0")}/${String(month).padStart(
@@ -369,26 +419,17 @@ export default function ProfileSetupScreen({ navigation }: Props) {
                 "0",
               )}/${year}`;
             }
-
             setDateOfBirth(dob);
-
             const parsedDate = parseAustralianToDate(dob);
-            if (parsedDate) {
-              setTempDate(parsedDate);
-            }
+            if (parsedDate) setTempDate(parsedDate);
           }
-          setSecurityLicenseNo(
-            profile?.staff?.security_license_no ??
-              // profile?.documents?.find(
-              //   (doc: any) => doc.document_name === 'Security License',
-              // )?.document_no ??
-              "",
-          );
+          setSecurityLicenseNo(profile?.staff?.security_license_no ?? "");
         } else {
           setPhoneNumber(profile?.customer?.phone ?? "");
           setGender(profile?.customer?.gender ?? null);
         }
       } catch (err) {
+        console.log("Profile load error:", err);
         Toast.show({ type: "error", text1: "Could not load profile" });
       } finally {
         setFetching(false);
@@ -398,18 +439,17 @@ export default function ProfileSetupScreen({ navigation }: Props) {
     initializeProfile();
   }, [navigation]);
 
+  // ─── Google Places ──────────────────────────────────────────────────────────
   const fetchPlaces = async (text: string) => {
     if (text.length < 3) {
       setPredictions([]);
       setShowSuggestions(false);
       return;
     }
-
     try {
       const res = await fetch(
         `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${text}&key=${GOOGLE_API_KEY}`,
       );
-
       const json = await res.json();
       setPredictions(json.predictions || []);
       setShowSuggestions(true);
@@ -423,12 +463,10 @@ export default function ProfileSetupScreen({ navigation }: Props) {
       setShowSuggestions(false);
       Keyboard.dismiss();
 
-      // 🔥 IMPORTANT: delay state sync until tap finishes
       requestAnimationFrame(async () => {
         const res = await fetch(
           `https://maps.googleapis.com/maps/api/place/details/json?place_id=${placeId}&key=${GOOGLE_API_KEY}`,
         );
-
         const json = await res.json();
         const details = json.result;
 
@@ -443,14 +481,14 @@ export default function ProfileSetupScreen({ navigation }: Props) {
           if (comp.types.includes("administrative_area_level_1"))
             tempState = comp.long_name;
           if (comp.types.includes("country")) {
-            // Prefer the full country name for display (e.g. "Pakistan")
+            // Always store full country name
             tempCountry = comp.long_name || comp.short_name;
           }
         });
 
         setCity(tempCity);
         setStateValue(tempState);
-        setCountry(tempCountry);
+        setCountry(tempCountry); // full name from Google
 
         if (details.geometry?.location) {
           setCoordinates({
@@ -464,6 +502,7 @@ export default function ProfileSetupScreen({ navigation }: Props) {
     }
   };
 
+  // ─── Validation ─────────────────────────────────────────────────────────────
   const validateForm = () => {
     if (!fullName.trim()) {
       Toast.show({ type: "error", text1: "Full Name is required" });
@@ -482,29 +521,16 @@ export default function ProfileSetupScreen({ navigation }: Props) {
       return false;
     }
 
-    // if (!securityLicenseNo.trim()) {
-    //   Toast.show({
-    //     type: 'error',
-    //     text1: 'Security License No is required',
-    //   });
-    //   return false;
-    // }
-
     const isValidPhone =
-      // Australia
       (phoneNumber.startsWith("0") && phoneNumber.length === 10) ||
       (phoneNumber.startsWith("+61") && phoneNumber.length === 12) ||
-      // Pakistan
       (phoneNumber.startsWith("03") && phoneNumber.length === 11) ||
       (phoneNumber.startsWith("+92") && phoneNumber.length === 13) ||
-      // US / Canada
       (phoneNumber.startsWith("+1") && phoneNumber.length === 12) ||
       (!phoneNumber.startsWith("+") && phoneNumber.length === 10);
+
     if (!isValidPhone) {
-      Toast.show({
-        type: "error",
-        text1: "Please enter a valid phone number",
-      });
+      Toast.show({ type: "error", text1: "Please enter a valid phone number" });
       return false;
     }
 
@@ -513,25 +539,17 @@ export default function ProfileSetupScreen({ navigation }: Props) {
         Toast.show({ type: "error", text1: "Company Name is required" });
         return false;
       }
-      // if (!registrationNumber.trim()) {
-      //   Toast.show({ type: 'error', text1: 'Registration Number is required' });
-      //   return false;
-      // }
     }
+
     if (userType === "staff") {
       if (!dateOfBirth.trim()) {
-        Toast.show({
-          type: "error",
-          text1: "Date of Birth is required",
-        });
+        Toast.show({ type: "error", text1: "Date of Birth is required" });
         return false;
       }
-
       if (!gender) {
         Toast.show({ type: "error", text1: "Gender is required" });
         return false;
       }
-
       if (!residentialStatus) {
         Toast.show({ type: "error", text1: "Residential Status is required" });
         return false;
@@ -539,68 +557,49 @@ export default function ProfileSetupScreen({ navigation }: Props) {
     }
     return true;
   };
-  // Country mappings
-  const countryMap: Record<string, string> = {
-    Pakistan: "PAK",
-    Australia: "AUS",
-    India: "IND",
-    Canada: "CAN",
-    "United States": "USA",
-    "United Kingdom": "GBR",
-  };
 
-  const countryCodeToName: Record<string, string> = {
-    PAK: "Pakistan",
-    AUS: "Australia",
-    IND: "India",
-    CAN: "Canada",
-    USA: "United States",
-    GBR: "United Kingdom",
-    PK: "Pakistan",
-    AU: "Australia",
-    IN: "India",
-    CA: "Canada",
-    US: "United States",
-    GB: "United Kingdom",
-  };
+  // ─── Image picker ───────────────────────────────────────────────────────────
   const pickImage = async () => {
     const result = await launchImageLibrary({
       mediaType: "photo",
-      quality: 0.5, // reduce quality
+      quality: 0.5,
     });
 
     if (!result.didCancel && result.assets && result.assets.length > 0) {
       const asset = result.assets[0];
-
-      // Resize image to reduce size
       const resizedImage = await ImageResizer.createResizedImage(
         asset.uri!,
-        800, // maxWidth
-        800, // maxHeight
+        800,
+        800,
         "JPEG",
-        70, // compression 0-100
+        70,
       );
-
       const file = {
         uri: resizedImage.uri,
         type: asset.type || "image/jpeg",
         name: asset.fileName || `profile_${Date.now()}.jpg`,
       };
-
-      setProfileImage(file.uri); // for preview
-      setImageFile(file); // for API
+      setProfileImage(file.uri);
+      setImageFile(file);
     }
   };
+
+  // ─── Save / Continue ────────────────────────────────────────────────────────
   const handleContinue = async () => {
     Keyboard.dismiss();
     if (!validateForm() || !userId) return;
 
     const emailChanged =
       gmail.trim().toLowerCase() !== originalGmail.trim().toLowerCase();
-
     setLoading(true);
 
     try {
+      /**
+       * BASE PAYLOAD
+       * - country  : full name (e.g. "Australia") — for ALL user types
+       * - city     : auto-filled from address — for ALL user types
+       * - state    : auto-filled from address — for ALL user types
+       */
       const payload: Record<string, any> = {
         name: fullName.trim(),
         phone: phoneNumber.trim(),
@@ -608,28 +607,27 @@ export default function ProfileSetupScreen({ navigation }: Props) {
         address: address.trim(),
         city: city.trim(),
         state: stateValue.trim(),
-
-        origin_country:
-          countryMap[country.trim()] ||
-          countryCodeToName[country.trim()] || // safety
-          country.trim(),
+        country: country.trim(), // full name, all user types
         coordinates: coordinates ? `${coordinates.lat},${coordinates.lng}` : "",
       };
 
-      // ✅ FIXED: DOB only added if valid
-      if (userType === "staff" && dateOfBirth?.trim()) {
-        const dobApi = australianToApiDate(dateOfBirth);
-        if (dobApi) {
-          payload.date_of_birth = dobApi;
+      // Staff-specific
+      if (userType === "staff") {
+        /**
+         * origin_country: full name (e.g. "Pakistan")
+         * Separate from `country` (which is the residential/address country).
+         */
+        payload.origin_country = originCountry.trim();
+
+        if (dateOfBirth?.trim()) {
+          const dobApi = australianToApiDate(dateOfBirth);
+          if (dobApi) payload.date_of_birth = dobApi;
         }
+        payload.gender = gender;
+        payload.staff_document_type = residentialStatus;
       }
 
-      // Profile image
-      if (imageFile) {
-        payload.profile_image = imageFile;
-      }
-
-      // Contractor fields
+      // Contractor-specific
       if (userType === "contractor") {
         payload.company_name = companyName.trim();
         payload.registration_number = registrationNumber.trim();
@@ -637,68 +635,52 @@ export default function ProfileSetupScreen({ navigation }: Props) {
         payload.abn = abn.trim();
       }
 
-      // Staff fields
-      else if (userType === "staff") {
-        payload.gender = gender;
-        payload.staff_document_type = residentialStatus;
+      // Image
+      if (imageFile) {
+        payload.profile_image = imageFile;
       }
 
-      console.log("🔥 FINAL PROFILE PAYLOAD:", payload);
+      console.log(
+        "🔥 FINAL PROFILE PAYLOAD:",
+        JSON.stringify(payload, null, 2),
+      );
 
       await updateUserProfile(userId, payload);
 
-      // Email OTP flow
       if (emailChanged && userType === "customer") {
         setOtpModalVisible(true);
         setLoading(false);
         return;
       }
 
-      Toast.show({
-        type: "success",
-        text1: "Profile Updated Successfully",
-      });
-
+      Toast.show({ type: "success", text1: "Profile Updated Successfully" });
       setOriginalGmail(gmail.trim().toLowerCase());
       navigation.navigate("Profile");
     } catch (err: any) {
-      console.log("Update Error:", err?.response?.data || err);
-
+      console.log("UPDATE ERROR:", err?.response?.data || err);
       const errorMsg =
         err?.response?.data?.error ||
         err?.response?.data?.message ||
         "Failed to update profile";
-
-      Toast.show({
-        type: "error",
-        text1: errorMsg,
-        position: "bottom",
-      });
+      Toast.show({ type: "error", text1: errorMsg, position: "bottom" });
     } finally {
       setLoading(false);
     }
   };
+
   const handleVerifyAndSave = async () => {
     if (otp.length !== 6) {
       Toast.show({ type: "error", text1: "Please enter 6-digit OTP" });
       return;
     }
-
     setIsVerifyingOtp(true);
-
     try {
       const payload = {
         email: gmail.trim().toLowerCase(),
         email_otp: otp.trim(),
       };
-
       await updateUserProfile(userId!, payload);
-
-      Toast.show({
-        type: "success",
-        text1: "Email updated successfully!",
-      });
-
+      Toast.show({ type: "success", text1: "Email updated successfully!" });
       setOriginalGmail(gmail.trim().toLowerCase());
       setOtpModalVisible(false);
       setOtp("");
@@ -708,7 +690,6 @@ export default function ProfileSetupScreen({ navigation }: Props) {
         err?.response?.data?.message ||
         err?.message ||
         "Failed to verify OTP";
-
       Toast.show({
         type: "error",
         text1: errorMsg,
@@ -720,6 +701,7 @@ export default function ProfileSetupScreen({ navigation }: Props) {
     }
   };
 
+  // ─── Loading state ──────────────────────────────────────────────────────────
   if (fetching) {
     return (
       <SafeAreaView style={styles.container}>
@@ -732,6 +714,7 @@ export default function ProfileSetupScreen({ navigation }: Props) {
     );
   }
 
+  // ─── Render ─────────────────────────────────────────────────────────────────
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#fff" />
@@ -744,6 +727,7 @@ export default function ProfileSetupScreen({ navigation }: Props) {
         onScroll={(e) => setScrollY(e.nativeEvent.contentOffset.y)}
         scrollEventThrottle={16}
       >
+        {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity onPress={() => navigation.goBack()}>
             <ArrowLeft size={24} color="#fff" />
@@ -751,6 +735,8 @@ export default function ProfileSetupScreen({ navigation }: Props) {
           <Text style={styles.headerTitle}>Complete Your Profile</Text>
           <View style={{ width: 24 }} />
         </View>
+
+        {/* Profile image */}
         <TouchableOpacity onPress={pickImage} style={styles.imageContainer}>
           {profileImage ? (
             <Image source={{ uri: profileImage }} style={styles.profileImage} />
@@ -760,12 +746,12 @@ export default function ProfileSetupScreen({ navigation }: Props) {
               <Text style={{ fontSize: 12, color: "#fff" }}>Upload Photo</Text>
             </View>
           )}
-
           <View style={styles.editIcon}>
             <Edit2 size={16} color="#fff" />
           </View>
         </TouchableOpacity>
 
+        {/* Full Name */}
         <InputField
           icon={User}
           label={
@@ -775,13 +761,12 @@ export default function ProfileSetupScreen({ navigation }: Props) {
           }
           value={fullName}
           onChange={(text: string) => {
-            if (text.length <= 40) {
-              setFullName(text);
-            }
+            if (text.length <= 40) setFullName(text);
           }}
           placeholder="Enter your full name"
         />
 
+        {/* Phone */}
         <InputField
           icon={Phone}
           label={
@@ -796,12 +781,11 @@ export default function ProfileSetupScreen({ navigation }: Props) {
           maxLength={15}
         />
 
-        {/* Email */}
+        {/* Email (read-only) */}
         <View style={styles.field}>
           <Text style={styles.label}>
             Email <Text style={styles.required}>*</Text>
           </Text>
-
           <LinearGradient
             colors={["#171d30", "#171d30"]}
             start={{ x: 0, y: 0 }}
@@ -809,16 +793,6 @@ export default function ProfileSetupScreen({ navigation }: Props) {
             style={styles.inputContainer}
           >
             <Mail size={20} color="#fff" style={styles.inputIcon} />
-            {/* <TextInput
-              style={styles.input}
-              value={gmail}
-              onChangeText={setGmail}
-              placeholder="yourname@gmail.com"
-              placeholderTextColor="#fff"
-              keyboardType="email-address"
-              autoCapitalize="none"
-              autoCorrect={false}
-            /> */}
             <TextInput
               style={styles.input}
               value={gmail}
@@ -832,11 +806,11 @@ export default function ProfileSetupScreen({ navigation }: Props) {
           </LinearGradient>
         </View>
 
+        {/* ── Contractor-specific fields ── */}
         {userType === "contractor" && (
           <>
             <InputField
               icon={Building2}
-              // label="Company Name *"
               label={
                 <>
                   Company Name <Text style={styles.required}>*</Text>
@@ -846,50 +820,63 @@ export default function ProfileSetupScreen({ navigation }: Props) {
               onChange={setCompanyName}
               placeholder="Enter company name"
             />
-            {/* <InputField
-              icon={FileText}
-              label={
-                <>
-                  Registration Number <Text style={styles.required}>*</Text>
-                </>
-              }
-              value={registrationNumber}
-              onChange={setRegistrationNumber}
-              placeholder="Enter registration number"
-            /> */}
-
             <InputField
               icon={FileText}
               label="ACN (Australian Company Number)"
               value={acn}
               onChange={(text: string) => {
-                const cleaned = text.replace(/\D/g, ""); // only digits
-                if (cleaned.length <= 9) {
-                  setAcn(cleaned);
-                }
+                const cleaned = text.replace(/\D/g, "");
+                if (cleaned.length <= 9) setAcn(cleaned);
               }}
               placeholder="Enter ACN (9 digits)"
               keyboardType="numeric"
             />
-
             <InputField
               icon={FileText}
               label="ABN (Australian Business Number)"
               value={abn}
               onChange={(text: string) => {
-                const cleaned = text.replace(/\D/g, ""); // only digits
-                if (cleaned.length <= 11) {
-                  setAbn(cleaned);
-                }
+                const cleaned = text.replace(/\D/g, "");
+                if (cleaned.length <= 11) setAbn(cleaned);
               }}
               placeholder="Enter ABN (11 digits)"
               keyboardType="numeric"
             />
           </>
         )}
+        {userType === "staff" && (
+          <TouchableOpacity
+            style={styles.field}
+            onPress={() => setShowCountryModal(true)}
+          >
+            <Text style={styles.label}>
+              Country of Origin <Text style={styles.required}>*</Text>
+            </Text>
+            <LinearGradient
+              colors={["#171d30", "#171d30"]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.inputContainer}
+            >
+              <Globe size={20} color="#fff" style={styles.inputIcon} />
+              <Text
+                style={[
+                  styles.input,
+                  !originCountry && { color: "rgba(255,255,255,0.6)" },
+                ]}
+              >
+                {/* Always display full name */}
+                {originCountry || "Select Country of Origin"}
+              </Text>
+              <ChevronDown size={20} color="#fff" />
+            </LinearGradient>
+          </TouchableOpacity>
+        )}
 
+        {/* ── Staff-specific fields ── */}
         {userType === "staff" && (
           <>
+            {/* Gender dropdown */}
             <TouchableOpacity
               style={styles.field}
               onPress={() => setShowGenderModal(true)}
@@ -897,7 +884,6 @@ export default function ProfileSetupScreen({ navigation }: Props) {
               <Text style={styles.label}>
                 Gender <Text style={styles.required}>*</Text>
               </Text>
-
               <LinearGradient
                 colors={["#171d30", "#171d30"]}
                 start={{ x: 0, y: 0 }}
@@ -905,7 +891,6 @@ export default function ProfileSetupScreen({ navigation }: Props) {
                 style={styles.inputContainer}
               >
                 <User size={20} color="#fff" style={styles.inputIcon} />
-
                 <Text
                   style={[
                     styles.input,
@@ -916,11 +901,11 @@ export default function ProfileSetupScreen({ navigation }: Props) {
                     ? genderOptions.find((o) => o.value === gender)?.label
                     : "Select Gender"}
                 </Text>
-
                 <ChevronDown size={20} color="#fff" />
               </LinearGradient>
             </TouchableOpacity>
 
+            {/* Date of birth */}
             <TouchableOpacity
               style={styles.field}
               onPress={() => setShowDatePicker(true)}
@@ -946,24 +931,23 @@ export default function ProfileSetupScreen({ navigation }: Props) {
               </LinearGradient>
             </TouchableOpacity>
 
-            {/* Native Date Picker */}
             {showDatePicker && (
               <DateTimePicker
                 value={tempDate}
                 mode="date"
-                display="spinner" // Use "calendar" on newer iOS if preferred
+                display="spinner"
                 onChange={(event, selectedDate) => {
                   setShowDatePicker(false);
                   if (selectedDate) {
                     setTempDate(selectedDate);
-                    const formatted = formatToAustralian(selectedDate);
-                    setDateOfBirth(formatted);
+                    setDateOfBirth(formatToAustralian(selectedDate));
                   }
                 }}
-                maximumDate={new Date()} // Prevent future dates
+                maximumDate={new Date()}
               />
             )}
 
+            {/* Residential status dropdown */}
             <TouchableOpacity
               style={styles.field}
               onPress={() => setShowResidentialModal(true)}
@@ -971,15 +955,13 @@ export default function ProfileSetupScreen({ navigation }: Props) {
               <Text style={styles.label}>
                 Residential Status <Text style={styles.required}>*</Text>
               </Text>
-
               <LinearGradient
                 colors={["#171d30", "#171d30"]}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
-                style={styles.gradientInput}
+                style={styles.inputContainer}
               >
                 <Globe size={20} color="#fff" style={styles.inputIcon} />
-
                 <Text
                   style={[
                     styles.input,
@@ -992,25 +974,13 @@ export default function ProfileSetupScreen({ navigation }: Props) {
                       )?.label
                     : "Select Residential Status"}
                 </Text>
-
                 <ChevronDown size={20} color="#fff" />
               </LinearGradient>
             </TouchableOpacity>
-
-            {/* <InputField
-              icon={FileText}
-              label={
-                <>
-                  Security License No. <Text style={styles.required}>*</Text>
-                </>
-              }
-              value={securityLicenseNo}
-              onChange={setSecurityLicenseNo}
-              placeholder="Enter Security License No."
-            /> */}
           </>
         )}
 
+        {/* ── Gender Modal ── */}
         <Modal visible={showGenderModal} transparent animationType="slide">
           <View style={styles.modalOverlay}>
             <View style={styles.customModal}>
@@ -1018,17 +988,31 @@ export default function ProfileSetupScreen({ navigation }: Props) {
               <FlatList
                 data={genderOptions}
                 keyExtractor={(item) => item.value}
-                renderItem={({ item }) => (
-                  <TouchableOpacity
-                    style={styles.modalItem}
-                    onPress={() => {
-                      setGender(item.value);
-                      setShowGenderModal(false);
-                    }}
-                  >
-                    <Text style={styles.modalItemText}>{item.label}</Text>
-                  </TouchableOpacity>
-                )}
+                renderItem={({ item }) => {
+                  const isSelected = gender === item.value;
+                  return (
+                    <TouchableOpacity
+                      style={[
+                        styles.modalItem,
+                        isSelected && styles.modalItemSelected,
+                      ]}
+                      onPress={() => {
+                        setGender(item.value);
+                        setShowGenderModal(false);
+                      }}
+                    >
+                      <Text
+                        style={[
+                          styles.modalItemText,
+                          isSelected && styles.modalItemTextSelected,
+                        ]}
+                      >
+                        {item.label}
+                      </Text>
+                      {isSelected && <Text style={styles.checkMark}>✓</Text>}
+                    </TouchableOpacity>
+                  );
+                }}
               />
               <TouchableOpacity
                 style={styles.cancelBtn}
@@ -1040,6 +1024,7 @@ export default function ProfileSetupScreen({ navigation }: Props) {
           </View>
         </Modal>
 
+        {/* ── Residential Status Modal ── */}
         <Modal visible={showResidentialModal} transparent animationType="slide">
           <View style={styles.modalOverlay}>
             <View style={styles.customModal}>
@@ -1047,17 +1032,31 @@ export default function ProfileSetupScreen({ navigation }: Props) {
               <FlatList
                 data={residentialOptions}
                 keyExtractor={(item) => item.value}
-                renderItem={({ item }) => (
-                  <TouchableOpacity
-                    style={styles.modalItem}
-                    onPress={() => {
-                      setResidentialStatus(item.value);
-                      setShowResidentialModal(false);
-                    }}
-                  >
-                    <Text style={styles.modalItemText}>{item.label}</Text>
-                  </TouchableOpacity>
-                )}
+                renderItem={({ item }) => {
+                  const isSelected = residentialStatus === item.value;
+                  return (
+                    <TouchableOpacity
+                      style={[
+                        styles.modalItem,
+                        isSelected && styles.modalItemSelected,
+                      ]}
+                      onPress={() => {
+                        setResidentialStatus(item.value);
+                        setShowResidentialModal(false);
+                      }}
+                    >
+                      <Text
+                        style={[
+                          styles.modalItemText,
+                          isSelected && styles.modalItemTextSelected,
+                        ]}
+                      >
+                        {item.label}
+                      </Text>
+                      {isSelected && <Text style={styles.checkMark}>✓</Text>}
+                    </TouchableOpacity>
+                  );
+                }}
               />
               <TouchableOpacity
                 style={styles.cancelBtn}
@@ -1069,7 +1068,69 @@ export default function ProfileSetupScreen({ navigation }: Props) {
           </View>
         </Modal>
 
-        {/* ==================== ADDRESS SECTION ==================== */}
+        {/* ── Origin Country Modal (staff only) ── */}
+        <Modal visible={showCountryModal} transparent animationType="slide">
+          <View style={styles.modalOverlay}>
+            <View
+              style={[styles.customModal, { width: "92%", maxHeight: "70%" }]}
+            >
+              <Text style={styles.modalTitle}>Select Country of Origin</Text>
+              <TextInput
+                style={styles.searchInput}
+                placeholder="Search country..."
+                placeholderTextColor="rgba(255,255,255,0.5)"
+                value={countrySearch}
+                onChangeText={setCountrySearch}
+              />
+              <FlatList
+                data={(countries || []).filter((c) =>
+                  c.name.toLowerCase().includes(countrySearch.toLowerCase()),
+                )}
+                keyExtractor={(item) => item.code}
+                style={{ marginBottom: 8 }}
+                renderItem={({ item }) => {
+                  const isSelected = originCountry === item.code;
+                  return (
+                    <TouchableOpacity
+                      style={[
+                        styles.modalItem,
+                        isSelected && styles.modalItemSelected,
+                      ]}
+                      onPress={() => {
+                        // Store short code and display name separately
+                        setOriginCountry(item.code);
+                        setCountry(item.name);
+                        setShowCountryModal(false);
+                        setCountrySearch("");
+                      }}
+                    >
+                      <Text
+                        style={[
+                          styles.modalItemText,
+                          isSelected && styles.modalItemTextSelected,
+                        ]}
+                      >
+                        {item.name}
+                      </Text>
+                      {isSelected && <Text style={styles.checkMark}>✓</Text>}
+                    </TouchableOpacity>
+                  );
+                }}
+              />
+              <TouchableOpacity
+                style={styles.cancelBtn}
+                onPress={() => {
+                  setShowCountryModal(false);
+                  setCountrySearch("");
+                }}
+              >
+                <Text style={styles.cancelText}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
+
+        {/* ── Address section ── */}
         <View
           style={styles.field}
           onLayout={(event) => {
@@ -1092,7 +1153,7 @@ export default function ProfileSetupScreen({ navigation }: Props) {
               style={styles.input}
               value={address}
               placeholder="Start typing your address..."
-              placeholderTextColor="rgba(255,255,255,0.6)"
+              placeholderTextColor="rgba(255, 255, 255, 0.96)"
               onChangeText={(text) => {
                 setAddress(text);
                 fetchPlaces(text);
@@ -1115,43 +1176,42 @@ export default function ProfileSetupScreen({ navigation }: Props) {
           </LinearGradient>
         </View>
 
-     
+        {/* ── Origin Country (staff) + City / State / Country (all types) ── */}
         {(userType === "staff" ||
           userType === "customer" ||
           userType === "contractor") && (
           <>
-            {/* Only show Country for Staff */}
-            {userType === "staff" && (
-              <InputField
-                icon={Globe}
-                label="Country of Origin"
-                value={country}
-                onChange={() => {}}
-                editable={false}
-                placeholder="Country will appear here"
-              />
-            )}
+            {/* Origin country — staff only */}
 
-            {/* Coordinates - kept for all types (useful for location) */}
+            {/* City / State / Country — auto-filled, disabled, all user types */}
             <InputField
-              icon={Navigation}
-              label="Coordinates"
-              value={
-                coordinates &&
-                typeof coordinates.lat === "number" &&
-                typeof coordinates.lng === "number"
-                  ? `${coordinates.lat.toFixed(6)}, ${coordinates.lng.toFixed(
-                      6,
-                    )}`
-                  : ""
-              }
+              icon={MapPin}
+              label="City"
+              value={city}
               onChange={() => {}}
               editable={false}
-              placeholder="Coordinates will appear here"
+              placeholder="City will appear here"
+            />
+            <InputField
+              icon={Building2}
+              label="State"
+              value={stateValue}
+              onChange={() => {}}
+              editable={false}
+              placeholder="State will appear here"
+            />
+            <InputField
+              icon={Globe}
+              label="Country"
+              value={country}
+              onChange={() => {}}
+              editable={false}
+              placeholder="Country will appear here"
             />
           </>
         )}
 
+        {/* Save button */}
         <TouchableOpacity
           style={[styles.continueButton, loading && styles.buttonDisabled]}
           onPress={handleContinue}
@@ -1165,6 +1225,7 @@ export default function ProfileSetupScreen({ navigation }: Props) {
           )}
         </TouchableOpacity>
 
+        {/* Delete profile */}
         <TouchableOpacity
           style={styles.deleteButton}
           onPress={() => navigation.navigate("DeleteProfileVerification")}
@@ -1174,6 +1235,7 @@ export default function ProfileSetupScreen({ navigation }: Props) {
         </TouchableOpacity>
       </ScrollView>
 
+      {/* Address suggestions overlay */}
       {showSuggestions && predictions.length > 0 && (
         <FlatList
           data={predictions}
@@ -1206,6 +1268,7 @@ export default function ProfileSetupScreen({ navigation }: Props) {
         />
       )}
 
+      {/* OTP Modal */}
       <Modal
         animationType="slide"
         transparent={true}
@@ -1219,7 +1282,6 @@ export default function ProfileSetupScreen({ navigation }: Props) {
               Enter the OTP sent to{" "}
               <Text style={{ fontWeight: "bold" }}>{gmail}</Text>
             </Text>
-
             <TextInput
               style={styles.otpInput}
               placeholder="Enter 6-digit OTP"
@@ -1230,7 +1292,6 @@ export default function ProfileSetupScreen({ navigation }: Props) {
               maxLength={6}
               autoFocus
             />
-
             <View style={styles.modalButtonRow}>
               <TouchableOpacity
                 style={styles.cancelModalBtn}
@@ -1241,7 +1302,6 @@ export default function ProfileSetupScreen({ navigation }: Props) {
               >
                 <Text style={styles.cancelModalText}>Cancel</Text>
               </TouchableOpacity>
-
               <TouchableOpacity
                 style={[
                   styles.verifyModalBtn,
@@ -1264,61 +1324,21 @@ export default function ProfileSetupScreen({ navigation }: Props) {
   );
 }
 
-const InputField = ({
-  icon: Icon,
-  label,
-  value,
-  onChange,
-  editable = true,
-  placeholder = "",
-  keyboardType = "default",
-  gradient = true,
-}: any) => (
-  <View style={styles.field}>
-    <Text style={styles.label}>{label}</Text>
-
-    <LinearGradient
-      colors={["#171d30", "#171d30"]}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 1 }}
-      style={styles.inputContainer}
-    >
-      <Icon size={20} color="#fff" style={styles.inputIcon} />
-
-      <TextInput
-        style={styles.input}
-        value={value}
-        onChangeText={onChange}
-        placeholder={placeholder}
-        placeholderTextColor="rgba(255,255,255,0.6)"
-        editable={editable}
-        keyboardType={keyboardType}
-        autoCapitalize="sentences"
-        returnKeyType="done" // 👈 Adds a "Done" button to keyboard
-        onSubmitEditing={Keyboard.dismiss}
-      />
-    </LinearGradient>
-  </View>
-);
-
+// ─── Styles ────────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: COLORS.brandDark,
   },
-
   container: {
     flex: 1,
     backgroundColor: COLORS.brandDark,
-    // width: '100%',
     paddingTop: 25,
   },
-
   scrollContent: {
     paddingHorizontal: 15,
     paddingBottom: 50,
   },
-
   gradientInput: {
     flexDirection: "row",
     alignItems: "center",
@@ -1335,7 +1355,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-
   deleteButtonText: {
     color: "#EF4444",
     fontSize: 16,
@@ -1346,32 +1365,25 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     paddingVertical: 14,
-    // backgroundColor: COLORS.surface,
     marginHorizontal: 5,
     borderRadius: 16,
     marginBottom: 7,
-    // borderWidth: 1,
-    // borderColor: COLORS.border,
   },
-
   screenTitle: {
     fontSize: 18,
     fontWeight: "600",
     color: COLORS.textPrimary,
   },
-
   headerTitle: {
     fontSize: 15,
     fontWeight: "700",
     color: COLORS.textPrimary,
   },
-
   imageContainer: {
     alignSelf: "center",
     marginBottom: 5,
     position: "relative",
   },
-
   profileImage: {
     width: 110,
     height: 110,
@@ -1379,7 +1391,6 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: COLORS.brand,
   },
-
   placeholderImage: {
     width: 110,
     height: 110,
@@ -1390,7 +1401,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: COLORS.border,
   },
-
   editIcon: {
     position: "absolute",
     bottom: 5,
@@ -1403,44 +1413,36 @@ const styles = StyleSheet.create({
     alignItems: "center",
     elevation: 5,
   },
-
   field: {
     marginBottom: 10,
   },
-
   label: {
     fontSize: 13,
     fontWeight: "600",
     color: COLORS.textSecondary,
     marginBottom: 5,
   },
-
   inputContainer: {
     flexDirection: "row",
     alignItems: "center",
     borderRadius: 50,
     borderWidth: 1,
-    // borderColor: COLORS.border,
     borderColor: "#5d5c5ccc",
     height: 42,
   },
-
   inputIcon: {
     marginRight: 9,
     marginLeft: 8,
   },
-
   input: {
     flex: 1,
     fontSize: 14,
     color: COLORS.textPrimary,
   },
-
   required: {
     color: COLORS.error,
     fontWeight: "700",
   },
-
   continueButton: {
     backgroundColor: "#0A7C6E",
     paddingVertical: 16,
@@ -1448,17 +1450,14 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginTop: 15,
   },
-
   buttonDisabled: {
     opacity: 0.6,
   },
-
   buttonText: {
     color: "#fff",
     fontSize: 16,
     fontWeight: "700",
   },
-
   suggestionsList: {
     position: "absolute",
     top: 50,
@@ -1469,9 +1468,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 1,
     borderColor: "#cccccc",
-    // zIndex: 1000,
   },
-
   suggestionItem: {
     flexDirection: "row",
     alignItems: "center",
@@ -1480,19 +1477,16 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: COLORS.border,
   },
-
   suggestionText: {
     fontSize: 15,
     color: COLORS.textPrimary,
   },
-
   modalOverlay: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.7)",
     justifyContent: "center",
     alignItems: "center",
   },
-
   customModal: {
     width: "85%",
     backgroundColor: COLORS.surface,
@@ -1502,7 +1496,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: COLORS.border,
   },
-
   modalTitle: {
     fontSize: 18,
     fontWeight: "700",
@@ -1510,19 +1503,32 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     color: COLORS.textPrimary,
   },
-
   modalItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingVertical: 14,
     paddingHorizontal: 16,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.border,
   },
-
+  // FIX: highlight currently-selected item in modal
+  modalItemSelected: {
+    backgroundColor: "rgba(10, 124, 110, 0.2)",
+  },
   modalItemText: {
     fontSize: 16,
     color: COLORS.textPrimary,
   },
-
+  modalItemTextSelected: {
+    color: COLORS.brand,
+    fontWeight: "700",
+  },
+  checkMark: {
+    fontSize: 16,
+    color: COLORS.brand,
+    fontWeight: "700",
+  },
   cancelBtn: {
     marginTop: 12,
     padding: 14,
@@ -1530,12 +1536,19 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.surfaceLight,
     borderRadius: 12,
   },
-
   cancelText: {
     color: COLORS.textSecondary,
     fontWeight: "600",
   },
-
+  searchInput: {
+    height: 44,
+    borderWidth: 1,
+    borderColor: "#333",
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    color: "#fff",
+    marginBottom: 12,
+  },
   otpModalContainer: {
     width: "88%",
     backgroundColor: COLORS.surface,
@@ -1545,14 +1558,12 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: COLORS.border,
   },
-
   modalSubtitle: {
     fontSize: 12,
     color: COLORS.textSecondary,
     textAlign: "center",
     marginBottom: 18,
   },
-
   otpInput: {
     width: "100%",
     height: 50,
@@ -1566,13 +1577,11 @@ const styles = StyleSheet.create({
     color: COLORS.textPrimary,
     letterSpacing: 5,
   },
-
   modalButtonRow: {
     flexDirection: "row",
     width: "100%",
     gap: 12,
   },
-
   cancelModalBtn: {
     flex: 1,
     paddingVertical: 14,
@@ -1580,13 +1589,11 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     alignItems: "center",
   },
-
   cancelModalText: {
     color: COLORS.textSecondary,
     fontSize: 12,
     fontWeight: "600",
   },
-
   verifyModalBtn: {
     flex: 1,
     paddingVertical: 14,
@@ -1594,13 +1601,11 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     alignItems: "center",
   },
-
   verifyModalText: {
     color: COLORS.brandDark,
     fontSize: 12,
     fontWeight: "700",
   },
-
   btnDisabled: {
     opacity: 0.6,
   },

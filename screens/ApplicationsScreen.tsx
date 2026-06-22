@@ -2317,10 +2317,10 @@ export default function WeeklyRosterScreen({ navigation }: any) {
                       label="Job Type"
                       value={toTitleCase(selectedShift?.jobType) || "N/A"}
                     />
-                    <DetailRow
+                    {/* <DetailRow
                       label="ASAP Shift"
                       value={selectedShift.isAsap ? "Yes" : "No"}
-                    />
+                    /> */}
                     <DetailRow
                       label="Job Amount"
                       value={

@@ -1736,12 +1736,12 @@ export default function SignUpScreen({ navigation }: { navigation: any }) {
               Please check your inbox to activate your account.
             </Text>
 
-            <TouchableOpacity
+            {/* <TouchableOpacity
               style={styles.openGmailButton}
               onPress={handleOpenGmail}
             >
               <Text style={styles.openGmailText}>📧 Open Email</Text>
-            </TouchableOpacity>
+            </TouchableOpacity> */}
 
             <TouchableOpacity
               style={styles.goToLoginButton}

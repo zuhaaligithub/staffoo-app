@@ -39,7 +39,7 @@ import {
   Mail,
 } from "lucide-react-native";
 import LinearGradient from "react-native-linear-gradient";
-import Toast from "react-native-toast-message";
+import Toast, { BaseToast, ErrorToast } from "react-native-toast-message";
 import { launchImageLibrary } from "react-native-image-picker";
 import axios from "./axiosInterceptor";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -80,241 +80,40 @@ const ALLOWED_FILE_TYPES = [
   "application/msword",
   "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
 ];
-// ─── Full Country List for Dropdown ─────────────────────────────────────
-const COUNTRIES = [
-  { name: "Afghanistan", code: "AF" },
-  { name: "Albania", code: "AL" },
-  { name: "Algeria", code: "DZ" },
-  { name: "American Samoa", code: "AS" },
-  { name: "Andorra", code: "AD" },
-  { name: "Angola", code: "AO" },
-  { name: "Anguilla", code: "AI" },
-  { name: "Antarctica", code: "AQ" },
-  { name: "Antigua and Barbuda", code: "AG" },
-  { name: "Argentina", code: "AR" },
-  { name: "Armenia", code: "AM" },
-  { name: "Aruba", code: "AW" },
-  { name: "Australia", code: "AU" },
-  { name: "Austria", code: "AT" },
-  { name: "Azerbaijan", code: "AZ" },
-  { name: "Bahamas", code: "BS" },
-  { name: "Bahrain", code: "BH" },
-  { name: "Bangladesh", code: "BD" },
-  { name: "Barbados", code: "BB" },
-  { name: "Belarus", code: "BY" },
-  { name: "Belgium", code: "BE" },
-  { name: "Belize", code: "BZ" },
-  { name: "Benin", code: "BJ" },
-  { name: "Bermuda", code: "BM" },
-  { name: "Bhutan", code: "BT" },
-  { name: "Bolivia", code: "BO" },
-  { name: "Bosnia and Herzegovina", code: "BA" },
-  { name: "Botswana", code: "BW" },
-  { name: "Brazil", code: "BR" },
-  { name: "British Indian Ocean Territory", code: "IO" },
-  { name: "Brunei Darussalam", code: "BN" },
-  { name: "Bulgaria", code: "BG" },
-  { name: "Burkina Faso", code: "BF" },
-  { name: "Burundi", code: "BI" },
-  { name: "Cambodia", code: "KH" },
-  { name: "Cameroon", code: "CM" },
-  { name: "Canada", code: "CA" },
-  { name: "Cape Verde", code: "CV" },
-  { name: "Cayman Islands", code: "KY" },
-  { name: "Central African Republic", code: "CF" },
-  { name: "Chad", code: "TD" },
-  { name: "Chile", code: "CL" },
-  { name: "China", code: "CN" },
-  { name: "Colombia", code: "CO" },
-  { name: "Comoros", code: "KM" },
-  { name: "Congo", code: "CG" },
-  { name: "Congo, Democratic Republic", code: "CD" },
-  { name: "Cook Islands", code: "CK" },
-  { name: "Costa Rica", code: "CR" },
-  { name: "Côte D'Ivoire", code: "CI" },
-  { name: "Croatia", code: "HR" },
-  { name: "Cuba", code: "CU" },
-  { name: "Cyprus", code: "CY" },
-  { name: "Czech Republic", code: "CZ" },
-  { name: "Denmark", code: "DK" },
-  { name: "Djibouti", code: "DJ" },
-  { name: "Dominica", code: "DM" },
-  { name: "Dominican Republic", code: "DO" },
-  { name: "Ecuador", code: "EC" },
-  { name: "Egypt", code: "EG" },
-  { name: "El Salvador", code: "SV" },
-  { name: "Equatorial Guinea", code: "GQ" },
-  { name: "Eritrea", code: "ER" },
-  { name: "Estonia", code: "EE" },
-  { name: "Ethiopia", code: "ET" },
-  { name: "Falkland Islands", code: "FK" },
-  { name: "Faroe Islands", code: "FO" },
-  { name: "Fiji", code: "FJ" },
-  { name: "Finland", code: "FI" },
-  { name: "France", code: "FR" },
-  { name: "French Guiana", code: "GF" },
-  { name: "French Polynesia", code: "PF" },
-  { name: "Gabon", code: "GA" },
-  { name: "Gambia", code: "GM" },
-  { name: "Georgia", code: "GE" },
-  { name: "Germany", code: "DE" },
-  { name: "Ghana", code: "GH" },
-  { name: "Gibraltar", code: "GI" },
-  { name: "Greece", code: "GR" },
-  { name: "Greenland", code: "GL" },
-  { name: "Grenada", code: "GD" },
-  { name: "Guadeloupe", code: "GP" },
-  { name: "Guam", code: "GU" },
-  { name: "Guatemala", code: "GT" },
-  { name: "Guinea", code: "GN" },
-  { name: "Guinea-Bissau", code: "GW" },
-  { name: "Guyana", code: "GY" },
-  { name: "Haiti", code: "HT" },
-  { name: "Holy See (Vatican City State)", code: "VA" },
-  { name: "Honduras", code: "HN" },
-  { name: "Hong Kong", code: "HK" },
-  { name: "Hungary", code: "HU" },
-  { name: "Iceland", code: "IS" },
-  { name: "India", code: "IN" },
-  { name: "Indonesia", code: "ID" },
-  { name: "Iran", code: "IR" },
-  { name: "Iraq", code: "IQ" },
-  { name: "Ireland", code: "IE" },
-  { name: "Israel", code: "IL" },
-  { name: "Italy", code: "IT" },
-  { name: "Jamaica", code: "JM" },
-  { name: "Japan", code: "JP" },
-  { name: "Jordan", code: "JO" },
-  { name: "Kazakhstan", code: "KZ" },
-  { name: "Kenya", code: "KE" },
-  { name: "Kiribati", code: "KI" },
-  { name: "Korea, Democratic People's Republic", code: "KP" },
-  { name: "Korea, Republic of", code: "KR" },
-  { name: "Kuwait", code: "KW" },
-  { name: "Kyrgyzstan", code: "KG" },
-  { name: "Lao People's Democratic Republic", code: "LA" },
-  { name: "Latvia", code: "LV" },
-  { name: "Lebanon", code: "LB" },
-  { name: "Lesotho", code: "LS" },
-  { name: "Liberia", code: "LR" },
-  { name: "Libyan Arab Jamahiriya", code: "LY" },
-  { name: "Liechtenstein", code: "LI" },
-  { name: "Lithuania", code: "LT" },
-  { name: "Luxembourg", code: "LU" },
-  { name: "Macao", code: "MO" },
-  { name: "Macedonia", code: "MK" },
-  { name: "Madagascar", code: "MG" },
-  { name: "Malawi", code: "MW" },
-  { name: "Malaysia", code: "MY" },
-  { name: "Maldives", code: "MV" },
-  { name: "Mali", code: "ML" },
-  { name: "Malta", code: "MT" },
-  { name: "Marshall Islands", code: "MH" },
-  { name: "Martinique", code: "MQ" },
-  { name: "Mauritania", code: "MR" },
-  { name: "Mauritius", code: "MU" },
-  { name: "Mayotte", code: "YT" },
-  { name: "Mexico", code: "MX" },
-  { name: "Micronesia", code: "FM" },
-  { name: "Moldova", code: "MD" },
-  { name: "Monaco", code: "MC" },
-  { name: "Mongolia", code: "MN" },
-  { name: "Montenegro", code: "ME" },
-  { name: "Montserrat", code: "MS" },
-  { name: "Morocco", code: "MA" },
-  { name: "Mozambique", code: "MZ" },
-  { name: "Myanmar", code: "MM" },
-  { name: "Namibia", code: "NA" },
-  { name: "Nauru", code: "NR" },
-  { name: "Nepal", code: "NP" },
-  { name: "Netherlands", code: "NL" },
-  { name: "Netherlands Antilles", code: "AN" },
-  { name: "New Caledonia", code: "NC" },
-  { name: "New Zealand", code: "NZ" },
-  { name: "Nicaragua", code: "NI" },
-  { name: "Niger", code: "NE" },
-  { name: "Nigeria", code: "NG" },
-  { name: "Niue", code: "NU" },
-  { name: "Norfolk Island", code: "NF" },
-  { name: "Northern Mariana Islands", code: "MP" },
-  { name: "Norway", code: "NO" },
-  { name: "Oman", code: "OM" },
-  { name: "Pakistan", code: "PK" },
-  { name: "Palau", code: "PW" },
-  { name: "Palestinian Territory", code: "PS" },
-  { name: "Panama", code: "PA" },
-  { name: "Papua New Guinea", code: "PG" },
-  { name: "Paraguay", code: "PY" },
-  { name: "Peru", code: "PE" },
-  { name: "Philippines", code: "PH" },
-  { name: "Pitcairn", code: "PN" },
-  { name: "Poland", code: "PL" },
-  { name: "Portugal", code: "PT" },
-  { name: "Puerto Rico", code: "PR" },
-  { name: "Qatar", code: "QA" },
-  { name: "Réunion", code: "RE" },
-  { name: "Romania", code: "RO" },
-  { name: "Russian Federation", code: "RU" },
-  { name: "Rwanda", code: "RW" },
-  { name: "Saint Helena", code: "SH" },
-  { name: "Saint Kitts and Nevis", code: "KN" },
-  { name: "Saint Lucia", code: "LC" },
-  { name: "Saint Pierre and Miquelon", code: "PM" },
-  { name: "Saint Vincent and the Grenadines", code: "VC" },
-  { name: "Samoa", code: "WS" },
-  { name: "San Marino", code: "SM" },
-  { name: "Sao Tome and Principe", code: "ST" },
-  { name: "Saudi Arabia", code: "SA" },
-  { name: "Senegal", code: "SN" },
-  { name: "Serbia", code: "RS" },
-  { name: "Seychelles", code: "SC" },
-  { name: "Sierra Leone", code: "SL" },
-  { name: "Singapore", code: "SG" },
-  { name: "Slovakia", code: "SK" },
-  { name: "Slovenia", code: "SI" },
-  { name: "Solomon Islands", code: "SB" },
-  { name: "Somalia", code: "SO" },
-  { name: "South Africa", code: "ZA" },
-  { name: "South Georgia", code: "GS" },
-  { name: "Spain", code: "ES" },
-  { name: "Sri Lanka", code: "LK" },
-  { name: "Sudan", code: "SD" },
-  { name: "Suriname", code: "SR" },
-  { name: "Swaziland", code: "SZ" },
-  { name: "Sweden", code: "SE" },
-  { name: "Switzerland", code: "CH" },
-  { name: "Syrian Arab Republic", code: "SY" },
-  { name: "Taiwan", code: "TW" },
-  { name: "Tajikistan", code: "TJ" },
-  { name: "Tanzania", code: "TZ" },
-  { name: "Thailand", code: "TH" },
-  { name: "Timor-Leste", code: "TL" },
-  { name: "Togo", code: "TG" },
-  { name: "Tokelau", code: "TK" },
-  { name: "Tonga", code: "TO" },
-  { name: "Trinidad and Tobago", code: "TT" },
-  { name: "Tunisia", code: "TN" },
-  { name: "Turkey", code: "TR" },
-  { name: "Turkmenistan", code: "TM" },
-  { name: "Turks and Caicos Islands", code: "TC" },
-  { name: "Tuvalu", code: "TV" },
-  { name: "Uganda", code: "UG" },
-  { name: "Ukraine", code: "UA" },
-  { name: "United Arab Emirates", code: "AE" },
-  { name: "United Kingdom", code: "GB" },
-  { name: "United States", code: "US" },
-  { name: "Uruguay", code: "UY" },
-  { name: "Uzbekistan", code: "UZ" },
-  { name: "Vanuatu", code: "VU" },
-  { name: "Venezuela", code: "VE" },
-  { name: "Viet Nam", code: "VN" },
-  { name: "Virgin Islands, British", code: "VG" },
-  { name: "Virgin Islands, U.S.", code: "VI" },
-  { name: "Wallis and Futuna", code: "WF" },
-  { name: "Yemen", code: "YE" },
-  { name: "Zambia", code: "ZM" },
-  { name: "Zimbabwe", code: "ZW" },
-];
+// Fetch country list dynamically instead of a large static list
+const [countries, setCountries] = useState<
+  Array<{ name: string; code: string }>
+>([]);
+const [countriesLoading, setCountriesLoading] = useState(false);
+
+useEffect(() => {
+  let mounted = true;
+  const fetchCountries = async () => {
+    try {
+      setCountriesLoading(true);
+      const res = await fetch(
+        "https://restcountries.com/v3.1/all?fields=name,cca3,cca2",
+      );
+      const json = await res.json();
+      const list = (json || [])
+        .map((c: any) => ({
+          name: c.name?.common || "",
+          code: c.cca3 || c.cca2 || "",
+        }))
+        .filter((c: any) => c.name && c.code)
+        .sort((a: any, b: any) => a.name.localeCompare(b.name));
+      if (mounted) setCountries(list);
+    } catch (err) {
+      console.warn("Failed to load countries", err);
+    } finally {
+      if (mounted) setCountriesLoading(false);
+    }
+  };
+  fetchCountries();
+  return () => {
+    mounted = false;
+  };
+}, []);
 
 // STRICT: ONLY these exact document names will show the verify button
 const VERIFIABLE_DOCUMENT_NAMES = [
@@ -731,6 +530,9 @@ const FormField = ({
 type Props = { navigation: any };
 
 export default function StaffManagement({ navigation }: Props) {
+  // Add these states
+  const [countrySearch, setCountrySearch] = useState("");
+
   // ── Staff list ────────────────────────────────────────────────────────────
   const [staff, setStaff] = useState<StaffMember[]>([]);
   const [rawStaff, setRawStaff] = useState<any[]>([]);
@@ -936,7 +738,7 @@ export default function StaffManagement({ navigation }: Props) {
           city: city || p.city,
           state: state || p.state,
           country: country || p.country,
-          origin_country: countryCode || p.origin_country,
+          // origin_country: countryCode || p.origin_country,
           coordinates: coordinates || p.coordinates,
         }));
       } else {
@@ -995,7 +797,7 @@ export default function StaffManagement({ navigation }: Props) {
     else if (!/^\S+@\S+\.\S+$/.test(addForm.email)) e.email = "Invalid email";
 
     if (!addForm.password.trim()) e.password = "Password is required";
-    else if (addForm.password.length < 6) e.password = "Min 6 characters";
+    else if (addForm.password.length < 8) e.password = "Min 8 characters";
 
     if (!addForm.phone.trim()) e.phone = "Phone is required";
     else if (!ausPhoneRegex.test(addForm.phone.replace(/[\s()+-]/g, "")))
@@ -1035,9 +837,9 @@ export default function StaffManagement({ navigation }: Props) {
   };
 
   // ─── Add staff ────────────────────────────────────────────────────────────
-
   const addStaff = async () => {
     if (!validateAdd()) return;
+
     try {
       setAddLoading(true);
       const headers = await getAuthHeaders();
@@ -1053,22 +855,16 @@ export default function StaffManagement({ navigation }: Props) {
         user_id: userId,
       };
 
-      // staff_document_type → snake_case
       if (addForm.residential_status) {
         payload.staff_document_type =
           RESIDENTIAL_STATUS_MAP[addForm.residential_status] ||
           addForm.residential_status.toLowerCase().replace(/\s+/g, "_");
       }
 
-      // Date of birth — DD/MM/YYYY
       if (addForm.date_of_birth) {
         payload.date_of_birth = addForm.date_of_birth;
       }
-      console.log("====================================");
-      console.log("UPDATE STAFF PAYLOAD");
-      console.log(JSON.stringify(payload, null, 2));
-      console.log("====================================");
-      // Auto-filled from address
+
       if (addForm.origin_country)
         payload.origin_country = addForm.origin_country;
       if (addForm.city) payload.city = addForm.city;
@@ -1076,13 +872,16 @@ export default function StaffManagement({ navigation }: Props) {
       if (addForm.country) payload.country = addForm.country;
       if (addForm.coordinates) payload.coordinates = addForm.coordinates;
 
-      console.log(
-        "🚀 Payload being sent to /admin/create-staff:",
-        JSON.stringify(payload, null, 2),
-      );
+      console.log("🚀 Payload:", JSON.stringify(payload, null, 2));
 
       await axios.post(`${BASE_URL}/admin/create-staff`, payload, { headers });
-      Alert.alert("Success", "Staff added successfully.");
+
+      Toast.show({
+        type: "success",
+        text1: "Staff Added Successfully",
+        position: "bottom",
+      });
+
       setShowAddModal(false);
       setAddForm(EMPTY_ADD_FORM);
       setAddDobSelected(null);
@@ -1092,14 +891,24 @@ export default function StaffManagement({ navigation }: Props) {
       console.log("API ERROR:", e?.response?.data);
 
       const errorData = e?.response?.data;
+      const newErrors: any = {};
 
-      let errorMessage = errorData?.message || "Failed to update staff.";
-
-      if (errorData?.errors?.password?.length) {
-        errorMessage = errorData.errors.password[0];
+      if (errorData?.errors?.email) {
+        newErrors.email = errorData.errors.email[0] || "Email already taken";
+      } else if (errorData?.message) {
+        newErrors.email = errorData.message; // fallback
+      } else {
+        newErrors.email = "Failed to add staff. Please try again.";
       }
 
-      Alert.alert("Error", errorMessage);
+      setAddErrors(newErrors);
+
+      Toast.show({
+        type: "error",
+        text1: "Validation Error",
+        text2: newErrors.email,
+        position: "top",
+      });
     } finally {
       setAddLoading(false);
     }
@@ -2102,10 +1911,15 @@ export default function StaffManagement({ navigation }: Props) {
           <FormField
             placeholder="Email *"
             value={form.email}
-            onChangeText={(t) => setForm((p: any) => ({ ...p, email: t }))}
+            onChangeText={(t) => {
+              setForm((p: any) => ({ ...p, email: t }));
+              // Clear error when user starts typing
+              if (errors.email) {
+                setAddErrors((prev: any) => ({ ...prev, email: "" }));
+              }
+            }}
           />
           {errors.email && <Text style={styles.errorText}>{errors.email}</Text>}
-
           {isAdd && (
             <>
               <FormField
@@ -2179,7 +1993,7 @@ export default function StaffManagement({ navigation }: Props) {
                   fontSize: 14,
                 }}
               >
-                {form.residential_status || "Residential Status *"}
+                {form.residential_status || "Residential Status"}
               </Text>
               <ChevronDown size={20} color={COLORS.textSecondary} />
             </TouchableOpacity>
@@ -2208,7 +2022,6 @@ export default function StaffManagement({ navigation }: Props) {
           </View>
 
           <View>
-            
             <TouchableOpacity
               style={styles.selectBox}
               activeOpacity={0.8}
@@ -2238,7 +2051,7 @@ export default function StaffManagement({ navigation }: Props) {
             {(isAdd ? showCountryDropdown : showEditCountryDropdown) && (
               <View style={styles.inlineDropdown}>
                 <ScrollView style={{ maxHeight: 250 }} nestedScrollEnabled>
-                  {COUNTRIES.map((country) => (
+                  {(countries || []).map((country) => (
                     <TouchableOpacity
                       key={country.code}
                       style={styles.dropdownItem}
@@ -2892,6 +2705,38 @@ export default function StaffManagement({ navigation }: Props) {
         </View>
         <Toast />
       </Modal>
+      <Toast
+        config={{
+          success: (props) => (
+            <BaseToast
+              {...props}
+              style={{ borderLeftColor: COLORS.success, borderLeftWidth: 7 }}
+              contentContainerStyle={{
+                paddingHorizontal: 15,
+                backgroundColor: "#1e2937",
+              }}
+              text1Style={{ fontSize: 16, fontWeight: "700", color: "#fff" }}
+              text2Style={{ fontSize: 14, color: "#e2e8f0" }}
+            />
+          ),
+          error: (props) => (
+            <ErrorToast
+              {...props}
+              style={{ borderLeftColor: COLORS.danger, borderLeftWidth: 7 }}
+              contentContainerStyle={{
+                paddingHorizontal: 15,
+                backgroundColor: "#1e2937",
+              }}
+              text1Style={{ fontSize: 16, fontWeight: "700", color: "#fff" }}
+              text2Style={{ fontSize: 14, color: "#e2e8f0" }}
+            />
+          ),
+        }}
+        position="top" // Changed to top - better visibility over modal
+        topOffset={70}
+        visibilityTime={5000}
+        autoHide={true}
+      />
     </SafeAreaView>
   );
 }
@@ -3052,7 +2897,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     height: 45,
   },
-  errorText: { color: "#F87171", fontSize: 11, marginLeft: 12, marginTop: 3 },
+  errorText: { color: "#F87171", fontSize: 11, marginLeft: 10, marginTop: 3 },
   label: { color: COLORS.textSecondary, marginBottom: 6, fontSize: 14 },
   selectBox: {
     backgroundColor: "#1E2D3D",
@@ -3427,7 +3272,7 @@ const docStyles = StyleSheet.create({
     borderColor: "rgba(255,255,255,0.05)",
   },
   dateText: { color: "#fff", fontSize: 14, flex: 1 },
-  errorText: { color: "#ff6b6b", fontSize: 12, marginTop: 4 },
+  errorText: { color: "#ff6b6b", fontSize: 12 },
   dropdownSelector: {
     flexDirection: "row",
     justifyContent: "space-between",

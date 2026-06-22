@@ -30,6 +30,7 @@ export interface ProfileUpdatePayload {
   address?: string;
   city?: string;
   state?: string;
+  country?: string;
   origin_country?: string; // 👈 ADD THIS
   coordinates?: string;
   company_name?: string;
@@ -257,7 +258,7 @@ export const updateUserProfile = async (
   if (payload.staff_document_type)
     formData.append("staff_document_type", payload.staff_document_type);
 
-  // ==================== 🔥 FIX: DATE OF BIRTH ====================
+  // ==================== DATE OF BIRTH ====================
   if (payload.date_of_birth) {
     formData.append("date_of_birth", payload.date_of_birth);
   }
@@ -267,11 +268,18 @@ export const updateUserProfile = async (
   if (payload.city) formData.append("city", payload.city);
   if (payload.state) formData.append("state", payload.state);
 
+  // ✅ FIX: COUNTRY ADDED HERE
+  if (payload.country) {
+    formData.append("country", payload.country);
+  }
+
   if (payload.origin_country) {
     formData.append("origin_country", payload.origin_country);
   }
 
-  if (payload.coordinates) formData.append("coordinates", payload.coordinates);
+  if (payload.coordinates) {
+    formData.append("coordinates", payload.coordinates);
+  }
 
   // ==================== CONTRACTOR ====================
   if (payload.company_name)
@@ -285,7 +293,11 @@ export const updateUserProfile = async (
 
   // ==================== PROFILE IMAGE ====================
   if (payload.profile_image) {
-    formData.append("profile_image", payload.profile_image);
+    formData.append("profile_image", {
+      uri: payload.profile_image.uri,
+      name: payload.profile_image.name || "profile.jpg",
+      type: payload.profile_image.type || "image/jpeg",
+    } as any);
   }
 
   // ==================== LOGGING ====================
@@ -297,7 +309,7 @@ export const updateUserProfile = async (
     email: payload.email,
     gender: payload.gender,
     staff_document_type: payload.staff_document_type,
-    date_of_birth: payload.date_of_birth, // 🔥 ADD THIS
+    date_of_birth: payload.date_of_birth,
     company_name: payload.company_name,
     registration_number: payload.registration_number,
     acn: payload.acn,
@@ -305,6 +317,7 @@ export const updateUserProfile = async (
     address: payload.address,
     city: payload.city,
     state: payload.state,
+    country: payload.country, // ✅ FIX LOGGING TOO
     origin_country: payload.origin_country,
     coordinates: payload.coordinates,
   };
@@ -688,7 +701,7 @@ export interface JobFinancials {
 export interface JobPostPayload {
   user_id: number;
 
-  title: string;
+  job_type: string;
 
   description: string;
 

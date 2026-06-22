@@ -468,7 +468,6 @@ export default function ReviewConfirmScreen() {
       return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
     };
 
-   
     const locationParts = (jobData.location || "")
       .split(",")
       .map((item: string) => item.trim());
@@ -496,7 +495,7 @@ export default function ReviewConfirmScreen() {
 
     const payload = {
       user_id: user.id,
-      title: jobData.title || getCategoryDisplay(jobData.category),
+job_type: jobData.category || "others",
       description: jobData.description || "No description provided",
       address: jobData.location || "Not specified",
       coordinates: `${jobData.lat},${jobData.lng}`,

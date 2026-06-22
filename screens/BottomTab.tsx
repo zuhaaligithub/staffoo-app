@@ -175,7 +175,7 @@ export default function BottomTab({ navigation, activeTab = 'Home' }: Props) {
       <View style={styles.bottomTab}>
         {renderTab('Home', 'Home', Home)}
 
-        {renderTab('Applications', 'Applications', FileText)}
+        {renderTab('Applications', 'My Jobs', FileText)}
 
         {userType === 'customer' && (
           <TouchableOpacity
