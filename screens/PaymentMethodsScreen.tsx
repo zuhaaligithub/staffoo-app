@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -10,9 +10,10 @@ import {
   ActivityIndicator,
   Dimensions,
 } from "react-native";
-import { ChevronLeft, Plus } from "lucide-react-native";
+import { ChevronLeft, Plus, Trash2 } from "lucide-react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
+import { useFocusEffect } from "@react-navigation/native";
 
 const BASE_URL = "https://apis.staffoo.com.au/api";
 const { height: SCREEN_HEIGHT } = Dimensions.get("window");
@@ -40,6 +41,61 @@ type Props = {
 export default function PaymentMethodsScreen({ navigation }: Props) {
   const [cards, setCards] = useState<Card[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const handleDeleteCard = (index: number) => {
+    Alert.alert("Delete Card", "Are you sure you want to delete this card?", [
+      {
+        text: "Cancel",
+        style: "cancel",
+      },
+      {
+        text: "Delete",
+        style: "destructive",
+        onPress: async () => {
+          try {
+            setLoading(true);
+
+            const updatedCards = cards.filter((_, i) => i !== index);
+
+            const token = await AsyncStorage.getItem("@auth_token");
+            const userStr = await AsyncStorage.getItem("user");
+            if (!token || !userStr) {
+              throw new Error("Missing auth or user session");
+            }
+
+            const user = JSON.parse(userStr);
+
+            const formData = new FormData();
+            formData.append("bank_details", JSON.stringify(updatedCards));
+
+            const res = await axios.post(
+              `${BASE_URL}/user-update/${user.id}`,
+              formData,
+              {
+                headers: {
+                  Authorization: `Bearer ${token}`,
+                  "Content-Type": "multipart/form-data",
+                },
+              },
+            );
+
+            if (res.data && res.data.success) {
+              setCards(updatedCards);
+              Alert.alert("Success", "Card deleted successfully");
+            } else {
+              console.warn("Delete card: unexpected response", res.data);
+              throw new Error("Failed to update server");
+            }
+          } catch (error) {
+            console.error("Delete card error:", error);
+            Alert.alert("Error", "Failed to delete card");
+          } finally {
+            setLoading(false);
+          }
+        },
+      },
+    ]);
+  };
 
   const fetchCards = async () => {
     try {
@@ -76,20 +132,30 @@ export default function PaymentMethodsScreen({ navigation }: Props) {
     }
   };
 
-  useEffect(() => {
-    fetchCards();
-  }, []);
-
+  useFocusEffect(
+    useCallback(() => {
+      fetchCards();
+    }, []),
+  );
   const handleAddNew = () => {
     navigation.navigate("PaymentHistory", {
       onCardAdded: fetchCards,
     });
   };
 
-  const renderCard = ({ item }: { item: Card }) => {
+  const renderCard = ({ item, index }: { item: Card; index: number }) => {
     const last4 = item.card_number.replace(/\D/g, "").slice(-4);
     return (
       <View style={styles.creditCard}>
+        <View style={styles.cardHeader}>
+          <TouchableOpacity
+            style={styles.deleteButton}
+            onPress={() => handleDeleteCard(index)}
+          >
+            <Trash2 size={14} color="#fff" />
+          </TouchableOpacity>
+        </View>
+
         <View style={styles.cardTop}>
           <View style={styles.chipContainer}>
             <View style={styles.chip}>
@@ -97,11 +163,11 @@ export default function PaymentMethodsScreen({ navigation }: Props) {
               <View style={styles.chipShine} />
             </View>
           </View>
+
           <Text style={styles.cardBrand}>VISA</Text>
         </View>
 
         <Text style={styles.cardNumberLarge}>•••• •••• •••• {last4}</Text>
-
         <View style={styles.cardBottom}>
           <View>
             <Text style={styles.cardLabel}>CARD HOLDER</Text>
@@ -167,7 +233,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#111111",
-    paddingTop:20
+    paddingTop: 20,
   },
   header: {
     flexDirection: "row",
@@ -176,7 +242,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 16,
     marginHorizontal: 16,
-  
   },
   title: {
     fontSize: 20,
@@ -191,7 +256,10 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     paddingHorizontal: 20,
   },
-
+  topRight: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
   /* ==================== MAIN CARDS CONTAINER ==================== */
   cardsWrapper: {
     flex: 1,
@@ -201,7 +269,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.08)",
     overflow: "hidden",
-    maxHeight: SCREEN_HEIGHT * 0.70, // Fixed reasonable height
+    maxHeight: SCREEN_HEIGHT * 0.7, // Fixed reasonable height
   },
 
   listContent: {
@@ -219,16 +287,12 @@ const styles = StyleSheet.create({
   creditCard: {
     backgroundColor: "#173F73",
     borderRadius: 10,
-    padding: 14,
+    padding: 10,
     marginBottom: 9,
     minHeight: 100,
     justifyContent: "space-between",
   },
-  cardTop: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
+
   chipContainer: { width: 48, height: 35 },
   chip: {
     width: "100%",
@@ -246,6 +310,10 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.3)",
   },
+  rightSection: {
+    alignItems: "flex-end",
+  },
+
   chipShine: {
     position: "absolute",
     top: 6,
@@ -260,13 +328,7 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: "700",
   },
-  cardNumberLarge: {
-    color: "#fff",
-    fontSize: 20,
-    fontWeight: "600",
-    letterSpacing: 2,
-    marginVertical: 10,
-  },
+
   cardBottom: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -306,5 +368,34 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 16,
     fontWeight: "700",
+  },
+  cardHeader: {
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    // marginBottom: 5,
+  },
+
+  cardTop: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+
+  deleteButton: {
+    width: 30,
+    height: 30,
+    backgroundColor: "#EF4444",
+    borderRadius: 6,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  cardNumberLarge: {
+    color: "#fff",
+    fontSize: 20,
+    fontWeight: "600",
+    letterSpacing: 2,
+    marginTop: 9,
+    marginBottom: 9,
   },
 });

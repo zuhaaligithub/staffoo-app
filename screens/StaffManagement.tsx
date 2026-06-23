@@ -1,4 +1,10 @@
-import React, { useEffect, useState, useMemo } from "react";
+import React, {
+  useEffect,
+  useState,
+  useMemo,
+  useRef,
+  useCallback,
+} from "react";
 import {
   View,
   Text,
@@ -37,6 +43,7 @@ import {
   ExternalLink,
   Calendar as CalendarIcon,
   Mail,
+  Search,
 } from "lucide-react-native";
 import LinearGradient from "react-native-linear-gradient";
 import Toast, { BaseToast, ErrorToast } from "react-native-toast-message";
@@ -80,49 +87,13 @@ const ALLOWED_FILE_TYPES = [
   "application/msword",
   "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
 ];
-// Fetch country list dynamically instead of a large static list
-const [countries, setCountries] = useState<
-  Array<{ name: string; code: string }>
->([]);
-const [countriesLoading, setCountriesLoading] = useState(false);
 
-useEffect(() => {
-  let mounted = true;
-  const fetchCountries = async () => {
-    try {
-      setCountriesLoading(true);
-      const res = await fetch(
-        "https://restcountries.com/v3.1/all?fields=name,cca3,cca2",
-      );
-      const json = await res.json();
-      const list = (json || [])
-        .map((c: any) => ({
-          name: c.name?.common || "",
-          code: c.cca3 || c.cca2 || "",
-        }))
-        .filter((c: any) => c.name && c.code)
-        .sort((a: any, b: any) => a.name.localeCompare(b.name));
-      if (mounted) setCountries(list);
-    } catch (err) {
-      console.warn("Failed to load countries", err);
-    } finally {
-      if (mounted) setCountriesLoading(false);
-    }
-  };
-  fetchCountries();
-  return () => {
-    mounted = false;
-  };
-}, []);
-
-// STRICT: ONLY these exact document names will show the verify button
 const VERIFIABLE_DOCUMENT_NAMES = [
   "visa",
   "security license",
   "security licence",
 ];
 
-// ─── ALLOWED DOCUMENT TYPES — only these appear in the documents tab ──────────
 const ALLOWED_DOC_NAMES: string[] = [
   "passport",
   "visa",
@@ -152,7 +123,6 @@ const ALLOWED_DOC_NAMES: string[] = [
   "police check",
 ];
 
-// ─── Residential status → snake_case map ─────────────────────────────────────
 const RESIDENTIAL_STATUS_MAP: Record<string, string> = {
   "Student Visa": "student_visa",
   "Bridging Visa": "bridging_visa",
@@ -162,12 +132,10 @@ const RESIDENTIAL_STATUS_MAP: Record<string, string> = {
   Other: "other",
 };
 
-// Reverse map: snake_case → display label
 const RESIDENTIAL_STATUS_REVERSE: Record<string, string> = Object.fromEntries(
   Object.entries(RESIDENTIAL_STATUS_MAP).map(([k, v]) => [v, k]),
 );
 
-// ─── Display name map ─────────────────────────────────────────────────────────
 const DOCUMENT_DISPLAY_NAME: Record<string, string> = {
   passport: "Passport",
   visa: "Visa",
@@ -206,7 +174,6 @@ const getDisplayName = (docName?: string): string => {
   return DOCUMENT_DISPLAY_NAME[key] || docName;
 };
 
-// ─── Helper: check if a document name is in the allowed list ─────────────────
 const isAllowedDocument = (docName?: string): boolean => {
   if (!docName) return false;
   const key = docName
@@ -219,8 +186,118 @@ const isAllowedDocument = (docName?: string): boolean => {
   });
 };
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+// ─── Embedded countries list (no network call needed) ─────────────────────────
+// Top countries first, then alphabetical
+const COUNTRIES_LIST: Array<{ name: string; code: string }> = [
+  { name: "Australia", code: "AUS" },
+  { name: "New Zealand", code: "NZL" },
+  { name: "United Kingdom", code: "GBR" },
+  { name: "United States", code: "USA" },
+  { name: "Canada", code: "CAN" },
+  { name: "India", code: "IND" },
+  { name: "Philippines", code: "PHL" },
+  { name: "China", code: "CHN" },
+  { name: "South Korea", code: "KOR" },
+  { name: "Japan", code: "JPN" },
+  { name: "Afghanistan", code: "AFG" },
+  { name: "Albania", code: "ALB" },
+  { name: "Algeria", code: "DZA" },
+  { name: "Angola", code: "AGO" },
+  { name: "Argentina", code: "ARG" },
+  { name: "Armenia", code: "ARM" },
+  { name: "Austria", code: "AUT" },
+  { name: "Azerbaijan", code: "AZE" },
+  { name: "Bahrain", code: "BHR" },
+  { name: "Bangladesh", code: "BGD" },
+  { name: "Belarus", code: "BLR" },
+  { name: "Belgium", code: "BEL" },
+  { name: "Bolivia", code: "BOL" },
+  { name: "Bosnia and Herzegovina", code: "BIH" },
+  { name: "Brazil", code: "BRA" },
+  { name: "Bulgaria", code: "BGR" },
+  { name: "Cambodia", code: "KHM" },
+  { name: "Cameroon", code: "CMR" },
+  { name: "Chile", code: "CHL" },
+  { name: "Colombia", code: "COL" },
+  { name: "Croatia", code: "HRV" },
+  { name: "Cuba", code: "CUB" },
+  { name: "Czech Republic", code: "CZE" },
+  { name: "Denmark", code: "DNK" },
+  { name: "Ecuador", code: "ECU" },
+  { name: "Egypt", code: "EGY" },
+  { name: "Ethiopia", code: "ETH" },
+  { name: "Fiji", code: "FJI" },
+  { name: "Finland", code: "FIN" },
+  { name: "France", code: "FRA" },
+  { name: "Germany", code: "DEU" },
+  { name: "Ghana", code: "GHA" },
+  { name: "Greece", code: "GRC" },
+  { name: "Guatemala", code: "GTM" },
+  { name: "Hong Kong", code: "HKG" },
+  { name: "Hungary", code: "HUN" },
+  { name: "Indonesia", code: "IDN" },
+  { name: "Iran", code: "IRN" },
+  { name: "Iraq", code: "IRQ" },
+  { name: "Ireland", code: "IRL" },
+  { name: "Israel", code: "ISR" },
+  { name: "Italy", code: "ITA" },
+  { name: "Jamaica", code: "JAM" },
+  { name: "Jordan", code: "JOR" },
+  { name: "Kazakhstan", code: "KAZ" },
+  { name: "Kenya", code: "KEN" },
+  { name: "Kuwait", code: "KWT" },
+  { name: "Laos", code: "LAO" },
+  { name: "Lebanon", code: "LBN" },
+  { name: "Libya", code: "LBY" },
+  { name: "Malaysia", code: "MYS" },
+  { name: "Mexico", code: "MEX" },
+  { name: "Morocco", code: "MAR" },
+  { name: "Myanmar", code: "MMR" },
+  { name: "Nepal", code: "NPL" },
+  { name: "Netherlands", code: "NLD" },
+  { name: "Nigeria", code: "NGA" },
+  { name: "Norway", code: "NOR" },
+  { name: "Oman", code: "OMN" },
+  { name: "Pakistan", code: "PAK" },
+  { name: "Panama", code: "PAN" },
+  { name: "Papua New Guinea", code: "PNG" },
+  { name: "Paraguay", code: "PRY" },
+  { name: "Peru", code: "PER" },
+  { name: "Poland", code: "POL" },
+  { name: "Portugal", code: "PRT" },
+  { name: "Qatar", code: "QAT" },
+  { name: "Romania", code: "ROU" },
+  { name: "Russia", code: "RUS" },
+  { name: "Saudi Arabia", code: "SAU" },
+  { name: "Singapore", code: "SGP" },
+  { name: "Slovenia", code: "SVN" },
+  { name: "Solomon Islands", code: "SLB" },
+  { name: "Somalia", code: "SOM" },
+  { name: "South Africa", code: "ZAF" },
+  { name: "Spain", code: "ESP" },
+  { name: "Sri Lanka", code: "LKA" },
+  { name: "Sudan", code: "SDN" },
+  { name: "Sweden", code: "SWE" },
+  { name: "Switzerland", code: "CHE" },
+  { name: "Syria", code: "SYR" },
+  { name: "Taiwan", code: "TWN" },
+  { name: "Tanzania", code: "TZA" },
+  { name: "Thailand", code: "THA" },
+  { name: "Timor-Leste", code: "TLS" },
+  { name: "Tunisia", code: "TUN" },
+  { name: "Turkey", code: "TUR" },
+  { name: "Uganda", code: "UGA" },
+  { name: "Ukraine", code: "UKR" },
+  { name: "United Arab Emirates", code: "ARE" },
+  { name: "Uruguay", code: "URY" },
+  { name: "Uzbekistan", code: "UZB" },
+  { name: "Venezuela", code: "VEN" },
+  { name: "Vietnam", code: "VNM" },
+  { name: "Yemen", code: "YEM" },
+  { name: "Zimbabwe", code: "ZWE" },
+];
 
+// ─── Types ────────────────────────────────────────────────────────────────────
 interface StaffMember {
   id: string;
   name: string;
@@ -252,7 +329,7 @@ interface AddStaffForm {
   gender: string;
   residential_status: string;
   address: string;
-  date_of_birth?: string; // DD/MM/YYYY for payload
+  date_of_birth?: string;
   origin_country?: string;
   city?: string;
   state?: string;
@@ -269,7 +346,7 @@ interface EditStaffForm {
   residential_status: string;
   address: string;
   password?: string;
-  date_of_birth?: string; // DD/MM/YYYY for payload
+  date_of_birth?: string;
   origin_country?: string;
   city?: string;
   state?: string;
@@ -321,7 +398,6 @@ const residentialOptions = [
 ];
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-
 const isImageFile = (
   fileStr?: string | null,
   mimeType?: string | null,
@@ -352,77 +428,55 @@ const getExpiryStatus = (
   return "ok";
 };
 
-// Formats date strings (YYYY-MM-DD or DD/MM/YYYY) or Date objects into Australian format (DD/MM/YYYY)
 const formatAUDate = (dateSource?: string | Date | null): string => {
   if (!dateSource) return "—";
-
   if (dateSource instanceof Date) {
-    const day = String(dateSource.getDate()).padStart(2, "0");
-    const month = String(dateSource.getMonth() + 1).padStart(2, "0");
-    const year = dateSource.getFullYear();
-    return `${day}/${month}/${year}`;
+    return `${String(dateSource.getDate()).padStart(2, "0")}/${String(
+      dateSource.getMonth() + 1,
+    ).padStart(2, "0")}/${dateSource.getFullYear()}`;
   }
-
-  // Already DD/MM/YYYY
   if (/^\d{2}\/\d{2}\/\d{4}$/.test(dateSource)) return dateSource;
-
   const [year, month, day] = dateSource.split("-");
   if (!year || !month || !day) return dateSource;
   return `${day}/${month}/${year}`;
 };
 
-// Parses an expiry date that may come back as DD/MM/YYYY or YYYY-MM-DD
 const parseApiExpiryDate = (value: string): Date | null => {
   if (!value) return null;
-
-  // DD/MM/YYYY
   const ddmmyyyy = value.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
   if (ddmmyyyy) {
     const [, dd, mm, yyyy] = ddmmyyyy;
     const d = new Date(Number(yyyy), Number(mm) - 1, Number(dd));
     return isNaN(d.getTime()) ? null : d;
   }
-
-  // YYYY-MM-DD
   const yyyymmdd = value.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
   if (yyyymmdd) {
     const [, yyyy, mm, dd] = yyyymmdd;
     const d = new Date(Number(yyyy), Number(mm) - 1, Number(dd));
     return isNaN(d.getTime()) ? null : d;
   }
-
-  // Fallback
   const d = new Date(value);
   return isNaN(d.getTime()) ? null : d;
 };
 
-// STRICT CHECK: ONLY returns true for documents named "Visa" or "Security License"
 const isVerifiableDocType = (opts: {
   label?: string | null;
   value?: string | null;
   category?: string | null;
 }): boolean => {
   const docName = (opts.label || opts.value || "").toLowerCase().trim();
-  const result = VERIFIABLE_DOCUMENT_NAMES.some(
+  return VERIFIABLE_DOCUMENT_NAMES.some(
     (keyword) => docName === keyword || docName.includes(keyword),
   );
-  return result;
 };
 
-// ─── Google Places: extract address components ────────────────────────────────
 const extractAddressComponents = (
   components: any[],
-): {
-  city: string;
-  state: string;
-  country: string;
-  countryCode: string;
-} => {
-  let city = "";
-  let state = "";
-  let country = "";
-  let countryCode = "";
-
+): { city: string; state: string; country: string; countryCode: string } => {
+  let city = "",
+    state = "",
+    country = "",
+    countryCode = "";
   components.forEach((component: any) => {
     const types: string[] = component.types || [];
     if (
@@ -432,20 +486,135 @@ const extractAddressComponents = (
     ) {
       if (!city) city = component.long_name;
     }
-    if (types.includes("administrative_area_level_1")) {
+    if (types.includes("administrative_area_level_1"))
       state = component.short_name.toLowerCase();
-    }
     if (types.includes("country")) {
       country = component.long_name;
-      countryCode = component.short_name; // e.g. "AU", "NZ"
+      countryCode = component.short_name;
     }
   });
-
   return { city, state, country, countryCode };
 };
 
-// ─── Sub-components ───────────────────────────────────────────────────────────
+// ─── Country Picker Modal (Fast FlatList + Search) ────────────────────────────
+interface CountryPickerModalProps {
+  visible: boolean;
+  selectedCountry: string;
+  onSelect: (name: string) => void;
+  onClose: () => void;
+}
 
+const CountryPickerModal = React.memo(
+  ({
+    visible,
+    selectedCountry,
+    onSelect,
+    onClose,
+  }: CountryPickerModalProps) => {
+    const [search, setSearch] = useState("");
+
+    const filtered = useMemo(() => {
+      if (!search.trim()) return COUNTRIES_LIST;
+      const q = search.toLowerCase().trim();
+      return COUNTRIES_LIST.filter((c) => c.name.toLowerCase().includes(q));
+    }, [search]);
+
+    const handleClose = useCallback(() => {
+      setSearch("");
+      onClose();
+    }, [onClose]);
+
+    const renderItem = useCallback(
+      ({ item }: { item: { name: string; code: string } }) => (
+        <TouchableOpacity
+          style={cpStyles.item}
+          onPress={() => {
+            setSearch("");
+            onSelect(item.name);
+          }}
+          activeOpacity={0.7}
+        >
+          <Text style={cpStyles.itemText}>{item.name}</Text>
+          {selectedCountry === item.name && (
+            <Check size={18} color={COLORS.primary} />
+          )}
+        </TouchableOpacity>
+      ),
+      [selectedCountry, onSelect],
+    );
+
+    const keyExtractor = useCallback(
+      (item: { name: string; code: string }) => item.code,
+      [],
+    );
+
+    return (
+      <Modal
+        visible={visible}
+        transparent
+        animationType="slide"
+        onRequestClose={handleClose}
+      >
+        <View style={cpStyles.overlay}>
+          <View style={cpStyles.sheet}>
+            {/* Header */}
+            <View style={cpStyles.header}>
+              <Text style={cpStyles.title}>Country of Origin</Text>
+              <TouchableOpacity onPress={handleClose} style={cpStyles.closeBtn}>
+                <X size={20} color={COLORS.textSecondary} />
+              </TouchableOpacity>
+            </View>
+
+            {/* Search */}
+            <View style={cpStyles.searchRow}>
+              <Search
+                size={16}
+                color={COLORS.textMuted}
+                style={{ marginRight: 8 }}
+              />
+              <TextInput
+                style={cpStyles.searchInput}
+                placeholder="Search country…"
+                placeholderTextColor={COLORS.textMuted}
+                value={search}
+                onChangeText={setSearch}
+                autoCorrect={false}
+                autoCapitalize="none"
+              />
+              {search.length > 0 && (
+                <TouchableOpacity onPress={() => setSearch("")}>
+                  <X size={16} color={COLORS.textMuted} />
+                </TouchableOpacity>
+              )}
+            </View>
+
+            {/* List */}
+            <FlatList
+              data={filtered}
+              renderItem={renderItem}
+              keyExtractor={keyExtractor}
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={false}
+              getItemLayout={(_, index) => ({
+                length: 52,
+                offset: 52 * index,
+                index,
+              })}
+              initialNumToRender={20}
+              maxToRenderPerBatch={30}
+              windowSize={10}
+              ListEmptyComponent={
+                <Text style={cpStyles.empty}>No countries found.</Text>
+              }
+            />
+          </View>
+        </View>
+      </Modal>
+    );
+  },
+);
+
+// ─── Sub-components ───────────────────────────────────────────────────────────
 const LazyImage = ({ uri, style }: { uri: string; style: any }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -530,16 +699,11 @@ const FormField = ({
 type Props = { navigation: any };
 
 export default function StaffManagement({ navigation }: Props) {
-  // Add these states
-  const [countrySearch, setCountrySearch] = useState("");
-
-  // ── Staff list ────────────────────────────────────────────────────────────
   const [staff, setStaff] = useState<StaffMember[]>([]);
   const [rawStaff, setRawStaff] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [residentialStatusSaved, setResidentialStatusSaved] = useState(false);
 
-  // ── Add modal ─────────────────────────────────────────────────────────────
   const [showAddModal, setShowAddModal] = useState(false);
   const [addForm, setAddForm] = useState<AddStaffForm>(EMPTY_ADD_FORM);
   const [addLoading, setAddLoading] = useState(false);
@@ -549,7 +713,12 @@ export default function StaffManagement({ navigation }: Props) {
     useState(false);
   const [addErrors, setAddErrors] = useState<any>({});
 
-  // ── Edit modal ────────────────────────────────────────────────────────────
+  // ── Country picker modal state (single shared modal) ──────────────────────
+  const [countryPickerVisible, setCountryPickerVisible] = useState(false);
+  const [countryPickerTarget, setCountryPickerTarget] = useState<
+    "add" | "edit"
+  >("add");
+
   const [showEditModal, setShowEditModal] = useState(false);
   const [editForm, setEditForm] = useState<EditStaffForm>(EMPTY_EDIT_FORM);
   const [editErrors, setEditErrors] = useState<any>({});
@@ -563,27 +732,23 @@ export default function StaffManagement({ navigation }: Props) {
     "personal" | "documents" | "onboarding"
   >("personal");
 
-  // ── Documents tab ─────────────────────────────────────────────────────────
   const [staffDocuments, setStaffDocuments] = useState<StaffDocument[]>([]);
   const [currentStaffUserId, setCurrentStaffUserId] = useState<number | null>(
     null,
   );
 
-  // ── DOB Calendar (Add) ────────────────────────────────────────────────────
   const [showAddDobCalendar, setShowAddDobCalendar] = useState(false);
   const [addDobCalendarMonth, setAddDobCalendarMonth] = useState(
     new Date(2000, 0, 1),
   );
   const [addDobSelected, setAddDobSelected] = useState<Date | null>(null);
 
-  // ── DOB Calendar (Edit) ───────────────────────────────────────────────────
   const [showEditDobCalendar, setShowEditDobCalendar] = useState(false);
   const [editDobCalendarMonth, setEditDobCalendarMonth] = useState(
     new Date(2000, 0, 1),
   );
   const [editDobSelected, setEditDobSelected] = useState<Date | null>(null);
 
-  // ── Document upload modal ─────────────────────────────────────────────────
   const [docModalVisible, setDocModalVisible] = useState(false);
   const [selectedDocType, setSelectedDocType] = useState<{
     label: string;
@@ -601,24 +766,17 @@ export default function StaffManagement({ navigation }: Props) {
   const [fileError, setFileError] = useState("");
   const [docNumberError, setDocNumberError] = useState("");
   const [expiryError, setExpiryError] = useState("");
-  // ── Country Dropdown States ───────────────────────────────────────────────
-  const [showCountryDropdown, setShowCountryDropdown] = useState(false);
-  const [showEditCountryDropdown, setShowEditCountryDropdown] = useState(false);
-  // ── Online verification (Visa / Security License) ─────────────────────────
   const [verifying, setVerifying] = useState(false);
   const [isVerified, setIsVerified] = useState(false);
 
   const needsVerification = selectedDocType
     ? isVerifiableDocType(selectedDocType)
     : false;
-
   const isExpiryLocked = needsVerification;
 
   useEffect(() => {
     getStaff();
   }, []);
-
-  // ─── Auth helpers ─────────────────────────────────────────────────────────
 
   const getAuthHeaders = async () => {
     const token = await AsyncStorage.getItem("@auth_token");
@@ -630,8 +788,6 @@ export default function StaffManagement({ navigation }: Props) {
     if (!userData) return null;
     return JSON.parse(userData).id;
   };
-
-  // ─── Staff CRUD ───────────────────────────────────────────────────────────
 
   const getStaff = async () => {
     try {
@@ -671,8 +827,6 @@ export default function StaffManagement({ navigation }: Props) {
   const normalizeGender = (g?: string) =>
     g ? g.charAt(0).toUpperCase() + g.slice(1).toLowerCase() : "";
 
-  // ─── Address autocomplete ─────────────────────────────────────────────────
-
   const fetchPlaces = async (text: string, isAdd: boolean) => {
     if (text.length < 3) {
       isAdd
@@ -695,8 +849,6 @@ export default function StaffManagement({ navigation }: Props) {
     } catch {}
   };
 
-  // ─── Select place + auto-fill country, city, state, coordinates ──────────
-
   const selectPlace = async (
     description: string,
     placeId: string,
@@ -704,7 +856,6 @@ export default function StaffManagement({ navigation }: Props) {
   ) => {
     Keyboard.dismiss();
 
-    // Update address immediately
     if (isAdd) {
       setAddForm((p) => ({ ...p, address: description }));
       setShowAddSuggestions(false);
@@ -715,7 +866,6 @@ export default function StaffManagement({ navigation }: Props) {
       setEditPredictions([]);
     }
 
-    // Fetch place details for components + coordinates
     try {
       const detailRes = await fetch(
         `https://maps.googleapis.com/maps/api/place/details/json?place_id=${placeId}&fields=address_components,geometry&key=${GOOGLE_API_KEY}`,
@@ -737,26 +887,24 @@ export default function StaffManagement({ navigation }: Props) {
           ...p,
           city: city || p.city,
           state: state || p.state,
-          country: country || p.country,
-          // origin_country: countryCode || p.origin_country,
+          country: country || p.country, // Only address-related fields
           coordinates: coordinates || p.coordinates,
+          // origin_country is deliberately NOT updated
         }));
       } else {
         setEditForm((p) => ({
           ...p,
           city: city || p.city,
           state: state || p.state,
-          country: country || p.country,
-          origin_country: countryCode || p.origin_country,
+          country: country || p.country, // Only address-related fields
           coordinates: coordinates || p.coordinates,
+          // origin_country is deliberately NOT updated
         }));
       }
     } catch (err) {
       console.log("Place details error:", err);
     }
   };
-
-  // ─── DOB Calendar helpers ─────────────────────────────────────────────────
 
   const buildDobCalendarGrid = (month: Date): (Date | null)[] => {
     const year = month.getFullYear();
@@ -785,124 +933,88 @@ export default function StaffManagement({ navigation }: Props) {
     }
   };
 
-  // ─── Validation ───────────────────────────────────────────────────────────
-
   const ausPhoneRegex = /^(?:\+?61|0)[2-478](?:[ -]?[0-9]){8}$/;
 
   const validateAdd = () => {
     const e: any = {};
-
     if (!addForm.name.trim()) e.name = "Full name is required";
     if (!addForm.email.trim()) e.email = "Email is required";
     else if (!/^\S+@\S+\.\S+$/.test(addForm.email)) e.email = "Invalid email";
-
     if (!addForm.password.trim()) e.password = "Password is required";
     else if (addForm.password.length < 8) e.password = "Min 8 characters";
-
     if (!addForm.phone.trim()) e.phone = "Phone is required";
     else if (!ausPhoneRegex.test(addForm.phone.replace(/[\s()+-]/g, "")))
       e.phone = "Must be a valid Australian phone number";
-
     if (!addForm.address.trim()) e.address = "Address is required";
-
-    // NEW: Mandatory fields
     if (!addForm.date_of_birth) e.date_of_birth = "Date of Birth is required";
     if (!addForm.origin_country?.trim())
       e.origin_country = "Country of Origin is required";
-
     setAddErrors(e);
     return Object.keys(e).length === 0;
   };
 
   const validateEdit = () => {
     const e: any = {};
-
     if (!editForm.name.trim()) e.name = "Full name is required";
     if (!editForm.email.trim()) e.email = "Email is required";
     else if (!/^\S+@\S+\.\S+$/.test(editForm.email)) e.email = "Invalid email";
-
     if (!editForm.phone.trim()) e.phone = "Phone is required";
     else if (!ausPhoneRegex.test(editForm.phone.replace(/[\s()+-]/g, "")))
       e.phone = "Must be a valid Australian phone number";
-
     if (!editForm.address.trim()) e.address = "Address is required";
-
-    // NEW: Mandatory fields
     if (!editForm.date_of_birth) e.date_of_birth = "Date of Birth is required";
     if (!editForm.origin_country?.trim())
       e.origin_country = "Country of Origin is required";
-
     setEditErrors(e);
     return Object.keys(e).length === 0;
   };
 
-  // ─── Add staff ────────────────────────────────────────────────────────────
   const addStaff = async () => {
     if (!validateAdd()) return;
-
     try {
       setAddLoading(true);
       const headers = await getAuthHeaders();
       const userId = await getMyUserId();
-
       const payload: any = {
         name: addForm.name,
         email: addForm.email,
         password: addForm.password,
         phone: addForm.phone,
+        security_license_no: addForm.security_license_no,
         gender: addForm.gender,
         address: addForm.address,
         user_id: userId,
       };
-
-      if (addForm.residential_status) {
+      if (addForm.residential_status)
         payload.staff_document_type =
           RESIDENTIAL_STATUS_MAP[addForm.residential_status] ||
           addForm.residential_status.toLowerCase().replace(/\s+/g, "_");
-      }
-
-      if (addForm.date_of_birth) {
-        payload.date_of_birth = addForm.date_of_birth;
-      }
-
+      if (addForm.date_of_birth) payload.date_of_birth = addForm.date_of_birth;
       if (addForm.origin_country)
         payload.origin_country = addForm.origin_country;
       if (addForm.city) payload.city = addForm.city;
       if (addForm.state) payload.state = addForm.state;
       if (addForm.country) payload.country = addForm.country;
       if (addForm.coordinates) payload.coordinates = addForm.coordinates;
-
-      console.log("🚀 Payload:", JSON.stringify(payload, null, 2));
-
       await axios.post(`${BASE_URL}/admin/create-staff`, payload, { headers });
-
       Toast.show({
         type: "success",
         text1: "Staff Added Successfully",
         position: "bottom",
       });
-
       setShowAddModal(false);
       setAddForm(EMPTY_ADD_FORM);
       setAddDobSelected(null);
       setAddErrors({});
       getStaff();
     } catch (e: any) {
-      console.log("API ERROR:", e?.response?.data);
-
       const errorData = e?.response?.data;
       const newErrors: any = {};
-
-      if (errorData?.errors?.email) {
+      if (errorData?.errors?.email)
         newErrors.email = errorData.errors.email[0] || "Email already taken";
-      } else if (errorData?.message) {
-        newErrors.email = errorData.message; // fallback
-      } else {
-        newErrors.email = "Failed to add staff. Please try again.";
-      }
-
+      else if (errorData?.message) newErrors.email = errorData.message;
+      else newErrors.email = "Failed to add staff. Please try again.";
       setAddErrors(newErrors);
-
       Toast.show({
         type: "error",
         text1: "Validation Error",
@@ -914,39 +1026,24 @@ export default function StaffManagement({ navigation }: Props) {
     }
   };
 
-  // ─── Open edit modal ──────────────────────────────────────────────────────
-
   const openEditModal = (item: StaffMember) => {
     const raw = rawStaff.find((g) => g.id.toString() === item.id);
     if (!raw) return;
-
-    // residential_status: API may return snake_case, convert back to display label
     const rawResidential =
       raw.staff?.staff_document_type || raw.staff_document_type || "";
     const residentialDisplay =
       RESIDENTIAL_STATUS_REVERSE[rawResidential] || rawResidential;
-
-    // DOB handling
     const rawDob = raw.staff?.date_of_birth || raw.staff?.dob || raw.dob || "";
     let dobDisplay = "";
     let dobDate: Date | null = null;
-
     if (rawDob) {
       dobDate = parseApiExpiryDate(rawDob);
       dobDisplay = dobDate ? formatAUDate(dobDate) : "";
     }
-
     setEditingStaffId(item.id);
     setCurrentStaffUserId(raw.id);
     setEditDobSelected(dobDate);
-
-    // Set calendar to selected DOB if exists, otherwise current month
-    if (dobDate) {
-      setEditDobCalendarMonth(dobDate);
-    } else {
-      setEditDobCalendarMonth(new Date()); // Current month/year
-    }
-
+    setEditDobCalendarMonth(dobDate || new Date());
     setEditForm({
       name: raw.name || "",
       email: raw.email || "",
@@ -957,7 +1054,6 @@ export default function StaffManagement({ navigation }: Props) {
       address: raw.address || "",
       password: undefined,
       date_of_birth: dobDisplay || undefined,
-
       origin_country:
         raw.staff?.origin_country || raw.origin_country || raw.country || "",
       city: raw.city || "",
@@ -965,7 +1061,6 @@ export default function StaffManagement({ navigation }: Props) {
       country: raw.country || "",
       coordinates: raw.coordinates || raw.current_coordinates || "",
     });
-
     setStaffDocuments(raw.documents || []);
     setResidentialStatusSaved(!!rawResidential);
     setActiveModalTab("personal");
@@ -975,12 +1070,10 @@ export default function StaffManagement({ navigation }: Props) {
 
   const updateStaff = async () => {
     if (!editingStaffId || !validateEdit()) return;
-
     try {
       setEditLoading(true);
       const headers = await getAuthHeaders();
       const userId = await getMyUserId();
-
       const payload: any = {
         name: editForm.name,
         email: editForm.email,
@@ -990,69 +1083,35 @@ export default function StaffManagement({ navigation }: Props) {
         address: editForm.address,
         user_id: userId,
       };
-
-      // ─── Add Conditional Fields ─────────────────────────────────────
-      if (editForm.residential_status) {
+      if (editForm.residential_status)
         payload.staff_document_type =
           RESIDENTIAL_STATUS_MAP[editForm.residential_status] ||
           editForm.residential_status.toLowerCase().replace(/\s+/g, "_");
-      }
-
-      if (editForm.date_of_birth) {
+      if (editForm.date_of_birth)
         payload.date_of_birth = editForm.date_of_birth;
-      }
-
-      if (editForm.origin_country) {
+      if (editForm.origin_country)
         payload.origin_country = editForm.origin_country;
-      }
-      if (editForm.city) {
-        payload.city = editForm.city;
-      }
-      if (editForm.state) {
-        payload.state = editForm.state;
-      }
-      if (editForm.country) {
-        payload.country = editForm.country;
-      }
-      if (editForm.coordinates) {
-        payload.coordinates = editForm.coordinates;
-      }
-
-      if (editForm.password?.trim()) {
-        payload.password = editForm.password;
-      }
-
-      // ─── Log AFTER all fields are added ─────────────────────────────
-      console.log("====================================");
-      console.log("UPDATE STAFF PAYLOAD (FINAL)");
-      console.log(JSON.stringify(payload, null, 2));
-      console.log("====================================");
-
+      if (editForm.city) payload.city = editForm.city;
+      if (editForm.state) payload.state = editForm.state;
+      if (editForm.country) payload.country = editForm.country;
+      if (editForm.coordinates) payload.coordinates = editForm.coordinates;
+      if (editForm.password?.trim()) payload.password = editForm.password;
       await axios.put(
         `${BASE_URL}/admin/update-staff/${editingStaffId}`,
         payload,
         { headers },
       );
-
-      console.log("✅ Staff updated successfully");
-
-      // Refresh data
+      getStaff();
       const refreshResponse = await axios.get(
         `${BASE_URL}/get-contractor-staff/${userId}`,
         { headers },
       );
-
       const apiData = refreshResponse.data?.guards || [];
       setRawStaff(apiData);
-
       const thisStaff = apiData.find((g: any) => g.id === currentStaffUserId);
-      if (thisStaff) {
-        setStaffDocuments(thisStaff.documents || []);
-      }
-
+      if (thisStaff) setStaffDocuments(thisStaff.documents || []);
       setResidentialStatusSaved(true);
       setEditErrors({});
-
       Alert.alert("Success", "Staff updated successfully.", [
         { text: "OK", onPress: () => setShowEditModal(false) },
         {
@@ -1061,7 +1120,6 @@ export default function StaffManagement({ navigation }: Props) {
         },
       ]);
     } catch (e: any) {
-      console.log("❌ Update staff error:", e?.response?.data || e.message);
       Alert.alert(
         "Error",
         e?.response?.data?.message || "Failed to update staff.",
@@ -1070,7 +1128,6 @@ export default function StaffManagement({ navigation }: Props) {
       setEditLoading(false);
     }
   };
-  // ─── Delete staff ─────────────────────────────────────────────────────────
 
   const deleteStaff = (id: string, name: string) => {
     Alert.alert("Delete Staff", `Delete "${name}"?`, [
@@ -1093,21 +1150,15 @@ export default function StaffManagement({ navigation }: Props) {
     ]);
   };
 
-  // ─── Dynamic Document Definitions & Merged List ───────────────────────────
-
-  // Replace the current DYNAMIC_DOC_TYPES with this:
   const DYNAMIC_DOC_TYPES = useMemo(() => {
     const typesMap = new Map<
       string,
       { label: string; value: string; category: string }
     >();
-
-    // Only use documents from the CURRENT staff
     if (Array.isArray(staffDocuments)) {
       staffDocuments.forEach((doc: any) => {
         const docName = doc.document_name || "";
         const normalizedKey = docName.toLowerCase().replace(/[\s_]+/g, "");
-
         if (
           docName &&
           !typesMap.has(normalizedKey) &&
@@ -1121,25 +1172,14 @@ export default function StaffManagement({ navigation }: Props) {
         }
       });
     }
-
     return Array.from(typesMap.values());
-  }, [staffDocuments]); // ← changed dependency
+  }, [staffDocuments]);
 
-  const mergedDocList = useMemo((): Array<
-    StaffDocument & {
-      _reqDef?: { label: string; value: string; category: string };
-    }
-  > => {
-    // Only include documents that are in the allowed list
+  const mergedDocList = useMemo(() => {
     const filteredDocs = staffDocuments.filter((doc) =>
       isAllowedDocument(doc.document_name || doc.document_type),
     );
-
-    const result: Array<
-      StaffDocument & {
-        _reqDef?: { label: string; value: string; category: string };
-      }
-    > = filteredDocs.map((doc) => {
+    const result: any[] = filteredDocs.map((doc) => {
       const reqDef = DYNAMIC_DOC_TYPES.find((r) => {
         const rVal = r.value.toLowerCase().replace(/[\s_]+/g, "");
         const dName = (doc.document_name || "")
@@ -1152,7 +1192,6 @@ export default function StaffManagement({ navigation }: Props) {
       });
       return { ...doc, _reqDef: reqDef };
     });
-
     DYNAMIC_DOC_TYPES.forEach((req) => {
       const alreadyPresent = filteredDocs.some((d) => {
         const rVal = req.value.toLowerCase().replace(/[\s_]+/g, "");
@@ -1164,7 +1203,6 @@ export default function StaffManagement({ navigation }: Props) {
           .replace(/[\s_]+/g, "");
         return dName === rVal || dType === rVal;
       });
-
       if (!alreadyPresent) {
         result.push({
           id: -1,
@@ -1173,12 +1211,9 @@ export default function StaffManagement({ navigation }: Props) {
           document_name: req.value,
           document_type: req.value.toLowerCase().replace(/\s+/g, "_"),
           _reqDef: req,
-        } as StaffDocument & {
-          _reqDef: { label: string; value: string; category: string };
         });
       }
     });
-
     return result;
   }, [staffDocuments, DYNAMIC_DOC_TYPES, currentStaffUserId]);
 
@@ -1203,8 +1238,6 @@ export default function StaffManagement({ navigation }: Props) {
     }
   };
 
-  // ─── Document upload modal ────────────────────────────────────────────────
-
   const resetDocForm = () => {
     setSelectedFile(null);
     setUploadedFilePath(null);
@@ -1225,12 +1258,9 @@ export default function StaffManagement({ navigation }: Props) {
   ) => {
     resetDocForm();
     setSelectedDocType(docType);
-
     const isVerifiable = isVerifiableDocType(docType);
-
     if (existingDoc && existingDoc.id !== -1) {
       setDocumentNumber(existingDoc.document_no || "");
-
       if (existingDoc.document_expiry) {
         const parsed = parseApiExpiryDate(existingDoc.document_expiry);
         if (parsed) {
@@ -1238,25 +1268,15 @@ export default function StaffManagement({ navigation }: Props) {
           setCurrentCalendarMonth(parsed);
         }
       }
-
       if (existingDoc.file) setUploadedFilePath(existingDoc.file);
-
-      if (isVerifiable) {
-        setIsVerified(
-          !!(existingDoc.document_no && existingDoc.document_expiry),
-        );
-      } else {
-        setIsVerified(true);
-      }
+      setIsVerified(
+        isVerifiable
+          ? !!(existingDoc.document_no && existingDoc.document_expiry)
+          : true,
+      );
     } else {
-      if (isVerifiable) {
-        setIsVerified(false);
-        setExpirationDate(null);
-      } else {
-        setIsVerified(true);
-      }
+      setIsVerified(!isVerifiable);
     }
-
     setDocModalVisible(true);
   };
 
@@ -1308,8 +1328,6 @@ export default function StaffManagement({ navigation }: Props) {
     }
   };
 
-  // ─── Online document verification ────────────────────────────────────────
-
   const handleVerifyDocument = async () => {
     if (!selectedDocType) {
       Toast.show({
@@ -1319,22 +1337,14 @@ export default function StaffManagement({ navigation }: Props) {
       });
       return;
     }
-
     if (!documentNumber.trim()) {
       setDocNumberError("Please enter document number");
-      Toast.show({
-        type: "error",
-        text1: "Please enter document number",
-        position: "bottom",
-      });
       return;
     }
-
     try {
       setVerifying(true);
       setExpiryError("");
       const token = await AsyncStorage.getItem("@auth_token");
-
       const docNameLower = (
         selectedDocType.label ||
         selectedDocType.value ||
@@ -1343,26 +1353,26 @@ export default function StaffManagement({ navigation }: Props) {
         .toLowerCase()
         .trim();
       const isVisa = docNameLower.includes("visa");
-
       let response;
-
       if (isVisa) {
-        const payload = { passport: documentNumber.trim() };
-        response = await axios.post(`${BASE_URL}/admin/visa-check`, payload, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
+        response = await axios.post(
+          `${BASE_URL}/admin/visa-check`,
+          { passport: documentNumber.trim() },
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
           },
-        });
+        );
       } else {
-        const payload = {
-          document_type: selectedDocType.label,
-          license_number: documentNumber.trim(),
-          user_id: Number(currentStaffUserId),
-        };
         response = await axios.post(
           `${Api_Url}/documents-online-verification-staffoo`,
-          payload,
+          {
+            document_type: selectedDocType.label,
+            license_number: documentNumber.trim(),
+            user_id: Number(currentStaffUserId),
+          },
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -1371,20 +1381,17 @@ export default function StaffManagement({ navigation }: Props) {
           },
         );
       }
-
       const data = response?.data;
-
       if (data?.success === false) {
         setIsVerified(false);
         setExpirationDate(null);
         Toast.show({
           type: "error",
-          text1: data?.message || "Document verification failed",
+          text1: data?.message || "Verification failed",
           position: "bottom",
         });
         return;
       }
-
       const expiryRaw =
         data?.expiry ||
         data?.expiry_date ||
@@ -1392,7 +1399,6 @@ export default function StaffManagement({ navigation }: Props) {
         data?.data?.expiry ||
         data?.data?.expiry_date ||
         data?.data?.document_expiry;
-
       if (expiryRaw) {
         const dateObj = parseApiExpiryDate(expiryRaw);
         if (dateObj) {
@@ -1402,19 +1408,18 @@ export default function StaffManagement({ navigation }: Props) {
           setShowInlineCalendar(false);
           Toast.show({
             type: "success",
-            text1: data?.message || "Document verified successfully",
+            text1: data?.message || "Document verified",
             position: "bottom",
           });
           return;
         }
       }
-
       setIsVerified(false);
       setExpirationDate(null);
-      setExpiryError("Could not process expiration date from verification");
+      setExpiryError("Could not parse expiry date from verification");
       Toast.show({
         type: "error",
-        text1: "Verification failed to parse expiry date",
+        text1: "Verification failed to parse expiry",
         position: "bottom",
       });
     } catch (error: any) {
@@ -1425,7 +1430,7 @@ export default function StaffManagement({ navigation }: Props) {
         text1:
           error?.response?.data?.message ||
           error?.message ||
-          "Document verification failed",
+          "Verification failed",
         position: "bottom",
       });
     } finally {
@@ -1438,7 +1443,6 @@ export default function StaffManagement({ navigation }: Props) {
     setFileError("");
     setDocNumberError("");
     setExpiryError("");
-
     if (!selectedFile && !uploadedFilePath) {
       setFileError("Please upload a file");
       hasError = true;
@@ -1447,7 +1451,6 @@ export default function StaffManagement({ navigation }: Props) {
       setDocNumberError("Please enter document number");
       hasError = true;
     }
-
     if (needsVerification) {
       if (!isVerified || !expirationDate) {
         Toast.show({
@@ -1461,7 +1464,6 @@ export default function StaffManagement({ navigation }: Props) {
       setExpiryError("Please select expiration date");
       hasError = true;
     }
-
     if (hasError) {
       Toast.show({
         type: "error",
@@ -1470,7 +1472,6 @@ export default function StaffManagement({ navigation }: Props) {
       });
       return;
     }
-
     setSaving(true);
     try {
       let fileName = "";
@@ -1478,12 +1479,10 @@ export default function StaffManagement({ navigation }: Props) {
         fileName = uploadedFilePath.split("/").pop() || uploadedFilePath;
       else if (selectedFile?.name) fileName = selectedFile.name;
       else fileName = "unknown_file";
-
       const y = expirationDate!.getFullYear();
       const m = String(expirationDate!.getMonth() + 1).padStart(2, "0");
       const d = String(expirationDate!.getDate()).padStart(2, "0");
       const expDate = `${y}-${m}-${d}`;
-
       const existingDoc = staffDocuments.find((doc) => {
         const n = (doc.document_name || "")
           .toLowerCase()
@@ -1494,7 +1493,6 @@ export default function StaffManagement({ navigation }: Props) {
         const v = selectedDocType!.value.toLowerCase().replace(/[\s_]+/g, "");
         return n === v || t === v;
       });
-
       const payload: any = {
         user_id: currentStaffUserId,
         document_no: documentNumber.trim(),
@@ -1502,7 +1500,6 @@ export default function StaffManagement({ navigation }: Props) {
         file: fileName,
         document_category: selectedDocType!.category,
       };
-
       if (existingDoc) {
         payload.id = existingDoc.id;
         payload.document_name =
@@ -1520,7 +1517,6 @@ export default function StaffManagement({ navigation }: Props) {
         payload.exp = false;
         payload.no = false;
       }
-
       const token = await AsyncStorage.getItem("@auth_token");
       await axios.post(`${BASE_URL}/guard-update-documents`, payload, {
         headers: {
@@ -1528,14 +1524,12 @@ export default function StaffManagement({ navigation }: Props) {
           "Content-Type": "application/json",
         },
       });
-
       Toast.show({
         type: "success",
         text1: "Document saved successfully",
         position: "bottom",
       });
       setDocModalVisible(false);
-
       const userId = await getMyUserId();
       const headers = await getAuthHeaders();
       const response = await axios.get(
@@ -1573,8 +1567,6 @@ export default function StaffManagement({ navigation }: Props) {
     });
   };
 
-  // ─── Render: modal file preview ───────────────────────────────────────────
-
   const renderModalPreview = () => {
     const fileUri =
       selectedFile?.uri ||
@@ -1609,8 +1601,6 @@ export default function StaffManagement({ navigation }: Props) {
       </View>
     );
   };
-
-  // ─── Render: filled document card ─────────────────────────────────────────
 
   const renderFilledCard = (
     item: StaffDocument,
@@ -1651,9 +1641,7 @@ export default function StaffManagement({ navigation }: Props) {
             <Pencil size={15} color={COLORS.primary} />
           </TouchableOpacity>
         </View>
-
         <View style={docStyles.divider} />
-
         <View style={docStyles.infoRow}>
           <Text style={docStyles.infoLabel}>Document Number</Text>
           <Text style={docStyles.infoValue}>{item.document_no || "—"}</Text>
@@ -1670,7 +1658,6 @@ export default function StaffManagement({ navigation }: Props) {
             {formatAUDate(item.document_expiry)}
           </Text>
         </View>
-
         <TouchableOpacity
           style={docStyles.viewBtn}
           onPress={() => openFile(item.file)}
@@ -1683,8 +1670,6 @@ export default function StaffManagement({ navigation }: Props) {
       </LinearGradient>
     );
   };
-
-  // ─── Render: empty document card ──────────────────────────────────────────
 
   const renderEmptyCard = (
     item: StaffDocument,
@@ -1736,8 +1721,6 @@ export default function StaffManagement({ navigation }: Props) {
     </LinearGradient>
   );
 
-  // ─── Render: documents tab ────────────────────────────────────────────────
-
   const renderDocumentsTab = () => (
     <ScrollView
       contentContainerStyle={{ padding: 16, paddingBottom: 24 }}
@@ -1769,8 +1752,6 @@ export default function StaffManagement({ navigation }: Props) {
     </ScrollView>
   );
 
-  // ─── Render: edit modal body ──────────────────────────────────────────────
-
   const renderEditModalBody = () => {
     switch (activeModalTab) {
       case "personal":
@@ -1782,15 +1763,12 @@ export default function StaffManagement({ navigation }: Props) {
     }
   };
 
-  // ─── Render: DOB inline calendar ─────────────────────────────────────────
-
   const renderDobCalendar = (isAdd: boolean) => {
     const calMonth = isAdd ? addDobCalendarMonth : editDobCalendarMonth;
     const selectedDob = isAdd ? addDobSelected : editDobSelected;
     const grid = buildDobCalendarGrid(calMonth);
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-
     return (
       <View style={dobCalStyles.inlineCalendar}>
         <View style={dobCalStyles.calendarHeaderRow}>
@@ -1824,7 +1802,6 @@ export default function StaffManagement({ navigation }: Props) {
         <View style={dobCalStyles.daysGrid}>
           {grid.map((date, idx) => {
             if (!date) return <View key={idx} style={dobCalStyles.dayCell} />;
-            // DOB must be in the past
             const isFuture = date > today;
             const isSelected =
               selectedDob && date.toDateString() === selectedDob.toDateString();
@@ -1839,7 +1816,7 @@ export default function StaffManagement({ navigation }: Props) {
                 ]}
                 onPress={() => {
                   if (isFuture) return;
-                  const formatted = formatAUDate(date); // DD/MM/YYYY
+                  const formatted = formatAUDate(date);
                   if (isAdd) {
                     setAddDobSelected(date);
                     setAddForm((p) => ({ ...p, date_of_birth: formatted }));
@@ -1867,8 +1844,6 @@ export default function StaffManagement({ navigation }: Props) {
       </View>
     );
   };
-
-  // ─── Render: personal info form ───────────────────────────────────────────
 
   const renderPersonalForm = (isAdd: boolean) => {
     const form = isAdd ? addForm : editForm;
@@ -1913,13 +1888,12 @@ export default function StaffManagement({ navigation }: Props) {
             value={form.email}
             onChangeText={(t) => {
               setForm((p: any) => ({ ...p, email: t }));
-              // Clear error when user starts typing
-              if (errors.email) {
+              if (errors.email)
                 setAddErrors((prev: any) => ({ ...prev, email: "" }));
-              }
             }}
           />
           {errors.email && <Text style={styles.errorText}>{errors.email}</Text>}
+
           {isAdd && (
             <>
               <FormField
@@ -1935,7 +1909,6 @@ export default function StaffManagement({ navigation }: Props) {
               )}
             </>
           )}
-
           {!isAdd && (
             <FormField
               placeholder="New Password (optional)"
@@ -1945,6 +1918,7 @@ export default function StaffManagement({ navigation }: Props) {
             />
           )}
 
+          {/* DOB */}
           <TouchableOpacity
             style={styles.selectBox}
             activeOpacity={0.8}
@@ -1975,7 +1949,15 @@ export default function StaffManagement({ navigation }: Props) {
           />
           {errors.phone && <Text style={styles.errorText}>{errors.phone}</Text>}
 
-          {/* Residential Status — inline dropdown */}
+          <FormField
+            placeholder="Security License No"
+            value={form.security_license_no || ""}
+            onChangeText={(t) =>
+              setForm((p: any) => ({ ...p, security_license_no: t }))
+            }
+          />
+
+          {/* Residential Status */}
           <View>
             <TouchableOpacity
               style={styles.selectBox}
@@ -2021,16 +2003,15 @@ export default function StaffManagement({ navigation }: Props) {
             )}
           </View>
 
+          {/* ── Country of Origin — opens full-screen fast modal ── */}
           <View>
             <TouchableOpacity
               style={styles.selectBox}
               activeOpacity={0.8}
               onPress={() => {
                 Keyboard.dismiss();
-                const setDropdown = isAdd
-                  ? setShowCountryDropdown
-                  : setShowEditCountryDropdown;
-                setDropdown((prev: boolean) => !prev);
+                setCountryPickerTarget(isAdd ? "add" : "edit");
+                setCountryPickerVisible(true);
               }}
             >
               <Text
@@ -2045,36 +2026,6 @@ export default function StaffManagement({ navigation }: Props) {
             </TouchableOpacity>
             {errors.origin_country && (
               <Text style={styles.errorText}>{errors.origin_country}</Text>
-            )}
-
-            {/* Dropdown List */}
-            {(isAdd ? showCountryDropdown : showEditCountryDropdown) && (
-              <View style={styles.inlineDropdown}>
-                <ScrollView style={{ maxHeight: 250 }} nestedScrollEnabled>
-                  {(countries || []).map((country) => (
-                    <TouchableOpacity
-                      key={country.code}
-                      style={styles.dropdownItem}
-                      onPress={() => {
-                        setForm((p: any) => ({
-                          ...p,
-                          origin_country: country.name,
-                        }));
-                        // Close dropdown
-                        if (isAdd) setShowCountryDropdown(false);
-                        else setShowEditCountryDropdown(false);
-                      }}
-                    >
-                      <Text style={styles.dropdownItemText}>
-                        {country.name}
-                      </Text>
-                      {form.origin_country === country.name && (
-                        <Check size={18} color={COLORS.primary} />
-                      )}
-                    </TouchableOpacity>
-                  ))}
-                </ScrollView>
-              </View>
             )}
           </View>
 
@@ -2113,7 +2064,8 @@ export default function StaffManagement({ navigation }: Props) {
               </View>
             )}
           </View>
-          {/* ── Coordinates (Read-only, auto-filled from address) ── */}
+
+          {/* Coordinates read-only */}
           <View>
             <View
               style={[styles.selectBox, { backgroundColor: COLORS.surface }]}
@@ -2130,7 +2082,6 @@ export default function StaffManagement({ navigation }: Props) {
             </View>
           </View>
 
-          {/* Auto-filled fields display (read-only hint) */}
           {(form as any).city || (form as any).country ? (
             <View style={styles.autoFillRow}>
               {(form as any).city ? (
@@ -2157,6 +2108,7 @@ export default function StaffManagement({ navigation }: Props) {
             </View>
           ) : null}
 
+          {/* Gender */}
           <View style={styles.genderBlock}>
             <Text style={styles.label}>Gender</Text>
             <View style={styles.genderOptions}>
@@ -2189,18 +2141,15 @@ export default function StaffManagement({ navigation }: Props) {
               ))}
             </View>
           </View>
-
           <View style={{ height: 20 }} />
         </ScrollView>
       </KeyboardAvoidingView>
     );
   };
 
-  // ─── Render: staff card ───────────────────────────────────────────────────
-
   const renderItem = ({ item }: { item: StaffMember }) => (
     <View style={styles.card}>
-      <View style={styles.cardHeader}></View>
+      <View style={styles.cardHeader} />
       <View style={styles.userInfo}>
         <View style={styles.infoRow}>
           <User size={16} color="#64748B" />
@@ -2238,11 +2187,8 @@ export default function StaffManagement({ navigation }: Props) {
     </View>
   );
 
-  // ─── Main return ──────────────────────────────────────────────────────────
-
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity
           style={styles.backButton}
@@ -2284,7 +2230,24 @@ export default function StaffManagement({ navigation }: Props) {
         />
       )}
 
-      {/* ── ADD MODAL ─────────────────────────────────────────────────────── */}
+      {/* ── Country Picker Modal (shared, fast) ───────────────────────────── */}
+      <CountryPickerModal
+        visible={countryPickerVisible}
+        selectedCountry={
+          countryPickerTarget === "add"
+            ? addForm.origin_country || ""
+            : editForm.origin_country || ""
+        }
+        onSelect={(name) => {
+          if (countryPickerTarget === "add")
+            setAddForm((p) => ({ ...p, origin_country: name }));
+          else setEditForm((p) => ({ ...p, origin_country: name }));
+          setCountryPickerVisible(false);
+        }}
+        onClose={() => setCountryPickerVisible(false)}
+      />
+
+      {/* ADD MODAL */}
       <Modal
         visible={showAddModal}
         transparent
@@ -2332,7 +2295,7 @@ export default function StaffManagement({ navigation }: Props) {
         </View>
       </Modal>
 
-      {/* ── EDIT MODAL ────────────────────────────────────────────────────── */}
+      {/* EDIT MODAL */}
       <Modal
         visible={showEditModal}
         transparent
@@ -2374,9 +2337,6 @@ export default function StaffManagement({ navigation }: Props) {
                       ]}
                     >
                       Documents
-                      {/* {staffDocuments.length > 0
-                        ? ` (${staffDocuments.length})`
-                        : ""} */}
                     </Text>
                   </TouchableOpacity>
                 )}
@@ -2388,9 +2348,7 @@ export default function StaffManagement({ navigation }: Props) {
                 <X size={20} color={COLORS.textSecondary} />
               </TouchableOpacity>
             </View>
-
             {renderEditModalBody()}
-
             <View style={styles.footer}>
               <TouchableOpacity
                 style={styles.cancelButton}
@@ -2421,7 +2379,7 @@ export default function StaffManagement({ navigation }: Props) {
         </View>
       </Modal>
 
-      {/* ── DOCUMENT UPLOAD MODAL ─────────────────────────────────────────── */}
+      {/* DOCUMENT UPLOAD MODAL */}
       <Modal
         visible={docModalVisible}
         transparent
@@ -2448,12 +2406,10 @@ export default function StaffManagement({ navigation }: Props) {
                 <X size={24} color="#fff" />
               </TouchableOpacity>
             </View>
-
             <ScrollView
               style={docStyles.modalBody}
               keyboardShouldPersistTaps="handled"
             >
-              {/* File upload */}
               <View style={docStyles.imageUploadArea}>
                 {renderModalPreview()}
                 <TouchableOpacity
@@ -2483,7 +2439,6 @@ export default function StaffManagement({ navigation }: Props) {
                 ) : null}
               </View>
 
-              {/* Document type */}
               <Text style={docStyles.fieldLabel}>DOCUMENT TYPE</Text>
               <View style={docStyles.dropdownSelector}>
                 <Text style={docStyles.dropdownText}>
@@ -2495,11 +2450,9 @@ export default function StaffManagement({ navigation }: Props) {
                 </Text>
               </View>
 
-              {/* Document number */}
               <Text style={[docStyles.fieldLabel, { marginTop: 18 }]}>
                 DOCUMENT NUMBER *
               </Text>
-
               {needsVerification ? (
                 <View style={{ flexDirection: "row" }}>
                   <TextInput
@@ -2517,9 +2470,9 @@ export default function StaffManagement({ navigation }: Props) {
                     maxLength={DOC_NO_MAX}
                     autoCapitalize="characters"
                     onChangeText={(t) => {
-                      const formatted = t.toUpperCase();
-                      setDocumentNumber(formatted);
-                      if (formatted.trim()) setDocNumberError("");
+                      const f = t.toUpperCase();
+                      setDocumentNumber(f);
+                      if (f.trim()) setDocNumberError("");
                       setIsVerified(false);
                       setExpirationDate(null);
                       setExpiryError("");
@@ -2554,7 +2507,6 @@ export default function StaffManagement({ navigation }: Props) {
               {docNumberError ? (
                 <Text style={docStyles.errorText}>{docNumberError}</Text>
               ) : null}
-
               {needsVerification && !isVerified && (
                 <Text style={docStyles.inputHelpText}>
                   Tap "Verify" to validate this document and auto-fill its
@@ -2562,11 +2514,9 @@ export default function StaffManagement({ navigation }: Props) {
                 </Text>
               )}
 
-              {/* Expiry date */}
               <Text style={[docStyles.fieldLabel, { marginTop: 18 }]}>
                 EXPIRATION DATE *
               </Text>
-
               <TouchableOpacity
                 style={[
                   docStyles.dateButton,
@@ -2575,9 +2525,8 @@ export default function StaffManagement({ navigation }: Props) {
                 activeOpacity={isExpiryLocked ? 1 : 0.8}
                 disabled={isExpiryLocked}
                 onPress={() => {
-                  if (!isExpiryLocked) {
+                  if (!isExpiryLocked)
                     setShowInlineCalendar(!showInlineCalendar);
-                  }
                 }}
               >
                 <Text
@@ -2598,18 +2547,15 @@ export default function StaffManagement({ navigation }: Props) {
                   <CalendarIcon size={20} color={COLORS.primary} />
                 )}
               </TouchableOpacity>
-
               {isExpiryLocked && (
                 <Text style={docStyles.inputHelpText}>
                   Auto-filled from verification — cannot be edited manually.
                 </Text>
               )}
-
               {expiryError ? (
                 <Text style={docStyles.errorText}>{expiryError}</Text>
               ) : null}
 
-              {/* Inline calendar for expiry */}
               {showInlineCalendar && !isExpiryLocked && (
                 <View style={docStyles.inlineCalendar}>
                   <View style={docStyles.calendarHeaderRow}>
@@ -2686,10 +2632,8 @@ export default function StaffManagement({ navigation }: Props) {
                   </View>
                 </View>
               )}
-
               <View style={{ height: 30 }} />
             </ScrollView>
-
             <TouchableOpacity
               style={docStyles.saveButton}
               onPress={handleSaveDoc}
@@ -2705,6 +2649,7 @@ export default function StaffManagement({ navigation }: Props) {
         </View>
         <Toast />
       </Modal>
+
       <Toast
         config={{
           success: (props) => (
@@ -2732,17 +2677,76 @@ export default function StaffManagement({ navigation }: Props) {
             />
           ),
         }}
-        position="top" // Changed to top - better visibility over modal
+        position="top"
         topOffset={70}
         visibilityTime={5000}
-        autoHide={true}
+        autoHide
       />
     </SafeAreaView>
   );
 }
 
-// ─── Staff Management Styles ──────────────────────────────────────────────────
+// ─── Country Picker Styles ────────────────────────────────────────────────────
+const cpStyles = StyleSheet.create({
+  overlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.6)",
+    justifyContent: "flex-end",
+  },
+  sheet: {
+    backgroundColor: "#0D1421",
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    height: "80%",
+    paddingBottom: 20,
+    borderTopWidth: 1,
+    borderColor: "rgba(98,97,97,0.5)",
+  },
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: "rgba(255,255,255,0.07)",
+  },
+  title: { color: "#fff", fontSize: 17, fontWeight: "700" },
+  closeBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: "rgba(255,255,255,0.06)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  searchRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#1A2438",
+    marginHorizontal: 16,
+    marginVertical: 12,
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    height: 44,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.08)",
+  },
+  searchInput: { flex: 1, color: "#fff", fontSize: 14 },
+  item: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 20,
+    height: 52,
+    borderBottomWidth: 1,
+    borderBottomColor: "rgba(255,255,255,0.05)",
+  },
+  itemText: { color: "#fff", fontSize: 15 },
+  empty: { color: "#4A6080", textAlign: "center", marginTop: 40, fontSize: 14 },
+});
 
+// ─── Staff Management Styles ──────────────────────────────────────────────────
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -2962,11 +2966,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 5,
   },
-  autoFillChipText: {
-    color: COLORS.primary,
-    fontSize: 11,
-    fontWeight: "600",
-  },
+  autoFillChipText: { color: COLORS.primary, fontSize: 11, fontWeight: "600" },
   genderBlock: {},
   genderOptions: {
     flexDirection: "row",
@@ -3014,8 +3014,6 @@ const styles = StyleSheet.create({
   saveText: { color: COLORS.text, fontWeight: "700" },
   buttonDisabled: { opacity: 0.6 },
 });
-
-// ─── DOB Calendar Styles ──────────────────────────────────────────────────────
 
 const dobCalStyles = StyleSheet.create({
   inlineCalendar: {
@@ -3066,8 +3064,6 @@ const dobCalStyles = StyleSheet.create({
   dayTextSelected: { color: "#fff", fontWeight: "bold" },
   dayTextDisabled: { color: "#aaa" },
 });
-
-// ─── Document Tab / Modal Styles ──────────────────────────────────────────────
 
 const docStyles = StyleSheet.create({
   cardGradient: { borderRadius: 14, padding: 16, marginBottom: 14 },

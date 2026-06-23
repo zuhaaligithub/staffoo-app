@@ -20,7 +20,6 @@ const { width } = Dimensions.get("window");
 const BASE_URL = "https://apis.staffoo.com.au/api";
 
 type Question = {
-  id?: number;
   question: string;
   type: string;
   answer: string;
@@ -30,39 +29,14 @@ type Question = {
   optiond?: string | null;
 };
 
-type InductionData = {
+type QuestionnaireItem = {
   id: number;
   title: string;
   questionnaire: Question[];
   status?: string;
+  questionnaire_id?: number;
 };
-const COLORS = {
-  // 🌿 Primary Brand
-  primary: "#89E7D0", // mint accent
-  primaryDark: "#4FCBB3",
 
-  // 🌙 Background system (clean dark navy)
-  background: "#001F3F",
-  surface: "#20b72c",
-  surface2: "#12243A",
-
-  // ✨ Card / Glass
-  card: "rgba(255,255,255,0.06)",
-  cardBorder: "rgba(255,255,255,0.08)",
-
-  // ✍️ Text
-  text: "#FFFFFF",
-  textSecondary: "rgba(255,255,255,0.7)",
-  textMuted: "rgba(255,255,255,0.5)",
-
-  // 🔴🟡🟢 Status
-  success: "#22C55E",
-  warning: "#F59E0B",
-  danger: "#EF4444",
-
-  // Border
-  border: "rgba(255,255,255,0.08)",
-};
 type RouteParams = {
   inductionId: number | string;
 };
@@ -70,11 +44,9 @@ type RouteParams = {
 export default function InductionQuestionsScreen() {
   const route = useRoute();
   const navigation = useNavigation();
-
-  // Stronger typing
   const { inductionId } = route.params as RouteParams;
 
-  const [induction, setInduction] = useState<InductionData | null>(null);
+  const [induction, setInduction] = useState<QuestionnaireItem | null>(null);
   const [questions, setQuestions] = useState<Question[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedOption, setSelectedOption] = useState<number | null>(null);
@@ -89,39 +61,18 @@ export default function InductionQuestionsScreen() {
   const progress =
     questions.length > 0 ? ((currentIndex + 1) / questions.length) * 100 : 0;
 
-  // Early return if inductionId is missing
-  if (!inductionId) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <View
-          style={{
-            flex: 1,
-            justifyContent: "center",
-            alignItems: "center",
-            padding: 20,
-          }}
-        >
-          <Text style={{ fontSize: 18, color: "red", textAlign: "center" }}>
-            Error: Induction ID not found
-          </Text>
-          <TouchableOpacity
-            style={styles.nextButton}
-            onPress={() => navigation.goBack()}
-          >
-            <Text style={styles.nextButtonText}>Go Back</Text>
-          </TouchableOpacity>
-        </View>
-      </SafeAreaView>
-    );
-  }
-
-  const capitalizeText = (text: string = "") => {
-    return text
-      .toLowerCase()
-      .split(" ")
-      .filter(Boolean)
-      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(" ");
+  const COLORS = {
+    primary: "#89E7D0",
+    background: "#001F3F",
+    surface2: "#12243A",
+    card: "rgba(255,255,255,0.06)",
+    cardBorder: "rgba(255,255,255,0.08)",
+    text: "#FFFFFF",
+    textSecondary: "rgba(255,255,255,0.7)",
+    textMuted: "rgba(255,255,255,0.5)",
+    success: "#22C55E",
+    danger: "#EF4444",
+    border: "rgba(255,255,255,0.08)",
   };
 
   useEffect(() => {
@@ -130,44 +81,49 @@ export default function InductionQuestionsScreen() {
 
   const loadUserAndFetchQuestions = async () => {
     try {
-      const cachedUser = await AsyncStorage.getItem("user");
-      if (cachedUser) {
-        const parsedUser = JSON.parse(cachedUser);
-        const uid = parsedUser?.id || parsedUser?.user?.id;
-        setUserId(uid);
-      }
-      await fetchInductionQuestions();
-    } catch (err) {
-      console.error("Error loading user:", err);
-      await fetchInductionQuestions();
-    }
-  };
-
-  const fetchInductionQuestions = async () => {
-    try {
       setLoading(true);
       setError(null);
 
-      const token = await AsyncStorage.getItem("@auth_token");
-
+      // 1. Get user data first
       const cachedUser = await AsyncStorage.getItem("user");
-      const parsedUser = cachedUser ? JSON.parse(cachedUser) : null;
+      if (!cachedUser) {
+        setError("User session not found. Please login again.");
+        return;
+      }
 
-      const userId =
+      const parsedUser = JSON.parse(cachedUser);
+      const uid =
         parsedUser?.id || parsedUser?.user?.id || parsedUser?.guard_id;
 
+      if (!uid) {
+        setError("User ID not found in session");
+        return;
+      }
+
+      setUserId(uid); // ← Set userId
+
+      // 2. Now fetch questions with correct userId
+      await fetchInductionQuestions(uid);
+    } catch (err) {
+      console.error("Error loading user:", err);
+      setError("Failed to load user data");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchInductionQuestions = async (currentUserId: string) => {
+    try {
+      const token = await AsyncStorage.getItem("@auth_token");
       if (!token) {
         Alert.alert("Session Expired", "Please login again");
         return;
       }
 
-      if (!userId) {
-        setError("User ID not found");
-        return;
-      }
+      console.log(`Fetching: ${BASE_URL}/get-questionnaire/${currentUserId}`);
 
       const response = await fetch(
-        `${BASE_URL}/get-questionnaire/${userId}`, // ✅ FIX HERE
+        `${BASE_URL}/get-questionnaire/${currentUserId}`,
         {
           method: "GET",
           headers: {
@@ -185,35 +141,36 @@ export default function InductionQuestionsScreen() {
         !Array.isArray(data.data) ||
         data.data.length === 0
       ) {
-        setError("No questions found");
-        setLoading(false);
+        setError("No questionnaires found");
         return;
       }
 
-      const inductionData = data.data[0];
+      // Find correct questionnaire
+      const selectedInduction = data.data.find(
+        (item: any) =>
+          item.id === Number(inductionId) ||
+          item.questionnaire_id === Number(inductionId),
+      );
 
-      if (!inductionData?.questionnaire?.length) {
-        setError("No questionnaire found in this induction");
-        setLoading(false);
+      if (!selectedInduction?.questionnaire?.length) {
+        setError("Selected questionnaire not found or has no questions");
         return;
       }
 
-      setInduction(inductionData);
-      setQuestions(inductionData.questionnaire);
+      setInduction(selectedInduction);
+      setQuestions(selectedInduction.questionnaire);
 
-      const initialAnswers = inductionData.questionnaire.map(() => ({
+      const initialAnswers = selectedInduction.questionnaire.map(() => ({
         selectedOption: null,
         shortAnswer: "",
       }));
-
       setUserAnswers(initialAnswers);
     } catch (err) {
       console.error("❌ Fetch Error:", err);
-      setError("Failed to load questions");
-    } finally {
-      setLoading(false);
+      setError("Failed to load questions. Please try again.");
     }
   };
+
   const getOptions = (q: Question) => {
     if (
       q.type?.toLowerCase().includes("true") ||
@@ -225,18 +182,16 @@ export default function InductionQuestionsScreen() {
       ];
     }
 
-    const opts = [];
+    const opts: { label: string; value: string }[] = [];
     if (q.optiona) opts.push({ label: q.optiona, value: "1" });
     if (q.optionb) opts.push({ label: q.optionb, value: "2" });
     if (q.optionc) opts.push({ label: q.optionc, value: "3" });
     if (q.optiond) opts.push({ label: q.optiond, value: "4" });
-
     return opts;
   };
 
   const handleSelect = (index: number) => {
     setSelectedOption(index);
-
     const updated = [...userAnswers];
     updated[currentIndex] = { ...updated[currentIndex], selectedOption: index };
     setUserAnswers(updated);
@@ -244,7 +199,6 @@ export default function InductionQuestionsScreen() {
 
   const handleShortAnswerChange = (text: string) => {
     setShortAnswer(text);
-
     const updated = [...userAnswers];
     updated[currentIndex] = { ...updated[currentIndex], shortAnswer: text };
     setUserAnswers(updated);
@@ -257,10 +211,8 @@ export default function InductionQuestionsScreen() {
     questions.forEach((question, index) => {
       if (question.type === "MCQs" || question.type === "True/False") {
         totalGradedQuestions++;
-
         const userAnswer = userAnswers[index];
         const correctAnswerIndex = parseInt(question.answer) - 1;
-
         if (userAnswer?.selectedOption === correctAnswerIndex) {
           correctCount++;
         }
@@ -271,16 +223,9 @@ export default function InductionQuestionsScreen() {
       totalGradedQuestions > 0
         ? (correctCount / totalGradedQuestions) * 100
         : 0;
-
     return Math.round(percentage);
   };
-  const formatQuestionText = (text: string = "") => {
-    if (!text) return "";
 
-    return (
-      text.trim().replace(/\s+/g, " ").charAt(0).toUpperCase() + text.slice(1)
-    );
-  };
   const submitInduction = async () => {
     if (!userId) {
       Alert.alert("Error", "User ID not found");
@@ -290,25 +235,16 @@ export default function InductionQuestionsScreen() {
     try {
       setSubmitting(true);
       const token = await AsyncStorage.getItem("@auth_token");
-
       if (!token) {
         Alert.alert("Session Expired", "Please login again");
         return;
       }
 
       const marks = calculateMarks();
-
       const submitFormData = new FormData();
       submitFormData.append("guard_id", userId);
       submitFormData.append("marks", marks.toString());
       submitFormData.append("questionnaire_id", inductionId.toString());
-
-      console.log("====================================");
-      console.log("Submitting induction questionnaire...");
-      console.log("userId:", userId);
-      console.log("inductionId:", inductionId);
-      console.log("marks:", marks);
-      console.log("====================================");
 
       const submitResponse = await fetch(
         `${BASE_URL}/submit-guard-questionnaire`,
@@ -328,12 +264,7 @@ export default function InductionQuestionsScreen() {
         const statusFormData = new FormData();
         statusFormData.append("guard_id", userId);
         statusFormData.append("id", inductionId.toString());
-        // statusFormData.append('type', 'induction');
 
-        console.log("Updating induction read status...");
-        console.log("userId:", userId);
-        console.log("inductionId:", inductionId);
-        console.log("====================================");
         await fetch(`${BASE_URL}/update-induction-read-status`, {
           method: "POST",
           headers: {
@@ -382,7 +313,6 @@ export default function InductionQuestionsScreen() {
 
     if (currentIndex < questions.length - 1) {
       setCurrentIndex((prev) => prev + 1);
-
       const nextAnswer = userAnswers[currentIndex + 1];
       setSelectedOption(nextAnswer?.selectedOption ?? null);
       setShortAnswer(nextAnswer?.shortAnswer ?? "");
@@ -438,7 +368,6 @@ export default function InductionQuestionsScreen() {
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor={COLORS.background} />
 
-      {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerRow}>
           <TouchableOpacity
@@ -447,11 +376,9 @@ export default function InductionQuestionsScreen() {
           >
             <ChevronLeft size={24} color={COLORS.text} />
           </TouchableOpacity>
-
           <Text style={styles.questionCounter}>
             Question {currentIndex + 1} / {questions.length}
           </Text>
-
           <TouchableOpacity
             onPress={() => navigation.goBack()}
             style={styles.iconButton}
@@ -459,26 +386,18 @@ export default function InductionQuestionsScreen() {
             <X size={24} color={COLORS.text} />
           </TouchableOpacity>
         </View>
-
         <View style={styles.progressContainer}>
           <View style={[styles.progressBar, { width: `${progress}%` }]} />
         </View>
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        <Text style={styles.inductionTitle}>
-          {formatQuestionText(induction?.title || "")}
-        </Text>
+        <Text style={styles.inductionTitle}>{induction?.title || ""}</Text>
 
         <View style={styles.questionCard}>
-          <Text style={styles.questionText}>
-            {formatQuestionText(currentQuestion.question)}
-          </Text>
+          <Text style={styles.questionText}>{currentQuestion.question}</Text>
           <View style={styles.questionTypeBadge}>
-            <Text style={styles.questionTypeText}>
-              {" "}
-              {capitalizeText(currentQuestion.type)}
-            </Text>
+            <Text style={styles.questionTypeText}>{currentQuestion.type}</Text>
           </View>
         </View>
 
@@ -521,7 +440,7 @@ export default function InductionQuestionsScreen() {
                       selectedOption === index && styles.selectedOptionText,
                     ]}
                   >
-                    {capitalizeText(option.label)}
+                    {option.label}
                   </Text>
                 </View>
               </TouchableOpacity>
@@ -530,7 +449,6 @@ export default function InductionQuestionsScreen() {
         )}
       </ScrollView>
 
-      {/* Footer Button */}
       <View style={styles.footer}>
         <TouchableOpacity
           style={[
@@ -562,85 +480,69 @@ export default function InductionQuestionsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    // backgroundColor: COLORS.background,
     backgroundColor: "#111111",
     paddingTop: 30,
   },
-
   header: {
     paddingBottom: 15,
     paddingHorizontal: 20,
-    backgroundColor: COLORS.surface2,
+    backgroundColor: "#12243A",
     borderBottomLeftRadius: 20,
     borderBottomRightRadius: 20,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
     marginHorizontal: 10,
     paddingTop: 7,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: "rgba(255,255,255,0.08)",
   },
-
   headerRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     marginBottom: 10,
   },
-
-  iconButton: {
-    padding: 4,
-  },
-
+  iconButton: { padding: 4 },
   questionCounter: {
-    color: COLORS.text,
+    color: "#FFFFFF",
     fontSize: 14,
     fontWeight: "700",
   },
-
   progressContainer: {
     height: 8,
     backgroundColor: "rgba(255,255,255,0.08)",
     borderRadius: 4,
     overflow: "hidden",
   },
-
   progressBar: {
     height: "100%",
-    backgroundColor: COLORS.primary,
+    backgroundColor: "#89E7D0",
     borderRadius: 4,
   },
-
   inductionTitle: {
     fontSize: 22,
     fontWeight: "700",
-    color: COLORS.text,
+    color: "#FFFFFF",
     textAlign: "center",
     marginVertical: 10,
   },
-
   scrollContent: {
     flexGrow: 1,
     padding: 20,
     paddingBottom: 120,
   },
-
   questionCard: {
-    backgroundColor: COLORS.card,
+    backgroundColor: "rgba(255,255,255,0.06)",
     borderRadius: 24,
     padding: 12,
     marginBottom: 24,
     borderWidth: 1,
-    borderColor: COLORS.cardBorder,
+    borderColor: "rgba(255,255,255,0.08)",
   },
-
   questionText: {
     fontSize: 16,
     lineHeight: 20,
-    color: COLORS.text,
+    color: "#FFFFFF",
     fontWeight: "600",
   },
-
   questionTypeBadge: {
     backgroundColor: "rgba(137,231,208,0.15)",
     paddingHorizontal: 12,
@@ -651,108 +553,86 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "rgba(137,231,208,0.25)",
   },
-
   questionTypeText: {
-    color: COLORS.primary,
+    color: "#89E7D0",
     fontSize: 12,
     fontWeight: "700",
   },
-
-  shortAnswerContainer: {
-    marginBottom: 20,
-  },
-
+  shortAnswerContainer: { marginBottom: 20 },
   shortAnswerInput: {
-    backgroundColor: COLORS.card,
+    backgroundColor: "rgba(255,255,255,0.06)",
     borderRadius: 18,
     padding: 18,
     fontSize: 16,
-    color: COLORS.text,
+    color: "#FFFFFF",
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: "rgba(255,255,255,0.08)",
     minHeight: 140,
     textAlignVertical: "top",
   },
-
-  optionsContainer: {
-    gap: 14,
-  },
-
+  optionsContainer: { gap: 14 },
   optionButton: {
-    backgroundColor: COLORS.card,
+    backgroundColor: "rgba(255,255,255,0.06)",
     borderRadius: 50,
     padding: 10,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: "rgba(255,255,255,0.08)",
   },
-
   selectedOption: {
-    borderColor: COLORS.primary,
+    borderColor: "#89E7D0",
     backgroundColor: "rgba(137,231,208,0.12)",
   },
-
   optionContent: {
     flexDirection: "row",
     alignItems: "center",
   },
-
-  checkbox: {
-    marginRight: 16,
-  },
-
+  checkbox: { marginRight: 16 },
   emptyCheckbox: {
     width: 26,
     height: 26,
     borderRadius: 13,
     borderWidth: 2,
-    borderColor: COLORS.textMuted,
+    borderColor: "rgba(255,255,255,0.5)",
   },
-
   checkedBox: {
     width: 26,
     height: 26,
     borderRadius: 13,
-    backgroundColor: COLORS.primary,
+    backgroundColor: "#89E7D0",
     alignItems: "center",
     justifyContent: "center",
   },
-
   optionText: {
     fontSize: 14,
-    color: COLORS.textSecondary,
+    color: "rgba(255,255,255,0.7)",
     flex: 1,
     lineHeight: 24,
   },
-
   selectedOptionText: {
-    color: COLORS.text,
+    color: "#FFFFFF",
     fontWeight: "700",
   },
-
   footer: {
     position: "absolute",
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: COLORS.surface2,
+    backgroundColor: "#12243A",
     padding: 18,
     borderTopWidth: 1,
-    borderTopColor: COLORS.border,
+    borderTopColor: "rgba(255,255,255,0.08)",
   },
-
   nextButton: {
-    backgroundColor: COLORS.primary,
+    backgroundColor: "#89E7D0",
     paddingVertical: 14,
     borderRadius: 18,
     alignItems: "center",
   },
-
   disabledButton: {
     backgroundColor: "rgba(255,255,255,0.2)",
   },
-
   nextButtonText: {
-    color: COLORS.background,
+    color: "#001F3F",
     fontSize: 18,
     fontWeight: "700",
   },

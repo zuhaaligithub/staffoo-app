@@ -19,27 +19,27 @@ export interface LoginPayload {
   email: string;
   password: string;
 }
+// ==================== UPDATED INTERFACE ====================
 export interface ProfileUpdatePayload {
   name?: string;
   phone?: string;
-  gmail?: string;
-  gender?: string | null;
-  staff_document_type?: string | null;
   email?: string;
   email_otp?: string;
+  gender?: string | null;
+  staff_document_type?: string | null;
+  security_license_no?: string; // ← Added
+  date_of_birth?: string;
   address?: string;
   city?: string;
   state?: string;
   country?: string;
-  origin_country?: string; // 👈 ADD THIS
+  origin_country?: string;
   coordinates?: string;
   company_name?: string;
   registration_number?: string;
   acn?: string;
   abn?: string;
-  date_of_birth?: string;
 }
-
 export const getAuthToken = async (): Promise<string | null> => {
   let token = await AsyncStorage.getItem("@auth_token");
   if (!token) token = await AsyncStorage.getItem("auth_token");
@@ -244,7 +244,6 @@ export const updateUserProfile = async (
   }
 
   const endpoint = `${BASE_URL}/user-update/${userId}`;
-
   const formData = new FormData();
 
   // ==================== BASIC FIELDS ====================
@@ -252,11 +251,14 @@ export const updateUserProfile = async (
   if (payload.phone) formData.append("phone", payload.phone);
   if (payload.email) formData.append("email", payload.email);
   if (payload.email_otp) formData.append("email_otp", payload.email_otp);
-
   if (payload.gender) formData.append("gender", payload.gender);
-
   if (payload.staff_document_type)
     formData.append("staff_document_type", payload.staff_document_type);
+
+  // ==================== SECURITY LICENSE (Staff) ====================
+  if (payload.security_license_no !== undefined) {
+    formData.append("security_license_no", payload.security_license_no);
+  }
 
   // ==================== DATE OF BIRTH ====================
   if (payload.date_of_birth) {
@@ -267,27 +269,16 @@ export const updateUserProfile = async (
   if (payload.address) formData.append("address", payload.address);
   if (payload.city) formData.append("city", payload.city);
   if (payload.state) formData.append("state", payload.state);
-
-  // ✅ FIX: COUNTRY ADDED HERE
-  if (payload.country) {
-    formData.append("country", payload.country);
-  }
-
-  if (payload.origin_country) {
+  if (payload.country) formData.append("country", payload.country);
+  if (payload.origin_country)
     formData.append("origin_country", payload.origin_country);
-  }
-
-  if (payload.coordinates) {
-    formData.append("coordinates", payload.coordinates);
-  }
+  if (payload.coordinates) formData.append("coordinates", payload.coordinates);
 
   // ==================== CONTRACTOR ====================
   if (payload.company_name)
     formData.append("company_name", payload.company_name);
-
   if (payload.registration_number)
     formData.append("registration_number", payload.registration_number);
-
   if (payload.acn) formData.append("acn", payload.acn);
   if (payload.abn) formData.append("abn", payload.abn);
 
@@ -302,13 +293,13 @@ export const updateUserProfile = async (
 
   // ==================== LOGGING ====================
   console.log("[UPDATE PROFILE] Sending to:", endpoint);
-
   const logData: Record<string, any> = {
     name: payload.name,
     phone: payload.phone,
     email: payload.email,
     gender: payload.gender,
     staff_document_type: payload.staff_document_type,
+    security_license_no: payload.security_license_no, // ← Added
     date_of_birth: payload.date_of_birth,
     company_name: payload.company_name,
     registration_number: payload.registration_number,
@@ -317,11 +308,10 @@ export const updateUserProfile = async (
     address: payload.address,
     city: payload.city,
     state: payload.state,
-    country: payload.country, // ✅ FIX LOGGING TOO
+    country: payload.country,
     origin_country: payload.origin_country,
     coordinates: payload.coordinates,
   };
-
   console.log("[UPDATE PROFILE] FormData contents:", logData);
 
   try {
@@ -341,14 +331,12 @@ export const updateUserProfile = async (
       "[UPDATE PROFILE] Full Error:",
       error?.response?.data || error,
     );
-
     const errorMessage =
       error?.response?.data?.message ||
       error?.response?.data?.error ||
       error?.response?.data?.errors?.[0] ||
       error.message ||
       "Failed to update profile";
-
     throw new Error(errorMessage);
   }
 };

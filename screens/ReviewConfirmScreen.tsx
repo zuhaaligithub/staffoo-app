@@ -1180,7 +1180,7 @@ job_type: jobData.category || "others",
                   <View>
                     <Text style={pmStyles.title}>Complete Payment</Text>
                     <Text style={pmStyles.subtitle}>
-                      Direct Payment To The Service Provider.
+                      Direct payment to the service provider.
                     </Text>
                   </View>
                   <View style={pmStyles.securedBadge}>

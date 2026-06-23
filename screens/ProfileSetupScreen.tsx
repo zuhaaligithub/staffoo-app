@@ -56,6 +56,60 @@ const COLORS = {
   textMuted: "#64748B",
   border: "#1F2A44",
 };
+const STATIC_COUNTRIES = [
+  { name: "Afghanistan", code: "AFG" },
+  { name: "Albania", code: "ALB" },
+  { name: "Algeria", code: "DZA" },
+  { name: "Argentina", code: "ARG" },
+  { name: "Australia", code: "AUS" },
+  { name: "Austria", code: "AUT" },
+  { name: "Bangladesh", code: "BGD" },
+  { name: "Belgium", code: "BEL" },
+  { name: "Brazil", code: "BRA" },
+  { name: "Canada", code: "CAN" },
+  { name: "China", code: "CHN" },
+  { name: "Colombia", code: "COL" },
+  { name: "Croatia", code: "HRV" },
+  { name: "Denmark", code: "DNK" },
+  { name: "Egypt", code: "EGY" },
+  { name: "France", code: "FRA" },
+  { name: "Germany", code: "DEU" },
+  { name: "Greece", code: "GRC" },
+  { name: "India", code: "IND" },
+  { name: "Indonesia", code: "IDN" },
+  { name: "Iran", code: "IRN" },
+  { name: "Iraq", code: "IRQ" },
+  { name: "Ireland", code: "IRL" },
+  { name: "Italy", code: "ITA" },
+  { name: "Japan", code: "JPN" },
+  { name: "Kenya", code: "KEN" },
+  { name: "Malaysia", code: "MYS" },
+  { name: "Mexico", code: "MEX" },
+  { name: "Nepal", code: "NPL" },
+  { name: "Netherlands", code: "NLD" },
+  { name: "New Zealand", code: "NZL" },
+  { name: "Nigeria", code: "NGA" },
+  { name: "Norway", code: "NOR" },
+  { name: "Pakistan", code: "PAK" },
+  { name: "Philippines", code: "PHL" },
+  { name: "Poland", code: "POL" },
+  { name: "Portugal", code: "PRT" },
+  { name: "Russia", code: "RUS" },
+  { name: "Saudi Arabia", code: "SAU" },
+  { name: "Singapore", code: "SGP" },
+  { name: "South Africa", code: "ZAF" },
+  { name: "South Korea", code: "KOR" },
+  { name: "Spain", code: "ESP" },
+  { name: "Sri Lanka", code: "LKA" },
+  { name: "Sweden", code: "SWE" },
+  { name: "Switzerland", code: "CHE" },
+  { name: "Thailand", code: "THA" },
+  { name: "Turkey", code: "TUR" },
+  { name: "United Arab Emirates", code: "ARE" },
+  { name: "United Kingdom", code: "GBR" },
+  { name: "United States", code: "USA" },
+  { name: "Vietnam", code: "VNM" },
+].sort((a, b) => a.name.localeCompare(b.name));
 
 type Props = { navigation: any };
 
@@ -165,39 +219,8 @@ export default function ProfileSetupScreen({ navigation }: Props) {
 
   const [showCountryModal, setShowCountryModal] = useState(false);
   const [countrySearch, setCountrySearch] = useState("");
-  const [countries, setCountries] = useState<
-    Array<{ name: string; code: string }>
-  >([]);
+  const [countries] = useState(STATIC_COUNTRIES);
   const [countriesLoading, setCountriesLoading] = useState(false);
-
-  useEffect(() => {
-    let mounted = true;
-    const fetchCountries = async () => {
-      try {
-        setCountriesLoading(true);
-        const res = await fetch(
-          "https://restcountries.com/v3.1/all?fields=name,cca3,cca2",
-        );
-        const json = await res.json();
-        const list = (json || [])
-          .map((c: any) => ({
-            name: c.name?.common || "",
-            code: c.cca3 || c.cca2 || "",
-          }))
-          .filter((c: any) => c.name && c.code)
-          .sort((a: any, b: any) => a.name.localeCompare(b.name));
-        if (mounted) setCountries(list);
-      } catch (err) {
-        console.warn("Failed to load countries", err);
-      } finally {
-        if (mounted) setCountriesLoading(false);
-      }
-    };
-    fetchCountries();
-    return () => {
-      mounted = false;
-    };
-  }, []);
 
   // Helper: resolve any country string (code or full name) → full name
   const countryCodeToNameFallback: Record<string, string> = {
@@ -219,11 +242,11 @@ export default function ProfileSetupScreen({ navigation }: Props) {
     if (!input) return "";
     const trimmed = input.trim();
     // try countries list first
-    const byName = countries.find(
+    const byName = STATIC_COUNTRIES.find(
       (c) => c.name.toLowerCase() === trimmed.toLowerCase(),
     );
     if (byName) return byName.name;
-    const byCode = countries.find(
+    const byCode = STATIC_COUNTRIES.find(
       (c) => c.code.toLowerCase() === trimmed.toLowerCase(),
     );
     if (byCode) return byCode.name;
@@ -361,12 +384,14 @@ export default function ProfileSetupScreen({ navigation }: Props) {
           let originName = resolveCountryName(originRaw);
           // If we have the countries list, try to normalize to code+name
           if (countries && countries.length > 0) {
-            const byCode = countries.find(
+            const byCode = STATIC_COUNTRIES.find(
               (c) => c.code.toLowerCase() === originRaw.trim().toLowerCase(),
             );
-            const byName = countries.find(
+
+            const byName = STATIC_COUNTRIES.find(
               (c) => c.name.toLowerCase() === originRaw.trim().toLowerCase(),
             );
+
             if (byCode) {
               originCode = byCode.code;
               originName = byCode.name;
@@ -375,8 +400,7 @@ export default function ProfileSetupScreen({ navigation }: Props) {
               originName = byName.name;
             }
           }
-          setOriginCountry(originCode);
-          setCountry(originName);
+          setOriginCountry(originName);
         }
 
         // Coordinates
@@ -409,6 +433,7 @@ export default function ProfileSetupScreen({ navigation }: Props) {
           setPhoneNumber(profile?.staff?.phone ?? "");
           setGender(profile?.staff?.gender ?? null);
           setResidentialStatus(profile?.staff?.staff_document_type ?? null);
+          setSecurityLicenseNo(profile?.staff?.security_license_no ?? "");
 
           if (profile?.staff?.date_of_birth) {
             let dob = profile.staff.date_of_birth.trim();
@@ -554,6 +579,14 @@ export default function ProfileSetupScreen({ navigation }: Props) {
         Toast.show({ type: "error", text1: "Residential Status is required" });
         return false;
       }
+      if (!securityLicenseNo?.trim()) {
+        // ← NEW
+        Toast.show({
+          type: "error",
+          text1: "Security License Number is required",
+        });
+        return false;
+      }
     }
     return true;
   };
@@ -618,6 +651,7 @@ export default function ProfileSetupScreen({ navigation }: Props) {
          * Separate from `country` (which is the residential/address country).
          */
         payload.origin_country = originCountry.trim();
+        payload.security_license_no = securityLicenseNo.trim();
 
         if (dateOfBirth?.trim()) {
           const dobApi = australianToApiDate(dateOfBirth);
@@ -905,6 +939,28 @@ export default function ProfileSetupScreen({ navigation }: Props) {
               </LinearGradient>
             </TouchableOpacity>
 
+            <View style={styles.field}>
+              <Text style={styles.label}>
+                Security License Number <Text style={styles.required}>*</Text>
+              </Text>
+              <LinearGradient
+                colors={["#171d30", "#171d30"]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.inputContainer}
+              >
+                <FileText size={20} color="#fff" style={styles.inputIcon} />
+                <TextInput
+                  style={styles.input}
+                  value={securityLicenseNo}
+                  onChangeText={setSecurityLicenseNo}
+                  placeholder="Enter Security License Number"
+                  placeholderTextColor="rgba(255,255,255,0.6)"
+                  autoCapitalize="characters"
+                />
+              </LinearGradient>
+            </View>
+
             {/* Date of birth */}
             <TouchableOpacity
               style={styles.field}
@@ -1072,7 +1128,13 @@ export default function ProfileSetupScreen({ navigation }: Props) {
         <Modal visible={showCountryModal} transparent animationType="slide">
           <View style={styles.modalOverlay}>
             <View
-              style={[styles.customModal, { width: "92%", maxHeight: "70%" }]}
+              style={[
+                styles.customModal,
+                {
+                  width: "92%",
+                  height: "70%",
+                },
+              ]}
             >
               <Text style={styles.modalTitle}>Select Country of Origin</Text>
               <TextInput
@@ -1083,13 +1145,14 @@ export default function ProfileSetupScreen({ navigation }: Props) {
                 onChangeText={setCountrySearch}
               />
               <FlatList
-                data={(countries || []).filter((c) =>
+                data={STATIC_COUNTRIES.filter((c) =>
                   c.name.toLowerCase().includes(countrySearch.toLowerCase()),
                 )}
                 keyExtractor={(item) => item.code}
-                style={{ marginBottom: 8 }}
+                style={{ flex: 1, marginBottom: 8 }}
                 renderItem={({ item }) => {
-                  const isSelected = originCountry === item.code;
+                  const isSelected = originCountry === item.name;
+
                   return (
                     <TouchableOpacity
                       style={[
@@ -1097,9 +1160,7 @@ export default function ProfileSetupScreen({ navigation }: Props) {
                         isSelected && styles.modalItemSelected,
                       ]}
                       onPress={() => {
-                        // Store short code and display name separately
-                        setOriginCountry(item.code);
-                        setCountry(item.name);
+                        setOriginCountry(item.name);
                         setShowCountryModal(false);
                         setCountrySearch("");
                       }}
@@ -1112,6 +1173,7 @@ export default function ProfileSetupScreen({ navigation }: Props) {
                       >
                         {item.name}
                       </Text>
+
                       {isSelected && <Text style={styles.checkMark}>✓</Text>}
                     </TouchableOpacity>
                   );

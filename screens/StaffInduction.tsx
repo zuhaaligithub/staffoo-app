@@ -20,23 +20,25 @@ const THEME_COLOR = "#0A7C6E";
 const BASE_URL = "https://apis.staffoo.com.au/api";
 
 const COLORS = {
-  primary: "#89E7D0",
-  primaryDark: "#4FCBB3",
+  background: "#030508",
+  surface: "#07111A",
+  card: "#0D1421",
 
-  background: "#001F3F",
-  surface: "#0B1F3A",
-  surface2: "#12243A",
-
-  card: "rgba(255,255,255,0.06)",
-  border: "rgba(255,255,255,0.08)",
+  primary: "#00A99D",
+  primaryGlow: "rgba(0,169,157,0.25)",
+  primaryBorder: "rgba(0,169,157,0.25)",
 
   text: "#FFFFFF",
-  textSecondary: "rgba(255,255,255,0.7)",
-  textMuted: "rgba(255,255,255,0.5)",
+  textSecondary: "#94A3B8",
+  textMuted: "#4A6080",
 
-  success: "#22C55E",
-  warning: "#F59E0B",
-  danger: "#EF4444",
+  success: "#34C88A",
+  warning: "#F5A623",
+  danger: "#F87171",
+
+  border: "rgba(255,255,255,0.08)",
+  heroBg1: "#0D1F2D",
+  heroBg2: "#061014",
 };
 
 // ✅ GLOBAL HELPER
@@ -434,8 +436,7 @@ export default function StaffInductionScreen({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    // backgroundColor: COLORS.background,
-    backgroundColor: "#111111",
+    backgroundColor: COLORS.background,
     paddingTop: 25,
   },
   headerRow: {
@@ -445,13 +446,12 @@ const styles = StyleSheet.create({
 
     paddingHorizontal: 16,
     paddingVertical: 14,
-
     marginHorizontal: 16,
     marginTop: 10,
 
     borderRadius: 18,
 
-    // backgroundColor: COLORS.surface2,
+    backgroundColor: COLORS.surface,
     borderWidth: 1,
     borderColor: COLORS.border,
   },
@@ -491,9 +491,9 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: "700",
-    color: "#fff",
+    color: COLORS.text,
     marginBottom: 12,
-    marginTop: 10,
+    marginTop: 18,
   },
   completedCardBorder: {
     borderWidth: 1,
@@ -501,11 +501,11 @@ const styles = StyleSheet.create({
   },
 
   recentCard: {
-    // backgroundColor: COLORS.surface,
     borderRadius: 22,
-    padding: 18,
+    padding: 10,
     flexDirection: "row",
 
+    backgroundColor: COLORS.card,
     borderWidth: 1,
     borderColor: COLORS.border,
 
@@ -515,13 +515,13 @@ const styles = StyleSheet.create({
     elevation: 8,
   },
   recentIcon: {
-    width: 70,
-    height: 70,
+    width: 60,
+    height: 60,
     borderRadius: 18,
 
-    backgroundColor: "rgba(137, 231, 208, 0.08)",
+    backgroundColor: COLORS.primaryGlow,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: COLORS.primaryBorder,
 
     alignItems: "center",
     justifyContent: "center",
@@ -548,6 +548,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     borderRadius: 14,
     marginTop: 12,
+
+    shadowColor: COLORS.primary,
+    shadowOpacity: 0.25,
+    shadowRadius: 10,
+    elevation: 4,
+
     alignSelf: "flex-start",
   },
 
@@ -563,7 +569,7 @@ const styles = StyleSheet.create({
 
     backgroundColor: COLORS.card,
 
-    padding: 14,
+    padding: 16,
     borderRadius: 18,
 
     marginBottom: 14,
@@ -624,26 +630,26 @@ const styles = StyleSheet.create({
   completedBadge: {
     flexDirection: "row",
     alignItems: "center",
-    marginTop: 8,
+    marginTop: 10,
 
-    backgroundColor: "rgba(34,197,94,0.1)",
+    backgroundColor: "rgba(52, 200, 138, 0.12)",
     paddingHorizontal: 10,
-    paddingVertical: 4,
+    paddingVertical: 5,
     borderRadius: 12,
 
-    alignSelf: "flex-start", // ✅ only content width
+    alignSelf: "flex-start",
   },
 
   pendingBadge: {
     flexDirection: "row",
     alignItems: "center",
-    marginTop: 8,
+    marginTop: 10,
 
-    backgroundColor: "rgba(245,158,11,0.1)",
+    backgroundColor: "rgba(245, 166, 35, 0.12)",
     paddingHorizontal: 10,
-    paddingVertical: 4,
+    paddingVertical: 5,
     borderRadius: 12,
 
-    alignSelf: "flex-start", // ✅ only content width
+    alignSelf: "flex-start",
   },
 });

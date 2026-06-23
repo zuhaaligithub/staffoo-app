@@ -1571,7 +1571,6 @@ import axios from "axios";
 const BASE_URL = "https://apis.staffoo.com.au/api";
 
 // ─── Design System ─────────────────────────────────────────────────────────────
-
 const COLORS = {
   background: "#030508",
   surface: "#07111A",
@@ -1593,7 +1592,6 @@ const COLORS = {
 };
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
-
 type AvailableJob = {
   id: number;
   title: string;
@@ -1611,16 +1609,13 @@ type AvailableJob = {
 type Props = { navigation: any; route: any };
 
 // ─── Helpers ───────────────────────────────────────────────────────────────────
-
 const formatDate = (val: any): string => {
   if (!val) return "—";
   const clean = String(val).split("T")[0].split(" ")[0];
   const parts = clean.includes("-") ? clean.split("-") : clean.split("/");
   if (parts.length !== 3) return "—";
   let [y, m, d] = parts;
-  if (y.length === 4) {
-    return `${d.padStart(2, "0")}/${m.padStart(2, "0")}/${y}`;
-  }
+  if (y.length === 4) return `${d.padStart(2, "0")}/${m.padStart(2, "0")}/${y}`;
   return `${y.padStart(2, "0")}/${m.padStart(2, "0")}/${d}`;
 };
 
@@ -1665,8 +1660,263 @@ const shapeJobForDetails = (raw: any) => {
   };
 };
 
-// ─── Component ─────────────────────────────────────────────────────────────────
+// ─── Staff Assign Bottom Sheet Component ──────────────────────────────────────
+interface StaffAssignSheetProps {
+  visible: boolean;
+  job: AvailableJob | null;
+  staffList: any[];
+  loadingStaff: boolean;
+  selectedStaff: number | null;
+  onSelectStaff: (id: number) => void;
+  onAccept: () => void;
+  onDecline: () => void;
+}
 
+const StaffAssignSheet = ({
+  visible,
+  job,
+  staffList,
+  loadingStaff,
+  selectedStaff,
+  onSelectStaff,
+  onAccept,
+  onDecline,
+}: StaffAssignSheetProps) => {
+  const [showStaffModal, setShowStaffModal] = useState(false);
+
+  if (!visible || !job) return null;
+
+  const selectedName = selectedStaff
+    ? staffList.find((s) => s.id === selectedStaff)?.name ||
+      `Staff #${selectedStaff}`
+    : null;
+
+  return (
+    <Modal
+      visible={visible}
+      transparent
+      animationType="slide"
+      onRequestClose={onDecline}
+    >
+      <View style={assignStyles.overlay}>
+        <View style={assignStyles.sheet}>
+          {/* Handle bar */}
+          <View style={assignStyles.handle} />
+
+          {/* Title */}
+          <Text style={assignStyles.title}>🔔 New Job Request</Text>
+
+          {/* Job Info Cards */}
+          <View style={assignStyles.infoCard}>
+            <CalendarDays size={18} color={COLORS.primary} />
+            <View style={{ flex: 1 }}>
+              <Text style={assignStyles.infoLabel}>Date</Text>
+              <Text style={assignStyles.infoValue}>{job.date}</Text>
+            </View>
+          </View>
+
+          <View style={assignStyles.infoCard}>
+            <Clock size={18} color={COLORS.primary} />
+            <View style={{ flex: 1 }}>
+              <Text style={assignStyles.infoLabel}>Time</Text>
+              <Text style={assignStyles.infoValue}>
+                {job.startTime} – {job.endTime}
+              </Text>
+            </View>
+          </View>
+
+          <View style={assignStyles.infoCard}>
+            <MapPin size={18} color={COLORS.danger} />
+            <View style={{ flex: 1 }}>
+              <Text style={assignStyles.infoLabel}>Location</Text>
+              <Text style={assignStyles.infoValue} numberOfLines={2}>
+                {job.address}
+              </Text>
+            </View>
+          </View>
+
+          <View style={assignStyles.infoCard}>
+            <Briefcase size={18} color={COLORS.primary} />
+            <View style={{ flex: 1 }}>
+              <Text style={assignStyles.infoLabel}>Site</Text>
+              <Text style={assignStyles.infoValue}>{job.siteName}</Text>
+            </View>
+          </View>
+
+          {/* Staff Assignment Section */}
+          <Text style={assignStyles.assignLabel}>Assign to Staff Member</Text>
+
+          {loadingStaff ? (
+            <View style={assignStyles.loadingRow}>
+              <ActivityIndicator size="small" color={COLORS.primary} />
+              <Text style={assignStyles.loadingText}>Loading staff…</Text>
+            </View>
+          ) : staffList.length === 0 ? (
+            <View style={assignStyles.noStaffBox}>
+              <Text style={assignStyles.noStaffText}>No staff available</Text>
+            </View>
+          ) : (
+            <>
+              {/* Staff selector button */}
+              <TouchableOpacity
+                style={[
+                  assignStyles.staffSelector,
+                  selectedStaff !== null
+                    ? assignStyles.staffSelectorSelected
+                    : undefined,
+                ]}
+                onPress={() => setShowStaffModal(true)}
+                activeOpacity={0.8}
+              >
+                <View style={assignStyles.staffSelectorLeft}>
+                  <View
+                    style={[
+                      assignStyles.staffIconWrap,
+                      selectedStaff !== null
+                        ? { backgroundColor: "rgba(0,169,157,0.2)" }
+                        : undefined,
+                    ]}
+                  >
+                    <UserCheck
+                      size={18}
+                      color={
+                        selectedStaff !== null
+                          ? COLORS.primary
+                          : COLORS.textMuted
+                      }
+                    />
+                  </View>
+                  <Text
+                    style={[
+                      assignStyles.staffSelectorText,
+                      selectedStaff !== null
+                        ? { color: COLORS.text }
+                        : undefined,
+                    ]}
+                    numberOfLines={1}
+                  >
+                    {selectedName || "Tap to select staff member"}
+                  </Text>
+                </View>
+                <ChevronDown
+                  size={18}
+                  color={
+                    selectedStaff !== null ? COLORS.primary : COLORS.textMuted
+                  }
+                />
+              </TouchableOpacity>
+
+              {!selectedStaff && (
+                <Text style={assignStyles.requiredHint}>
+                  * Staff selection is required to accept
+                </Text>
+              )}
+
+              {/* Staff picker modal */}
+              <Modal
+                visible={showStaffModal}
+                transparent
+                animationType="fade"
+                onRequestClose={() => setShowStaffModal(false)}
+              >
+                <View style={assignStyles.pickerOverlay}>
+                  <View style={assignStyles.pickerSheet}>
+                    <Text style={assignStyles.pickerTitle}>
+                      Select Staff Member
+                    </Text>
+                    <FlatList
+                      data={staffList}
+                      keyExtractor={(item) => item.id.toString()}
+                      renderItem={({ item }) => (
+                        <TouchableOpacity
+                          style={[
+                            assignStyles.pickerItem,
+                            selectedStaff === item.id &&
+                              assignStyles.pickerItemSelected,
+                          ]}
+                          onPress={() => {
+                            onSelectStaff(item.id);
+                            setShowStaffModal(false);
+                          }}
+                          activeOpacity={0.75}
+                        >
+                          <View style={assignStyles.pickerItemLeft}>
+                            <View style={assignStyles.pickerAvatar}>
+                              <Text style={assignStyles.pickerAvatarText}>
+                                {getInitials(item.name || item.email || "?")}
+                              </Text>
+                            </View>
+                            <View>
+                              <Text style={assignStyles.pickerItemName}>
+                                {item.name || item.email || `Staff #${item.id}`}
+                              </Text>
+                              {item.email && item.name && (
+                                <Text style={assignStyles.pickerItemEmail}>
+                                  {item.email}
+                                </Text>
+                              )}
+                            </View>
+                          </View>
+                          {selectedStaff === item.id && (
+                            <CheckCircle size={18} color={COLORS.primary} />
+                          )}
+                        </TouchableOpacity>
+                      )}
+                      showsVerticalScrollIndicator={false}
+                      ItemSeparatorComponent={() => (
+                        <View
+                          style={{
+                            height: 1,
+                            backgroundColor: COLORS.cardBorder,
+                          }}
+                        />
+                      )}
+                    />
+                    <TouchableOpacity
+                      style={assignStyles.pickerCancel}
+                      onPress={() => setShowStaffModal(false)}
+                    >
+                      <Text style={assignStyles.pickerCancelText}>Cancel</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              </Modal>
+            </>
+          )}
+
+          {/* Action buttons */}
+          <View style={assignStyles.buttonRow}>
+            <TouchableOpacity
+              style={[
+                assignStyles.acceptBtn,
+                !selectedStaff &&
+                  staffList.length > 0 &&
+                  assignStyles.acceptBtnDisabled,
+              ]}
+              onPress={onAccept}
+              disabled={staffList.length > 0 && !selectedStaff}
+              activeOpacity={0.85}
+            >
+              <CheckCircle size={16} color="#fff" />
+              <Text style={assignStyles.acceptBtnText}>ACCEPT JOB</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={assignStyles.declineBtn}
+              onPress={onDecline}
+              activeOpacity={0.85}
+            >
+              <XCircle size={16} color="#fff" />
+              <Text style={assignStyles.declineBtnText}>SKIP</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    </Modal>
+  );
+};
+
+// ─── Component ─────────────────────────────────────────────────────────────────
 export default function StaffShifts({ navigation, route }: Props) {
   const bottomSheetRef = useRef<BottomSheet>(null);
   const snapPoints = useMemo(() => ["75%", "85%"], []);
@@ -1688,6 +1938,7 @@ export default function StaffShifts({ navigation, route }: Props) {
   const [profileImage, setProfileImage] = useState<string | null>(null);
   const [loadingProfile, setLoadingProfile] = useState(true);
 
+  // ── ASAP bottom sheet (notification) ───────────────────────────────────────
   const [notificationJob, setNotificationJob] = useState<any>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [staffList, setStaffList] = useState<any[]>([]);
@@ -1695,8 +1946,18 @@ export default function StaffShifts({ navigation, route }: Props) {
   const [loadingStaff, setLoadingStaff] = useState(false);
   const [showStaffDropdown, setShowStaffDropdown] = useState(false);
 
-  // ─── Load user from storage ─────────────────────────────────────────────────
+  // ── NEW: Staff assign sheet for "New" tab jobs (contractor) ───────────────
+  const [assignSheetJob, setAssignSheetJob] = useState<AvailableJob | null>(
+    null,
+  );
+  const [assignSheetVisible, setAssignSheetVisible] = useState(false);
+  const [assignSelectedStaff, setAssignSelectedStaff] = useState<number | null>(
+    null,
+  );
+  const [assignStaffList, setAssignStaffList] = useState<any[]>([]);
+  const [assignLoadingStaff, setAssignLoadingStaff] = useState(false);
 
+  // ─── Load user from storage ─────────────────────────────────────────────────
   useEffect(() => {
     const loadUser = async () => {
       try {
@@ -1723,15 +1984,12 @@ export default function StaffShifts({ navigation, route }: Props) {
   useEffect(() => {
     const timer = setTimeout(() => {
       isAppReadyRef.current = true;
-    }, 800); // small delay ensures navigation + sheet mounted
-
+    }, 800);
     return () => clearTimeout(timer);
   }, []);
 
   const openBottomSheet = (job: any) => {
     setNotificationJob(job);
-
-    // IMPORTANT: delay opening sheet until UI is ready
     setTimeout(() => {
       setSheetOpen(true);
       bottomSheetRef.current?.snapToIndex(0);
@@ -1739,7 +1997,6 @@ export default function StaffShifts({ navigation, route }: Props) {
   };
 
   // ─── Fetch profile ──────────────────────────────────────────────────────────
-
   useEffect(() => {
     const fetchProfile = async () => {
       setLoadingProfile(true);
@@ -1750,7 +2007,6 @@ export default function StaffShifts({ navigation, route }: Props) {
         const idFromStorage = Number(parsed?.id);
         if (!idFromStorage) return;
         setUserId(idFromStorage);
-
         const res = await getUserProfile(idFromStorage);
         if (res?.success && res?.data) {
           setUserDocuments(res.data.documents || []);
@@ -1759,7 +2015,6 @@ export default function StaffShifts({ navigation, route }: Props) {
           setUserType((parsed.user_type || "").trim().toLowerCase());
         }
       } catch (err) {
-        console.error("[Profile Error]:", err);
         const stored = await AsyncStorage.getItem("user");
         if (stored) {
           const parsed = JSON.parse(stored);
@@ -1773,16 +2028,13 @@ export default function StaffShifts({ navigation, route }: Props) {
   }, []);
 
   // ─── Fetch available jobs ───────────────────────────────────────────────────
-
   const fetchAvailableJobs = async () => {
     try {
       setLoadingAvailable(true);
       const token = await AsyncStorage.getItem("@auth_token");
-
       const response = await axios.get(`${BASE_URL}/jobs/available`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-
       let apiJobs: any[] = [];
       if (
         response.data?.data?.jobs?.data &&
@@ -1799,7 +2051,6 @@ export default function StaffShifts({ navigation, route }: Props) {
       } else if (Array.isArray(response.data)) {
         apiJobs = response.data;
       }
-
       const formatted: AvailableJob[] = apiJobs.map((job: any) => {
         let formattedDate = "TBD";
         if (job.start_time || job.start) {
@@ -1808,10 +2059,8 @@ export default function StaffShifts({ navigation, route }: Props) {
             d.getMonth() + 1,
           ).padStart(2, "0")}/${d.getFullYear()}`;
         }
-
         const startRaw = job.start_time || job.start;
         const endRaw = job.end_time || job.end;
-
         const startTime = startRaw
           ? new Date(startRaw).toLocaleTimeString("en-AU", {
               hour: "2-digit",
@@ -1819,7 +2068,6 @@ export default function StaffShifts({ navigation, route }: Props) {
               hour12: false,
             })
           : "TBD";
-
         const endTime = endRaw
           ? new Date(endRaw).toLocaleTimeString("en-AU", {
               hour: "2-digit",
@@ -1827,7 +2075,6 @@ export default function StaffShifts({ navigation, route }: Props) {
               hour12: false,
             })
           : "TBD";
-
         return {
           id: job.id,
           title: job.title || "Security Guard Shift",
@@ -1848,13 +2095,8 @@ export default function StaffShifts({ navigation, route }: Props) {
           raw: job,
         };
       });
-
       setAvailableJobs(formatted);
     } catch (error: any) {
-      console.error(
-        "Available jobs error:",
-        error?.response?.data || error.message,
-      );
       Toast.show({
         type: "error",
         text1: "Failed to load available jobs",
@@ -1864,6 +2106,7 @@ export default function StaffShifts({ navigation, route }: Props) {
       setLoadingAvailable(false);
     }
   };
+
   useEffect(() => {
     if (sheetOpen) {
       bottomSheetRef.current?.expand();
@@ -1872,7 +2115,6 @@ export default function StaffShifts({ navigation, route }: Props) {
   }, [sheetOpen]);
 
   // ─── Fetch accepted shifts ──────────────────────────────────────────────────
-
   const fetchAcceptedShifts = useCallback(async () => {
     setLoadingToday(true);
     try {
@@ -1902,8 +2144,23 @@ export default function StaffShifts({ navigation, route }: Props) {
     }, [fetchAcceptedShifts]),
   );
 
-  // ─── ASAP notification bottom sheet ────────────────────────────────────────
+  // ─── Load contractor staff for assign sheet ─────────────────────────────────
+  const loadAssignStaff = useCallback(async () => {
+    if (!userId) return;
+    setAssignLoadingStaff(true);
+    try {
+      const res = await getContractorStaff(userId);
+      if (res?.guards?.length) setAssignStaffList(res.guards);
+      else setAssignStaffList([]);
+    } catch (err) {
+      console.error("[Assign Staff Load Error]:", err);
+      setAssignStaffList([]);
+    } finally {
+      setAssignLoadingStaff(false);
+    }
+  }, [userId]);
 
+  // ─── ASAP notification bottom sheet ────────────────────────────────────────
   const extractJobData = (notif: any): any => {
     if (!notif) return {};
     if (notif?.additionalData?.roster?.roster?.id)
@@ -1939,13 +2196,8 @@ export default function StaffShifts({ navigation, route }: Props) {
           );
           if (pending && userType) {
             const job = JSON.parse(pending);
-            if (isAppReadyRef.current) {
-              openBottomSheet(job);
-            } else {
-              setTimeout(() => {
-                openBottomSheet(job);
-              }, 1200);
-            }
+            if (isAppReadyRef.current) openBottomSheet(job);
+            else setTimeout(() => openBottomSheet(job), 1200);
             await AsyncStorage.removeItem("@pending_asap_notification");
           }
         } catch (err) {
@@ -1997,19 +2249,61 @@ export default function StaffShifts({ navigation, route }: Props) {
     setSheetOpen(false);
   };
 
-  // ─── New tab handlers ───────────────────────────────────────────────────────
+  // ─── NEW: Handle "Accept Job" tap in New tab ────────────────────────────────
+  const handleAcceptJobTap = (job: AvailableJob) => {
+    if (userType === "contractor") {
+      // Show assign-staff bottom sheet instead of navigating directly
+      setAssignSheetJob(job);
+      setAssignSelectedStaff(null);
+      setAssignSheetVisible(true);
+      loadAssignStaff();
+    } else {
+      // Guard: go directly
+      const shaped = shapeJobForDetails(job.raw);
+      navigation.navigate("AsapJobDetails", {
+        job: shaped,
+        availableJobId: job.id,
+        onJobAccepted: () => {
+          setAvailableJobs((prev) => prev.filter((j) => j.id !== job.id));
+          fetchAcceptedShifts();
+          setActiveTab("Accepted");
+        },
+      });
+    }
+  };
 
-  const handleAcceptJob = (job: AvailableJob) => {
-    const shaped = shapeJobForDetails(job.raw);
+  // When contractor confirms staff selection from the assign sheet
+  const handleAssignSheetAccept = () => {
+    if (!assignSheetJob) return;
+    if (assignStaffList.length > 0 && !assignSelectedStaff) {
+      Toast.show({
+        type: "error",
+        text1: "Please select a staff member first",
+      });
+      return;
+    }
+    const shaped = shapeJobForDetails(assignSheetJob.raw);
     navigation.navigate("AsapJobDetails", {
       job: shaped,
-      availableJobId: job.id,
+      availableJobId: assignSheetJob.id,
+      staff_id: assignSelectedStaff,
       onJobAccepted: () => {
-        setAvailableJobs((prev) => prev.filter((j) => j.id !== job.id));
+        setAvailableJobs((prev) =>
+          prev.filter((j) => j.id !== assignSheetJob.id),
+        );
         fetchAcceptedShifts();
         setActiveTab("Accepted");
       },
     });
+    setAssignSheetVisible(false);
+    setAssignSheetJob(null);
+    setAssignSelectedStaff(null);
+  };
+
+  const handleAssignSheetDecline = () => {
+    setAssignSheetVisible(false);
+    setAssignSheetJob(null);
+    setAssignSelectedStaff(null);
   };
 
   const handleRejectJob = (job: AvailableJob) => {
@@ -2030,10 +2324,8 @@ export default function StaffShifts({ navigation, route }: Props) {
   );
 
   // ─── Render: Available job card ─────────────────────────────────────────────
-
   const renderAvailableCard = ({ item }: { item: AvailableJob }) => (
     <View style={styles.shiftCard}>
-      {/* Header row */}
       <View style={cardStyles.headerRow}>
         <View style={cardStyles.siteIconWrap}>
           <Briefcase size={14} color={COLORS.primary} />
@@ -2048,15 +2340,8 @@ export default function StaffShifts({ navigation, route }: Props) {
         ) : null}
       </View>
 
-      {/* Divider */}
       <View style={cardStyles.divider} />
 
-      {/* Rate pill */}
-      {/* <View style={cardStyles.ratePill}>
-        <Text style={cardStyles.rateText}>{item.rate}</Text>
-      </View> */}
-
-      {/* Info rows */}
       <View style={styles.rowItem}>
         <View style={styles.iconBgGrey}>
           <MapPin size={14} color={COLORS.primary} />
@@ -2081,15 +2366,15 @@ export default function StaffShifts({ navigation, route }: Props) {
         <View style={styles.iconBgGrey}>
           <FileText size={14} color={COLORS.primary} />
         </View>
-        <Text style={[styles.addressText]} numberOfLines={2}>
+        <Text style={styles.addressText} numberOfLines={2}>
           {item.address}
         </Text>
       </View>
 
-      {/* Action buttons — only Accept, no Skip */}
+      {/* Accept button — triggers staff sheet for contractor */}
       <TouchableOpacity
         style={cardStyles.acceptjobButton}
-        onPress={() => handleAcceptJob(item)}
+        onPress={() => handleAcceptJobTap(item)}
         activeOpacity={0.8}
       >
         <CheckCircle size={16} color="#fff" />
@@ -2099,7 +2384,6 @@ export default function StaffShifts({ navigation, route }: Props) {
   );
 
   // ─── Render: Accepted shift card ────────────────────────────────────────────
-
   const renderShiftCard = (shift: any, index: number, isToday = false) => {
     const isConfirmed = shift.job_status?.toLowerCase() === "confirmed";
     const signinStatus = Number(shift.signin_status ?? 0);
@@ -2114,18 +2398,15 @@ export default function StaffShifts({ navigation, route }: Props) {
       showButton = true;
       buttonText = "Sign In";
       buttonVariant = "signIn";
-
       const guardUserId = shift.guard?.user_id ?? shift.user_id;
       const isUserAdmin = Number(guardUserId) === 1;
       let hasMissingDocs = false;
-
       if (!isUserAdmin && Number(shift.is_document) === 1) {
         hasMissingDocs =
           !userDocuments ||
           userDocuments.length === 0 ||
           userDocuments.some((doc: any) => !doc.file || !doc.document_no);
       }
-
       if (hasMissingDocs) {
         onPress = () =>
           Toast.show({
@@ -2155,7 +2436,6 @@ export default function StaffShifts({ navigation, route }: Props) {
         : buttonVariant === "ongoing"
         ? styles.ongoingButton
         : styles.viewButton;
-
     const actionTextColor =
       buttonVariant === "signIn"
         ? "#92400e"
@@ -2165,7 +2445,6 @@ export default function StaffShifts({ navigation, route }: Props) {
 
     return (
       <View key={index} style={styles.shiftCard}>
-        {/* Date + Time row */}
         <View style={styles.rowBetween}>
           <View style={styles.rowItem}>
             <View style={styles.iconBgGrey}>
@@ -2181,7 +2460,6 @@ export default function StaffShifts({ navigation, route }: Props) {
                 }`}
             </Text>
           </View>
-
           <View style={styles.rowItem}>
             <View style={styles.iconBgGrey}>
               <Clock size={14} color={COLORS.primary} />
@@ -2191,8 +2469,6 @@ export default function StaffShifts({ navigation, route }: Props) {
             </Text>
           </View>
         </View>
-
-        {/* Address */}
         <View style={styles.rowItem}>
           <View style={styles.iconBgGrey}>
             <MapPin size={14} color={COLORS.primary} />
@@ -2203,8 +2479,6 @@ export default function StaffShifts({ navigation, route }: Props) {
             </Text>
           </View>
         </View>
-
-        {/* Instructions file */}
         <TouchableOpacity style={styles.rowItem}>
           <View style={styles.iconBgGrey}>
             <FileText size={14} color={COLORS.primary} />
@@ -2215,8 +2489,6 @@ export default function StaffShifts({ navigation, route }: Props) {
               : "No instruction file"}
           </Text>
         </TouchableOpacity>
-
-        {/* Notes + Action button */}
         <View style={[styles.rowBetween, { alignItems: "flex-start" }]}>
           <View style={{ flex: 1, paddingRight: 16 }}>
             <Text style={styles.detailsLabel}>Instructions / Notes</Text>
@@ -2224,7 +2496,6 @@ export default function StaffShifts({ navigation, route }: Props) {
               {shift.site?.site_description || "No site description"}
             </Text>
           </View>
-
           {showButton && (
             <TouchableOpacity
               activeOpacity={0.8}
@@ -2249,7 +2520,6 @@ export default function StaffShifts({ navigation, route }: Props) {
   };
 
   // ─── Render tab contents ────────────────────────────────────────────────────
-
   const renderNewTab = () => {
     if (loadingAvailable) {
       return (
@@ -2259,7 +2529,6 @@ export default function StaffShifts({ navigation, route }: Props) {
         </View>
       );
     }
-
     if (availableJobs.length === 0) {
       return (
         <View style={cardStyles.emptyContainer}>
@@ -2267,11 +2536,10 @@ export default function StaffShifts({ navigation, route }: Props) {
             <Briefcase size={36} color={COLORS.primary} />
           </View>
           <Text style={cardStyles.emptyText}>No available jobs right now</Text>
-          <Text style={cardStyles.emptySubText}>Pull down to refresh</Text>
+          {/* <Text style={cardStyles.emptySubText}>Pull down to refresh</Text> */}
         </View>
       );
     }
-
     return (
       <FlatList
         data={availableJobs}
@@ -2293,7 +2561,6 @@ export default function StaffShifts({ navigation, route }: Props) {
         </View>
       );
     }
-
     return (
       <>
         <Text style={styles.sectionHeader}>Today's Shifts</Text>
@@ -2304,7 +2571,6 @@ export default function StaffShifts({ navigation, route }: Props) {
         ) : (
           todayShifts.map((shift, index) => renderShiftCard(shift, index, true))
         )}
-
         <Text style={styles.sectionHeader}>This Week's Shifts</Text>
         {weekShifts.length === 0 ? (
           <View style={styles.emptyBlock}>
@@ -2318,11 +2584,9 @@ export default function StaffShifts({ navigation, route }: Props) {
   };
 
   // ─── Main render ────────────────────────────────────────────────────────────
-
   const jobData = extractJobData(notificationJob);
   const isRefreshing =
     activeTab === "New" ? loadingAvailable : loadingToday || loadingWeek;
-
   const onRefresh = () => {
     if (activeTab === "New") fetchAvailableJobs();
     else fetchAcceptedShifts();
@@ -2332,7 +2596,7 @@ export default function StaffShifts({ navigation, route }: Props) {
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor={COLORS.background} />
 
-      {/* ── Header (fixed) ── */}
+      {/* Header */}
       <LinearGradient
         colors={[COLORS.heroBg1, COLORS.heroBg2]}
         start={{ x: 0, y: 0 }}
@@ -2362,7 +2626,7 @@ export default function StaffShifts({ navigation, route }: Props) {
         </TouchableOpacity>
       </LinearGradient>
 
-      {/* ── Tab bar (fixed) ── */}
+      {/* Tab bar */}
       <View style={tabStyles.tabBar}>
         {(["Accepted", "New"] as const).map((tab) => {
           const isActive = activeTab === tab;
@@ -2410,11 +2674,21 @@ export default function StaffShifts({ navigation, route }: Props) {
           />
         }
       >
-        {/* ── Tab content ── */}
         {activeTab === "New" ? renderNewTab() : renderAcceptedTab()}
-
         {!notificationJob && <View style={styles.placeholder} />}
       </ScrollView>
+
+      {/* ── Staff Assign Sheet — "New" tab (contractor only) ── */}
+      <StaffAssignSheet
+        visible={assignSheetVisible && userType === "contractor"}
+        job={assignSheetJob}
+        staffList={assignStaffList}
+        loadingStaff={assignLoadingStaff}
+        selectedStaff={assignSelectedStaff}
+        onSelectStaff={setAssignSelectedStaff}
+        onAccept={handleAssignSheetAccept}
+        onDecline={handleAssignSheetDecline}
+      />
 
       {/* ── ASAP notification bottom sheet ── */}
       <BottomSheet
@@ -2438,14 +2712,12 @@ export default function StaffShifts({ navigation, route }: Props) {
             <Calendar size={18} color={COLORS.primary} />
             <Text style={styles.infoText}>{formatDate(jobData.start)}</Text>
           </View>
-
           <View style={styles.infoRow}>
             <Clock size={18} color={COLORS.primary} />
             <Text style={styles.infoText}>
               {formatTime(jobData.start)} – {formatTime(jobData.end)}
             </Text>
           </View>
-
           <View style={styles.infoRow}>
             <MapPin size={18} color={COLORS.danger} />
             <Text style={styles.addressInSheet} numberOfLines={4}>
@@ -2454,7 +2726,6 @@ export default function StaffShifts({ navigation, route }: Props) {
                 "No address available"}
             </Text>
           </View>
-
           <View style={styles.infoRow}>
             <Clock size={18} color={COLORS.textSecondary} />
             <Text style={styles.infoTextt}>
@@ -2532,7 +2803,6 @@ export default function StaffShifts({ navigation, route }: Props) {
             </View>
           )}
 
-          {/* Sheet action buttons */}
           <View style={styles.buttonContainer}>
             <TouchableOpacity
               style={[
@@ -2547,7 +2817,6 @@ export default function StaffShifts({ navigation, route }: Props) {
               <CheckCircle size={16} color="#fff" />
               <Text style={styles.buttonText}>ACCEPT</Text>
             </TouchableOpacity>
-
             <TouchableOpacity
               style={styles.declineButton}
               onPress={handleDeclineNotification}
@@ -2564,8 +2833,259 @@ export default function StaffShifts({ navigation, route }: Props) {
   );
 }
 
-// ─── Tab bar styles ───────────────────────────────────────────────────────────
+// ─── Staff Assign Sheet Styles ────────────────────────────────────────────────
+const assignStyles = StyleSheet.create({
+  overlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.65)",
+    justifyContent: "flex-end",
+  },
+  sheet: {
+    backgroundColor: COLORS.surface,
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    paddingBottom: 44,
+    borderTopWidth: 1,
+    borderColor: COLORS.cardBorder,
+    maxHeight: "88%",
+  },
+  handle: {
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: COLORS.textMuted,
+    alignSelf: "center",
+    marginBottom: 16,
+  },
+  title: {
+    fontSize: 19,
+    color: COLORS.primary,
+    fontWeight: "700",
+    marginBottom: 14,
+  },
+  infoCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 14,
+    backgroundColor: COLORS.card,
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: COLORS.cardBorder,
+    marginBottom: 10,
+  },
+  infoLabel: {
+    fontSize: 11,
+    color: COLORS.textMuted,
+    fontWeight: "600",
+    letterSpacing: 0.4,
+    textTransform: "uppercase",
+    marginBottom: 2,
+  },
+  infoValue: {
+    fontSize: 14,
+    color: COLORS.text,
+    fontWeight: "600",
+  },
+  assignLabel: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: COLORS.textSecondary,
+    marginBottom: 10,
+    marginTop: 6,
+    textTransform: "uppercase",
+    letterSpacing: 0.4,
+  },
+  loadingRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    padding: 12,
+  },
+  loadingText: {
+    color: COLORS.textSecondary,
+    fontSize: 13,
+  },
+  noStaffBox: {
+    backgroundColor: COLORS.dangerBg,
+    borderRadius: 10,
+    padding: 14,
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: COLORS.danger,
+  },
+  noStaffText: {
+    color: COLORS.danger,
+    fontWeight: "600",
+    fontSize: 14,
+  },
+  staffSelector: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: COLORS.card,
+    borderWidth: 1,
+    borderColor: COLORS.cardBorder,
+    borderRadius: 14,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+  },
+  staffSelectorSelected: {
+    borderColor: COLORS.primary,
+    backgroundColor: "rgba(0,169,157,0.06)",
+  },
+  staffSelectorLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    flex: 1,
+  },
+  staffIconWrap: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    backgroundColor: "rgba(255,255,255,0.06)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  staffSelectorText: {
+    fontSize: 14,
+    color: COLORS.textMuted,
+    flex: 1,
+  },
+  requiredHint: {
+    fontSize: 11,
+    color: COLORS.warning,
+    marginTop: 6,
+    marginLeft: 4,
+  },
+  // Staff picker modal
+  pickerOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.7)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  pickerSheet: {
+    width: "88%",
+    backgroundColor: COLORS.card,
+    borderRadius: 20,
+    padding: 20,
+    maxHeight: "65%",
+    borderWidth: 1,
+    borderColor: COLORS.cardBorder,
+  },
+  pickerTitle: {
+    fontSize: 17,
+    fontWeight: "700",
+    color: COLORS.text,
+    textAlign: "center",
+    marginBottom: 16,
+  },
+  pickerItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingVertical: 13,
+    paddingHorizontal: 4,
+  },
+  pickerItemSelected: {
+    backgroundColor: "rgba(0,169,157,0.08)",
+    borderRadius: 10,
+    paddingHorizontal: 8,
+  },
+  pickerItemLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    flex: 1,
+  },
+  pickerAvatar: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: COLORS.primaryGlow,
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: COLORS.primaryBorder,
+  },
+  pickerAvatarText: {
+    color: COLORS.primary,
+    fontSize: 14,
+    fontWeight: "700",
+  },
+  pickerItemName: {
+    fontSize: 15,
+    color: COLORS.text,
+    fontWeight: "600",
+  },
+  pickerItemEmail: {
+    fontSize: 12,
+    color: COLORS.textMuted,
+    marginTop: 2,
+  },
+  pickerCancel: {
+    marginTop: 14,
+    paddingVertical: 13,
+    backgroundColor: COLORS.surface,
+    borderRadius: 12,
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: COLORS.cardBorder,
+  },
+  pickerCancelText: {
+    color: COLORS.textSecondary,
+    fontWeight: "600",
+    fontSize: 15,
+  },
+  // Action buttons
+  buttonRow: {
+    flexDirection: "row",
+    gap: 10,
+    marginTop: 16,
+  },
+  acceptBtn: {
+    flex: 2,
+    backgroundColor: COLORS.success,
+    paddingVertical: 15,
+    borderRadius: 14,
+    alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "center",
+    gap: 8,
+  },
+  acceptBtnDisabled: {
+    opacity: 0.45,
+  },
+  acceptBtnText: {
+    color: "#fff",
+    fontWeight: "700",
+    fontSize: 14,
+    letterSpacing: 0.5,
+  },
+  declineBtn: {
+    flex: 1,
+    backgroundColor: COLORS.dangerBg,
+    paddingVertical: 15,
+    borderRadius: 14,
+    alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "center",
+    gap: 8,
+    borderWidth: 1,
+    borderColor: COLORS.danger,
+  },
+  declineBtnText: {
+    color: "#fff",
+    fontWeight: "700",
+    fontSize: 14,
+  },
+});
 
+// ─── Tab bar styles ───────────────────────────────────────────────────────────
 const tabStyles = StyleSheet.create({
   tabBar: {
     flexDirection: "row",
@@ -2583,14 +3103,6 @@ const tabStyles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  // tabActive: {
-  //   backgroundColor: COLORS.card,
-  //   shadowColor: COLORS.primary,
-  //   shadowOffset: { width: 0, height: 2 },
-  //   shadowOpacity: 0.2,
-  //   shadowRadius: 6,
-  //   elevation: 3,
-  // },
   tabActive: {
     backgroundColor: "#ccc",
     shadowColor: COLORS.primary,
@@ -2599,19 +3111,9 @@ const tabStyles = StyleSheet.create({
     shadowRadius: 6,
     elevation: 3,
   },
-  tabInner: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-  },
-  tabText: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: COLORS.textMuted,
-  },
-  tabTextActive: {
-    color: COLORS.primary,
-  },
+  tabInner: { flexDirection: "row", alignItems: "center", gap: 6 },
+  tabText: { fontSize: 14, fontWeight: "600", color: COLORS.textMuted },
+  tabTextActive: { color: COLORS.primary },
   badge: {
     backgroundColor: COLORS.primary,
     borderRadius: 10,
@@ -2621,15 +3123,10 @@ const tabStyles = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: 5,
   },
-  badgeText: {
-    color: "#fff",
-    fontSize: 11,
-    fontWeight: "700",
-  },
+  badgeText: { color: "#fff", fontSize: 11, fontWeight: "700" },
 });
 
 // ─── Available job card styles ────────────────────────────────────────────────
-
 const cardStyles = StyleSheet.create({
   headerRow: {
     flexDirection: "row",
@@ -2659,16 +3156,8 @@ const cardStyles = StyleSheet.create({
     borderWidth: 1,
     borderColor: COLORS.warning,
   },
-  statusBadgeText: {
-    color: COLORS.warning,
-    fontSize: 10,
-    fontWeight: "700",
-  },
-  divider: {
-    height: 1,
-    backgroundColor: COLORS.cardBorder,
-    marginBottom: 10,
-  },
+  statusBadgeText: { color: COLORS.warning, fontSize: 10, fontWeight: "700" },
+  divider: { height: 1, backgroundColor: COLORS.cardBorder, marginBottom: 10 },
   ratePill: {
     alignSelf: "flex-start",
     backgroundColor: COLORS.primaryGlow,
@@ -2679,27 +3168,7 @@ const cardStyles = StyleSheet.create({
     borderWidth: 1,
     borderColor: COLORS.primaryBorder,
   },
-  rateText: {
-    color: COLORS.primary,
-    fontSize: 12,
-    fontWeight: "700",
-  },
-  acceptButton: {
-    backgroundColor: COLORS.success,
-    paddingVertical: 13,
-    borderRadius: 12,
-    alignItems: "center",
-    flexDirection: "row",
-    justifyContent: "center",
-    gap: 8,
-    marginTop: 14,
-  },
-  acceptText: {
-    color: "#fff",
-    fontWeight: "700",
-    fontSize: 13,
-    letterSpacing: 0.5,
-  },
+  rateText: { color: COLORS.primary, fontSize: 12, fontWeight: "700" },
   acceptjobButton: {
     backgroundColor: COLORS.success,
     paddingVertical: 10,
@@ -2710,8 +3179,7 @@ const cardStyles = StyleSheet.create({
     gap: 8,
     marginTop: 5,
     width: "40%",
-
-    alignSelf: "center", // 👈 add this
+    alignSelf: "center",
   },
   acceptjobText: {
     color: "#fff",
@@ -2719,10 +3187,7 @@ const cardStyles = StyleSheet.create({
     fontSize: 10,
     letterSpacing: 0.5,
   },
-  emptyContainer: {
-    paddingVertical: 60,
-    alignItems: "center",
-  },
+  emptyContainer: { paddingVertical: 60, alignItems: "center" },
   emptyIconWrap: {
     width: 80,
     height: 80,
@@ -2747,7 +3212,6 @@ const cardStyles = StyleSheet.create({
 });
 
 // ─── Main styles ──────────────────────────────────────────────────────────────
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -2756,12 +3220,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   scrollContainer: { flex: 1 },
-  scrollContent: {
-    // paddingHorizontal: 16,
-    paddingBottom: 100,
-  },
-
-  // ── Header ──
+  scrollContent: { paddingBottom: 100 },
   headerGradient: {
     borderRadius: 16,
     padding: 16,
@@ -2769,11 +3228,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: COLORS.cardBorder,
   },
-  headerLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 14,
-  },
+  headerLeft: { flexDirection: "row", alignItems: "center", gap: 14 },
   avatar: {
     width: 52,
     height: 52,
@@ -2799,8 +3254,6 @@ const styles = StyleSheet.create({
     fontWeight: "400",
     marginTop: 2,
   },
-
-  // ── Section headers ──
   sectionHeader: {
     fontSize: 16,
     fontWeight: "700",
@@ -2810,8 +3263,6 @@ const styles = StyleSheet.create({
     color: COLORS.primary,
     letterSpacing: 0.3,
   },
-
-  // ── Shift card ──
   shiftCard: {
     backgroundColor: COLORS.card,
     borderColor: COLORS.cardBorder,
@@ -2872,8 +3323,6 @@ const styles = StyleSheet.create({
     marginBottom: 3,
   },
   detailsValue: { fontSize: 13, color: COLORS.textSecondary, marginTop: 3 },
-
-  // ── Action buttons in shift cards ──
   actionButton: {
     paddingHorizontal: 16,
     paddingVertical: 10,
@@ -2897,8 +3346,6 @@ const styles = StyleSheet.create({
     borderColor: COLORS.cardBorder,
   },
   actionButtonText: { fontSize: 11, fontWeight: "700" },
-
-  // ── Loading / empty ──
   loadingContainer: {
     flex: 1,
     justifyContent: "center",
@@ -2906,15 +3353,8 @@ const styles = StyleSheet.create({
     marginTop: 80,
   },
   loadingText: { marginTop: 16, fontSize: 14, color: COLORS.textSecondary },
-  emptyBlock: {
-    paddingVertical: 20,
-    alignItems: "center",
-  },
-  emptyText: {
-    textAlign: "center",
-    fontSize: 13,
-    color: COLORS.textMuted,
-  },
+  emptyBlock: { paddingVertical: 20, alignItems: "center" },
+  emptyText: { textAlign: "center", fontSize: 13, color: COLORS.textMuted },
   placeholder: {
     flex: 1,
     justifyContent: "center",
@@ -2923,8 +3363,6 @@ const styles = StyleSheet.create({
     paddingVertical: 40,
   },
   disabledButton: { opacity: 0.45 },
-
-  // ── Bottom sheet ──
   sheetBackground: {
     backgroundColor: COLORS.surface,
     borderTopLeftRadius: 24,
@@ -2938,11 +3376,7 @@ const styles = StyleSheet.create({
     height: 4,
     borderRadius: 999,
   },
-  sheetContent: {
-    paddingHorizontal: 22,
-    paddingTop: 10,
-    paddingBottom: 44,
-  },
+  sheetContent: { paddingHorizontal: 22, paddingTop: 10, paddingBottom: 44 },
   newRequest: {
     fontSize: 19,
     color: COLORS.primary,
@@ -2974,11 +3408,7 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
     marginBottom: 8,
   },
-  buttonContainer: {
-    flexDirection: "row",
-    gap: 10,
-    marginTop: 10,
-  },
+  buttonContainer: { flexDirection: "row", gap: 10, marginTop: 10 },
   acceptButton: {
     flex: 1,
     backgroundColor: COLORS.success,
@@ -3002,8 +3432,6 @@ const styles = StyleSheet.create({
     borderColor: COLORS.danger,
   },
   buttonText: { color: "white", fontSize: 13, fontWeight: "700" },
-
-  // ── Staff dropdown ──
   customDropdown: {
     flexDirection: "row",
     alignItems: "center",
@@ -3024,11 +3452,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   dropdownText: { fontSize: 14, color: COLORS.text, flexShrink: 1 },
-  iconRight: {
-    marginLeft: 10,
-    justifyContent: "center",
-    alignItems: "center",
-  },
+  iconRight: { marginLeft: 10, justifyContent: "center", alignItems: "center" },
   modalOverlay: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.65)",
