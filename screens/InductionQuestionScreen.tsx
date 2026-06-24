@@ -31,10 +31,10 @@ type Question = {
 
 type QuestionnaireItem = {
   id: number;
+  questionnaire_id: number;
   title: string;
   questionnaire: Question[];
   status?: string;
-  questionnaire_id?: number;
 };
 
 type RouteParams = {
@@ -44,8 +44,11 @@ type RouteParams = {
 export default function InductionQuestionsScreen() {
   const route = useRoute();
   const navigation = useNavigation();
-  const { inductionId } = route.params as RouteParams;
-
+  const { inductionId: routeInductionId } = route.params as RouteParams;
+  const capitalizeFirstLetter = (text: string) => {
+    if (!text) return "";
+    return text.charAt(0).toUpperCase() + text.slice(1);
+  };
   const [induction, setInduction] = useState<QuestionnaireItem | null>(null);
   const [questions, setQuestions] = useState<Question[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -56,6 +59,7 @@ export default function InductionQuestionsScreen() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
+  const [questionnaireId, setQuestionnaireId] = useState<number | null>(null);
 
   const currentQuestion = questions[currentIndex];
   const progress =
@@ -77,14 +81,13 @@ export default function InductionQuestionsScreen() {
 
   useEffect(() => {
     loadUserAndFetchQuestions();
-  }, [inductionId]);
+  }, [routeInductionId]);
 
   const loadUserAndFetchQuestions = async () => {
     try {
       setLoading(true);
       setError(null);
 
-      // 1. Get user data first
       const cachedUser = await AsyncStorage.getItem("user");
       if (!cachedUser) {
         setError("User session not found. Please login again.");
@@ -100,9 +103,7 @@ export default function InductionQuestionsScreen() {
         return;
       }
 
-      setUserId(uid); // ← Set userId
-
-      // 2. Now fetch questions with correct userId
+      setUserId(uid);
       await fetchInductionQuestions(uid);
     } catch (err) {
       console.error("Error loading user:", err);
@@ -145,11 +146,10 @@ export default function InductionQuestionsScreen() {
         return;
       }
 
-      // Find correct questionnaire
       const selectedInduction = data.data.find(
         (item: any) =>
-          item.id === Number(inductionId) ||
-          item.questionnaire_id === Number(inductionId),
+          item.id === Number(routeInductionId) ||
+          item.questionnaire_id === Number(routeInductionId),
       );
 
       if (!selectedInduction?.questionnaire?.length) {
@@ -159,6 +159,7 @@ export default function InductionQuestionsScreen() {
 
       setInduction(selectedInduction);
       setQuestions(selectedInduction.questionnaire);
+      setQuestionnaireId(selectedInduction.questionnaire_id); // 1
 
       const initialAnswers = selectedInduction.questionnaire.map(() => ({
         selectedOption: null,
@@ -181,7 +182,6 @@ export default function InductionQuestionsScreen() {
         { label: "False", value: "2" },
       ];
     }
-
     const opts: { label: string; value: string }[] = [];
     if (q.optiona) opts.push({ label: q.optiona, value: "1" });
     if (q.optionb) opts.push({ label: q.optionb, value: "2" });
@@ -241,10 +241,18 @@ export default function InductionQuestionsScreen() {
       }
 
       const marks = calculateMarks();
+
+      // Submit API - Send inductionId (4) as requested
       const submitFormData = new FormData();
       submitFormData.append("guard_id", userId);
       submitFormData.append("marks", marks.toString());
-      submitFormData.append("questionnaire_id", inductionId.toString());
+      submitFormData.append("questionnaire_id", routeInductionId.toString()); // ← 4
+
+      console.log("=== SUBMIT PAYLOAD ===", {
+        guard_id: userId,
+        marks: marks,
+        questionnaire_id: routeInductionId,
+      });
 
       const submitResponse = await fetch(
         `${BASE_URL}/submit-guard-questionnaire`,
@@ -259,20 +267,39 @@ export default function InductionQuestionsScreen() {
       );
 
       const submitData = await submitResponse.json();
+      console.log(
+        "=== SUBMIT RESPONSE ===",
+        JSON.stringify(submitData, null, 2),
+      );
 
       if (submitData.success) {
+        // Update Status - Send real questionnaire_id (1)
         const statusFormData = new FormData();
         statusFormData.append("guard_id", userId);
-        statusFormData.append("id", inductionId.toString());
+        statusFormData.append("id", questionnaireId?.toString() || "1");
 
-        await fetch(`${BASE_URL}/update-induction-read-status`, {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            Accept: "application/json",
-          },
-          body: statusFormData,
+        console.log("=== UPDATE STATUS PAYLOAD ===", {
+          guard_id: userId,
+          id: questionnaireId,
         });
+
+        const statusResponse = await fetch(
+          `${BASE_URL}/update-induction-read-status`,
+          {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${token}`,
+              Accept: "application/json",
+            },
+            body: statusFormData,
+          },
+        );
+
+        const statusData = await statusResponse.json();
+        console.log(
+          "=== UPDATE STATUS RESPONSE ===",
+          JSON.stringify(statusData, null, 2),
+        );
 
         if (marks > 80) {
           Alert.alert(
@@ -440,7 +467,7 @@ export default function InductionQuestionsScreen() {
                       selectedOption === index && styles.selectedOptionText,
                     ]}
                   >
-                    {option.label}
+                    {capitalizeFirstLetter(option.label)}
                   </Text>
                 </View>
               </TouchableOpacity>
