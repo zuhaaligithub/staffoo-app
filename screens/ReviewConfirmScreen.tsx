@@ -1051,7 +1051,7 @@ job_type: jobData.category || "others",
           </View>
           <View style={{ flex: 1 }}>
             <Text style={styles.policyText}>
-              I Agree To The{" "}
+              I agree to the{" "}
               <Text
                 style={styles.policyLink}
                 onPress={(e) => {

@@ -208,7 +208,7 @@ export default function PaymentMethodsScreen({ navigation }: Props) {
             style={{ flex: 1 }}
           />
         ) : cards.length === 0 ? (
-          <Text style={styles.emptyText}>No payment methods added yet</Text>
+          <Text style={styles.emptyText}>No payment details added yet</Text>
         ) : (
           <FlatList
             data={cards}

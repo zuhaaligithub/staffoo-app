@@ -1921,11 +1921,12 @@ export default function StaffShifts({ navigation, route }: Props) {
   const bottomSheetRef = useRef<BottomSheet>(null);
   const snapPoints = useMemo(() => ["75%", "85%"], []);
   const isAppReadyRef = useRef(false);
-  const [activeTab, setActiveTab] = useState<"New" | "Accepted">("Accepted");
 
   const [availableJobs, setAvailableJobs] = useState<AvailableJob[]>([]);
   const [loadingAvailable, setLoadingAvailable] = useState(false);
-
+  const [activeTab, setActiveTab] = useState<"Available Jobs" | "Accepted">(
+    "Accepted",
+  );
   const [todayShifts, setTodayShifts] = useState<any[]>([]);
   const [weekShifts, setWeekShifts] = useState<any[]>([]);
   const [loadingToday, setLoadingToday] = useState(false);
@@ -2586,9 +2587,11 @@ export default function StaffShifts({ navigation, route }: Props) {
   // ─── Main render ────────────────────────────────────────────────────────────
   const jobData = extractJobData(notificationJob);
   const isRefreshing =
-    activeTab === "New" ? loadingAvailable : loadingToday || loadingWeek;
+    activeTab === "Available Jobs"
+      ? loadingAvailable
+      : loadingToday || loadingWeek;
   const onRefresh = () => {
-    if (activeTab === "New") fetchAvailableJobs();
+    if (activeTab === "Available Jobs") fetchAvailableJobs();
     else fetchAcceptedShifts();
   };
 
@@ -2628,10 +2631,10 @@ export default function StaffShifts({ navigation, route }: Props) {
 
       {/* Tab bar */}
       <View style={tabStyles.tabBar}>
-        {(["Accepted", "New"] as const).map((tab) => {
+        {(["Accepted", "Available Jobs"] as const).map((tab) => {
           const isActive = activeTab === tab;
           const badge =
-            tab === "New" && availableJobs.length > 0
+            tab === "Available Jobs" && availableJobs.length > 0
               ? availableJobs.length
               : null;
           return (
@@ -2674,7 +2677,7 @@ export default function StaffShifts({ navigation, route }: Props) {
           />
         }
       >
-        {activeTab === "New" ? renderNewTab() : renderAcceptedTab()}
+        {activeTab === "Available Jobs" ? renderNewTab() : renderAcceptedTab()}
         {!notificationJob && <View style={styles.placeholder} />}
       </ScrollView>
 

@@ -378,10 +378,10 @@ export default function JobPaymentHistory({ navigation }: Props) {
     setEmailList((prev) => prev.filter((e) => e !== email));
 
   const handleSendDocument = async () => {
-    if (emailList.length === 0) {
-      Alert.alert("No Recipients", "Please add at least one email address.");
-      return;
-    }
+    // if (emailList.length === 0) {
+    //   Alert.alert("No Recipients", "Please add at least one email address.");
+    //   return;
+    // }
     if (!selectedTransaction) return;
     try {
       setSharing(true);
