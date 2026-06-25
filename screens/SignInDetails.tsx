@@ -101,7 +101,6 @@ export default function SignInDetails({
       rawShift.notes ||
       rawShift.instructions ||
       rawShift.site_description ||
-      
       "",
   };
 
@@ -519,7 +518,7 @@ export default function SignInDetails({
           </View>
 
           {/* ── Updated Location Banner showing exact Lat/Lng ── */}
-          <View style={styles.locationBanner}>
+          {/* <View style={styles.locationBanner}>
             {locationLoading ? (
               <ActivityIndicator size="small" color="#3b82f6" />
             ) : (
@@ -543,7 +542,7 @@ export default function SignInDetails({
                 ? `Lat: ${latitude?.toFixed(5)}, Lng: ${longitude?.toFixed(5)}`
                 : locationError}
             </Text>
-          </View>
+          </View> */}
 
           {/* Event */}
           {/* <View style={styles.fieldCard}>
