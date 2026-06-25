@@ -444,6 +444,106 @@ export default function ReviewConfirmScreen() {
   //   return postJob(payload);
   // };
 
+  // const submitJob = async (intentId: string | null) => {
+  //   const user = JSON.parse((await AsyncStorage.getItem("user"))!);
+
+  //   const parseLocalDate = (value: any): Date => {
+  //     if (!value) return new Date();
+  //     if (value instanceof Date) return value;
+
+  //     if (typeof value === "string") {
+  //       if (value.includes("T")) return new Date(value);
+
+  //       if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+  //         const [y, m, d] = value.split("-").map(Number);
+  //         return new Date(y, m - 1, d);
+  //       }
+  //     }
+
+  //     return new Date(value);
+  //   };
+
+  //   const formatTime = (ds: string) => {
+  //     const d = new Date(ds);
+  //     return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  //   };
+
+  //   const locationParts = (jobData.location || "")
+  //     .split(",")
+  //     .map((item: string) => item.trim());
+
+  //   const extractedState =
+  //     locationParts.length >= 2 ? locationParts[locationParts.length - 2] : "";
+
+  //   console.log("Location:", jobData.location);
+  //   console.log("Extracted State:", extractedState);
+
+  //   const formattedShifts = (jobData.shifts || []).map((shift: any) => {
+  //     const s = parseLocalDate(shift.startTime);
+  //     const e = parseLocalDate(shift.endTime);
+
+  //     return {
+  //       start: `${s.getFullYear()}-${pad(s.getMonth() + 1)}-${pad(
+  //         s.getDate(),
+  //       )}T${pad(s.getHours())}:${pad(s.getMinutes())}`,
+  //       end: `${e.getFullYear()}-${pad(e.getMonth() + 1)}-${pad(
+  //         e.getDate(),
+  //       )}T${pad(e.getHours())}:${pad(e.getMinutes())}`,
+  //       numberOfGuards: Number(shift.guardsCount || 1),
+  //     };
+  //   });
+
+  //   const payload = {
+  //     user_id: user.id,
+  //     job_type: jobData.category || "others",
+  //     description: jobData.description || "No description provided",
+  //     address: jobData.location || "Not specified",
+  //     coordinates: `${jobData.lat},${jobData.lng}`,
+
+  //     state: "open",
+  //     posting_type: "broadcast",
+
+  //     shifts: formattedShifts,
+
+  //     job_level: Number(jobData.jobLevel ?? 1),
+
+  //     payment_option: selectedPlan,
+
+  //     job_location_state: extractedState,
+
+  //     financials: {
+  //       base_total_inc_gst: parseFloat(totalIncGST.toFixed(2)),
+  //       discount_applied:
+  //         selectedPlan === "full"
+  //           ? parseFloat((totalIncGST * 0.05).toFixed(2))
+  //           : 0,
+  //       amount_to_charge_today: parseFloat(ctaAmount.toFixed(2)),
+  //       balance_deferred:
+  //         selectedPlan === "split"
+  //           ? parseFloat((totalIncGST * 0.5).toFixed(2))
+  //           : 0,
+  //     },
+
+  //     is_document: selectedDocuments.length > 0,
+  //     document_list: uploadedFileUrls || [],
+  //     document_types: selectedDocuments || [],
+
+  //     job_instruction: jobData.description || "",
+
+  //     tasks: (jobData.tasks || []).map((t: any) => ({
+  //       task: t.task || t.title || "",
+  //       task_start: t.task_start || formatTime(t.startTime),
+  //       task_end: t.task_end || formatTime(t.endTime),
+  //     })),
+
+  //     payment_intent_id: intentId,
+  //   };
+
+  //   console.log("[CREATE JOB PAYLOAD]", JSON.stringify(payload, null, 2));
+
+  //   return postJob(payload);
+  // };
+
   const submitJob = async (intentId: string | null) => {
     const user = JSON.parse((await AsyncStorage.getItem("user"))!);
 
@@ -468,12 +568,156 @@ export default function ReviewConfirmScreen() {
       return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
     };
 
-    const locationParts = (jobData.location || "")
-      .split(",")
-      .map((item: string) => item.trim());
+    const getStateFromAddress = (address: string) => {
+      if (!address) return "";
 
-    const extractedState =
-      locationParts.length >= 2 ? locationParts[locationParts.length - 2] : "";
+      // Known abbreviation -> full name maps for common countries
+      const AU: Record<string, string> = {
+        VIC: "Victoria",
+        NSW: "New South Wales",
+        QLD: "Queensland",
+        WA: "Western Australia",
+        SA: "South Australia",
+        TAS: "Tasmania",
+        ACT: "Australian Capital Territory",
+        NT: "Northern Territory",
+      };
+
+      const US: Record<string, string> = {
+        AL: "Alabama",
+        AK: "Alaska",
+        AZ: "Arizona",
+        AR: "Arkansas",
+        CA: "California",
+        CO: "Colorado",
+        CT: "Connecticut",
+        DE: "Delaware",
+        FL: "Florida",
+        GA: "Georgia",
+        HI: "Hawaii",
+        ID: "Idaho",
+        IL: "Illinois",
+        IN: "Indiana",
+        IA: "Iowa",
+        KS: "Kansas",
+        KY: "Kentucky",
+        LA: "Louisiana",
+        ME: "Maine",
+        MD: "Maryland",
+        MA: "Massachusetts",
+        MI: "Michigan",
+        MN: "Minnesota",
+        MS: "Mississippi",
+        MO: "Missouri",
+        MT: "Montana",
+        NE: "Nebraska",
+        NV: "Nevada",
+        NH: "New Hampshire",
+        NJ: "New Jersey",
+        NM: "New Mexico",
+        NY: "New York",
+        NC: "North Carolina",
+        ND: "North Dakota",
+        OH: "Ohio",
+        OK: "Oklahoma",
+        OR: "Oregon",
+        PA: "Pennsylvania",
+        RI: "Rhode Island",
+        SC: "South Carolina",
+        SD: "South Dakota",
+        TN: "Tennessee",
+        TX: "Texas",
+        UT: "Utah",
+        VT: "Vermont",
+        VA: "Virginia",
+        WA: "Washington",
+        WV: "West Virginia",
+        WI: "Wisconsin",
+        WY: "Wyoming",
+      };
+
+      const CA: Record<string, string> = {
+        AB: "Alberta",
+        BC: "British Columbia",
+        MB: "Manitoba",
+        NB: "New Brunswick",
+        NL: "Newfoundland and Labrador",
+        NS: "Nova Scotia",
+        ON: "Ontario",
+        PE: "Prince Edward Island",
+        QC: "Quebec",
+        SK: "Saskatchewan",
+        NT: "Northwest Territories",
+        NU: "Nunavut",
+        YT: "Yukon",
+      };
+
+      const countryNames = [
+        "Australia",
+        "United States",
+        "United States of America",
+        "USA",
+        "Canada",
+        "India",
+        "Pakistan",
+        "United Kingdom",
+        "UK",
+      ];
+
+      const parts = address
+        .split(",")
+        .map((p) => p.trim())
+        .filter(Boolean);
+
+      const last = parts[parts.length - 1] || "";
+      const secondLast = parts[parts.length - 2] || "";
+
+      // If last token is a recognized country, for AU/US/CA return the previous token
+      // otherwise return the country itself (useful for India, Pakistan, etc.)
+      const normalizedLast = last.replace(/\./g, "").trim();
+      const matchedCountry = countryNames.find(
+        (c) =>
+          normalizedLast.toLowerCase() === c.toLowerCase() ||
+          normalizedLast.toLowerCase().includes(c.toLowerCase()),
+      );
+
+      if (matchedCountry) {
+        const countriesWhereStateIsSecondLast = [
+          "Australia",
+          "United States",
+          "United States of America",
+          "USA",
+          "Canada",
+        ];
+        if (countriesWhereStateIsSecondLast.includes(matchedCountry)) {
+          return secondLast;
+        }
+        return matchedCountry;
+      }
+
+      // Search for known abbreviations anywhere in the address tokens (reverse priority)
+      const tokens = address
+        .replace(/[.]/g, " ")
+        .split(/[,\s]+/)
+        .map((t) => t.trim())
+        .filter(Boolean)
+        .reverse();
+
+      for (const t of tokens) {
+        const up = t.toUpperCase();
+        if (AU[up]) return AU[up];
+        if (US[up]) return US[up];
+        if (CA[up]) return CA[up];
+      }
+
+      // If second last looks like a region (not purely numeric) return it, otherwise fall back to last
+      const maybe = secondLast || last;
+      if (maybe && !/^[0-9\-]+$/.test(maybe)) return maybe;
+
+      return "";
+    };
+
+    const extractedState = getStateFromAddress(jobData.location || "");
 
     console.log("Location:", jobData.location);
     console.log("Extracted State:", extractedState);
@@ -495,7 +739,7 @@ export default function ReviewConfirmScreen() {
 
     const payload = {
       user_id: user.id,
-job_type: jobData.category || "others",
+      job_type: jobData.category || "others",
       description: jobData.description || "No description provided",
       address: jobData.location || "Not specified",
       coordinates: `${jobData.lat},${jobData.lng}`,
@@ -509,7 +753,6 @@ job_type: jobData.category || "others",
 
       payment_option: selectedPlan,
 
-      // ✅ Now sends "Thornton NSW"
       job_location_state: extractedState,
 
       financials: {

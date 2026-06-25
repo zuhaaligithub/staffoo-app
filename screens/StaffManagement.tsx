@@ -2066,7 +2066,7 @@ export default function StaffManagement({ navigation }: Props) {
           </View>
 
           {/* Coordinates read-only */}
-          <View>
+          {/* <View>
             <View
               style={[styles.selectBox, { backgroundColor: COLORS.surface }]}
             >
@@ -2080,7 +2080,7 @@ export default function StaffManagement({ navigation }: Props) {
                 {form.coordinates || "Will be auto-filled from address"}
               </Text>
             </View>
-          </View>
+          </View> */}
 
           {(form as any).city || (form as any).country ? (
             <View style={styles.autoFillRow}>

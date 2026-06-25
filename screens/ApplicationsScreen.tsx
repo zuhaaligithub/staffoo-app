@@ -15,6 +15,7 @@ import {
 } from "react-native";
 import { Picker } from "@react-native-picker/picker";
 import DateTimePicker from "@react-native-community/datetimepicker";
+import FileViewer from "react-native-file-viewer";
 import {
   ChevronLeft,
   ChevronRight,
@@ -180,15 +181,17 @@ export default function WeeklyRosterScreen({ navigation }: any) {
   const generateShiftPDF = async (shift: Shift) => {
     if (generatingPDF) return;
     setGeneratingPDF(true);
+
     try {
       const reportData = {
-        siteName: shift.siteName,
-        siteAddress: shift.address || "",
-        guardName: shift.guard,
-        shiftStart: shift.startTime,
-        shiftEnd: shift.endTime,
-        totalHours: shift.hours,
+        siteName: shift.siteName || "N/A",
+        siteAddress: shift.address || "N/A",
+        guardName: shift.guard || "N/A",
+        shiftStart: shift.startTime || "N/A",
+        shiftEnd: shift.endTime || "N/A",
+        totalHours: shift.hours || 0,
         jobStatus: shift.jobStatus || "confirmed",
+        date: shift.dateStr || "",
         signinDetails: {
           signin_time: shift.startTime,
           signout_time: shift.endTime,
@@ -198,26 +201,49 @@ export default function WeeklyRosterScreen({ navigation }: any) {
         },
       };
 
+      // Generate PDF
       const filePath = await PDFGenerator.generateShiftReportPDF(reportData);
 
-      Alert.alert("Success", "Shift Report PDF generated successfully!", [
-        { text: "OK" },
-        { text: "Open PDF", onPress: () => {} },
-      ]);
+      if (!filePath || !filePath.endsWith(".pdf")) {
+        throw new Error("PDF file path not returned");
+      }
+
+      // Success Alert with Open Option
+      Alert.alert(
+        "✅ PDF Generated Successfully",
+        `File saved as:\n${filePath.split("/").pop()}`,
+        [
+          {
+            text: "Open PDF",
+            onPress: async () => {
+              try {
+                await FileViewer.open(filePath, { showOpenWithDialog: true });
+              } catch (err: any) {
+                console.error("Open PDF Error:", err);
+                Alert.alert(
+                  "Cannot Open PDF",
+                  "No PDF viewer found. You can open it from Downloads/Files app.",
+                );
+              }
+            },
+          },
+          { text: "OK" },
+        ],
+      );
 
       Toast.show({
         type: "success",
-        text1: "PDF Generated",
-        text2: "Check your Documents folder",
+        text1: "PDF Saved Successfully",
+        text2: "Check Downloads / Files folder",
         position: "bottom",
       });
     } catch (error: any) {
       console.error("PDF Generation Error:", error);
-      Alert.alert("Error", "Failed to generate PDF. Please try again.");
+      Alert.alert("PDF Error", error.message || "Failed to generate PDF");
       Toast.show({
         type: "error",
         text1: "PDF Generation Failed",
-        text2: error.message || "Unknown error",
+        text2: error.message || "Please try again",
         position: "bottom",
       });
     } finally {
@@ -941,7 +967,7 @@ export default function WeeklyRosterScreen({ navigation }: any) {
                   {/* Customer Details */}
                   <DetailCard
                     icon={<UserCircle size={20} color="#A78BFA" />}
-                    title="Customer Details"
+                    title="Client Details"
                     iconBg="rgba(167,139,250,0.25)"
                   >
                     <DetailRow
