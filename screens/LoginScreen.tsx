@@ -633,81 +633,6 @@ export default function LoginScreen({ navigation }: Props) {
     hasRequestedLocation.current = true;
     await requestLocationPermission();
   };
-
-  // const handleGoogleLogin = async () => {
-  //   try {
-  //     setLoading(true);
-  //     console.log('🚀 [GOOGLE] Starting Google Sign-In...');
-  //     await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
-  //     await GoogleSignin.signOut().catch(() => { });
-  //     const userInfo = await GoogleSignin.signIn();
-  //     if (userInfo.type !== 'success' || !userInfo.data) {
-  //       throw new Error('Google sign-in failed');
-  //     }
-  //     const tokens = await GoogleSignin.getTokens();
-  //     const { accessToken } = tokens;
-  //     if (!accessToken) throw new Error('No access token');
-  //     const response = await fetch(`${BASE_URL}/auth/google/callback`, {
-  //       method: 'POST',
-  //       headers: {
-  //         'Content-Type': 'application/json',
-  //         Accept: 'application/json',
-  //       },
-  //       body: JSON.stringify({
-  //         credential: accessToken,
-  //       }),
-  //     });
-
-  //     if (!response.ok) {
-  //       throw new Error(`Server error ${response.status}`);
-  //     }
-  //     const data = await response.json();
-  //     console.log('✅ Callback success:', data);
-  //     const user = data.user;
-  //     const token = data.token;
-  //     if (!user?.id || !token) {
-  //       throw new Error('Invalid response');
-  //     }
-  //     await AsyncStorage.setItem('@auth_token', token);
-  //     await AsyncStorage.setItem('user', JSON.stringify(user));
-  //     await AsyncStorage.setItem('@user_id', String(user.id));
-  //     console.log('🧪 Saved user:', user);
-  //     console.log('🧪 Saved userId:', user.id);
-  //     try {
-  //       const playerId = await OneSignal.User.pushSubscription.getIdAsync();
-
-  //       if (playerId) {
-  //         await sendNotificationTokenToServer(playerId, String(user.id));
-  //         OneSignal.login(String(user.id));
-  //       }
-  //     } catch (e) {
-  //       console.log('OneSignal error:', e);
-  //     }
-  //     Toast.show({
-  //       type: 'success',
-  //       text1: 'Login Successful',
-  //       position: 'bottom',
-  //     });
-  //     setTimeout(() => {
-  //       navigation.reset({
-  //         index: 0,
-  //         routes: [{ name: 'Profile' }],
-  //       });
-  //     }, 500);
-
-  //   } catch (error: any) {
-  //     console.error('❌ Google Login Error:', error);
-  //     Toast.show({
-  //       type: 'error',
-  //       text1: 'Login Failed',
-  //       text2: error.message,
-  //       position: 'bottom',
-  //     });
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
-
   const handleGoogleLogin = async () => {
     try {
       setLoading(true);
@@ -736,10 +661,72 @@ export default function LoginScreen({ navigation }: Props) {
 
       console.log("✅ Google credential received");
 
+      // Save credential in case we need it for account creation
       setGoogleCredential(credential);
 
-      // Open popup like web version
-      setShowAccountTypeModal(true);
+      // FIRST CHECK IF USER ALREADY EXISTS
+      const response = await fetch(`${BASE_URL}/auth/google/callback`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify({
+          credential,
+        }),
+      });
+
+      const data = await response.json();
+
+      console.log("📥 Google Response:", data);
+
+      // Existing user -> Login directly
+      if (response.ok && data.success && data.user && data.token) {
+        const user = data.user;
+
+        await AsyncStorage.multiSet([
+          ["@auth_token", data.token],
+          ["user", JSON.stringify(user)],
+          ["@user_id", String(user.id)],
+          ["@user_type", user.user_type],
+        ]);
+
+        try {
+          const playerId = await OneSignal.User.pushSubscription.getIdAsync();
+
+          if (playerId) {
+            await sendNotificationTokenToServer(playerId, String(user.id));
+            OneSignal.login(String(user.id));
+          }
+        } catch (e) {
+          console.log("OneSignal Error:", e);
+        }
+
+        Toast.show({
+          type: "success",
+          text1: "Login Successful",
+          text2: `Welcome ${user.name || user.email}`,
+          position: "bottom",
+        });
+
+        setTimeout(() => {
+          redirectAfterLogin(user);
+        }, 500);
+
+        return;
+      }
+
+      // New user -> Open account type modal
+      if (
+        data.needs_account_type ||
+        response.status === 404 ||
+        response.status === 422
+      ) {
+        setShowAccountTypeModal(true);
+        return;
+      }
+
+      throw new Error(data.message || "Google login failed");
     } catch (error: any) {
       console.error("❌ Google Login Error:", error);
 
@@ -753,6 +740,51 @@ export default function LoginScreen({ navigation }: Props) {
       setLoading(false);
     }
   };
+  // const handleGoogleLogin = async () => {
+  //   try {
+  //     setLoading(true);
+
+  //     console.log("🚀 [GOOGLE] Starting Google Sign-In...");
+
+  //     await GoogleSignin.hasPlayServices({
+  //       showPlayServicesUpdateDialog: true,
+  //     });
+
+  //     await GoogleSignin.signOut().catch(() => {});
+
+  //     const userInfo = await GoogleSignin.signIn();
+
+  //     if (userInfo.type !== "success" || !userInfo.data) {
+  //       throw new Error("Google sign-in failed");
+  //     }
+
+  //     const tokens = await GoogleSignin.getTokens();
+
+  //     const credential = tokens.accessToken;
+
+  //     if (!credential) {
+  //       throw new Error("Failed to get Google credential");
+  //     }
+
+  //     console.log("✅ Google credential received");
+
+  //     setGoogleCredential(credential);
+
+  //     // Open popup like web version
+  //     setShowAccountTypeModal(true);
+  //   } catch (error: any) {
+  //     console.error("❌ Google Login Error:", error);
+
+  //     Toast.show({
+  //       type: "error",
+  //       text1: "Google Login Failed",
+  //       text2: error.message || "Please try again",
+  //       position: "bottom",
+  //     });
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
   const completeGoogleLogin = async () => {
     try {
       setLoading(true);

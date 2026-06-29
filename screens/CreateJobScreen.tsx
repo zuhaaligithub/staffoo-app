@@ -480,12 +480,51 @@ export default function CreateJobScreen() {
   const switchScheduleMode = (mode: ScheduleMode) => {
     cleanupPickers();
     setScheduleMode(mode);
-    if (mode === "single") setSingleDaySchedule(makeDaySchedule(new Date()));
+
+    if (mode === "single") {
+      setSingleDaySchedule(makeDaySchedule(new Date()));
+    } else {
+      // When going to range mode, make sure we start clean based on current sub-mode
+      if (multiDayMode === "range" && rangeSchedules.length === 0) {
+        setRangeSchedules([makeDaySchedule(new Date())]);
+      } else if (
+        multiDayMode === "individual" &&
+        individualSchedules.length === 0
+      ) {
+        const today = new Date();
+        setIndividualDates([today]);
+        setIndividualSchedules([makeDaySchedule(today)]);
+      }
+    }
   };
 
   const switchMultiDayMode = (mode: MultiDayMode) => {
     cleanupPickers();
     setMultiDayMode(mode);
+
+    if (mode === "range") {
+      // Reset Individual completely
+      setIndividualDates([]);
+      setIndividualSchedules([]);
+
+      // Ensure Date Range has at least one default day + shift
+      if (rangeSchedules.length === 0) {
+        const today = new Date();
+        setRangeFrom(today);
+        setRangeTo(today);
+        setRangeSchedules([makeDaySchedule(today)]);
+      }
+    } else if (mode === "individual") {
+      // Reset Range completely
+      setRangeSchedules([]);
+
+      // Ensure Individual has at least one default day + shift
+      if (individualSchedules.length === 0) {
+        const today = new Date();
+        setIndividualDates([today]);
+        setIndividualSchedules([makeDaySchedule(today)]);
+      }
+    }
   };
 
   const [currentJobLevel, setCurrentJobLevel] = useState<number>(1);
@@ -1193,28 +1232,50 @@ export default function CreateJobScreen() {
   );
 
   const isDaySelected = (d: Date) => {
-    if (calendarTarget === "single")
+    if (calendarTarget === "single") {
       return isSameDay(d, singleDaySchedule.date);
-    if (calendarTarget === "rangeFrom") return isSameDay(d, rangeFrom);
-    if (calendarTarget === "rangeTo") return isSameDay(d, rangeTo);
-    if (calendarTarget === "individual")
+    }
+
+    if (calendarTarget === "rangeFrom") {
+      return isSameDay(d, rangeFrom);
+    }
+
+    if (calendarTarget === "rangeTo") {
+      return isSameDay(d, rangeTo);
+    }
+
+    if (calendarTarget === "individual") {
       return individualDates.some((date) => isSameDay(date, d));
+    }
+
     return false;
   };
 
   const isDayInRange = (d: Date) => {
-    if (calendarTarget === "individual") return false;
-    return (
-      (calendarTarget === "rangeFrom" || calendarTarget === "rangeTo") &&
-      d > rangeFrom &&
-      d < rangeTo
+    // Only apply range highlighting when calendar is open for range selection
+    if (calendarTarget !== "rangeFrom" && calendarTarget !== "rangeTo") {
+      return false;
+    }
+
+    const from = new Date(
+      rangeFrom.getFullYear(),
+      rangeFrom.getMonth(),
+      rangeFrom.getDate(),
     );
+    const to = new Date(
+      rangeTo.getFullYear(),
+      rangeTo.getMonth(),
+      rangeTo.getDate(),
+    );
+    const current = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+
+    return current >= from && current <= to;
   };
 
   const onCalendarDayPress = (d: Date) => {
     const isPast = d < new Date(new Date().setHours(0, 0, 0, 0));
     if (isPast) return;
-    // FIX: Always use a clean midnight date to avoid time-of-day contamination
+
     const cleanDate = new Date(
       d.getFullYear(),
       d.getMonth(),
@@ -1224,6 +1285,7 @@ export default function CreateJobScreen() {
       0,
       0,
     );
+
     if (calendarTarget === "single") {
       setSingleDaySchedule(makeDaySchedule(cleanDate));
     } else if (calendarTarget === "rangeFrom") {
@@ -1240,7 +1302,11 @@ export default function CreateJobScreen() {
           : [...prev, cleanDate].sort((a, b) => a.getTime() - b.getTime());
       });
     }
-    if (calendarTarget !== "individual") setCalendarVisible(false);
+
+    // Close calendar only for single and range (not individual)
+    if (calendarTarget !== "individual") {
+      setCalendarVisible(false);
+    }
   };
 
   const totalManHours = useMemo(() => {
@@ -2257,6 +2323,7 @@ export default function CreateJobScreen() {
                     );
                   const isSelected = isDaySelected(day);
                   const inRange = isDayInRange(day);
+                  const isHighlighted = isSelected || inRange;
                   const isPast =
                     day < new Date(new Date().setHours(0, 0, 0, 0));
                   return (
@@ -2264,8 +2331,7 @@ export default function CreateJobScreen() {
                       key={`day-${idx}`}
                       style={[
                         styles.calendarDayCell,
-                        isSelected && styles.dayCellSelected,
-                        inRange && styles.dayCellInRange,
+                        isHighlighted && styles.dayCellSelected,
                         isPast && styles.dayCellDisabled,
                       ]}
                       onPress={() => !isPast && onCalendarDayPress(day)}
@@ -2274,7 +2340,7 @@ export default function CreateJobScreen() {
                       <Text
                         style={[
                           styles.dayCellText,
-                          isSelected && styles.dayCellTextSelected,
+                          isHighlighted && styles.dayCellTextSelected,
                           isPast && styles.dayCellTextDisabled,
                         ]}
                       >

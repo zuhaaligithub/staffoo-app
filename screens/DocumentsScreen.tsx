@@ -723,6 +723,8 @@ export default function DocumentsScreen({ navigation }: Props) {
           dob,
         };
 
+        console.log("Payload:", JSON.stringify(payload, null, 2));
+
         response = await axios.post(`${BASE_URL}/admin/visa-check`, payload, {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -735,6 +737,8 @@ export default function DocumentsScreen({ navigation }: Props) {
           document_type: selectedDocType.label,
           license_number: documentNumber.trim(),
         };
+
+        console.log("Payload:", JSON.stringify(payload, null, 2));
 
         response = await axios.post(
           `${Api_Url}/documents-online-verification-staffoo`,

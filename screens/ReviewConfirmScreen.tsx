@@ -568,151 +568,91 @@ export default function ReviewConfirmScreen() {
       return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
     };
 
-    const getStateFromAddress = (address: string) => {
+    const getStateFromAddress = (address: string): string => {
       if (!address) return "";
 
-      // Known abbreviation -> full name maps for common countries
-      const AU: Record<string, string> = {
-        VIC: "Victoria",
-        NSW: "New South Wales",
-        QLD: "Queensland",
-        WA: "Western Australia",
-        SA: "South Australia",
-        TAS: "Tasmania",
-        ACT: "Australian Capital Territory",
-        NT: "Northern Territory",
+      const upper = address.toUpperCase();
+
+      // ───── Pakistan Provinces & Major Cities Mapping ─────
+      const pakistanMap: Record<string, string> = {
+        // Provinces
+        PUNJAB: "Punjab",
+        SINDH: "Sindh",
+        "KHYBER PAKHTUNKHWA": "Khyber Pakhtunkhwa",
+        KPK: "Khyber Pakhtunkhwa",
+        BALOCHISTAN: "Balochistan",
+        "AZAD KASHMIR": "Azad Kashmir",
+        "GILGIT BALTISTAN": "Gilgit Baltistan",
+
+        // Major Cities → Province
+        LAHORE: "Punjab",
+        KARACHI: "Sindh",
+        ISLAMABAD: "Islamabad Capital Territory",
+        RAWALPINDI: "Punjab",
+        FAISALABAD: "Punjab",
+        MULTAN: "Punjab",
+        PESHAWAR: "Khyber Pakhtunkhwa",
+        QUETTA: "Balochistan",
       };
 
-      const US: Record<string, string> = {
-        AL: "Alabama",
-        AK: "Alaska",
-        AZ: "Arizona",
-        AR: "Arkansas",
-        CA: "California",
-        CO: "Colorado",
-        CT: "Connecticut",
-        DE: "Delaware",
-        FL: "Florida",
-        GA: "Georgia",
-        HI: "Hawaii",
-        ID: "Idaho",
-        IL: "Illinois",
-        IN: "Indiana",
-        IA: "Iowa",
-        KS: "Kansas",
-        KY: "Kentucky",
-        LA: "Louisiana",
-        ME: "Maine",
-        MD: "Maryland",
-        MA: "Massachusetts",
-        MI: "Michigan",
-        MN: "Minnesota",
-        MS: "Mississippi",
-        MO: "Missouri",
-        MT: "Montana",
-        NE: "Nebraska",
-        NV: "Nevada",
-        NH: "New Hampshire",
-        NJ: "New Jersey",
-        NM: "New Mexico",
-        NY: "New York",
-        NC: "North Carolina",
-        ND: "North Dakota",
-        OH: "Ohio",
-        OK: "Oklahoma",
-        OR: "Oregon",
-        PA: "Pennsylvania",
-        RI: "Rhode Island",
-        SC: "South Carolina",
-        SD: "South Dakota",
-        TN: "Tennessee",
-        TX: "Texas",
-        UT: "Utah",
-        VT: "Vermont",
-        VA: "Virginia",
-        WA: "Washington",
-        WV: "West Virginia",
-        WI: "Wisconsin",
-        WY: "Wyoming",
+      // ───── Australia States ─────
+      const australiaMap: Record<string, string> = {
+        VIC: "VIC",
+        VICTORIA: "VIC",
+        NSW: "NSW",
+        "NEW SOUTH WALES": "NSW",
+        QLD: "QLD",
+        QUEENSLAND: "QLD",
+        WA: "WA",
+        "WESTERN AUSTRALIA": "WA",
+        SA: "SA",
+        "SOUTH AUSTRALIA": "SA",
+        TAS: "TAS",
+        TASMANIA: "TAS",
+        ACT: "ACT",
+        NT: "NT",
       };
-
-      const CA: Record<string, string> = {
-        AB: "Alberta",
-        BC: "British Columbia",
-        MB: "Manitoba",
-        NB: "New Brunswick",
-        NL: "Newfoundland and Labrador",
-        NS: "Nova Scotia",
-        ON: "Ontario",
-        PE: "Prince Edward Island",
-        QC: "Quebec",
-        SK: "Saskatchewan",
-        NT: "Northwest Territories",
-        NU: "Nunavut",
-        YT: "Yukon",
-      };
-
-      const countryNames = [
-        "Australia",
-        "United States",
-        "United States of America",
-        "USA",
-        "Canada",
-        "India",
-        "Pakistan",
-        "United Kingdom",
-        "UK",
-      ];
 
       const parts = address
         .split(",")
         .map((p) => p.trim())
         .filter(Boolean);
 
-      const last = parts[parts.length - 1] || "";
-      const secondLast = parts[parts.length - 2] || "";
+      // 1. Check from the end (most accurate)
+      for (let i = parts.length - 1; i >= 0; i--) {
+        const part = parts[i].toUpperCase();
 
-      // If last token is a recognized country, for AU/US/CA return the previous token
-      // otherwise return the country itself (useful for India, Pakistan, etc.)
-      const normalizedLast = last.replace(/\./g, "").trim();
-      const matchedCountry = countryNames.find(
-        (c) =>
-          normalizedLast.toLowerCase() === c.toLowerCase() ||
-          normalizedLast.toLowerCase().includes(c.toLowerCase()),
-      );
-
-      if (matchedCountry) {
-        const countriesWhereStateIsSecondLast = [
-          "Australia",
-          "United States",
-          "United States of America",
-          "USA",
-          "Canada",
-        ];
-        if (countriesWhereStateIsSecondLast.includes(matchedCountry)) {
-          return secondLast;
+        // Pakistan Province / City check
+        for (const [key, value] of Object.entries(pakistanMap)) {
+          if (part.includes(key)) {
+            return value;
+          }
         }
-        return matchedCountry;
+
+        // Australia check
+        for (const [key, value] of Object.entries(australiaMap)) {
+          if (part.includes(key)) {
+            return value;
+          }
+        }
       }
 
-      // Search for known abbreviations anywhere in the address tokens (reverse priority)
-      const tokens = address
-        .replace(/[.]/g, " ")
-        .split(/[,\s]+/)
-        .map((t) => t.trim())
-        .filter(Boolean)
-        .reverse();
-
-      for (const t of tokens) {
-        const up = t.toUpperCase();
-        if (AU[up]) return AU[up];
-        if (US[up]) return US[up];
-        if (CA[up]) return CA[up];
+      // 2. Full address scan (for cities like Lahore anywhere in address)
+      for (const [key, value] of Object.entries(pakistanMap)) {
+        if (upper.includes(key)) {
+          return value;
+        }
       }
 
-      // If second last looks like a region (not purely numeric) return it, otherwise fall back to last
-      const maybe = secondLast || last;
-      if (maybe && !/^[0-9\-]+$/.test(maybe)) return maybe;
+      // 3. Country fallback (only if nothing else found)
+      if (upper.includes("PAKISTAN")) return "Pakistan";
+      if (upper.includes("AUSTRALIA")) return "Australia";
+
+      // 4. Last resort - return last part if it looks like a state
+      const lastPart = parts[parts.length - 1];
+      if (lastPart && lastPart.length > 2 && !/^\d+$/.test(lastPart)) {
+        return lastPart;
+      }
 
       return "";
     };

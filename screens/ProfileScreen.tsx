@@ -617,7 +617,7 @@ export default function ProfileScreen({ navigation }: Props) {
               {/* AVATAR */}
               <TouchableOpacity
                 style={styles.avatarWrapper}
-                onPress={pickImage}
+                // onPress={pickImage}
                 activeOpacity={0.85}
               >
                 {profileImage ? (
