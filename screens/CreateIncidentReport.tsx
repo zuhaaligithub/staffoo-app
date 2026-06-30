@@ -34,7 +34,7 @@ import {
 
 import { launchCamera, launchImageLibrary } from "react-native-image-picker";
 import SignatureScreen from "react-native-signature-canvas";
-import { getAuthToken } from "../services/authApi";
+import { BASE_URL, getAuthToken } from "../services/authApi";
 import RNFS from "react-native-fs";
 import ImageResizer from "react-native-image-resizer";
 import Toast from "react-native-toast-message";
@@ -585,7 +585,7 @@ export default function CreateIncidentReport({
           };
 
           const response = await fetch(
-            `https://apis.staffoo.com.au/api/report-incident/${siteId}`,
+            `${BASE_URL}/report-incident/${siteId}`,
             {
               method: "POST",
               headers: {

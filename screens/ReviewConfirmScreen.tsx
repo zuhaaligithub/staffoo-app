@@ -32,6 +32,7 @@ import {
   getUserProfile,
   holdPayment as holdPaymentAPI,
   getAuthToken,
+  BASE_URL,
 } from "../services/authApi";
 import { CardField, createPaymentMethod } from "@stripe/stripe-react-native";
 
@@ -224,7 +225,6 @@ export default function ReviewConfirmScreen() {
     selectedDocuments = [],
   } = (route.params || {}) as RouteParams;
 
-  const BASE_URL = "https://apis.staffoo.com.au/api";
   const LOGO = require("../assets/staffoo.png");
 
   // ── state ──
@@ -568,6 +568,94 @@ export default function ReviewConfirmScreen() {
       return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
     };
 
+    // const getStateFromAddress = (address: string): string => {
+    //   if (!address) return "";
+
+    //   const upper = address.toUpperCase();
+
+    //   // ───── Pakistan Provinces & Major Cities Mapping ─────
+    //   const pakistanMap: Record<string, string> = {
+    //     // Provinces
+    //     PUNJAB: "Punjab",
+    //     SINDH: "Sindh",
+    //     "KHYBER PAKHTUNKHWA": "Khyber Pakhtunkhwa",
+    //     KPK: "Khyber Pakhtunkhwa",
+    //     BALOCHISTAN: "Balochistan",
+    //     "AZAD KASHMIR": "Azad Kashmir",
+    //     "GILGIT BALTISTAN": "Gilgit Baltistan",
+
+    //     // Major Cities → Province
+    //     LAHORE: "Punjab",
+    //     KARACHI: "Sindh",
+    //     ISLAMABAD: "Islamabad Capital Territory",
+    //     RAWALPINDI: "Punjab",
+    //     FAISALABAD: "Punjab",
+    //     MULTAN: "Punjab",
+    //     PESHAWAR: "Khyber Pakhtunkhwa",
+    //     QUETTA: "Balochistan",
+    //   };
+
+    //   // ───── Australia States ─────
+    //   const australiaMap: Record<string, string> = {
+    //     VIC: "VIC",
+    //     VICTORIA: "VIC",
+    //     NSW: "NSW",
+    //     "NEW SOUTH WALES": "NSW",
+    //     QLD: "QLD",
+    //     QUEENSLAND: "QLD",
+    //     WA: "WA",
+    //     "WESTERN AUSTRALIA": "WA",
+    //     SA: "SA",
+    //     "SOUTH AUSTRALIA": "SA",
+    //     TAS: "TAS",
+    //     TASMANIA: "TAS",
+    //     ACT: "ACT",
+    //     NT: "NT",
+    //   };
+
+    //   const parts = address
+    //     .split(",")
+    //     .map((p) => p.trim())
+    //     .filter(Boolean);
+
+    //   // 1. Check from the end (most accurate)
+    //   for (let i = parts.length - 1; i >= 0; i--) {
+    //     const part = parts[i].toUpperCase();
+
+    //     // Pakistan Province / City check
+    //     for (const [key, value] of Object.entries(pakistanMap)) {
+    //       if (part.includes(key)) {
+    //         return value;
+    //       }
+    //     }
+
+    //     // Australia check
+    //     for (const [key, value] of Object.entries(australiaMap)) {
+    //       if (part.includes(key)) {
+    //         return value;
+    //       }
+    //     }
+    //   }
+
+    //   // 2. Full address scan (for cities like Lahore anywhere in address)
+    //   for (const [key, value] of Object.entries(pakistanMap)) {
+    //     if (upper.includes(key)) {
+    //       return value;
+    //     }
+    //   }
+
+    //   // 3. Country fallback (only if nothing else found)
+    //   if (upper.includes("PAKISTAN")) return "Pakistan";
+    //   if (upper.includes("AUSTRALIA")) return "Australia";
+
+    //   // 4. Last resort - return last part if it looks like a state
+    //   const lastPart = parts[parts.length - 1];
+    //   if (lastPart && lastPart.length > 2 && !/^\d+$/.test(lastPart)) {
+    //     return lastPart;
+    //   }
+
+    //   return "";
+    // };
     const getStateFromAddress = (address: string): string => {
       if (!address) return "";
 
@@ -575,42 +663,40 @@ export default function ReviewConfirmScreen() {
 
       // ───── Pakistan Provinces & Major Cities Mapping ─────
       const pakistanMap: Record<string, string> = {
-        // Provinces
-        PUNJAB: "Punjab",
-        SINDH: "Sindh",
-        "KHYBER PAKHTUNKHWA": "Khyber Pakhtunkhwa",
-        KPK: "Khyber Pakhtunkhwa",
-        BALOCHISTAN: "Balochistan",
-        "AZAD KASHMIR": "Azad Kashmir",
-        "GILGIT BALTISTAN": "Gilgit Baltistan",
+        PUNJAB: "punjab",
+        SINDH: "sindh",
+        "KHYBER PAKHTUNKHWA": "khyber pakhtunkhwa",
+        KPK: "khyber pakhtunkhwa",
+        BALOCHISTAN: "balochistan",
+        "AZAD KASHMIR": "azad kashmir",
+        "GILGIT BALTISTAN": "gilgit baltistan",
 
-        // Major Cities → Province
-        LAHORE: "Punjab",
-        KARACHI: "Sindh",
-        ISLAMABAD: "Islamabad Capital Territory",
-        RAWALPINDI: "Punjab",
-        FAISALABAD: "Punjab",
-        MULTAN: "Punjab",
-        PESHAWAR: "Khyber Pakhtunkhwa",
-        QUETTA: "Balochistan",
+        LAHORE: "punjab",
+        KARACHI: "sindh",
+        ISLAMABAD: "islamabad capital territory",
+        RAWALPINDI: "punjab",
+        FAISALABAD: "punjab",
+        MULTAN: "punjab",
+        PESHAWAR: "khyber pakhtunkhwa",
+        QUETTA: "balochistan",
       };
 
       // ───── Australia States ─────
       const australiaMap: Record<string, string> = {
-        VIC: "VIC",
-        VICTORIA: "VIC",
-        NSW: "NSW",
-        "NEW SOUTH WALES": "NSW",
-        QLD: "QLD",
-        QUEENSLAND: "QLD",
-        WA: "WA",
-        "WESTERN AUSTRALIA": "WA",
-        SA: "SA",
-        "SOUTH AUSTRALIA": "SA",
-        TAS: "TAS",
-        TASMANIA: "TAS",
-        ACT: "ACT",
-        NT: "NT",
+        VIC: "vic",
+        VICTORIA: "vic",
+        NSW: "nsw",
+        "NEW SOUTH WALES": "nsw",
+        QLD: "qld",
+        QUEENSLAND: "qld",
+        WA: "wa",
+        "WESTERN AUSTRALIA": "wa",
+        SA: "sa",
+        "SOUTH AUSTRALIA": "sa",
+        TAS: "tas",
+        TASMANIA: "tas",
+        ACT: "act",
+        NT: "nt",
       };
 
       const parts = address
@@ -622,7 +708,7 @@ export default function ReviewConfirmScreen() {
       for (let i = parts.length - 1; i >= 0; i--) {
         const part = parts[i].toUpperCase();
 
-        // Pakistan Province / City check
+        // Pakistan check
         for (const [key, value] of Object.entries(pakistanMap)) {
           if (part.includes(key)) {
             return value;
@@ -637,26 +723,31 @@ export default function ReviewConfirmScreen() {
         }
       }
 
-      // 2. Full address scan (for cities like Lahore anywhere in address)
+      // 2. Full address scan
       for (const [key, value] of Object.entries(pakistanMap)) {
         if (upper.includes(key)) {
           return value;
         }
       }
 
-      // 3. Country fallback (only if nothing else found)
-      if (upper.includes("PAKISTAN")) return "Pakistan";
-      if (upper.includes("AUSTRALIA")) return "Australia";
+      for (const [key, value] of Object.entries(australiaMap)) {
+        if (upper.includes(key)) {
+          return value;
+        }
+      }
 
-      // 4. Last resort - return last part if it looks like a state
+      // 3. Country fallback
+      if (upper.includes("PAKISTAN")) return "pakistan";
+      if (upper.includes("AUSTRALIA")) return "australia";
+
+      // 4. Last resort
       const lastPart = parts[parts.length - 1];
       if (lastPart && lastPart.length > 2 && !/^\d+$/.test(lastPart)) {
-        return lastPart;
+        return lastPart.toLowerCase();
       }
 
       return "";
     };
-
     const extractedState = getStateFromAddress(jobData.location || "");
 
     console.log("Location:", jobData.location);
@@ -684,7 +775,7 @@ export default function ReviewConfirmScreen() {
       address: jobData.location || "Not specified",
       coordinates: `${jobData.lat},${jobData.lng}`,
 
-      state: "open",
+      state: extractedState || "open",
       posting_type: "broadcast",
 
       shifts: formattedShifts,
@@ -749,7 +840,18 @@ export default function ReviewConfirmScreen() {
       setPaymentModalVisible(false);
       navigation.reset({
         index: 0,
-        routes: [{ name: "Applications" as never }],
+        routes: [
+          {
+            name: "MainTabs" as const,
+            state: {
+              routes: [
+                {
+                  name: "Applications" as const,
+                },
+              ],
+            },
+          } as never, // ← This suppresses the strict typing
+        ],
       });
     } catch (err: any) {
       const msg =
@@ -1840,10 +1942,10 @@ const styles = StyleSheet.create({
   },
   inputCard: {
     flex: 2,
-    backgroundColor: "#e4f1f9",
-    borderRadius: 10,
-    paddingVertical: 8,
-    paddingHorizontal: 20,
+    backgroundColor: "#cdd4d8",
+    borderRadius: 7,
+    paddingVertical: 5,
+    paddingHorizontal: 10,
   },
   inputCardText: { fontSize: 12, color: "#030303", fontWeight: "700" },
   rateCard: {

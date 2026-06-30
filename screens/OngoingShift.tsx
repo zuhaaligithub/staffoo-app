@@ -41,6 +41,7 @@ import {
   useCameraDevice,
   useCodeScanner,
 } from 'react-native-vision-camera';
+import { BASE_URL } from '../services/authApi';
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 const COLORS = {
@@ -248,7 +249,7 @@ export default function OngoingShift({
   const hasAlarmedRef = useRef(false);
   const checkIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  const BASE_URL = 'https://apis.staffoo.com.au/api';
+
   const RADIUS_METERS = 300;
   const POLL_INTERVAL_MS = 30000;
   const ALARM_REPEAT_INTERVAL = 15000;

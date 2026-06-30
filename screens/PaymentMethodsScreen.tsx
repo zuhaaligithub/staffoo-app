@@ -14,8 +14,9 @@ import { ChevronLeft, Plus, Trash2 } from "lucide-react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import { useFocusEffect } from "@react-navigation/native";
+import { BASE_URL } from "../services/authApi";
 
-const BASE_URL = "https://apis.staffoo.com.au/api";
+
 const { height: SCREEN_HEIGHT } = Dimensions.get("window");
 
 const COLORS = {

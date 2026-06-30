@@ -635,7 +635,7 @@ export default function SignUpScreen({ navigation }: { navigation: any }) {
               <Mail size={48} color="#4FCBB3" strokeWidth={1.5} />
             </View>
 
-            <Text style={styles.verifyTitle}>Verify Your Email</Text>
+            <Text style={styles.verifyTitle}>Verify your email address</Text>
 
             <Text style={styles.verifySubtitle}>
               We've sent a verification link to{' '}

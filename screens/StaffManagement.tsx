@@ -50,7 +50,7 @@ import Toast, { BaseToast, ErrorToast } from "react-native-toast-message";
 import { launchImageLibrary } from "react-native-image-picker";
 import axios from "./axiosInterceptor";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { uploadFile } from "../services/authApi";
+import { BASE_URL, uploadFile } from "../services/authApi";
 
 const { width } = Dimensions.get("window");
 
@@ -72,9 +72,9 @@ const COLORS = {
   warningBg: "rgba(245,166,35,0.08)",
 };
 
-const BASE_URL = "https://apis.staffoo.com.au/api";
 const GOOGLE_API_KEY = "AIzaSyCS-DB39Kk-Z25C5GWymVGshXIALbjXPGY";
-const FILE_BASE_URL = "https://apis.staffoo.com.au/staff_documents/";
+// const FILE_BASE_URL = "https://apis.staffoo.com.au/staff_documents/";
+const FILE_BASE_URL = "https://staging.apis.staffoo.com.au/staff_documents/";
 const Api_Url = "https://apis.thescouts.com.au/api";
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024;

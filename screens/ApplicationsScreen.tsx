@@ -34,12 +34,11 @@ import BottomTab from "./BottomTab";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import Toast from "react-native-toast-message";
-import { getContractorStaff } from "../services/authApi";
+import { getContractorStaff, BASE_URL } from "../services/authApi";
 import PDFGenerator from "./utils/PDFGenerator";
 import LinearGradient from "react-native-linear-gradient";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
-const BASE_URL = "https://apis.staffoo.com.au/api";
 const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const COLORS = {
   background: "#030508",
@@ -1097,7 +1096,7 @@ export default function WeeklyRosterScreen({ navigation }: any) {
           </View>
         </View>
       </Modal>
-      <BottomTab navigation={navigation} activeTab="Applications" />
+      {/* <BottomTab navigation={navigation} activeTab="Applications" /> */}
     </SafeAreaView>
   );
 }

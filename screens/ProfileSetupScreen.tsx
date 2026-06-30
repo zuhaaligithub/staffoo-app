@@ -18,6 +18,7 @@ import {
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import Toast from "react-native-toast-message";
 import {
+  BASE_URL,
   getAuthToken,
   getUserProfile,
   updateUserProfile,
@@ -329,7 +330,8 @@ export default function ProfileSetupScreen({ navigation }: Props) {
         const profileResponse = await getUserProfile(uid);
         const profile = profileResponse?.data || {};
 
-        const BASE_IMAGE_URL = "https://apis.staffoo.com.au/storage/";
+        // const BASE_IMAGE_URL = "https://apis.staffoo.com.au/storage/";
+        const BASE_IMAGE_URL = "https://staging.apis.staffoo.com.au/storage/";
 
         if (profile?.staff?.profile_image) {
           setProfileImage(`${BASE_IMAGE_URL}${profile.staff.profile_image}`);
@@ -635,26 +637,14 @@ export default function ProfileSetupScreen({ navigation }: Props) {
         id: userId,
       };
 
-      console.log("========== SEND OTP ==========");
-      console.log("URL:", "https://apis.staffoo.com.au/api/auth/resend-otp");
-      console.log("TOKEN:", token);
-      console.log("PAYLOAD:", payload);
-      console.log("HEADERS:", {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      });
-
-      const response = await fetch(
-        "https://apis.staffoo.com.au/api/auth/resend-otp",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify(payload),
+      const response = await fetch(`${BASE_URL}/auth/resend-otp`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
-      );
+        body: JSON.stringify(payload),
+      });
 
       const data = await response.json();
 
@@ -714,26 +704,14 @@ export default function ProfileSetupScreen({ navigation }: Props) {
         phone: cleanPhone,
       };
 
-      console.log("========== VERIFY PHONE ==========");
-      console.log("URL:", "https://apis.staffoo.com.au/api/auth/verify-phone");
-      console.log("TOKEN:", token);
-      console.log("PAYLOAD:", payload);
-      console.log("HEADERS:", {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      });
-
-      const response = await fetch(
-        "https://apis.staffoo.com.au/api/auth/verify-phone",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify(payload),
+      const response = await fetch(`${BASE_URL}/auth/verify-phone`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
-      );
+        body: JSON.stringify(payload),
+      });
 
       const data = await response.json();
 
@@ -833,7 +811,9 @@ export default function ProfileSetupScreen({ navigation }: Props) {
 
       Toast.show({ type: "success", text1: "Profile Updated Successfully" });
       setOriginalGmail(gmail.trim().toLowerCase());
-      navigation.navigate("Profile");
+      navigation.navigate("MainTabs", {
+        screen: "Profile", // ← exact name used in your MainTabs
+      });
     } catch (err: any) {
       console.log("UPDATE ERROR:", err?.response?.data || err);
       const errorMsg =

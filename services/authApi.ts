@@ -3,7 +3,8 @@ import axios from "axios";
 import { Platform } from "react-native";
 import { ChargeRate, ChargeRateFormData } from "../navigation/types";
 
-export const BASE_URL = "https://apis.staffoo.com.au/api";
+// export const BASE_URL = "https://apis.staffoo.com.au/api";
+export const BASE_URL = "https://staging.apis.staffoo.com.au/api";
 
 export interface UserData {
   id: number | string;

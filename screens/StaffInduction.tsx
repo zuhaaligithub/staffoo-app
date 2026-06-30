@@ -14,10 +14,9 @@ import {
 } from "react-native";
 import { ArrowLeft, Award, CheckCircle, Clock } from "lucide-react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { getAuthToken } from "../services/authApi";
+import { BASE_URL, getAuthToken } from "../services/authApi";
 
 const THEME_COLOR = "#0A7C6E";
-const BASE_URL = "https://apis.staffoo.com.au/api";
 
 const COLORS = {
   background: "#030508",
@@ -127,8 +126,8 @@ export default function StaffInductionScreen({
         if (imageUri) {
           const fullImage = imageUri.startsWith("http")
             ? imageUri
-            : `https://apis.staffoo.com.au/storage/${imageUri}`;
-
+            : // : `https://apis.staffoo.com.au/storage/${imageUri}`;
+              `https://staging.apis.staffoo.com.au/storage/${imageUri}`;
           setProfileImage(fullImage);
         }
       }

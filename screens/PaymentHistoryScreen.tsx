@@ -17,8 +17,9 @@ import LinearGradient from "react-native-linear-gradient";
 import { ChevronLeft } from "lucide-react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
+import { BASE_URL } from "../services/authApi";
 
-const BASE_URL = "https://apis.staffoo.com.au/api";
+
 
 type Props = {
   navigation: any;

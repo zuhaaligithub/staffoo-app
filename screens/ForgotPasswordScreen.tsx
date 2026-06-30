@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -6,21 +6,20 @@ import {
   TouchableOpacity,
   StyleSheet,
   ActivityIndicator,
-} from 'react-native';
-import Toast from 'react-native-toast-message';
-import axios from 'axios';
-
-const BASE_URL = 'https://apis.staffoo.com.au/api';
+} from "react-native";
+import Toast from "react-native-toast-message";
+import axios from "axios";
+import { BASE_URL } from "../services/authApi";
 
 export default function ForgotPasswordScreen({ route, navigation }: any) {
-  const prefilledEmail = route?.params?.email || '';
+  const prefilledEmail = route?.params?.email || "";
 
   const [email, setEmail] = useState(prefilledEmail);
   const [loading, setLoading] = useState(false);
 
   const handleReset = async () => {
     if (!email.trim()) {
-      Toast.show({ type: 'error', text1: 'Email required' });
+      Toast.show({ type: "error", text1: "Email required" });
       return;
     }
 
@@ -32,17 +31,17 @@ export default function ForgotPasswordScreen({ route, navigation }: any) {
       });
 
       Toast.show({
-        type: 'success',
-        text1: 'Reset link sent',
-        text2: 'Check your email inbox',
+        type: "success",
+        text1: "Reset link sent",
+        text2: "Check your email inbox",
       });
 
       navigation.goBack();
     } catch (err: any) {
       Toast.show({
-        type: 'error',
-        text1: 'Failed',
-        text2: err?.response?.data?.message || 'Try again',
+        type: "error",
+        text1: "Failed",
+        text2: err?.response?.data?.message || "Try again",
       });
     } finally {
       setLoading(false);
@@ -50,7 +49,7 @@ export default function ForgotPasswordScreen({ route, navigation }: any) {
   };
 
   const handleBack = () => {
-    navigation.navigate('Login'); // or navigation.goBack();
+    navigation.navigate("Login"); // or navigation.goBack();
   };
 
   return (
@@ -76,7 +75,11 @@ export default function ForgotPasswordScreen({ route, navigation }: any) {
         autoCapitalize="none"
       />
 
-      <TouchableOpacity style={styles.button} onPress={handleReset} disabled={loading}>
+      <TouchableOpacity
+        style={styles.button}
+        onPress={handleReset}
+        disabled={loading}
+      >
         {loading ? (
           <ActivityIndicator color="#fff" />
         ) : (
@@ -91,51 +94,51 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 20,
-    justifyContent: 'center',
-    backgroundColor: '#001F3F',
+    justifyContent: "center",
+    backgroundColor: "#001F3F",
   },
 
   backButton: {
-    position: 'absolute',
+    position: "absolute",
     top: 50,
     left: 20,
     zIndex: 10,
   },
 
   backText: {
-    color: '#fff',
+    color: "#fff",
     fontSize: 16,
   },
 
   title: {
     fontSize: 22,
-    fontWeight: 'bold',
-    color: '#fff',
+    fontWeight: "bold",
+    color: "#fff",
     marginBottom: 10,
   },
 
   desc: {
-    color: '#ccc',
+    color: "#ccc",
     marginBottom: 20,
   },
 
   input: {
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
     padding: 12,
     borderRadius: 8,
     marginBottom: 15,
-    color: '#000',
+    color: "#000",
   },
 
   button: {
-    backgroundColor: '#0A7C6E',
+    backgroundColor: "#0A7C6E",
     padding: 14,
     borderRadius: 8,
-    alignItems: 'center',
+    alignItems: "center",
   },
 
   buttonText: {
-    fontWeight: 'bold',
-    color: '#fff',
+    fontWeight: "bold",
+    color: "#fff",
   },
 });

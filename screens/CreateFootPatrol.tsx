@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef } from "react";
 import {
   View,
   Text,
@@ -11,7 +11,7 @@ import {
   Image,
   Alert,
   Platform,
-} from 'react-native';
+} from "react-native";
 import {
   ChevronLeft,
   ChevronDown,
@@ -21,19 +21,19 @@ import {
   PenTool,
   X,
   UploadCloud,
-} from 'lucide-react-native';
+} from "lucide-react-native";
 import {
   launchCamera,
   launchImageLibrary,
   CameraOptions,
   ImagePickerResponse,
-} from 'react-native-image-picker';
-import SignatureScreen from 'react-native-signature-canvas';
-import RNFS from 'react-native-fs';
-import ImageResizer from 'react-native-image-resizer';
-import { getAuthToken } from '../services/authApi';
-import axios from 'axios';
-import Toast from 'react-native-toast-message';
+} from "react-native-image-picker";
+import SignatureScreen from "react-native-signature-canvas";
+import RNFS from "react-native-fs";
+import ImageResizer from "react-native-image-resizer";
+import { BASE_URL, getAuthToken } from "../services/authApi";
+import axios from "axios";
+import Toast from "react-native-toast-message";
 // import { OPENAI_API_KEY } from './config/aiConfig';
 
 interface PhotoItem {
@@ -42,23 +42,23 @@ interface PhotoItem {
 }
 
 const COLORS = {
-  background: '#030508',
-  surface: '#07111A',
-  card: '#0D1421',
-  cardBorder: 'rgba(98, 97, 97, 0.83)',
-  primary: '#00A99D',
-  primaryGlow: 'rgba(0,169,157,0.25)',
-  primaryBorder: 'rgba(0,169,157,0.25)',
-  text: '#FFFFFF',
-  textSecondary: '#94A3B8',
-  textMuted: '#4A6080',
-  success: '#34C88A',
-  danger: '#F87171',
-  dangerBg: 'rgba(248,88,88,0.12)',
-  warning: '#F5A623',
-  warningBg: 'rgba(245,166,35,0.08)',
-  heroBg1: '#0D1F2D',
-  heroBg2: '#061014',
+  background: "#030508",
+  surface: "#07111A",
+  card: "#0D1421",
+  cardBorder: "rgba(98, 97, 97, 0.83)",
+  primary: "#00A99D",
+  primaryGlow: "rgba(0,169,157,0.25)",
+  primaryBorder: "rgba(0,169,157,0.25)",
+  text: "#FFFFFF",
+  textSecondary: "#94A3B8",
+  textMuted: "#4A6080",
+  success: "#34C88A",
+  danger: "#F87171",
+  dangerBg: "rgba(248,88,88,0.12)",
+  warning: "#F5A623",
+  warningBg: "rgba(245,166,35,0.08)",
+  heroBg1: "#0D1F2D",
+  heroBg2: "#061014",
 };
 
 export default function CreateFootPatrol({
@@ -75,12 +75,12 @@ export default function CreateFootPatrol({
   if (route.params?.jobRoster) {
     const job = route.params.jobRoster;
     siteId = job?.site?.id;
-    siteName = job?.site?.site_name || 'Unknown Site';
+    siteName = job?.site?.site_name || "Unknown Site";
     guardId = job?.guard_id;
     rosterId = job?.id;
   } else {
     siteId = route.params?.siteId;
-    siteName = route.params?.siteName || 'Unknown Site';
+    siteName = route.params?.siteName || "Unknown Site";
     guardId = route.params?.guardId;
     rosterId = route.params?.rosterId;
   }
@@ -91,13 +91,13 @@ export default function CreateFootPatrol({
         <View
           style={{
             flex: 1,
-            justifyContent: 'center',
-            alignItems: 'center',
+            justifyContent: "center",
+            alignItems: "center",
             padding: 40,
           }}
         >
-          <Text style={{ fontSize: 18, color: '#ef4444', textAlign: 'center' }}>
-            Missing required site or roster information.{'\n'}Go back and try
+          <Text style={{ fontSize: 18, color: "#ef4444", textAlign: "center" }}>
+            Missing required site or roster information.{"\n"}Go back and try
             again.
           </Text>
           <TouchableOpacity
@@ -106,11 +106,11 @@ export default function CreateFootPatrol({
               marginTop: 24,
               paddingVertical: 14,
               paddingHorizontal: 32,
-              backgroundColor: '#3b82f6',
+              backgroundColor: "#3b82f6",
               borderRadius: 12,
             }}
           >
-            <Text style={{ color: '#fff', fontWeight: '600', fontSize: 16 }}>
+            <Text style={{ color: "#fff", fontWeight: "600", fontSize: 16 }}>
               Go Back
             </Text>
           </TouchableOpacity>
@@ -122,33 +122,33 @@ export default function CreateFootPatrol({
   const now = new Date();
 
   // Date → DD/MM/YYYY
-  const formattedDate = `${String(now.getDate()).padStart(2, '0')}/${String(
+  const formattedDate = `${String(now.getDate()).padStart(2, "0")}/${String(
     now.getMonth() + 1,
-  ).padStart(2, '0')}/${now.getFullYear()}`;
+  ).padStart(2, "0")}/${now.getFullYear()}`;
 
   // Time → HH:mm:ss
-  const formattedTime = `${String(now.getHours()).padStart(2, '0')}:${String(
+  const formattedTime = `${String(now.getHours()).padStart(2, "0")}:${String(
     now.getMinutes(),
-  ).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
+  ).padStart(2, "0")}:${String(now.getSeconds()).padStart(2, "0")}`;
 
   const monthMap: { [key: string]: string } = {
-    Jan: '01',
-    Feb: '02',
-    Mar: '03',
-    Apr: '04',
-    May: '05',
-    Jun: '06',
-    Jul: '07',
-    Aug: '08',
-    Sep: '09',
-    Oct: '10',
-    Nov: '11',
-    Dec: '12',
+    Jan: "01",
+    Feb: "02",
+    Mar: "03",
+    Apr: "04",
+    May: "05",
+    Jun: "06",
+    Jul: "07",
+    Aug: "08",
+    Sep: "09",
+    Oct: "10",
+    Nov: "11",
+    Dec: "12",
   };
 
   const [expanded, setExpanded] = useState<string | null>(null);
   const [signatureData, setSignatureData] = useState<string | null>(null);
-  const [patrollingDetails, setPatrollingDetails] = useState<string>('');
+  const [patrollingDetails, setPatrollingDetails] = useState<string>("");
   const [photos, setPhotos] = useState<PhotoItem[]>([]);
   const signatureRef = useRef<any>(null);
 
@@ -162,16 +162,16 @@ export default function CreateFootPatrol({
         uri,
         800,
         800,
-        'JPEG',
+        "JPEG",
         60,
         0,
         undefined,
         false,
-        { mode: 'cover' },
+        { mode: "cover" },
       );
       return resized.uri;
     } catch (e) {
-      console.error('[Preview Resize] Failed:', e);
+      console.error("[Preview Resize] Failed:", e);
       return uri;
     }
   };
@@ -182,34 +182,34 @@ export default function CreateFootPatrol({
         uri,
         1000, // Good balance for foot patrol
         1000,
-        'JPEG',
+        "JPEG",
         70,
         0,
       );
-      const base64Content = await RNFS.readFile(resized.uri, 'base64');
+      const base64Content = await RNFS.readFile(resized.uri, "base64");
       return `data:image/jpeg;base64,${base64Content}`;
     } catch (error) {
-      console.error('[Base64 Conversion] Failed:', error);
-      throw new Error('Failed to convert photo to base64');
+      console.error("[Base64 Conversion] Failed:", error);
+      throw new Error("Failed to convert photo to base64");
     }
   };
 
   const pickImage = () => {
     if (photos.length >= 6) {
-      Alert.alert('Limit reached', 'You can upload up to 6 photos.');
+      Alert.alert("Limit reached", "You can upload up to 6 photos.");
       return;
     }
 
     const options: CameraOptions = {
-      mediaType: 'photo',
+      mediaType: "photo",
       quality: 0.7,
       includeBase64: false,
     };
 
-    Alert.alert('Add Photo', '', [
-      { text: 'Camera', onPress: () => launchCamera(options, handleImage) },
+    Alert.alert("Add Photo", "", [
+      { text: "Camera", onPress: () => launchCamera(options, handleImage) },
       // { text: 'Gallery', onPress: () => launchImageLibrary(options, handleImage) },
-      { text: 'Cancel', style: 'cancel' },
+      { text: "Cancel", style: "cancel" },
     ]);
   };
 
@@ -220,50 +220,50 @@ export default function CreateFootPatrol({
     quality: number = 50,
   ): Promise<string> => {
     try {
-      console.log('[resize] Starting (aggressive mode) for uri:', originalUri);
+      console.log("[resize] Starting (aggressive mode) for uri:", originalUri);
 
       const resized = await ImageResizer.createResizedImage(
         originalUri,
         maxWidth,
         maxHeight,
-        'JPEG',
+        "JPEG",
         quality,
         0,
         undefined,
         false,
-        { mode: 'cover' },
+        { mode: "cover" },
       );
-      console.log('[resize] Resized uri:', resized.uri);
-      const base64Content = await RNFS.readFile(resized.uri, 'base64');
+      console.log("[resize] Resized uri:", resized.uri);
+      const base64Content = await RNFS.readFile(resized.uri, "base64");
       const dataUri = `data:image/jpeg;base64,${base64Content}`;
       const sizeKB = Math.round((dataUri.length * 3) / 4 / 1024);
-      console.log('[resize] Success - aggressive compression');
-      console.log('[resize] Final size ≈', sizeKB, 'KB (target < 200 KB)');
+      console.log("[resize] Success - aggressive compression");
+      console.log("[resize] Final size ≈", sizeKB, "KB (target < 200 KB)");
 
       return dataUri;
     } catch (error: any) {
-      console.error('[resize] Failed:', error);
+      console.error("[resize] Failed:", error);
       throw error;
     }
   };
 
   const correctText = async (text: string, instruction: string) => {
     if (!text?.trim()) {
-      Alert.alert('No text', 'Please enter some incident details first.');
+      Alert.alert("No text", "Please enter some incident details first.");
       return;
     }
     try {
       const payload = {
-        model: 'gpt-4o-mini',
+        model: "gpt-4o-mini",
         messages: [
           {
-            role: 'system',
+            role: "system",
             content:
-              'You are a professional security report editor. ' +
-              'Be concise, factual, formal. Never invent new information.',
+              "You are a professional security report editor. " +
+              "Be concise, factual, formal. Never invent new information.",
           },
           {
-            role: 'user',
+            role: "user",
             content: `${instruction}:\n\n${text}`,
           },
         ],
@@ -274,14 +274,14 @@ export default function CreateFootPatrol({
         presence_penalty: 0,
       };
 
-      console.log('Sending OpenAI payload:', JSON.stringify(payload, null, 2));
+      console.log("Sending OpenAI payload:", JSON.stringify(payload, null, 2));
 
       const response = await axios.post(
-        'https://api.openai.com/v1/chat/completions',
+        "https://api.openai.com/v1/chat/completions",
         payload,
         {
           headers: {
-            'Content-Type': 'application/json',
+            "Content-Type": "application/json",
             // Authorization: `Bearer ${OPENAI_API_KEY}`,
           },
           timeout: 20000,
@@ -292,15 +292,15 @@ export default function CreateFootPatrol({
         response.data.choices?.[0]?.message?.content?.trim();
 
       if (!correctedText) {
-        throw new Error('No correction received from OpenAI');
+        throw new Error("No correction received from OpenAI");
       }
 
       setPatrollingDetails(correctedText);
-      console.log('AI corrected text:', correctedText);
+      console.log("AI corrected text:", correctedText);
     } catch (error: any) {
-      console.error('OpenAI request failed:', error);
+      console.error("OpenAI request failed:", error);
 
-      let errorMessage = 'AI text correction failed. Please try again.';
+      let errorMessage = "AI text correction failed. Please try again.";
 
       if (error.response) {
         const status = error.response.status;
@@ -308,47 +308,47 @@ export default function CreateFootPatrol({
 
         if (status === 401) {
           errorMessage =
-            'Invalid or expired OpenAI API key. Please check your API key.';
+            "Invalid or expired OpenAI API key. Please check your API key.";
         } else if (status === 429) {
           errorMessage =
-            'Rate limit exceeded. Please wait a moment and try again.';
-        } else if (status === 400 && errData?.code === 'invalid_api_key') {
+            "Rate limit exceeded. Please wait a moment and try again.";
+        } else if (status === 400 && errData?.code === "invalid_api_key") {
           errorMessage =
-            'Incorrect API key. Generate a new one from OpenAI dashboard.';
+            "Incorrect API key. Generate a new one from OpenAI dashboard.";
         } else if (errData?.message) {
           errorMessage = errData.message;
         }
       }
 
-      Alert.alert('AI Error', errorMessage);
+      Alert.alert("AI Error", errorMessage);
     }
   };
 
   const handleImage = async (response: ImagePickerResponse) => {
     if (response.didCancel) return;
     if (response.errorCode) {
-      Alert.alert('Error', response.errorMessage || 'Failed to pick image');
+      Alert.alert("Error", response.errorMessage || "Failed to pick image");
       return;
     }
 
     const asset = response.assets?.[0];
     if (!asset?.uri) return;
 
-    console.log('[handleImage] Selected image uri:', asset.uri);
+    console.log("[handleImage] Selected image uri:", asset.uri);
 
     try {
       const previewUri = await resizeForPreview(asset.uri);
 
-      const timestamp = new Date().toLocaleString('en-AU', {
-        day: '2-digit',
-        month: 'short',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
+      const timestamp = new Date().toLocaleString("en-AU", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
         hour12: false,
       });
 
-      setPhotos(prev => {
+      setPhotos((prev) => {
         const newPhotos = [...prev, { uri: previewUri, timestamp }];
         console.log(
           `[handleImage] Added photo. Total now: ${newPhotos.length}`,
@@ -356,8 +356,8 @@ export default function CreateFootPatrol({
         return newPhotos;
       });
     } catch (err: any) {
-      console.error('[handleImage] Processing failed:', err);
-      Alert.alert('Error', 'Failed to process image. Please try again.');
+      console.error("[handleImage] Processing failed:", err);
+      Alert.alert("Error", "Failed to process image. Please try again.");
     }
   };
 
@@ -367,16 +367,16 @@ export default function CreateFootPatrol({
 
   const submitReport = async () => {
     if (!patrollingDetails.trim()) {
-      return Alert.alert('Required', 'Please enter patrolling details.');
+      return Alert.alert("Required", "Please enter patrolling details.");
     }
     if (!signatureData) {
-      return Alert.alert('Required', 'Please provide staff signature.');
+      return Alert.alert("Required", "Please provide staff signature.");
     }
 
     setIsSubmitting(true); // ← Add this state if not already present
 
     try {
-      console.log('═══════ FOOT PATROL SUBMISSION START ═══════');
+      console.log("═══════ FOOT PATROL SUBMISSION START ═══════");
 
       // Convert photos to base64 only at submit time
       const photoPayload = await Promise.all(
@@ -410,16 +410,16 @@ export default function CreateFootPatrol({
       console.log(`Submitting with ${photoPayload.length} photos`);
 
       const token = await getAuthToken();
-      if (!token) throw new Error('No authentication token found');
+      if (!token) throw new Error("No authentication token found");
 
       const response = await fetch(
-        `https://apis.staffoo.com.au/api/add-foot-patrol-report/${siteId}`,
+        `${BASE_URL}/add-foot-patrol-report/${siteId}`,
         {
-          method: 'POST',
+          method: "POST",
           headers: {
             Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json',
-            Accept: 'application/json',
+            "Content-Type": "application/json",
+            Accept: "application/json",
           },
           body: JSON.stringify(payload),
         },
@@ -429,19 +429,19 @@ export default function CreateFootPatrol({
 
       if (response.ok) {
         Alert.alert(
-          'Success',
-          'Foot Patrolling Report submitted successfully!',
+          "Success",
+          "Foot Patrolling Report submitted successfully!",
         );
         navigation.goBack();
       } else {
         const msg = result.message || `Server error (${response.status})`;
-        Alert.alert('Submission Failed', msg);
+        Alert.alert("Submission Failed", msg);
       }
     } catch (error: any) {
-      console.error('Submit failed:', error);
+      console.error("Submit failed:", error);
       Alert.alert(
-        'Failed',
-        error.message || 'Something went wrong. Please try again.',
+        "Failed",
+        error.message || "Something went wrong. Please try again.",
       );
     } finally {
       setIsSubmitting(false);
@@ -471,7 +471,7 @@ export default function CreateFootPatrol({
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <TouchableOpacity
           style={styles.fieldCard}
-          onPress={() => toggleSection('date')}
+          onPress={() => toggleSection("date")}
         >
           <View style={styles.iconCircle}>
             <Calendar size={22} color="#3b82f6" />
@@ -482,7 +482,7 @@ export default function CreateFootPatrol({
           <ChevronDown size={20} color="#64748b" />
         </TouchableOpacity>
 
-        {expanded === 'date' && (
+        {expanded === "date" && (
           <View style={styles.expandedContent}>
             <Text style={styles.fieldValue}>
               {formattedDate} {formattedTime}
@@ -492,7 +492,7 @@ export default function CreateFootPatrol({
 
         <TouchableOpacity
           style={styles.fieldCard}
-          onPress={() => toggleSection('details')}
+          onPress={() => toggleSection("details")}
         >
           <View style={styles.iconCircle}>
             <FileText size={22} color="#3b82f6" />
@@ -502,13 +502,13 @@ export default function CreateFootPatrol({
               Foot Patrolling Details <Text style={styles.required}>*</Text>
             </Text>
             <Text style={styles.fieldValuePlaceholder}>
-              {patrollingDetails || 'Tap to write'}
+              {patrollingDetails || "Tap to write"}
             </Text>
           </View>
           <ChevronDown size={20} color="#64748b" />
         </TouchableOpacity>
 
-        {expanded === 'details' && (
+        {expanded === "details" && (
           <View style={styles.expandedContent}>
             <TextInput
               style={styles.textArea}
@@ -542,7 +542,7 @@ export default function CreateFootPatrol({
 
         <TouchableOpacity
           style={styles.fieldCard}
-          onPress={() => toggleSection('photos')}
+          onPress={() => toggleSection("photos")}
         >
           <View style={styles.iconCircle}>
             <Camera size={22} color="#3b82f6" />
@@ -554,7 +554,7 @@ export default function CreateFootPatrol({
           <ChevronDown size={20} color="#64748b" />
         </TouchableOpacity>
 
-        {expanded === 'photos' && (
+        {expanded === "photos" && (
           <View style={styles.expandedContent}>
             <View style={styles.photoGrid}>
               {photos.map((photo, i) => (
@@ -584,7 +584,7 @@ export default function CreateFootPatrol({
 
         <TouchableOpacity
           style={styles.fieldCard}
-          onPress={() => toggleSection('signature')}
+          onPress={() => toggleSection("signature")}
         >
           <View style={styles.iconCircle}>
             <PenTool size={22} color="#3b82f6" />
@@ -600,26 +600,26 @@ export default function CreateFootPatrol({
             color="#64748b"
             style={{
               transform: [
-                { rotate: expanded === 'signature' ? '180deg' : '0deg' },
+                { rotate: expanded === "signature" ? "180deg" : "0deg" },
               ],
             }}
           />
         </TouchableOpacity>
 
-        {expanded === 'signature' && (
+        {expanded === "signature" && (
           <View style={styles.cardContent}>
-            <View style={{ height: 300, backgroundColor: '#fff' }}>
+            <View style={{ height: 300, backgroundColor: "#fff" }}>
               <SignatureScreen
                 ref={signatureRef}
                 onOK={(sig: string) => {
                   setSignatureData(sig);
                   // Add the toast here:
                   Toast.show({
-                    type: 'success',
-                    text1: 'Signature Saved',
-                    text2: 'Your signature has been captured.',
+                    type: "success",
+                    text1: "Signature Saved",
+                    text2: "Your signature has been captured.",
                   });
-                  console.log('Signature OK - length:', sig.length);
+                  console.log("Signature OK - length:", sig.length);
                 }}
                 autoClear={false}
                 descriptionText="Sign here"
@@ -676,27 +676,27 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.background,
-    paddingTop: 20
+    paddingTop: 20,
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     padding: 20,
   },
   headerTitle: {
     fontSize: 20,
-    fontWeight: '700',
-    color: COLORS.text
+    fontWeight: "700",
+    color: COLORS.text,
   },
   scrollContent: {
     padding: 16,
-    paddingBottom: 140
+    paddingBottom: 140,
   },
 
   fieldCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     backgroundColor: COLORS.card,
     borderRadius: 16,
     padding: 16,
@@ -709,25 +709,25 @@ const styles = StyleSheet.create({
     height: 48,
     borderRadius: 24,
     backgroundColor: COLORS.primaryGlow,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     marginRight: 16,
   },
   fieldContent: {
-    flex: 1
+    flex: 1,
   },
   fieldLabel: {
     fontSize: 15,
-    fontWeight: '600',
-    color: COLORS.text
+    fontWeight: "600",
+    color: COLORS.text,
   },
   fieldValue: {
     fontSize: 15,
-    color: COLORS.textSecondary
+    color: COLORS.textSecondary,
   },
   fieldValuePlaceholder: {
     fontSize: 15,
-    color: COLORS.textMuted
+    color: COLORS.textMuted,
   },
 
   expandedContent: {
@@ -740,7 +740,7 @@ const styles = StyleSheet.create({
   },
   textArea: {
     minHeight: 100,
-    textAlignVertical: 'top',
+    textAlignVertical: "top",
     backgroundColor: COLORS.surface,
     color: COLORS.text, // Ensure text is visible in dark mode
     borderRadius: 10,
@@ -751,8 +751,8 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   aiButtons: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    justifyContent: "space-between",
     marginTop: 12,
     gap: 12,
   },
@@ -761,38 +761,38 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     backgroundColor: COLORS.dangerBg,
     borderRadius: 12,
-    alignItems: 'center',
+    alignItems: "center",
   },
   aiBtn: {
     flex: 1,
     paddingVertical: 12,
     backgroundColor: COLORS.primaryGlow,
     borderRadius: 12,
-    alignItems: 'center',
+    alignItems: "center",
   },
   btnText: {
     fontSize: 13,
-    fontWeight: '600',
-    color: COLORS.primary
+    fontWeight: "600",
+    color: COLORS.primary,
   },
 
   photoGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    flexDirection: "row",
+    flexWrap: "wrap",
     gap: 12,
     marginBottom: 16,
   },
   photoItem: {
-    width: '30%',
-    position: 'relative'
+    width: "30%",
+    position: "relative",
   },
   photo: {
-    width: '100%',
+    width: "100%",
     height: 85,
-    borderRadius: 12
+    borderRadius: 12,
   },
   removePhotoBtn: {
-    position: 'absolute',
+    position: "absolute",
     top: -10,
     right: -10,
     backgroundColor: COLORS.danger, // Better contrast against photos
@@ -803,22 +803,22 @@ const styles = StyleSheet.create({
   timestamp: {
     fontSize: 7,
     color: COLORS.warning,
-    textAlign: 'center',
+    textAlign: "center",
     marginTop: -14,
-    fontWeight: '900',
+    fontWeight: "900",
   },
   uploadArea: {
-    alignItems: 'center',
+    alignItems: "center",
     paddingVertical: 32,
     borderWidth: 2,
     borderColor: COLORS.cardBorder,
-    borderStyle: 'dashed',
+    borderStyle: "dashed",
     borderRadius: 12,
   },
   uploadText: {
     marginTop: 12,
     color: COLORS.textSecondary,
-    fontWeight: '500'
+    fontWeight: "500",
   },
 
   sectionHeader: {
@@ -829,14 +829,14 @@ const styles = StyleSheet.create({
     borderColor: COLORS.cardBorder,
   },
   cardHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     padding: 16,
   },
   cardTitle: {
     flex: 1,
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: "700",
     marginLeft: 12,
     color: COLORS.text,
   },
@@ -850,31 +850,31 @@ const styles = StyleSheet.create({
   },
 
   signatureButtons: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: 12,
-    marginTop: 12
+    marginTop: 12,
   },
   clearBtn: {
     flex: 1,
     backgroundColor: COLORS.danger,
     paddingVertical: 14,
     borderRadius: 10,
-    alignItems: 'center',
+    alignItems: "center",
   },
   saveBtn: {
     flex: 1,
     backgroundColor: COLORS.success,
     paddingVertical: 14,
     borderRadius: 10,
-    alignItems: 'center',
+    alignItems: "center",
   },
   btnTextWhite: {
     color: COLORS.text,
-    fontWeight: '600',
-    fontSize: 15
+    fontWeight: "600",
+    fontSize: 15,
   },
   signaturePreview: {
-    width: '100%',
+    width: "100%",
     height: 120,
     marginTop: 12,
     borderRadius: 8,
@@ -884,7 +884,7 @@ const styles = StyleSheet.create({
     paddingVertical: 16, // Added padding to separate buttons from edge
     paddingHorizontal: 16,
     backgroundColor: COLORS.background, // Ensure background matches
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: 12,
     borderTopWidth: 1, // Optional: add a subtle border to separate from body
     borderColor: COLORS.cardBorder,
@@ -894,12 +894,12 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.primary,
     paddingVertical: 16,
     borderRadius: 12,
-    alignItems: 'center',
+    alignItems: "center",
   },
   submitText: {
     color: COLORS.text,
     fontSize: 16,
-    fontWeight: '700'
+    fontWeight: "700",
   },
   cancelButton: {
     flex: 1,
@@ -907,16 +907,16 @@ const styles = StyleSheet.create({
     borderColor: COLORS.textMuted,
     paddingVertical: 16,
     borderRadius: 12,
-    alignItems: 'center',
+    alignItems: "center",
   },
   cancelText: {
     color: COLORS.textMuted,
     fontSize: 16,
-    fontWeight: '700'
+    fontWeight: "700",
   },
 
   required: {
     color: COLORS.danger,
-    fontWeight: 'bold'
+    fontWeight: "bold",
   },
 });

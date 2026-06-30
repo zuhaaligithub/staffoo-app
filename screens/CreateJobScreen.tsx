@@ -47,10 +47,12 @@ import {
   ArrowLeft,
   AlertCircle,
   ChevronRight,
+  X,
 } from "lucide-react-native";
 import { Keyboard } from "react-native";
 import LinearGradient from "react-native-linear-gradient";
 import { RatesConfig } from "../utils/rateCalculator";
+import BottomTab from "./BottomTab";
 
 const { width } = Dimensions.get("window");
 
@@ -1403,31 +1405,34 @@ export default function CreateJobScreen() {
       setUploading(false);
     }
   };
-
   const validateAndNext = () => {
     const newErrors: FormErrors = {};
 
+    // Category validation
     if (!form.category) {
       newErrors.category = "Please select a job category";
     } else if (form.category === "others" && !otherCategory.trim()) {
       newErrors.category = "Please enter job category";
     }
 
-    setErrors(newErrors);
-
-    if (Object.keys(newErrors).length > 0) {
-      Alert.alert("Incomplete Form", "Please fill all required fields");
-      return;
-    }
-    if (!form.description?.trim())
+    // Description & Location
+    if (!form.description?.trim()) {
       newErrors.description = "Description is required";
-    if (!form.location?.trim()) newErrors.location = "Location is required";
+    }
+    if (!form.location?.trim()) {
+      newErrors.location = "Location is required";
+    }
+
     setErrors(newErrors);
+
     if (Object.keys(newErrors).length > 0) {
       Alert.alert("Incomplete Form", "Please fill all required fields");
       return;
     }
 
+    // ─────────────────────────────────────────────────────────────
+    // SHIFT DURATION VALIDATION - Minimum 4 Hours
+    // ─────────────────────────────────────────────────────────────
     const activeSchedules =
       scheduleMode === "single"
         ? [singleDaySchedule]
@@ -1435,21 +1440,47 @@ export default function CreateJobScreen() {
         ? individualSchedules
         : rangeSchedules;
 
-    if (
-      !activeSchedules ||
-      activeSchedules.length === 0 ||
-      !activeSchedules[0]?.shifts?.[0]
-    ) {
-      Alert.alert("Schedule Empty", "Please provide a schedule configuration");
+    let hasInvalidShift = false;
+    const invalidShifts: string[] = [];
+
+    activeSchedules.forEach((day, dayIdx) => {
+      if (!day?.shifts || day.shifts.length === 0) return;
+
+      day.shifts.forEach((shift, shiftIdx) => {
+        const hours = shiftDurationHours(
+          safeDate(shift.startTime),
+          safeDate(shift.endTime),
+        );
+
+        if (hours < 4) {
+          hasInvalidShift = true;
+          const dateStr = formatDate(day.date);
+          invalidShifts.push(
+            `• ${dateStr} → Shift ${shiftIdx + 1} (${hours.toFixed(1)} hrs)`,
+          );
+        }
+      });
+    });
+
+    if (hasInvalidShift) {
+      Alert.alert(
+        "Minimum 4 Hours Required",
+        "Each shift must be at least 4 hours long.",
+        [{ text: "OK" }],
+      );
       return;
     }
 
+    // ─────────────────────────────────────────────────────────────
+    // Proceed to Review Screen
+    // ─────────────────────────────────────────────────────────────
     const first = activeSchedules[0];
     const last = activeSchedules[activeSchedules.length - 1];
 
     const hourlyRate = 45;
     const gstPercentage = 10;
     const discountPercentage = 5;
+
     const subtotal = totalManHours * hourlyRate;
     const gstAmount = subtotal * (gstPercentage / 100);
     const totalQuotation = subtotal + gstAmount;
@@ -1497,6 +1528,99 @@ export default function CreateJobScreen() {
     });
   };
 
+  // const validateAndNext = () => {
+  //   const newErrors: FormErrors = {};
+
+  //   if (!form.category) {
+  //     newErrors.category = "Please select a job category";
+  //   } else if (form.category === "others" && !otherCategory.trim()) {
+  //     newErrors.category = "Please enter job category";
+  //   }
+
+  //   setErrors(newErrors);
+
+  //   if (Object.keys(newErrors).length > 0) {
+  //     Alert.alert("Incomplete Form", "Please fill all required fields");
+  //     return;
+  //   }
+  //   if (!form.description?.trim())
+  //     newErrors.description = "Description is required";
+  //   if (!form.location?.trim()) newErrors.location = "Location is required";
+  //   setErrors(newErrors);
+  //   if (Object.keys(newErrors).length > 0) {
+  //     Alert.alert("Incomplete Form", "Please fill all required fields");
+  //     return;
+  //   }
+
+  //   const activeSchedules =
+  //     scheduleMode === "single"
+  //       ? [singleDaySchedule]
+  //       : multiDayMode === "individual"
+  //       ? individualSchedules
+  //       : rangeSchedules;
+
+  //   if (
+  //     !activeSchedules ||
+  //     activeSchedules.length === 0 ||
+  //     !activeSchedules[0]?.shifts?.[0]
+  //   ) {
+  //     Alert.alert("Schedule Empty", "Please provide a schedule configuration");
+  //     return;
+  //   }
+
+  //   const first = activeSchedules[0];
+  //   const last = activeSchedules[activeSchedules.length - 1];
+
+  //   const hourlyRate = 45;
+  //   const gstPercentage = 10;
+  //   const discountPercentage = 5;
+  //   const subtotal = totalManHours * hourlyRate;
+  //   const gstAmount = subtotal * (gstPercentage / 100);
+  //   const totalQuotation = subtotal + gstAmount;
+  //   const discountAmount = totalQuotation * (discountPercentage / 100);
+  //   const payableNow = totalQuotation - discountAmount;
+  //   const splitAmount = totalQuotation / 2;
+
+  //   navigation.navigate("ReviewConfirm", {
+  //     jobData: {
+  //       category:
+  //         form.category === "others" ? otherCategory.trim() : form.category,
+  //       location: form.location || "Not specified",
+  //       lat: form.lat ?? DEFAULT_LOCATION.lat,
+  //       lng: form.lng ?? DEFAULT_LOCATION.lng,
+  //       description: form.description || "",
+  //       startDate: first.date,
+  //       startTime: first.shifts[0]?.startTime ?? new Date(),
+  //       endDate: last.date,
+  //       endTime: last.shifts[last.shifts.length - 1]?.endTime ?? new Date(),
+  //       shifts: activeSchedules.flatMap((day) =>
+  //         (day?.shifts || []).map((s) => ({
+  //           date: day.date,
+  //           startTime: s.startTime,
+  //           endTime: s.endTime,
+  //           guardsCount: Number(s.guardsCount || 1),
+  //         })),
+  //       ),
+  //       totalManHours,
+  //       subtotal: parseFloat(subtotal.toFixed(2)),
+  //       gstAmount: parseFloat(gstAmount.toFixed(2)),
+  //       totalQuotation: parseFloat(totalQuotation.toFixed(2)),
+  //       discountAmount: parseFloat(discountAmount.toFixed(2)),
+  //       payableNow: parseFloat(payableNow.toFixed(2)),
+  //       splitAmount: parseFloat(splitAmount.toFixed(2)),
+  //       totalAmount: parseFloat(payableNow.toFixed(2)),
+  //       jobLevel: selectedJobLevel || String(currentJobLevel || 1),
+  //       tasks: tasks.map((t) => ({
+  //         title: t.title || "Untitled Task",
+  //         startTime: t.startTime,
+  //         endTime: t.endTime,
+  //       })),
+  //     },
+  //     uploadedFileUrls: uploadedFilePaths,
+  //     selectedDocuments: documentTypes,
+  //   });
+  // };
+
   useEffect(() => {
     if (!form.category) return;
     const newLevel = calculateJobLevel(form.category);
@@ -1507,31 +1631,6 @@ export default function CreateJobScreen() {
     if (matchedItem) setSelectedJobLevel(matchedItem.level);
   }, [form.category, ratesData]);
 
-  // const calculateJobLevel = (title: string): number => {
-  //   if (!title) return 1;
-  //   const t = title.toLowerCase();
-  //   if (
-  //     t.includes("manager") ||
-  //     t.includes("auditor") ||
-  //     t.includes("instructor")
-  //   )
-  //     return 5;
-  //   if (
-  //     t.includes("supervisor") ||
-  //     t.includes("patrol inspector") ||
-  //     t.includes("coordinator")
-  //   )
-  //     return 4;
-  //   if (
-  //     t.includes("operator") ||
-  //     t.includes("aviation") ||
-  //     t.includes("maritime")
-  //   )
-  //     return 3;
-  //   if (t.includes("dog") || t.includes("armed") || t.includes("monitoring"))
-  //     return 2;
-  //   return 1;
-  // };
   const calculateJobLevel = (title: string): number => {
     if (!title) return 1;
 
@@ -1582,6 +1681,13 @@ export default function CreateJobScreen() {
 
     // Default Level 1
     return 1;
+  };
+  const handleGoBack = () => {
+    if (navigation.canGoBack()) {
+      navigation.goBack();
+    } else {
+      navigation.navigate("MainTabs" as never); // Fallback
+    }
   };
   const toggleDocument = (docValue: string) => {
     setForm((prev) => {
@@ -1658,10 +1764,7 @@ export default function CreateJobScreen() {
         style={{ flex: 1 }}
       >
         <View style={styles.header}>
-          <TouchableOpacity
-            onPress={() => navigation.navigate("Profile")}
-            style={styles.backButton}
-          >
+          <TouchableOpacity onPress={handleGoBack} style={styles.backButton}>
             <ArrowLeft size={22} color="#FFF" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Create New Job</Text>
@@ -1673,8 +1776,10 @@ export default function CreateJobScreen() {
           keyboardShouldPersistTaps="handled"
         >
           {/* Location & Map */}
+          {/* Job Location */}
           <View style={styles.sectionCard}>
             <Text style={styles.inputLabel}>Job Location *</Text>
+
             <View
               style={[
                 styles.searchBarContainer,
@@ -1682,6 +1787,7 @@ export default function CreateJobScreen() {
               ]}
             >
               <Search size={18} color={TEXT_MUTED} style={{ marginRight: 8 }} />
+
               <TextInput
                 style={styles.searchBarInput}
                 placeholder="Search job site address..."
@@ -1689,13 +1795,35 @@ export default function CreateJobScreen() {
                 value={autocompleteQuery || form.location}
                 onChangeText={setAutocompleteQuery}
               />
+
+              {/* Clear Button (Cross) */}
+              {(form.location || autocompleteQuery) && (
+                <TouchableOpacity
+                  onPress={() => {
+                    setAutocompleteQuery("");
+                    setForm((prev) => ({
+                      ...prev,
+                      location: "",
+                      lat: DEFAULT_LOCATION.lat,
+                      lng: DEFAULT_LOCATION.lng,
+                    }));
+                    setSuggestions([]);
+                  }}
+                  style={{ padding: 4 }}
+                >
+                  <X size={18} color={TEXT_MUTED} />
+                </TouchableOpacity>
+              )}
             </View>
+
             {errors.location && (
               <Text style={styles.errorText}>{errors.location}</Text>
             )}
+
             {loadingSuggestions && (
               <ActivityIndicator color={ACCENT_TEAL} style={{ marginTop: 8 }} />
             )}
+
             {suggestions.map((item) => (
               <TouchableOpacity
                 key={item.place_id}
@@ -1712,6 +1840,7 @@ export default function CreateJobScreen() {
                 </Text>
               </TouchableOpacity>
             ))}
+
             <View style={styles.mapFrame}>
               <MapView
                 ref={mapRef}
@@ -2005,7 +2134,7 @@ export default function CreateJobScreen() {
             >
               <Text style={{ color: TEXT_MUTED }}>Calculated Hours</Text>
               <Text style={{ color: "#FFF", fontWeight: "700" }}>
-                {totalManHours.toFixed(1)} hrs
+                {totalManHours.toFixed(1)} Hours
               </Text>
             </View>
           </View>
@@ -2405,6 +2534,7 @@ export default function CreateJobScreen() {
           </View>
         </Modal>
       </KeyboardAvoidingView>
+      {/* <BottomTab navigation={navigation} activeTab="CreateJob" /> */}
     </SafeAreaView>
   );
 }

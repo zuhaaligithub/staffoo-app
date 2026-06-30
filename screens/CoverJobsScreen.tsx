@@ -1,5 +1,3 @@
-
-
 import React, { useState, useEffect } from "react";
 import {
   View,
@@ -25,8 +23,7 @@ import LinearGradient from "react-native-linear-gradient";
 
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
-
-const BASE_URL = "https://apis.staffoo.com.au/api";
+import { BASE_URL } from "../services/authApi";
 
 const COLORS = {
   background: "#030508",
@@ -421,9 +418,9 @@ const styles = StyleSheet.create({
     marginVertical: 5,
   },
   address: {
-    color: '#ededed80',
+    color: "#ededed80",
     fontSize: 12,
-    marginTop:5,
+    marginTop: 5,
     lineHeight: 12,
     marginBottom: 20,
   },

@@ -11,6 +11,7 @@ import {
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import Toast from "react-native-toast-message";
 import { ArrowLeft } from "lucide-react-native";
+import { BASE_URL } from "../services/authApi";
 
 const COLORS = {
   background: "#030508",
@@ -77,7 +78,7 @@ export default function DeleteProfileVerification({ navigation }: any) {
       }
 
       const response = await fetch(
-        `https://apis.staffoo.com.au/api/user-delete/${userId}`,
+        `${BASE_URL}/user-delete/${userId}`,
         {
           method: "DELETE",
           headers: {

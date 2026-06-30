@@ -18,8 +18,9 @@ import {
   ArrowLeft,
   AlertCircle,
 } from 'lucide-react-native';
+import { BASE_URL } from '../services/authApi';
 
-const BASE_URL = 'https://apis.staffoo.com.au/api';
+
 
 type Payslip = {
   id: number;

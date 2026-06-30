@@ -12,8 +12,9 @@ import Pdf from 'react-native-pdf';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { ArrowLeft, Check } from 'lucide-react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { BASE_URL } from '../services/authApi';
 
-export const BASE_URL = 'https://apis.staffoo.com.au/api';
+
 
 export default function PoliciesScreen() {
   const navigation = useNavigation();

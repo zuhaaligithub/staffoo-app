@@ -31,15 +31,15 @@ import {
 import Toast from "react-native-toast-message";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
-import { getUserProfile, uploadFile } from "../services/authApi";
+import { BASE_URL, getUserProfile, uploadFile } from "../services/authApi";
 import { launchImageLibrary } from "react-native-image-picker";
 import LinearGradient from "react-native-linear-gradient";
 import DateTimePicker from "@react-native-community/datetimepicker";
 
 const { width } = Dimensions.get("window");
 
-const BASE_URL = "https://apis.staffoo.com.au/api";
-const FILE_BASE_URL = "https://apis.staffoo.com.au/staff_documents/";
+// const FILE_BASE_URL = "https://apis.staffoo.com.au/staff_documents/";
+const FILE_BASE_URL = "https://staging.apis.staffoo.com.au/staff_documents/";
 const Api_Url = "https://apis.thescouts.com.au/api";
 
 type Props = { navigation: any };

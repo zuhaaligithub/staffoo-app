@@ -15,9 +15,9 @@ import {
 import { ChevronLeft, X, Check } from "lucide-react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRoute, useNavigation } from "@react-navigation/native";
+import { BASE_URL } from "../services/authApi";
 
 const { width } = Dimensions.get("window");
-const BASE_URL = "https://apis.staffoo.com.au/api";
 
 type Question = {
   question: string;

@@ -21,7 +21,6 @@ import BottomTab from "./BottomTab";
 import { getConversations } from "../services/authApi";
 import LinearGradient from "react-native-linear-gradient";
 
-const BASE_URL = "https://apis.staffoo.com.au/api";
 const COLORS = {
   // 🌿 Primary Brand
   primary: "#89E7D0", // mint accent
@@ -153,7 +152,6 @@ export default function MessageScreen({ navigation }: Props) {
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
-  // Main function: Call getConversations() + filter Admin chats
   const fetchChats = async () => {
     setLoading(true);
     try {
@@ -225,7 +223,7 @@ export default function MessageScreen({ navigation }: Props) {
       <StatusBar barStyle="dark-content" backgroundColor="#fff" />
 
       <View style={styles.header}>
-        <TouchableOpacity   onPress={() => navigation.navigate("Profile")}>
+        <TouchableOpacity onPress={() => navigation.navigate("Profile")}>
           <ChevronLeft size={22} color="#fff" />
         </TouchableOpacity>
         <Text style={styles.screenTitle}>Messages</Text>
@@ -338,7 +336,7 @@ export default function MessageScreen({ navigation }: Props) {
         )}
       </ScrollView>
 
-      <BottomTab navigation={navigation} activeTab="Messages" />
+      {/* <BottomTab navigation={navigation} activeTab="Messages" /> */}
     </SafeAreaView>
   );
 }

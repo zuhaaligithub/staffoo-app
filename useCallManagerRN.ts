@@ -399,7 +399,8 @@ export function useEchoCallListener() {
 // ---------------------------------------------------------------------------
 // Call Manager
 // ---------------------------------------------------------------------------
-const BASE_URL = 'https://apis.staffoo.com.au';
+// const BASE_URL = 'https://apis.staffoo.com.au';
+const BASE_URL = 'https://staging.apis.staffoo.com.au';
 
 async function apiPost(endpoint: string, body: object = {}) {
   let token = await AsyncStorage.getItem('@auth_token');
