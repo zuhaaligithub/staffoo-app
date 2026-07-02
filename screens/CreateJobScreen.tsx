@@ -1,4 +1,10 @@
-import React, { useState, useMemo, useEffect, useRef } from "react";
+import React, {
+  useState,
+  useMemo,
+  useEffect,
+  useRef,
+  useCallback,
+} from "react";
 import {
   View,
   Text,
@@ -16,7 +22,11 @@ import {
   StatusBar,
   Dimensions,
 } from "react-native";
-import { useNavigation } from "@react-navigation/native";
+import {
+  useFocusEffect,
+  useNavigation,
+  useRoute,
+} from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import MapView, { Marker } from "react-native-maps";
@@ -381,6 +391,10 @@ class ScheduleErrorBoundary extends React.Component<
     return this.props.children;
   }
 }
+type CreateJobRouteParams = {
+  isEdit?: boolean;
+  jobData?: any;
+};
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 export default function CreateJobScreen() {
@@ -688,6 +702,57 @@ export default function CreateJobScreen() {
     getLocation();
   }, [mapReady]);
 
+  const route = useRoute();
+  const { isEdit = false, jobData: editData } = (route.params ||
+    {}) as CreateJobRouteParams;
+
+  const resetForm = useCallback(() => {
+    const today = new Date();
+
+    setForm({
+      category: "",
+      documents: [],
+      location: "",
+      lat: DEFAULT_LOCATION.lat,
+      lng: DEFAULT_LOCATION.lng,
+      description: "",
+    });
+
+    setOtherCategory("");
+    setOtherDocument("");
+    setUploadedFilePaths([]);
+    setSelectedFiles([]);
+    setTasks([]);
+    setErrors({});
+
+    setScheduleMode("single");
+    setMultiDayMode("individual");
+
+    setSingleDaySchedule(makeDaySchedule(today));
+    setRangeFrom(today);
+    setRangeTo(today);
+    setRangeSchedules([makeDaySchedule(today)]);
+    setIndividualDates([]);
+    setIndividualSchedules([]);
+
+    setMasterStartTime(null);
+    setMasterEndTime(null);
+    setMasterGuards("");
+    setApplyToAll(false);
+
+    setAutocompleteQuery("");
+    setSuggestions([]);
+  }, []);
+
+  // Reset form only on fresh navigation (not when editing from ReviewConfirm)
+  useFocusEffect(
+    useCallback(() => {
+      if (!isEdit) {
+        resetForm();
+      }
+      // If isEdit is true → keep the data passed from ReviewConfirm
+    }, [isEdit, resetForm]),
+  );
   useEffect(() => {
     if (autocompleteQuery.length < 3) {
       setSuggestions([]);
@@ -1759,781 +1824,769 @@ export default function CreateJobScreen() {
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar barStyle="light-content" backgroundColor={BRAND_BG} />
-      <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        style={{ flex: 1 }}
+
+      <View style={styles.header}>
+        <TouchableOpacity onPress={handleGoBack} style={styles.backButton}>
+          <ArrowLeft size={22} color="#FFF" />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Create New Job</Text>
+        <View style={{ width: 40 }} />
+      </View>
+
+      <ScrollView
+        style={styles.container}
+        keyboardShouldPersistTaps="handled"
+        contentContainerStyle={{ paddingBottom: 120 }}
       >
-        <View style={styles.header}>
-          <TouchableOpacity onPress={handleGoBack} style={styles.backButton}>
-            <ArrowLeft size={22} color="#FFF" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Create New Job</Text>
-          <View style={{ width: 40 }} />
+        {/* Location & Map */}
+        {/* Job Location */}
+        <View style={styles.sectionCard}>
+          <Text style={styles.inputLabel}>Job Location *</Text>
+
+          <View
+            style={[
+              styles.searchBarContainer,
+              errors.location && styles.inputErrorBorder,
+            ]}
+          >
+            <Search size={18} color={TEXT_MUTED} style={{ marginRight: 8 }} />
+
+            <TextInput
+              style={styles.searchBarInput}
+              placeholder="Search job site address..."
+              placeholderTextColor={TEXT_MUTED}
+              value={autocompleteQuery || form.location}
+              onChangeText={setAutocompleteQuery}
+            />
+
+            {/* Clear Button (Cross) */}
+            {(form.location || autocompleteQuery) && (
+              <TouchableOpacity
+                onPress={() => {
+                  setAutocompleteQuery("");
+                  setForm((prev) => ({
+                    ...prev,
+                    location: "",
+                    lat: DEFAULT_LOCATION.lat,
+                    lng: DEFAULT_LOCATION.lng,
+                  }));
+                  setSuggestions([]);
+                }}
+                style={{ padding: 4 }}
+              >
+                <X size={18} color={TEXT_MUTED} />
+              </TouchableOpacity>
+            )}
+          </View>
+
+          {errors.location && (
+            <Text style={styles.errorText}>{errors.location}</Text>
+          )}
+
+          {loadingSuggestions && (
+            <ActivityIndicator color={ACCENT_TEAL} style={{ marginTop: 8 }} />
+          )}
+
+          {suggestions.map((item) => (
+            <TouchableOpacity
+              key={item.place_id}
+              style={styles.suggestionRow}
+              onPress={() => selectSuggestion(item)}
+            >
+              <MapPin size={16} color={TEXT_MUTED} style={{ marginRight: 8 }} />
+              <Text style={{ color: "#FFF", flex: 1 }}>{item.description}</Text>
+            </TouchableOpacity>
+          ))}
+
+          <View style={styles.mapFrame}>
+            <MapView
+              ref={mapRef}
+              style={StyleSheet.absoluteFillObject}
+              initialRegion={{
+                latitude: form.lat,
+                longitude: form.lng,
+                latitudeDelta: 0.0922,
+                longitudeDelta: 0.0421,
+              }}
+              onMapReady={() => setMapReady(true)}
+            >
+              <Marker
+                coordinate={{ latitude: form.lat, longitude: form.lng }}
+              />
+            </MapView>
+          </View>
         </View>
 
-        <ScrollView
-          style={styles.container}
-          keyboardShouldPersistTaps="handled"
-        >
-          {/* Location & Map */}
-          {/* Job Location */}
+        {/* Shift Schedule */}
+        <ScheduleErrorBoundary onReset={resetSchedule}>
           <View style={styles.sectionCard}>
-            <Text style={styles.inputLabel}>Job Location *</Text>
+            <Text style={styles.sectionTitle}>Shift Timing</Text>
 
-            <View
-              style={[
-                styles.searchBarContainer,
-                errors.location && styles.inputErrorBorder,
-              ]}
-            >
-              <Search size={18} color={TEXT_MUTED} style={{ marginRight: 8 }} />
-
-              <TextInput
-                style={styles.searchBarInput}
-                placeholder="Search job site address..."
-                placeholderTextColor={TEXT_MUTED}
-                value={autocompleteQuery || form.location}
-                onChangeText={setAutocompleteQuery}
-              />
-
-              {/* Clear Button (Cross) */}
-              {(form.location || autocompleteQuery) && (
-                <TouchableOpacity
-                  onPress={() => {
-                    setAutocompleteQuery("");
-                    setForm((prev) => ({
-                      ...prev,
-                      location: "",
-                      lat: DEFAULT_LOCATION.lat,
-                      lng: DEFAULT_LOCATION.lng,
-                    }));
-                    setSuggestions([]);
-                  }}
-                  style={{ padding: 4 }}
-                >
-                  <X size={18} color={TEXT_MUTED} />
-                </TouchableOpacity>
-              )}
-            </View>
-
-            {errors.location && (
-              <Text style={styles.errorText}>{errors.location}</Text>
-            )}
-
-            {loadingSuggestions && (
-              <ActivityIndicator color={ACCENT_TEAL} style={{ marginTop: 8 }} />
-            )}
-
-            {suggestions.map((item) => (
-              <TouchableOpacity
-                key={item.place_id}
-                style={styles.suggestionRow}
-                onPress={() => selectSuggestion(item)}
-              >
-                <MapPin
-                  size={16}
-                  color={TEXT_MUTED}
-                  style={{ marginRight: 8 }}
-                />
-                <Text style={{ color: "#FFF", flex: 1 }}>
-                  {item.description}
-                </Text>
-              </TouchableOpacity>
-            ))}
-
-            <View style={styles.mapFrame}>
-              <MapView
-                ref={mapRef}
-                style={StyleSheet.absoluteFillObject}
-                initialRegion={{
-                  latitude: form.lat,
-                  longitude: form.lng,
-                  latitudeDelta: 0.0922,
-                  longitudeDelta: 0.0421,
-                }}
-                onMapReady={() => setMapReady(true)}
-              >
-                <Marker
-                  coordinate={{ latitude: form.lat, longitude: form.lng }}
-                />
-              </MapView>
-            </View>
-          </View>
-
-          {/* Shift Schedule */}
-          <ScheduleErrorBoundary onReset={resetSchedule}>
-            <View style={styles.sectionCard}>
-              <Text style={styles.sectionTitle}>Shift Timing</Text>
-
-              <View style={styles.modeTabsRow}>
-                <TouchableOpacity
-                  style={[
-                    styles.modeTabButton,
-                    scheduleMode === "single" && styles.modeTabActive,
-                  ]}
-                  onPress={() => switchScheduleMode("single")}
-                >
-                  <Text
-                    style={[
-                      styles.modeTabTxt,
-                      scheduleMode === "single" && styles.modeTabTxtActive,
-                    ]}
-                  >
-                    Single Day
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[
-                    styles.modeTabButton,
-                    scheduleMode === "range" && styles.modeTabActive,
-                  ]}
-                  onPress={() => switchScheduleMode("range")}
-                >
-                  <Text
-                    style={[
-                      styles.modeTabTxt,
-                      scheduleMode === "range" && styles.modeTabTxtActive,
-                    ]}
-                  >
-                    Multiple Days
-                  </Text>
-                </TouchableOpacity>
-              </View>
-
-              {scheduleMode === "single" ? (
-                <View>
-                  <TouchableOpacity
-                    style={styles.calendarTriggerBtn}
-                    onPress={() => {
-                      setCalendarTarget("single");
-                      setCalendarVisible(true);
-                    }}
-                  >
-                    <Calendar
-                      size={18}
-                      color={ACCENT_TEAL}
-                      style={{ marginRight: 8 }}
-                    />
-                    <Text style={{ color: "#FFF" }}>
-                      Date: {formatDate(singleDaySchedule.date)}
-                    </Text>
-                  </TouchableOpacity>
-
-                  <View style={styles.shiftHeaderRow}>
-                    <Text style={[styles.shiftHeaderTxt, { flex: 2 }]}>
-                      Start → End
-                    </Text>
-                    <Text style={[styles.shiftHeaderTxt, { width: 56 }]}>
-                      Guards
-                    </Text>
-                    <View style={{ width: 90 }} />
-                  </View>
-
-                  {singleDaySchedule.shifts?.map((shift, sIdx) =>
-                    renderShiftRow(shift, sIdx, 0, "single"),
-                  )}
-
-                  <TouchableOpacity
-                    style={styles.addShiftRowBtn}
-                    onPress={addSingleShift}
-                  >
-                    <Plus size={16} color={ACCENT_TEAL} />
-                    <Text
-                      style={{
-                        color: ACCENT_TEAL,
-                        marginLeft: 6,
-                        fontWeight: "600",
-                      }}
-                    >
-                      Add Shift
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-              ) : (
-                <View>
-                  <View style={styles.modeTabsRow}>
-                    <TouchableOpacity
-                      style={[
-                        styles.modeTabButton,
-                        multiDayMode === "individual" && styles.modeTabActive,
-                      ]}
-                      onPress={() => switchMultiDayMode("individual")}
-                    >
-                      <Text
-                        style={[
-                          styles.modeTabTxt,
-                          multiDayMode === "individual" &&
-                            styles.modeTabTxtActive,
-                        ]}
-                      >
-                        Individual Dates
-                      </Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={[
-                        styles.modeTabButton,
-                        multiDayMode === "range" && styles.modeTabActive,
-                      ]}
-                      onPress={() => switchMultiDayMode("range")}
-                    >
-                      <Text
-                        style={[
-                          styles.modeTabTxt,
-                          multiDayMode === "range" && styles.modeTabTxtActive,
-                        ]}
-                      >
-                        Date Range
-                      </Text>
-                    </TouchableOpacity>
-                  </View>
-
-                  {multiDayMode === "range" ? (
-                    <View
-                      style={{
-                        flexDirection: "row",
-                        gap: 12,
-                        marginBottom: 12,
-                      }}
-                    >
-                      <TouchableOpacity
-                        style={[styles.calendarTriggerBtn, { flex: 1 }]}
-                        onPress={() => {
-                          setCalendarTarget("rangeFrom");
-                          setCalendarVisible(true);
-                        }}
-                      >
-                        <Calendar size={16} color={ACCENT_TEAL} />
-                        <Text style={{ color: "#FFF", fontSize: 13 }}>
-                          From: {formatDate(rangeFrom)}
-                        </Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        style={[styles.calendarTriggerBtn, { flex: 1 }]}
-                        onPress={() => {
-                          setCalendarTarget("rangeTo");
-                          setCalendarVisible(true);
-                        }}
-                      >
-                        <Calendar size={16} color={ACCENT_TEAL} />
-                        <Text style={{ color: "#FFF", fontSize: 13 }}>
-                          To: {formatDate(rangeTo)}
-                        </Text>
-                      </TouchableOpacity>
-                    </View>
-                  ) : (
-                    <TouchableOpacity
-                      style={[styles.calendarTriggerBtn, { marginBottom: 14 }]}
-                      onPress={openIndividualDatePicker}
-                    >
-                      <Plus size={16} color={ACCENT_TEAL} />
-                      <Text style={{ color: "#FFF" }}>
-                        Click Dates To Select/Deselect
-                      </Text>
-                    </TouchableOpacity>
-                  )}
-
-                  <View style={styles.masterConfigContainer}>
-                    <Text style={styles.masterConfigTitle}>
-                      FAST FILL: APPLIES AUTOMATICALLY TO ALL DATES
-                    </Text>
-
-                    <View style={styles.masterRow}>
-                      {/* Checkbox */}
-                      <TouchableOpacity
-                        style={styles.checkboxRow}
-                        onPress={handleApplyToAllToggle}
-                      >
-                        <View
-                          style={[
-                            styles.checkboxBox,
-                            applyToAll && styles.checkboxChecked,
-                          ]}
-                        >
-                          {applyToAll && <Check size={12} color="#000" />}
-                        </View>
-                      </TouchableOpacity>
-
-                      {/* Start Time */}
-                      <TouchableOpacity
-                        style={styles.timePickerButtonFlex}
-                        onPress={() => openMasterTimePicker("startTime")}
-                      >
-                        <Text style={{ color: "#FFF" }}>
-                          {masterStartTime
-                            ? formatTime(masterStartTime)
-                            : "Start"}
-                        </Text>
-                      </TouchableOpacity>
-
-                      {/* End Time */}
-                      <TouchableOpacity
-                        style={styles.timePickerButtonFlex}
-                        onPress={() => openMasterTimePicker("endTime")}
-                      >
-                        <Text style={{ color: "#FFF" }}>
-                          {masterEndTime ? formatTime(masterEndTime) : "End"}
-                        </Text>
-                      </TouchableOpacity>
-
-                      {/* Guards Input */}
-                      <TextInput
-                        style={styles.masterGuardsInputFlex}
-                        placeholder="Guards"
-                        placeholderTextColor={TEXT_MUTED}
-                        keyboardType="number-pad"
-                        value={masterGuards}
-                        onChangeText={onMasterGuardsChange}
-                      />
-                    </View>
-                  </View>
-
-                  {(multiDayMode === "individual"
-                    ? individualSchedules
-                    : rangeSchedules
-                  ).map((day, dIdx) => (
-                    <View
-                      key={`day-${dIdx}-${day.date.getTime()}`}
-                      style={styles.dayGroupContainer}
-                    >
-                      <Text style={styles.dayGroupHeading}>
-                        {formatDate(day.date)}
-                      </Text>
-                      {day.shifts?.map((shift, sIdx) =>
-                        renderShiftRow(shift, sIdx, dIdx, multiDayMode),
-                      )}
-                      <TouchableOpacity
-                        style={styles.addShiftRowBtn}
-                        onPress={() =>
-                          multiDayMode === "individual"
-                            ? addIndividualShift(dIdx)
-                            : addRangeShift(dIdx)
-                        }
-                      >
-                        <Plus size={14} color={ACCENT_TEAL} />
-                        <Text
-                          style={{
-                            color: ACCENT_TEAL,
-                            fontSize: 13,
-                            marginLeft: 4,
-                          }}
-                        >
-                          Add Shift
-                        </Text>
-                      </TouchableOpacity>
-                    </View>
-                  ))}
-                </View>
-              )}
-            </View>
-          </ScheduleErrorBoundary>
-
-          {/* Hours Summary */}
-          <View style={styles.quotationSummaryCard}>
-            <View
-              style={{ flexDirection: "row", justifyContent: "space-between" }}
-            >
-              <Text style={{ color: TEXT_MUTED }}>Calculated Hours</Text>
-              <Text style={{ color: "#FFF", fontWeight: "700" }}>
-                {totalManHours.toFixed(1)} Hours
-              </Text>
-            </View>
-          </View>
-
-          {/* Category */}
-          <View style={styles.sectionCard}>
-            <Text style={styles.inputLabel}>Job Category *</Text>
-
-            <LinearGradient
-              colors={[
-                "rgba(255,255,255,0.41)",
-                "rgba(255,255,255,0.35)",
-                "rgba(255,255,255,0.2)",
-                "rgba(255,255,255,0.10)",
-                "rgba(255,255,255,0.22)",
-              ]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.dropdownGradient}
-            >
+            <View style={styles.modeTabsRow}>
               <TouchableOpacity
                 style={[
-                  styles.selectBox,
-                  // Only show error border when there's actually an error
-                  errors.category && styles.inputErrorBorder,
+                  styles.modeTabButton,
+                  scheduleMode === "single" && styles.modeTabActive,
                 ]}
-                onPress={() => setShowCategoryModal(true)}
+                onPress={() => switchScheduleMode("single")}
               >
                 <Text
-                  style={{
-                    color: form.category ? "#FFF" : TEXT_MUTED,
-                    flex: 1,
+                  style={[
+                    styles.modeTabTxt,
+                    scheduleMode === "single" && styles.modeTabTxtActive,
+                  ]}
+                >
+                  Single Day
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.modeTabButton,
+                  scheduleMode === "range" && styles.modeTabActive,
+                ]}
+                onPress={() => switchScheduleMode("range")}
+              >
+                <Text
+                  style={[
+                    styles.modeTabTxt,
+                    scheduleMode === "range" && styles.modeTabTxtActive,
+                  ]}
+                >
+                  Multiple Days
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            {scheduleMode === "single" ? (
+              <View>
+                <TouchableOpacity
+                  style={styles.calendarTriggerBtn}
+                  onPress={() => {
+                    setCalendarTarget("single");
+                    setCalendarVisible(true);
                   }}
                 >
-                  {form.category
-                    ? categoryOptions.find((o) => o.value === form.category)
-                        ?.label || "Others"
-                    : "Select Category"}
-                </Text>
-                <ChevronDown size={18} color={ACCENT_TEAL} />
-              </TouchableOpacity>
-            </LinearGradient>
+                  <Calendar
+                    size={18}
+                    color={ACCENT_TEAL}
+                    style={{ marginRight: 8 }}
+                  />
+                  <Text style={{ color: "#FFF" }}>
+                    Date: {formatDate(singleDaySchedule.date)}
+                  </Text>
+                </TouchableOpacity>
 
-            {/* Error Message */}
-            {errors.category && (
-              <Text style={styles.errorText}>{errors.category}</Text>
-            )}
+                <View style={styles.shiftHeaderRow}>
+                  <Text style={[styles.shiftHeaderTxt, { flex: 2 }]}>
+                    Start → End
+                  </Text>
+                  <Text style={[styles.shiftHeaderTxt, { width: 56 }]}>
+                    Guards
+                  </Text>
+                  <View style={{ width: 90 }} />
+                </View>
 
-            {/* Others field */}
-            {form.category === "others" && (
-              <TextInput
-                style={[styles.inputBox, { marginTop: 10 }]}
-                placeholder="Specify Job Category"
-                placeholderTextColor={TEXT_MUTED}
-                value={otherCategory}
-                onChangeText={setOtherCategory}
-              />
-            )}
-          </View>
+                {singleDaySchedule.shifts?.map((shift, sIdx) =>
+                  renderShiftRow(shift, sIdx, 0, "single"),
+                )}
 
-          {/* Documents */}
-          <Text style={styles.inputLabel}>Required Documents</Text>
-          <View style={styles.toggleContainer}>
-            {documentOptions.slice(0, 3).map((doc) => {
-              const isActive = form.documents.includes(doc.value);
-              return (
-                <LinearGradient
-                  key={doc.value}
-                  colors={["rgba(255,255,255,0.25)", "rgba(255,255,255,0.08)"]}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                  style={styles.toggleCard}
+                <TouchableOpacity
+                  style={styles.addShiftRowBtn}
+                  onPress={addSingleShift}
                 >
-                  <View style={styles.toggleRow}>
-                    <Text style={styles.toggleLabel}>{doc.label}</Text>
+                  <Plus size={16} color={ACCENT_TEAL} />
+                  <Text
+                    style={{
+                      color: ACCENT_TEAL,
+                      marginLeft: 6,
+                      fontWeight: "600",
+                    }}
+                  >
+                    Add Shift
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <View>
+                <View style={styles.modeTabsRow}>
+                  <TouchableOpacity
+                    style={[
+                      styles.modeTabButton,
+                      multiDayMode === "individual" && styles.modeTabActive,
+                    ]}
+                    onPress={() => switchMultiDayMode("individual")}
+                  >
+                    <Text
+                      style={[
+                        styles.modeTabTxt,
+                        multiDayMode === "individual" &&
+                          styles.modeTabTxtActive,
+                      ]}
+                    >
+                      Individual Dates
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[
+                      styles.modeTabButton,
+                      multiDayMode === "range" && styles.modeTabActive,
+                    ]}
+                    onPress={() => switchMultiDayMode("range")}
+                  >
+                    <Text
+                      style={[
+                        styles.modeTabTxt,
+                        multiDayMode === "range" && styles.modeTabTxtActive,
+                      ]}
+                    >
+                      Date Range
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+
+                {multiDayMode === "range" ? (
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      gap: 12,
+                      marginBottom: 12,
+                    }}
+                  >
                     <TouchableOpacity
-                      activeOpacity={1}
-                      style={styles.toggleSwitch}
-                      onPress={() => toggleDocument(doc.value)}
+                      style={[styles.calendarTriggerBtn, { flex: 1 }]}
+                      onPress={() => {
+                        setCalendarTarget("rangeFrom");
+                        setCalendarVisible(true);
+                      }}
+                    >
+                      <Calendar size={16} color={ACCENT_TEAL} />
+                      <Text style={{ color: "#FFF", fontSize: 13 }}>
+                        From: {formatDate(rangeFrom)}
+                      </Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[styles.calendarTriggerBtn, { flex: 1 }]}
+                      onPress={() => {
+                        setCalendarTarget("rangeTo");
+                        setCalendarVisible(true);
+                      }}
+                    >
+                      <Calendar size={16} color={ACCENT_TEAL} />
+                      <Text style={{ color: "#FFF", fontSize: 13 }}>
+                        To: {formatDate(rangeTo)}
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                ) : (
+                  <TouchableOpacity
+                    style={[styles.calendarTriggerBtn, { marginBottom: 14 }]}
+                    onPress={openIndividualDatePicker}
+                  >
+                    <Plus size={16} color={ACCENT_TEAL} />
+                    <Text style={{ color: "#FFF" }}>
+                      Click Dates To Select/Deselect
+                    </Text>
+                  </TouchableOpacity>
+                )}
+
+                <View style={styles.masterConfigContainer}>
+                  <Text style={styles.masterConfigTitle}>
+                    FAST FILL: APPLIES AUTOMATICALLY TO ALL DATES
+                  </Text>
+
+                  <View style={styles.masterRow}>
+                    {/* Checkbox */}
+                    <TouchableOpacity
+                      style={styles.checkboxRow}
+                      onPress={handleApplyToAllToggle}
                     >
                       <View
                         style={[
-                          styles.toggleOption,
-                          isActive && styles.toggleOptionActiveYes,
+                          styles.checkboxBox,
+                          applyToAll && styles.checkboxChecked,
                         ]}
                       >
-                        <Text
-                          style={[
-                            styles.toggleText,
-                            isActive && styles.toggleTextActive,
-                          ]}
-                        >
-                          Yes
-                        </Text>
-                      </View>
-                      <View
-                        style={[
-                          styles.toggleOption,
-                          !isActive && styles.toggleOptionActiveNo,
-                        ]}
-                      >
-                        <Text
-                          style={[
-                            styles.toggleText,
-                            !isActive && styles.toggleTextActive,
-                          ]}
-                        >
-                          No
-                        </Text>
+                        {applyToAll && <Check size={12} color="#000" />}
                       </View>
                     </TouchableOpacity>
+
+                    {/* Start Time */}
+                    <TouchableOpacity
+                      style={styles.timePickerButtonFlex}
+                      onPress={() => openMasterTimePicker("startTime")}
+                    >
+                      <Text style={{ color: "#FFF" }}>
+                        {masterStartTime
+                          ? formatTime(masterStartTime)
+                          : "Start"}
+                      </Text>
+                    </TouchableOpacity>
+
+                    {/* End Time */}
+                    <TouchableOpacity
+                      style={styles.timePickerButtonFlex}
+                      onPress={() => openMasterTimePicker("endTime")}
+                    >
+                      <Text style={{ color: "#FFF" }}>
+                        {masterEndTime ? formatTime(masterEndTime) : "End"}
+                      </Text>
+                    </TouchableOpacity>
+
+                    {/* Guards Input */}
+                    <TextInput
+                      style={styles.masterGuardsInputFlex}
+                      placeholder="Guards"
+                      placeholderTextColor={TEXT_MUTED}
+                      keyboardType="number-pad"
+                      value={masterGuards}
+                      onChangeText={onMasterGuardsChange}
+                    />
                   </View>
-                </LinearGradient>
-              );
-            })}
-          </View>
+                </View>
 
-          {/* Description */}
-          <View style={styles.sectionCard}>
-            <View
-              style={{ flexDirection: "row", justifyContent: "space-between" }}
-            >
-              <Text style={styles.inputLabel}>Detailed Description *</Text>
-              <Text style={{ color: TEXT_MUTED, fontSize: 12 }}>
-                {form.description.length}/{MAX_DESCRIPTION_LENGTH}
-              </Text>
-            </View>
-            <TextInput
-              style={[
-                styles.textAreaBox,
-                errors.description && styles.inputErrorBorder,
-              ]}
-              multiline
-              maxLength={MAX_DESCRIPTION_LENGTH}
-              placeholder="Provide responsibilities, requirements, dress code, etc."
-              placeholderTextColor={TEXT_MUTED}
-              value={form.description}
-              onChangeText={(text) => {
-                setForm((prev) => ({ ...prev, description: text }));
-                setErrors((prev) => ({
-                  ...prev,
-                  description: text.trim().length > 0 ? "" : prev.description,
-                }));
-              }}
-            />
-            {errors.description && (
-              <Text style={styles.errorText}>{errors.description}</Text>
-            )}
-          </View>
-
-          {/* File Upload */}
-          <View style={styles.sectionCard}>
-            <Text style={styles.inputLabel}>Upload Documents</Text>
-            <TouchableOpacity
-              style={styles.uploadBoxFrame}
-              onPress={handleUpload}
-              disabled={uploading}
-            >
-              {uploading ? (
-                <ActivityIndicator color={ACCENT_TEAL} />
-              ) : (
-                <>
-                  <CloudUpload size={28} color={ACCENT_TEAL} />
-                  <Text style={{ color: "#FFF", marginTop: 6, fontSize: 13 }}>
-                    Upload files here
-                  </Text>
-                </>
-              )}
-            </TouchableOpacity>
-            {selectedFiles.map((file: any, i) => (
-              <View key={i} style={styles.fileRowItem}>
-                <FileCheck size={16} color={ACCENT_TEAL} />
-                <Text style={styles.fileRowTxt} numberOfLines={1}>
-                  {file.name || "document_file.pdf"}
-                </Text>
-              </View>
-            ))}
-          </View>
-
-          <TouchableOpacity
-            style={styles.primaryActionButton}
-            onPress={validateAndNext}
-          >
-            <LinearGradient
-              colors={["#5CE1D6", "#2bbcb0"]}
-              style={styles.gradientButtonWrapper}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-            >
-              <Text style={styles.primaryActionText}>
-                Proceed to Quotation Review
-              </Text>
-              <ArrowRight size={18} color="#001F3F" />
-            </LinearGradient>
-          </TouchableOpacity>
-          <View style={{ height: 40 }} />
-        </ScrollView>
-
-        {/* Time Picker */}
-        {pickerVisible && (
-          <View style={{ alignItems: "center", paddingHorizontal: 12 }}>
-            <DateTimePicker
-              mode="time"
-              is24Hour={true}
-              display={Platform.OS === "ios" ? "spinner" : "default"}
-              value={pickerValue}
-              onChange={onTimePickerChange}
-              textColor="#FFFFFF"
-            />
-            {Platform.OS === "ios" && (
-              <View
-                style={{
-                  flexDirection: "row",
-                  justifyContent: "center",
-                  gap: 12,
-                  marginTop: 10,
-                }}
-              >
-                <TouchableOpacity
-                  onPress={() => {
-                    try {
-                      applyTimeChange(pickerValue);
-                    } catch (e) {
-                      console.warn(e);
-                    }
-                    setPickerVisible(false);
-                  }}
-                  style={{
-                    paddingVertical: 10,
-                    paddingHorizontal: 16,
-                    borderRadius: 10,
-                    backgroundColor: ACCENT_TEAL,
-                  }}
-                >
-                  <Text style={{ color: BRAND_BG, fontWeight: "700" }}>
-                    Confirm
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={() => {
-                    setPickerVisible(false);
-                    setPickerTarget(null);
-                  }}
-                  style={{
-                    paddingVertical: 10,
-                    paddingHorizontal: 16,
-                    borderRadius: 10,
-                    backgroundColor: "rgba(255,255,255,0.08)",
-                  }}
-                >
-                  <Text style={{ color: "#fff", fontWeight: "700" }}>
-                    Cancel
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            )}
-          </View>
-        )}
-
-        {/* Calendar Modal */}
-        <Modal
-          visible={calendarVisible}
-          transparent
-          animationType="fade"
-          onRequestClose={() => setCalendarVisible(false)}
-        >
-          <View style={styles.modalBackgroundOverlay}>
-            <View style={styles.calendarModalContent}>
-              <View style={styles.calNavRow}>
-                <TouchableOpacity
-                  onPress={() =>
-                    setCalendarMonth(
-                      new Date(
-                        calendarMonth.getFullYear(),
-                        calendarMonth.getMonth() - 1,
-                        1,
-                      ),
-                    )
-                  }
-                >
-                  <ChevronLeft size={20} color="#FFF" />
-                </TouchableOpacity>
-                <Text style={styles.calendarMonthHeadingText}>
-                  {calendarMonth.toLocaleString("default", {
-                    month: "long",
-                    year: "numeric",
-                  })}
-                </Text>
-                <TouchableOpacity
-                  onPress={() =>
-                    setCalendarMonth(
-                      new Date(
-                        calendarMonth.getFullYear(),
-                        calendarMonth.getMonth() + 1,
-                        1,
-                      ),
-                    )
-                  }
-                >
-                  <ChevronRight size={20} color="#FFF" />
-                </TouchableOpacity>
-              </View>
-              <View style={styles.calWeekRow}>
-                {["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"].map((w) => (
-                  <Text key={w} style={styles.calWeekDay}>
-                    {w}
-                  </Text>
+                {(multiDayMode === "individual"
+                  ? individualSchedules
+                  : rangeSchedules
+                ).map((day, dIdx) => (
+                  <View
+                    key={`day-${dIdx}-${day.date.getTime()}`}
+                    style={styles.dayGroupContainer}
+                  >
+                    <Text style={styles.dayGroupHeading}>
+                      {formatDate(day.date)}
+                    </Text>
+                    {day.shifts?.map((shift, sIdx) =>
+                      renderShiftRow(shift, sIdx, dIdx, multiDayMode),
+                    )}
+                    <TouchableOpacity
+                      style={styles.addShiftRowBtn}
+                      onPress={() =>
+                        multiDayMode === "individual"
+                          ? addIndividualShift(dIdx)
+                          : addRangeShift(dIdx)
+                      }
+                    >
+                      <Plus size={14} color={ACCENT_TEAL} />
+                      <Text
+                        style={{
+                          color: ACCENT_TEAL,
+                          fontSize: 13,
+                          marginLeft: 4,
+                        }}
+                      >
+                        Add Shift
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
                 ))}
               </View>
-              <View style={styles.daysMatrixGrid}>
-                {calendarDays.map((day, idx) => {
-                  if (!day)
-                    return (
-                      <View key={`empty-${idx}`} style={styles.emptyGridCell} />
-                    );
-                  const isSelected = isDaySelected(day);
-                  const inRange = isDayInRange(day);
-                  const isHighlighted = isSelected || inRange;
-                  const isPast =
-                    day < new Date(new Date().setHours(0, 0, 0, 0));
-                  return (
-                    <TouchableOpacity
-                      key={`day-${idx}`}
+            )}
+          </View>
+        </ScheduleErrorBoundary>
+
+        {/* Hours Summary */}
+        <View style={styles.quotationSummaryCard}>
+          <View
+            style={{ flexDirection: "row", justifyContent: "space-between" }}
+          >
+            <Text style={{ color: TEXT_MUTED }}>Calculated Hours</Text>
+            <Text style={{ color: "#FFF", fontWeight: "700" }}>
+              {totalManHours.toFixed(1)} Hours
+            </Text>
+          </View>
+        </View>
+
+        {/* Category */}
+        <View style={styles.sectionCard}>
+          <Text style={styles.inputLabel}>Job Category *</Text>
+
+          <LinearGradient
+            colors={[
+              "rgba(255,255,255,0.41)",
+              "rgba(255,255,255,0.35)",
+              "rgba(255,255,255,0.2)",
+              "rgba(255,255,255,0.10)",
+              "rgba(255,255,255,0.22)",
+            ]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.dropdownGradient}
+          >
+            <TouchableOpacity
+              style={[
+                styles.selectBox,
+                // Only show error border when there's actually an error
+                errors.category && styles.inputErrorBorder,
+              ]}
+              onPress={() => setShowCategoryModal(true)}
+            >
+              <Text
+                style={{
+                  color: form.category ? "#FFF" : TEXT_MUTED,
+                  flex: 1,
+                }}
+              >
+                {form.category
+                  ? categoryOptions.find((o) => o.value === form.category)
+                      ?.label || "Others"
+                  : "Select Category"}
+              </Text>
+              <ChevronDown size={18} color={ACCENT_TEAL} />
+            </TouchableOpacity>
+          </LinearGradient>
+
+          {/* Error Message */}
+          {errors.category && (
+            <Text style={styles.errorText}>{errors.category}</Text>
+          )}
+
+          {/* Others field */}
+          {form.category === "others" && (
+            <TextInput
+              style={[styles.inputBox, { marginTop: 10 }]}
+              placeholder="Specify Job Category"
+              placeholderTextColor={TEXT_MUTED}
+              value={otherCategory}
+              onChangeText={setOtherCategory}
+            />
+          )}
+        </View>
+
+        {/* Documents */}
+        <Text style={styles.inputLabel}>Required Documents</Text>
+        <View style={styles.toggleContainer}>
+          {documentOptions.slice(0, 3).map((doc) => {
+            const isActive = form.documents.includes(doc.value);
+            return (
+              <LinearGradient
+                key={doc.value}
+                colors={["rgba(255,255,255,0.25)", "rgba(255,255,255,0.08)"]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.toggleCard}
+              >
+                <View style={styles.toggleRow}>
+                  <Text style={styles.toggleLabel}>{doc.label}</Text>
+                  <TouchableOpacity
+                    activeOpacity={1}
+                    style={styles.toggleSwitch}
+                    onPress={() => toggleDocument(doc.value)}
+                  >
+                    <View
                       style={[
-                        styles.calendarDayCell,
-                        isHighlighted && styles.dayCellSelected,
-                        isPast && styles.dayCellDisabled,
+                        styles.toggleOption,
+                        isActive && styles.toggleOptionActiveYes,
                       ]}
-                      onPress={() => !isPast && onCalendarDayPress(day)}
-                      disabled={isPast}
                     >
                       <Text
                         style={[
-                          styles.dayCellText,
-                          isHighlighted && styles.dayCellTextSelected,
-                          isPast && styles.dayCellTextDisabled,
+                          styles.toggleText,
+                          isActive && styles.toggleTextActive,
                         ]}
                       >
-                        {day.getDate()}
+                        Yes
                       </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
+                    </View>
+                    <View
+                      style={[
+                        styles.toggleOption,
+                        !isActive && styles.toggleOptionActiveNo,
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.toggleText,
+                          !isActive && styles.toggleTextActive,
+                        ]}
+                      >
+                        No
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+                </View>
+              </LinearGradient>
+            );
+          })}
+        </View>
+
+        {/* Description */}
+        <View style={styles.sectionCard}>
+          <View
+            style={{ flexDirection: "row", justifyContent: "space-between" }}
+          >
+            <Text style={styles.inputLabel}>Detailed Description *</Text>
+            <Text style={{ color: TEXT_MUTED, fontSize: 12 }}>
+              {form.description.length}/{MAX_DESCRIPTION_LENGTH}
+            </Text>
+          </View>
+          <TextInput
+            style={[
+              styles.textAreaBox,
+              errors.description && styles.inputErrorBorder,
+            ]}
+            multiline
+            maxLength={MAX_DESCRIPTION_LENGTH}
+            placeholder="Provide responsibilities, requirements, dress code, etc."
+            placeholderTextColor={TEXT_MUTED}
+            value={form.description}
+            onChangeText={(text) => {
+              setForm((prev) => ({ ...prev, description: text }));
+              setErrors((prev) => ({
+                ...prev,
+                description: text.trim().length > 0 ? "" : prev.description,
+              }));
+            }}
+          />
+          {errors.description && (
+            <Text style={styles.errorText}>{errors.description}</Text>
+          )}
+        </View>
+
+        {/* File Upload */}
+        <View style={styles.sectionCard}>
+          <Text style={styles.inputLabel}>Upload Documents</Text>
+          <TouchableOpacity
+            style={styles.uploadBoxFrame}
+            onPress={handleUpload}
+            disabled={uploading}
+          >
+            {uploading ? (
+              <ActivityIndicator color={ACCENT_TEAL} />
+            ) : (
+              <>
+                <CloudUpload size={28} color={ACCENT_TEAL} />
+                <Text style={{ color: "#FFF", marginTop: 6, fontSize: 13 }}>
+                  Upload files here
+                </Text>
+              </>
+            )}
+          </TouchableOpacity>
+          {selectedFiles.map((file: any, i) => (
+            <View key={i} style={styles.fileRowItem}>
+              <FileCheck size={16} color={ACCENT_TEAL} />
+              <Text style={styles.fileRowTxt} numberOfLines={1}>
+                {file.name || "document_file.pdf"}
+              </Text>
+            </View>
+          ))}
+        </View>
+
+        <TouchableOpacity
+          style={styles.primaryActionButton}
+          onPress={validateAndNext}
+        >
+          <LinearGradient
+            colors={["#5CE1D6", "#2bbcb0"]}
+            style={styles.gradientButtonWrapper}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+          >
+            <Text style={styles.primaryActionText}>
+              Proceed to Quotation Review
+            </Text>
+            <ArrowRight size={18} color="#001F3F" />
+          </LinearGradient>
+        </TouchableOpacity>
+        <View style={{ height: 40 }} />
+      </ScrollView>
+
+      {/* Time Picker */}
+      {pickerVisible && (
+        <View style={{ alignItems: "center", paddingHorizontal: 12 }}>
+          <DateTimePicker
+            mode="time"
+            is24Hour={true}
+            display={Platform.OS === "ios" ? "spinner" : "default"}
+            value={pickerValue}
+            onChange={onTimePickerChange}
+            textColor="#FFFFFF"
+          />
+          {Platform.OS === "ios" && (
+            <View
+              style={{
+                flexDirection: "row",
+                justifyContent: "center",
+                gap: 12,
+                marginTop: 10,
+              }}
+            >
               <TouchableOpacity
-                style={{ marginTop: 20, alignSelf: "flex-end" }}
-                onPress={() => setCalendarVisible(false)}
+                onPress={() => {
+                  try {
+                    applyTimeChange(pickerValue);
+                  } catch (e) {
+                    console.warn(e);
+                  }
+                  setPickerVisible(false);
+                }}
+                style={{
+                  paddingVertical: 10,
+                  paddingHorizontal: 16,
+                  borderRadius: 10,
+                  backgroundColor: ACCENT_TEAL,
+                }}
               >
-                <Text style={styles.closeModalTextLink}>Done</Text>
+                <Text style={{ color: BRAND_BG, fontWeight: "700" }}>
+                  Confirm
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => {
+                  setPickerVisible(false);
+                  setPickerTarget(null);
+                }}
+                style={{
+                  paddingVertical: 10,
+                  paddingHorizontal: 16,
+                  borderRadius: 10,
+                  backgroundColor: "rgba(255,255,255,0.08)",
+                }}
+              >
+                <Text style={{ color: "#fff", fontWeight: "700" }}>Cancel</Text>
               </TouchableOpacity>
             </View>
-          </View>
-        </Modal>
+          )}
+        </View>
+      )}
 
-        {/* Category Modal */}
-        <Modal
-          visible={showCategoryModal}
-          transparent
-          animationType="slide"
-          onRequestClose={() => setShowCategoryModal(false)}
-        >
-          <View style={styles.modalBackgroundOverlay}>
-            <View style={styles.bottomSheetContent}>
-              <Text style={styles.modalTitleHeader}>
-                Select Job Position Category
-              </Text>
-              <ScrollView
-                showsVerticalScrollIndicator={false}
-                contentContainerStyle={{ paddingBottom: 20 }}
+      {/* Calendar Modal */}
+      <Modal
+        visible={calendarVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setCalendarVisible(false)}
+      >
+        <View style={styles.modalBackgroundOverlay}>
+          <View style={styles.calendarModalContent}>
+            <View style={styles.calNavRow}>
+              <TouchableOpacity
+                onPress={() =>
+                  setCalendarMonth(
+                    new Date(
+                      calendarMonth.getFullYear(),
+                      calendarMonth.getMonth() - 1,
+                      1,
+                    ),
+                  )
+                }
               >
-                {categoryOptions.map((opt) => (
+                <ChevronLeft size={20} color="#FFF" />
+              </TouchableOpacity>
+              <Text style={styles.calendarMonthHeadingText}>
+                {calendarMonth.toLocaleString("default", {
+                  month: "long",
+                  year: "numeric",
+                })}
+              </Text>
+              <TouchableOpacity
+                onPress={() =>
+                  setCalendarMonth(
+                    new Date(
+                      calendarMonth.getFullYear(),
+                      calendarMonth.getMonth() + 1,
+                      1,
+                    ),
+                  )
+                }
+              >
+                <ChevronRight size={20} color="#FFF" />
+              </TouchableOpacity>
+            </View>
+            <View style={styles.calWeekRow}>
+              {["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"].map((w) => (
+                <Text key={w} style={styles.calWeekDay}>
+                  {w}
+                </Text>
+              ))}
+            </View>
+            <View style={styles.daysMatrixGrid}>
+              {calendarDays.map((day, idx) => {
+                if (!day)
+                  return (
+                    <View key={`empty-${idx}`} style={styles.emptyGridCell} />
+                  );
+                const isSelected = isDaySelected(day);
+                const inRange = isDayInRange(day);
+                const isHighlighted = isSelected || inRange;
+                const isPast = day < new Date(new Date().setHours(0, 0, 0, 0));
+                return (
                   <TouchableOpacity
-                    key={opt.value}
-                    style={styles.sheetOptionRow}
-                    onPress={() => {
-                      setForm((prev) => ({ ...prev, category: opt.value }));
-                      setErrors((prev) => ({ ...prev, category: undefined }));
-                      setShowCategoryModal(false);
-                    }}
+                    key={`day-${idx}`}
+                    style={[
+                      styles.calendarDayCell,
+                      isHighlighted && styles.dayCellSelected,
+                      isPast && styles.dayCellDisabled,
+                    ]}
+                    onPress={() => !isPast && onCalendarDayPress(day)}
+                    disabled={isPast}
                   >
                     <Text
-                      style={{
-                        color:
-                          form.category === opt.value ? ACCENT_TEAL : "#FFF",
-                        fontSize: 16,
-                      }}
+                      style={[
+                        styles.dayCellText,
+                        isHighlighted && styles.dayCellTextSelected,
+                        isPast && styles.dayCellTextDisabled,
+                      ]}
                     >
-                      {opt.label}
+                      {day.getDate()}
                     </Text>
-                    {form.category === opt.value && (
-                      <Check size={18} color={ACCENT_TEAL} />
-                    )}
                   </TouchableOpacity>
-                ))}
-              </ScrollView>
+                );
+              })}
             </View>
+            <TouchableOpacity
+              style={{ marginTop: 20, alignSelf: "flex-end" }}
+              onPress={() => setCalendarVisible(false)}
+            >
+              <Text style={styles.closeModalTextLink}>Done</Text>
+            </TouchableOpacity>
           </View>
-        </Modal>
-      </KeyboardAvoidingView>
+        </View>
+      </Modal>
+
+      {/* Category Modal */}
+      <Modal
+        visible={showCategoryModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowCategoryModal(false)}
+      >
+        <View style={styles.modalBackgroundOverlay}>
+          <View style={styles.bottomSheetContent}>
+            <Text style={styles.modalTitleHeader}>
+              Select Job Position Category
+            </Text>
+            <ScrollView
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={{ paddingBottom: 20 }}
+            >
+              {categoryOptions.map((opt) => (
+                <TouchableOpacity
+                  key={opt.value}
+                  style={styles.sheetOptionRow}
+                  onPress={() => {
+                    setForm((prev) => ({ ...prev, category: opt.value }));
+                    setErrors((prev) => ({ ...prev, category: undefined }));
+                    setShowCategoryModal(false);
+                  }}
+                >
+                  <Text
+                    style={{
+                      color: form.category === opt.value ? ACCENT_TEAL : "#FFF",
+                      fontSize: 16,
+                    }}
+                  >
+                    {opt.label}
+                  </Text>
+                  {form.category === opt.value && (
+                    <Check size={18} color={ACCENT_TEAL} />
+                  )}
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+      {/* </KeyboardAvoidingView> */}
       {/* <BottomTab navigation={navigation} activeTab="CreateJob" /> */}
     </SafeAreaView>
   );
@@ -2787,7 +2840,12 @@ const styles = StyleSheet.create({
     padding: 12,
     marginBottom: 20,
   },
-  primaryActionButton: { height: 54, borderRadius: 12, overflow: "hidden" },
+  primaryActionButton: {
+    height: 54,
+    borderRadius: 12,
+    overflow: "hidden",
+    marginBottom: 50,
+  },
   gradientButtonWrapper: {
     flex: 1,
     flexDirection: "row",

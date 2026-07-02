@@ -568,7 +568,7 @@
 //     return (
 //       <View style={styles.loadingContainer}>
 //         <ActivityIndicator size="large" color={COLORS.primary} />
-//         <Text style={styles.loadingText}>Loading Profile...</Text>
+//         <Text style={styles.loadingText}>Loading profile...</Text>
 //       </View>
 //     );
 //   }
@@ -1695,7 +1695,7 @@ export default function ProfileScreen({ navigation }: Props) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color={COLORS.primary} />
-        <Text style={styles.loadingText}>Loading Profile...</Text>
+        <Text style={styles.loadingText}>Loading profile...</Text>
       </View>
     );
   }

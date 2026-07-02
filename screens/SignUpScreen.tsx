@@ -1,6 +1,4 @@
-
-
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect } from "react";
 import {
   View,
   Text,
@@ -17,8 +15,8 @@ import {
   useWindowDimensions,
   Modal,
   StatusBar,
-} from 'react-native';
-import { Linking, Modal as RNModal } from 'react-native';
+} from "react-native";
+import { Linking, Modal as RNModal } from "react-native";
 import {
   Phone,
   Building2,
@@ -32,43 +30,43 @@ import {
   X,
   Circle,
   CheckCircle,
-} from 'lucide-react-native';
+} from "lucide-react-native";
 
-import Toast from 'react-native-toast-message';
-import { registerUser } from '../services/authApi';
-import { GoogleSignin } from '@react-native-google-signin/google-signin';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import LinearGradient from 'react-native-linear-gradient';
+import Toast from "react-native-toast-message";
+import { registerUser } from "../services/authApi";
+import { GoogleSignin } from "@react-native-google-signin/google-signin";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import LinearGradient from "react-native-linear-gradient";
 
-const LOGO = require('../assets/staffoo.png');
+const LOGO = require("../assets/staffoo.png");
 
 const COLORS = {
   // 🌿 Primary Brand
-  primary: '#0A7C6E',
+  primary: "#0A7C6E",
   // 0A7C6E
 
-  primaryDark: '#4FCBB3',
+  primaryDark: "#4FCBB3",
 
   // 🌙 Background system
-  background: '#001F3F',
-  surface: '#0B2A4A',
-  surface2: '#12243A',
+  background: "#001F3F",
+  surface: "#0B2A4A",
+  surface2: "#12243A",
 
   // ✨ Glass Cards
-  card: 'rgba(255,255,255,0.06)',
-  cardBorder: 'rgba(255,255,255,0.08)',
+  card: "rgba(255,255,255,0.06)",
+  cardBorder: "rgba(255,255,255,0.08)",
 
   // ✍️ Text
-  text: '#a3a1a1',
-  textSecondary: 'rgba(255, 254, 254, 0.75)',
-  textMuted: 'rgba(51, 50, 50, 0.45)',
+  text: "#a3a1a1",
+  textSecondary: "rgba(255, 254, 254, 0.75)",
+  textMuted: "rgba(51, 50, 50, 0.45)",
 
   // Status
-  success: '#0A7C6E',
-  warning: '#F59E0B',
-  danger: '#EF4444',
+  success: "#0A7C6E",
+  warning: "#F59E0B",
+  danger: "#EF4444",
 
-  border: 'rgba(255,255,255,0.08)',
+  border: "rgba(255,255,255,0.08)",
 };
 
 const PRIVACY_POLICY_TEXT = `Staffoo: Terms of Service & Privacy Policy
@@ -123,9 +121,12 @@ Email: [admin@staffoo.com.au]
 Phone: [1800782366]`;
 
 export default function SignUpScreen({ navigation }: { navigation: any }) {
-  const [userType, setUserType] = useState<'staff' | 'customer' | 'contractor'>(
-    'customer',
-  );
+  // const [userType, setUserType] = useState<'staff' | 'customer' | 'contractor'>(
+  //   'customer',
+  // );
+  const [userType, setUserType] = useState<
+    "staff" | "customer" | "contractor" | null
+  >(null);
   const [acceptedPolicy, setAcceptedPolicy] = useState(false);
   const [showPolicyModal, setShowPolicyModal] = useState(false);
 
@@ -133,22 +134,22 @@ export default function SignUpScreen({ navigation }: { navigation: any }) {
   const { width } = useWindowDimensions();
   const isTablet = width >= 768;
   const [showVerifyModal, setShowVerifyModal] = useState(false);
-  const [registeredEmail, setRegisteredEmail] = useState('');
+  const [registeredEmail, setRegisteredEmail] = useState("");
   // Form fields
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [phone, setPhone] = useState(''); // Optional
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [phone, setPhone] = useState(""); // Optional
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   useEffect(() => {
-    if (Platform.OS === 'android') {
+    if (Platform.OS === "android") {
       GoogleSignin.configure({
         webClientId:
-          '224693258602-a6q3lng2a3c8kte6p0llbu9iiduoiqtq.apps.googleusercontent.com',
+          "224693258602-a6q3lng2a3c8kte6p0llbu9iiduoiqtq.apps.googleusercontent.com",
       });
     }
   }, []);
@@ -161,13 +162,13 @@ export default function SignUpScreen({ navigation }: { navigation: any }) {
       return {
         valid: false,
         message:
-          'Password must contain at least 8 characters, 1 letter & 1 special character',
+          "Password must contain at least 8 characters, 1 letter & 1 special character",
       };
     }
 
     return {
       valid: true,
-      message: '',
+      message: "",
     };
   };
 
@@ -175,9 +176,10 @@ export default function SignUpScreen({ navigation }: { navigation: any }) {
   const passwordValidation = validatePassword(password);
 
   const handleUserTypeChange = (
-    newType: 'staff' | 'customer' | 'contractor',
+    newType: "staff" | "customer" | "contractor",
   ) => {
     if (newType === userType) return;
+
     setUserType(newType);
 
     Animated.sequence([
@@ -194,36 +196,42 @@ export default function SignUpScreen({ navigation }: { navigation: any }) {
     ]).start();
   };
 
-  const getDisplayName = (type: 'staff' | 'customer' | 'contractor') => {
-    if (type === 'customer') return 'Client';
-    if (type === 'staff') return 'Staff';
-    return 'Resource Partner';
+  const getDisplayName = (type: "staff" | "customer" | "contractor") => {
+    if (type === "customer") return "Client";
+    if (type === "staff") return "Staff";
+    return "Resource Partner";
   };
 
   const handleSignUp = async () => {
     if (!acceptedPolicy) {
       return Toast.show({
-        type: 'error',
-        text1: 'Please accept the Privacy Policy & Terms',
+        type: "error",
+        text1: "Please accept the Privacy Policy & Terms",
       });
     }
 
     if (!name.trim())
-      return Toast.show({ type: 'error', text1: 'Name is required' });
-    if (!email.trim() || !email.includes('@'))
-      return Toast.show({ type: 'error', text1: 'Valid email is required' });
+      return Toast.show({ type: "error", text1: "Name is required" });
+    if (!email.trim() || !email.includes("@"))
+      return Toast.show({ type: "error", text1: "Valid email is required" });
 
     const passwordRegex = /^(?=.*[A-Za-z])(?=.*[\W_]).{8,}$/;
     if (!passwordRegex.test(password)) {
       return Toast.show({
-        type: 'error',
-        text1: 'Weak Password',
+        type: "error",
+        text1: "Weak Password",
         text2:
-          'Password must contain at least 8 characters, 1 letter and 1 special character',
+          "Password must contain at least 8 characters, 1 letter and 1 special character",
       });
     }
     if (password !== confirmPassword)
-      return Toast.show({ type: 'error', text1: 'Passwords do not match' });
+      return Toast.show({ type: "error", text1: "Passwords do not match" });
+    if (!userType) {
+      return Toast.show({
+        type: "error",
+        text1: "Please select account type",
+      });
+    }
 
     const payload = {
       name: name.trim(),
@@ -243,31 +251,29 @@ export default function SignUpScreen({ navigation }: { navigation: any }) {
       setShowVerifyModal(true);
 
       Toast.show({
-        type: 'success',
-        text1: 'Account created successfully!',
-        text2: 'Please verify your Email',
+        type: "success",
+        text1: "Account created successfully!",
+        text2: "Please verify your Email",
       });
     } catch (error: any) {
       Toast.show({
-        type: 'error',
-        text1: 'Registration failed',
-        text2: error?.message || 'Please try again later',
+        type: "error",
+        text1: "Registration failed",
+        text2: error?.message || "Please try again later",
       });
     } finally {
       setLoading(false);
     }
   };
 
-
-
   const handleOpenGmail = async () => {
     try {
-      if (Platform.OS === 'android') {
+      if (Platform.OS === "android") {
         // Opens Gmail app directly (app home/inbox state)
-        await Linking.openURL('android-app://com.google.android.gm');
+        await Linking.openURL("android-app://com.google.android.gm");
       } else {
         // iOS Gmail app
-        const url = 'googlegmail://';
+        const url = "googlegmail://";
 
         const supported = await Linking.canOpenURL(url);
 
@@ -275,11 +281,11 @@ export default function SignUpScreen({ navigation }: { navigation: any }) {
           await Linking.openURL(url);
         } else {
           // fallback only if Gmail not installed
-          await Linking.openURL('message://');
+          await Linking.openURL("message://");
         }
       }
     } catch (error) {
-      console.log('Failed to open Gmail app:', error);
+      console.log("Failed to open Gmail app:", error);
     }
   };
 
@@ -287,7 +293,7 @@ export default function SignUpScreen({ navigation }: { navigation: any }) {
   const UserTypeOption = ({
     type,
   }: {
-    type: 'staff' | 'customer' | 'contractor';
+    type: "staff" | "customer" | "contractor";
   }) => {
     const isSelected = userType === type;
     const label = getDisplayName(type);
@@ -320,7 +326,7 @@ export default function SignUpScreen({ navigation }: { navigation: any }) {
     <SafeAreaView style={styles.container}>
       <KeyboardAvoidingView
         style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
       >
         <ScrollView
           contentContainerStyle={{
@@ -340,9 +346,9 @@ export default function SignUpScreen({ navigation }: { navigation: any }) {
               <Text style={styles.label}>Full Name *</Text>
               <LinearGradient
                 colors={[
-                  'rgba(233, 231, 231, 0.87)',
-                  'rgba(233, 231, 231, 0.87)',
-                  'rgba(233, 231, 231, 0.87)',
+                  "rgba(233, 231, 231, 0.87)",
+                  "rgba(233, 231, 231, 0.87)",
+                  "rgba(233, 231, 231, 0.87)",
                 ]}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
@@ -363,9 +369,9 @@ export default function SignUpScreen({ navigation }: { navigation: any }) {
               <Text style={styles.label}>Email Address *</Text>
               <LinearGradient
                 colors={[
-                  'rgba(233, 231, 231, 0.87)',
-                  'rgba(233, 231, 231, 0.87)',
-                  'rgba(233, 231, 231, 0.87)',
+                  "rgba(233, 231, 231, 0.87)",
+                  "rgba(233, 231, 231, 0.87)",
+                  "rgba(233, 231, 231, 0.87)",
                 ]}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
@@ -388,9 +394,9 @@ export default function SignUpScreen({ navigation }: { navigation: any }) {
               <Text style={styles.label}>Password *</Text>
               <LinearGradient
                 colors={[
-                  'rgba(233, 231, 231, 0.87)',
-                  'rgba(233, 231, 231, 0.87)',
-                  'rgba(233, 231, 231, 0.87)',
+                  "rgba(233, 231, 231, 0.87)",
+                  "rgba(233, 231, 231, 0.87)",
+                  "rgba(233, 231, 231, 0.87)",
                 ]}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
@@ -428,9 +434,9 @@ export default function SignUpScreen({ navigation }: { navigation: any }) {
               <Text style={styles.label}>Confirm Password *</Text>
               <LinearGradient
                 colors={[
-                  'rgba(233, 231, 231, 0.87)',
-                  'rgba(233, 231, 231, 0.87)',
-                  'rgba(233, 231, 231, 0.87)',
+                  "rgba(233, 231, 231, 0.87)",
+                  "rgba(233, 231, 231, 0.87)",
+                  "rgba(233, 231, 231, 0.87)",
                 ]}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
@@ -462,9 +468,9 @@ export default function SignUpScreen({ navigation }: { navigation: any }) {
               <Text style={styles.label}>Phone Number (Optional)</Text>
               <LinearGradient
                 colors={[
-                  'rgba(233, 231, 231, 0.87)',
-                  'rgba(233, 231, 231, 0.87)',
-                  'rgba(233, 231, 231, 0.87)',
+                  "rgba(233, 231, 231, 0.87)",
+                  "rgba(233, 231, 231, 0.87)",
+                  "rgba(233, 231, 231, 0.87)",
                 ]}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
@@ -485,7 +491,7 @@ export default function SignUpScreen({ navigation }: { navigation: any }) {
 
               {/* User Type Selection */}
               {/* User Type Selection */}
-              <Text style={styles.label}>Select Account Type</Text>
+              <Text style={styles.label}>Account Type *</Text>
               <View style={styles.radioContainer}>
                 <View style={styles.radioRow}>
                   <UserTypeOption type="customer" />
@@ -509,10 +515,10 @@ export default function SignUpScreen({ navigation }: { navigation: any }) {
                 {acceptedPolicy && <Check size={16} color="#fff" />}
               </View>
               <Text style={styles.policyText}>
-                I accept the{' '}
+                I accept the{" "}
                 <Text
                   style={styles.policyLink}
-                  onPress={e => {
+                  onPress={(e) => {
                     e.stopPropagation();
                     setShowPolicyModal(true);
                   }}
@@ -539,7 +545,7 @@ export default function SignUpScreen({ navigation }: { navigation: any }) {
 
             <View style={styles.footer}>
               <Text style={styles.footerText}>Already have an account? </Text>
-              <TouchableOpacity onPress={() => navigation.navigate('Login')}>
+              <TouchableOpacity onPress={() => navigation.navigate("Login")}>
                 <Text style={styles.loginLink}>Login</Text>
               </TouchableOpacity>
             </View>
@@ -638,7 +644,7 @@ export default function SignUpScreen({ navigation }: { navigation: any }) {
             <Text style={styles.verifyTitle}>Verify your email address</Text>
 
             <Text style={styles.verifySubtitle}>
-              We've sent a verification link to{' '}
+              We've sent a verification link to{" "}
               <Text style={styles.emailHighlight}>{registeredEmail}</Text>.
             </Text>
 
@@ -657,7 +663,7 @@ export default function SignUpScreen({ navigation }: { navigation: any }) {
               style={styles.goToLoginButton}
               onPress={() => {
                 setShowVerifyModal(false);
-                navigation.navigate('Login');
+                navigation.navigate("Login");
               }}
             >
               <Text style={styles.goToLoginText}>Go to Login Page</Text>
@@ -673,7 +679,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     // backgroundColor: COLORS.background,
-    backgroundColor: '#111111',
+    backgroundColor: "#111111",
     paddingTop: StatusBar.currentHeight || 15,
   },
 
@@ -692,7 +698,7 @@ const styles = StyleSheet.create({
 
   logoContainer: {
     marginVertical: 24,
-    alignItems: 'center',
+    alignItems: "center",
   },
 
   logo: {
@@ -704,27 +710,27 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
     fontSize: 14,
     marginTop: 10,
-    textAlign: 'center',
+    textAlign: "center",
   },
 
   gradientInput: {
-    width: '100%',
+    width: "100%",
     borderRadius: 12,
     marginBottom: 16,
   },
 
   inputInner: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingHorizontal: 16,
     height: 45,
-    width: '100%',
+    width: "100%",
   },
 
   input: {
     flex: 1,
     fontSize: 16,
-    color: '#111111',
+    color: "#111111",
     marginLeft: 12,
   },
 
@@ -743,15 +749,15 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: COLORS.text,
     marginBottom: 7,
-    fontWeight: '600',
+    fontWeight: "600",
     marginLeft: 2,
   },
 
   // ================= POLICY =================
 
   policyContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginBottom: 22,
     paddingHorizontal: 4,
     marginTop: 14,
@@ -764,8 +770,8 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: COLORS.primary,
     marginRight: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
 
   checkboxChecked: {
@@ -781,17 +787,17 @@ const styles = StyleSheet.create({
 
   policyLink: {
     color: COLORS.primary,
-    fontWeight: '700',
+    fontWeight: "700",
   },
 
   // ================= BUTTON =================
 
   signUpButton: {
-    backgroundColor: '#0A7C6E',
+    backgroundColor: "#0A7C6E",
     borderRadius: 50,
     height: 50,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     marginBottom: 24,
     shadowColor: COLORS.primary,
     shadowOffset: {
@@ -808,16 +814,16 @@ const styles = StyleSheet.create({
   },
 
   signUpText: {
-    color: '#ffff',
+    color: "#ffff",
     fontSize: 17,
-    fontWeight: '600',
+    fontWeight: "600",
   },
 
   // ================= FOOTER =================
 
   footer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
+    flexDirection: "row",
+    justifyContent: "center",
     marginBottom: 30,
   },
 
@@ -828,7 +834,7 @@ const styles = StyleSheet.create({
 
   loginLink: {
     color: COLORS.primary,
-    fontWeight: '700',
+    fontWeight: "700",
     fontSize: 14,
   },
 
@@ -843,16 +849,16 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.surface2,
     paddingHorizontal: 20,
     paddingVertical: 18,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     borderBottomWidth: 1,
     borderBottomColor: COLORS.border,
   },
 
   headerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 14,
   },
 
@@ -863,13 +869,13 @@ const styles = StyleSheet.create({
 
   modalTitle: {
     fontSize: 15,
-    fontWeight: '700',
+    fontWeight: "700",
     color: "#ffff",
   },
 
   modalSubtitle: {
     fontSize: 11,
-     color: "#ffff",
+    color: "#ffff",
     marginTop: 2,
   },
 
@@ -899,18 +905,18 @@ const styles = StyleSheet.create({
   },
 
   highlightedInfo: {
-    backgroundColor: 'rgba(137,231,208,0.12)',
+    backgroundColor: "rgba(137,231,208,0.12)",
     padding: 18,
     borderRadius: 18,
     marginBottom: 24,
     borderWidth: 1,
-    borderColor: 'rgba(137,231,208,0.18)',
+    borderColor: "rgba(137,231,208,0.18)",
   },
 
   highlightText: {
     fontSize: 15,
     color: "#fff",
-    fontWeight: '600',
+    fontWeight: "600",
     lineHeight: 24,
     marginBottom: 6,
   },
@@ -923,11 +929,11 @@ const styles = StyleSheet.create({
   },
 
   lastUpdated: {
-    textAlign: 'center',
+    textAlign: "center",
     marginTop: 28,
     fontSize: 13.5,
-    color: '#cccc',
-    fontWeight: '500',
+    color: "#cccc",
+    fontWeight: "500",
   },
 
   modalFooter: {
@@ -942,34 +948,34 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.primary,
     paddingVertical: 18,
     borderRadius: 18,
-    alignItems: 'center',
-    flexDirection: 'row',
-    justifyContent: 'center',
+    alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "center",
   },
 
   acceptBtnText: {
-    color: '#fff',
+    color: "#fff",
     fontSize: 17,
-    fontWeight: '800',
+    fontWeight: "800",
   },
 
   // Email Verification Modal Styles
   verifyModalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.85)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "rgba(0, 0, 0, 0.85)",
+    justifyContent: "center",
+    alignItems: "center",
     padding: 20,
   },
 
   verifyModalContent: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: "#FFFFFF",
     borderRadius: 24,
     padding: 32,
-    width: '100%',
+    width: "100%",
     maxWidth: 380,
-    alignItems: 'center',
-    shadowColor: '#000',
+    alignItems: "center",
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 10 },
     shadowOpacity: 0.3,
     shadowRadius: 20,
@@ -980,69 +986,69 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: 'rgba(79, 203, 179, 0.1)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "rgba(79, 203, 179, 0.1)",
+    justifyContent: "center",
+    alignItems: "center",
     marginBottom: 24,
   },
 
   verifyTitle: {
     fontSize: 24,
-    fontWeight: '700',
-    color: '#001F3F',
+    fontWeight: "700",
+    color: "#001F3F",
     marginBottom: 12,
-    textAlign: 'center',
+    textAlign: "center",
   },
 
   verifySubtitle: {
     fontSize: 16,
-    color: '#334155',
-    textAlign: 'center',
+    color: "#334155",
+    textAlign: "center",
     marginBottom: 8,
     lineHeight: 22,
   },
 
   verifyDescription: {
     fontSize: 15,
-    color: '#64748B',
-    textAlign: 'center',
+    color: "#64748B",
+    textAlign: "center",
     marginBottom: 32,
     lineHeight: 22,
   },
 
   emailHighlight: {
-    color: '#4FCBB3',
-    fontWeight: '600',
+    color: "#4FCBB3",
+    fontWeight: "600",
   },
 
   openGmailButton: {
-    backgroundColor: '#4FCBB3',
-    width: '100%',
+    backgroundColor: "#4FCBB3",
+    width: "100%",
     paddingVertical: 16,
     borderRadius: 14,
-    alignItems: 'center',
+    alignItems: "center",
     marginBottom: 12,
   },
 
   openGmailText: {
-    color: '#001F3F',
+    color: "#001F3F",
     fontSize: 17,
-    fontWeight: '700',
+    fontWeight: "700",
   },
 
   goToLoginButton: {
-    width: '100%',
+    width: "100%",
     paddingVertical: 16,
     borderRadius: 14,
-    alignItems: 'center',
+    alignItems: "center",
     borderWidth: 1.5,
-    borderColor: '#E2E8F0',
+    borderColor: "#E2E8F0",
   },
 
   goToLoginText: {
-    color: '#475569',
+    color: "#475569",
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
   },
 
   // ================= RADIO =================
@@ -1051,15 +1057,15 @@ const styles = StyleSheet.create({
   },
 
   radioRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    justifyContent: "space-between",
     gap: 14,
   },
 
   radioOption: {
     flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     backgroundColor: COLORS.card,
     borderWidth: 1.5,
     borderColor: COLORS.border,
@@ -1071,25 +1077,25 @@ const styles = StyleSheet.create({
 
   radioOptionSelected: {
     borderColor: COLORS.primary,
-    backgroundColor: 'rgba(137,231,208,0.12)',
+    backgroundColor: "rgba(137,231,208,0.12)",
   },
 
   radioIconWrapper: {
     marginRight: 0,
     width: 20,
-    alignItems: 'center',
+    alignItems: "center",
   },
 
   radioText: {
     fontSize: 13, // ← Increased text size
-    fontWeight: '300',
+    fontWeight: "300",
     color: COLORS.text,
     flex: 1,
-    textAlign: 'center', // Text centered
+    textAlign: "center", // Text centered
   },
 
   radioTextSelected: {
     color: COLORS.primary,
-    fontWeight: '700',
+    fontWeight: "700",
   },
 });

@@ -15,6 +15,7 @@ import {
   Linking,
   Alert,
   PermissionsAndroid,
+  ActivityIndicator,
 } from "react-native";
 import Geolocation from "react-native-geolocation-service";
 import BottomTab from "./BottomTab";
@@ -75,6 +76,7 @@ const categories = [
 
 export default function HomeScreen({ navigation }: any) {
   const [sites, setSites] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
   const [userType, setUserType] = useState<"customer" | "contractor" | "staff">(
     "staff",
@@ -116,12 +118,19 @@ export default function HomeScreen({ navigation }: any) {
   };
 
   const fetchCustomerSites = async () => {
+    setLoading(true);
+
     try {
       const token = await AsyncStorage.getItem("@auth_token");
       const userStr = await AsyncStorage.getItem("user");
-      if (!token || !userStr) return;
+
+      if (!token || !userStr) {
+        setLoading(false);
+        return;
+      }
 
       const userData = JSON.parse(userStr);
+
       const start = formatDateMMDDYYYY(weekStart);
       const end = formatDateMMDDYYYY(
         new Date(weekStart.getTime() + 6 * 86400000),
@@ -151,6 +160,8 @@ export default function HomeScreen({ navigation }: any) {
       }
     } catch (err) {
       console.log("Fetch sites error:", err);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -281,6 +292,23 @@ export default function HomeScreen({ navigation }: any) {
   };
 
   const bannerContent = getBannerContent();
+  if (loading) {
+    return (
+      <SafeAreaView
+        style={{
+          flex: 1,
+          justifyContent: "center",
+          alignItems: "center",
+          backgroundColor: "#111111",
+        }}
+      >
+        <ActivityIndicator size="large" color="#1E88E5" />
+        <Text style={{ marginTop: 15, fontSize: 16, color: "#fff" }}>
+          Loading profile...
+        </Text>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -316,7 +344,6 @@ export default function HomeScreen({ navigation }: any) {
         </TouchableOpacity>
       </View>
       <View style={{ flex: 1 }}>
-      
         <View style={styles.fixedTopSection}>
           <LinearGradient
             colors={[
@@ -378,8 +405,7 @@ export default function HomeScreen({ navigation }: any) {
           </View>
         </View>
 
-       
-       <View style={[styles.section, { flex: 1 }]}>
+        <View style={[styles.section, { flex: 1 }]}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Shifts This Week</Text>
             {sites.length > 0 && (

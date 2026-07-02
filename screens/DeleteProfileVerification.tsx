@@ -35,11 +35,8 @@ export default function DeleteProfileVerification({ navigation }: any) {
     { question: "What is the primary reason you are leaving our platform?" },
     { question: "How would you rate your overall experience (1-5)?" },
     { question: "Which features did you find most useful?" },
-    { question: "What issues did you face while using the app?" },
     { question: "What should we improve in the future?" },
-    { question: "Would you use our platform again?" },
     { question: "Would you recommend this app to others?" },
-    { question: "Which alternative are you switching to (if any)?" },
   ];
 
   useEffect(() => {
@@ -77,16 +74,13 @@ export default function DeleteProfileVerification({ navigation }: any) {
         return;
       }
 
-      const response = await fetch(
-        `${BASE_URL}/user-delete/${userId}`,
-        {
-          method: "DELETE",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
+      const response = await fetch(`${BASE_URL}/user-delete/${userId}`, {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
-      );
+      });
 
       const data = await response.json();
 
@@ -223,7 +217,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.background,
     padding: 20,
     marginBottom: 30, // ✅ FIXED BOTTOM SPACE
-    paddingTop:30,
+    paddingTop: 30,
   },
 
   header: {
@@ -285,7 +279,7 @@ const styles = StyleSheet.create({
     padding: 15,
     borderRadius: 12,
     alignItems: "center",
-    marginBottom:20,
+    marginBottom: 20,
   },
 
   deleteButtonText: {

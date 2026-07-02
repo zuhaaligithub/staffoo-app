@@ -90,8 +90,8 @@ export default function LoginScreen({ navigation }: Props) {
   const [showAccountTypeModal, setShowAccountTypeModal] = useState(false);
   const [googleCredential, setGoogleCredential] = useState("");
   const [selectedAccountType, setSelectedAccountType] = useState<
-    "customer" | "staff" | "contractor"
-  >("customer");
+    "customer" | "staff" | "contractor" | null
+  >(null);
   useEffect(() => {
     (async () => {
       try {
@@ -296,6 +296,14 @@ export default function LoginScreen({ navigation }: Props) {
   //   }
   // };
   const completeGoogleLogin = async () => {
+    if (!selectedAccountType) {
+      return Toast.show({
+        type: "error",
+        text1: "Please select account type",
+        position: "bottom",
+      });
+    }
+
     try {
       setLoading(true);
 
@@ -570,7 +578,7 @@ export default function LoginScreen({ navigation }: Props) {
               style={{ width: width * 0.6, height: width * 0.17 }}
             />
             <Text style={[styles.subtitle, { fontSize: scale(14) }]}>
-              Enter your credentials to sign in
+              Please enter your email and password.
             </Text>
           </View>
 
@@ -618,26 +626,9 @@ export default function LoginScreen({ navigation }: Props) {
             style={{ alignSelf: "flex-end", marginBottom: 10 }}
           >
             <Text style={{ color: "#89E7D0", fontSize: 13, fontWeight: "600" }}>
-              Forgot Password?
+              Forgot password?
             </Text>
           </TouchableOpacity>
-          {/* <TouchableOpacity
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              marginVertical: 7,
-            }}
-            onPress={() => setRememberMe(!rememberMe)}
-          >
-            <View
-              style={[styles.checkbox, rememberMe && styles.checkboxChecked]}
-            >
-              {rememberMe && <Check size={16} color="#fff" />}
-            </View>
-            <Text style={{ fontSize: 14, marginLeft: 8, color: '#fff' }}>
-              Remember Me
-            </Text>
-          </TouchableOpacity> */}
 
           <TouchableOpacity
             style={[styles.signInButton, loading && { opacity: 0.7 }]}

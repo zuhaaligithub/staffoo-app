@@ -1312,6 +1312,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     gap: 10,
     flexDirection: "column",
+    // paddingBottom: 20,
+    marginBottom:50
   },
   center: {
     flex: 1,

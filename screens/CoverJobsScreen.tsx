@@ -335,7 +335,7 @@ const CoverJobsScreen = ({ navigation }: Props) => {
 };
 
 const styles = StyleSheet.create({
-  // ... (your existing styles remain the same)
+
 
   container: {
     flex: 1,

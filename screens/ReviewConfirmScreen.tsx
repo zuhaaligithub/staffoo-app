@@ -233,6 +233,7 @@ export default function ReviewConfirmScreen() {
   const [rates, setRates] = useState<RatesConfig | null>(null);
   const [ratesLoading, setRatesLoading] = useState(true);
   const [ratesError, setRatesError] = useState<string | null>(null);
+  const [matchedRateRow, setMatchedRateRow] = useState<any>(null);
   const [acceptedPolicy, setAcceptedPolicy] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<PaymentPlan>("full");
   const [paymentModalVisible, setPaymentModalVisible] = useState(false);
@@ -374,176 +375,6 @@ export default function ReviewConfirmScreen() {
     return res.payment.payment_intent_id;
   };
 
-  // const submitJob = async (intentId: string | null) => {
-  //   const user = JSON.parse((await AsyncStorage.getItem("user"))!);
-  //   const parseLocalDate = (value: any): Date => {
-  //     if (!value) return new Date();
-  //     if (value instanceof Date) return value;
-  //     if (typeof value === "string") {
-  //       if (value.includes("T")) return new Date(value);
-  //       if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
-  //         const [y, m, d] = value.split("-").map(Number);
-  //         return new Date(y, m - 1, d);
-  //       }
-  //     }
-  //     return new Date(value);
-  //   };
-  //   const formatTime = (ds: string) => {
-  //     const d = new Date(ds);
-  //     return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
-  //   };
-  //   const formattedShifts = (jobData.shifts || []).map((shift: any) => {
-  //     const s = parseLocalDate(shift.startTime),
-  //       e = parseLocalDate(shift.endTime);
-  //     return {
-  //       start: `${s.getFullYear()}-${pad(s.getMonth() + 1)}-${pad(
-  //         s.getDate(),
-  //       )}T${pad(s.getHours())}:${pad(s.getMinutes())}`,
-  //       end: `${e.getFullYear()}-${pad(e.getMonth() + 1)}-${pad(
-  //         e.getDate(),
-  //       )}T${pad(e.getHours())}:${pad(e.getMinutes())}`,
-  //       numberOfGuards: Number(shift.guardsCount || 1),
-  //     };
-  //   });
-  //   const payload = {
-  //     user_id: user.id,
-  //     title: jobData.title || getCategoryDisplay(jobData.category),
-  //     description: jobData.description || "No description provided",
-  //     address: jobData.location || "Not specified",
-  //     coordinates: `${jobData.lat},${jobData.lng}`,
-  //     state: "open",
-  //     posting_type: "broadcast",
-  //     shifts: formattedShifts,
-  //     job_level: Number(jobData.jobLevel ?? 1),
-  //     payment_option: selectedPlan,
-  //     job_location_state: extractedState,
-  //     financials: {
-  //       base_total_inc_gst: parseFloat(totalIncGST.toFixed(2)),
-  //       discount_applied:
-  //         selectedPlan === "full"
-  //           ? parseFloat((totalIncGST * 0.05).toFixed(2))
-  //           : 0,
-  //       amount_to_charge_today: parseFloat(ctaAmount.toFixed(2)),
-  //       balance_deferred:
-  //         selectedPlan === "split"
-  //           ? parseFloat((totalIncGST * 0.5).toFixed(2))
-  //           : 0,
-  //     },
-  //     is_document: selectedDocuments.length > 0,
-  //     document_list: uploadedFileUrls || [],
-  //     document_types: selectedDocuments || [],
-  //     job_instruction: jobData.description || "",
-  //     tasks: (jobData.tasks || []).map((t: any) => ({
-  //       task: t.task || t.title || "",
-  //       task_start: t.task_start || formatTime(t.startTime),
-  //       task_end: t.task_end || formatTime(t.endTime),
-  //     })),
-  //     payment_intent_id: intentId,
-  //   };
-  //   console.log("[CREATE JOB PAYLOAD]", JSON.stringify(payload, null, 2));
-  //   return postJob(payload);
-  // };
-
-  // const submitJob = async (intentId: string | null) => {
-  //   const user = JSON.parse((await AsyncStorage.getItem("user"))!);
-
-  //   const parseLocalDate = (value: any): Date => {
-  //     if (!value) return new Date();
-  //     if (value instanceof Date) return value;
-
-  //     if (typeof value === "string") {
-  //       if (value.includes("T")) return new Date(value);
-
-  //       if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
-  //         const [y, m, d] = value.split("-").map(Number);
-  //         return new Date(y, m - 1, d);
-  //       }
-  //     }
-
-  //     return new Date(value);
-  //   };
-
-  //   const formatTime = (ds: string) => {
-  //     const d = new Date(ds);
-  //     return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
-  //   };
-
-  //   const locationParts = (jobData.location || "")
-  //     .split(",")
-  //     .map((item: string) => item.trim());
-
-  //   const extractedState =
-  //     locationParts.length >= 2 ? locationParts[locationParts.length - 2] : "";
-
-  //   console.log("Location:", jobData.location);
-  //   console.log("Extracted State:", extractedState);
-
-  //   const formattedShifts = (jobData.shifts || []).map((shift: any) => {
-  //     const s = parseLocalDate(shift.startTime);
-  //     const e = parseLocalDate(shift.endTime);
-
-  //     return {
-  //       start: `${s.getFullYear()}-${pad(s.getMonth() + 1)}-${pad(
-  //         s.getDate(),
-  //       )}T${pad(s.getHours())}:${pad(s.getMinutes())}`,
-  //       end: `${e.getFullYear()}-${pad(e.getMonth() + 1)}-${pad(
-  //         e.getDate(),
-  //       )}T${pad(e.getHours())}:${pad(e.getMinutes())}`,
-  //       numberOfGuards: Number(shift.guardsCount || 1),
-  //     };
-  //   });
-
-  //   const payload = {
-  //     user_id: user.id,
-  //     job_type: jobData.category || "others",
-  //     description: jobData.description || "No description provided",
-  //     address: jobData.location || "Not specified",
-  //     coordinates: `${jobData.lat},${jobData.lng}`,
-
-  //     state: "open",
-  //     posting_type: "broadcast",
-
-  //     shifts: formattedShifts,
-
-  //     job_level: Number(jobData.jobLevel ?? 1),
-
-  //     payment_option: selectedPlan,
-
-  //     job_location_state: extractedState,
-
-  //     financials: {
-  //       base_total_inc_gst: parseFloat(totalIncGST.toFixed(2)),
-  //       discount_applied:
-  //         selectedPlan === "full"
-  //           ? parseFloat((totalIncGST * 0.05).toFixed(2))
-  //           : 0,
-  //       amount_to_charge_today: parseFloat(ctaAmount.toFixed(2)),
-  //       balance_deferred:
-  //         selectedPlan === "split"
-  //           ? parseFloat((totalIncGST * 0.5).toFixed(2))
-  //           : 0,
-  //     },
-
-  //     is_document: selectedDocuments.length > 0,
-  //     document_list: uploadedFileUrls || [],
-  //     document_types: selectedDocuments || [],
-
-  //     job_instruction: jobData.description || "",
-
-  //     tasks: (jobData.tasks || []).map((t: any) => ({
-  //       task: t.task || t.title || "",
-  //       task_start: t.task_start || formatTime(t.startTime),
-  //       task_end: t.task_end || formatTime(t.endTime),
-  //     })),
-
-  //     payment_intent_id: intentId,
-  //   };
-
-  //   console.log("[CREATE JOB PAYLOAD]", JSON.stringify(payload, null, 2));
-
-  //   return postJob(payload);
-  // };
-
   const submitJob = async (intentId: string | null) => {
     const user = JSON.parse((await AsyncStorage.getItem("user"))!);
 
@@ -568,94 +399,6 @@ export default function ReviewConfirmScreen() {
       return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
     };
 
-    // const getStateFromAddress = (address: string): string => {
-    //   if (!address) return "";
-
-    //   const upper = address.toUpperCase();
-
-    //   // ───── Pakistan Provinces & Major Cities Mapping ─────
-    //   const pakistanMap: Record<string, string> = {
-    //     // Provinces
-    //     PUNJAB: "Punjab",
-    //     SINDH: "Sindh",
-    //     "KHYBER PAKHTUNKHWA": "Khyber Pakhtunkhwa",
-    //     KPK: "Khyber Pakhtunkhwa",
-    //     BALOCHISTAN: "Balochistan",
-    //     "AZAD KASHMIR": "Azad Kashmir",
-    //     "GILGIT BALTISTAN": "Gilgit Baltistan",
-
-    //     // Major Cities → Province
-    //     LAHORE: "Punjab",
-    //     KARACHI: "Sindh",
-    //     ISLAMABAD: "Islamabad Capital Territory",
-    //     RAWALPINDI: "Punjab",
-    //     FAISALABAD: "Punjab",
-    //     MULTAN: "Punjab",
-    //     PESHAWAR: "Khyber Pakhtunkhwa",
-    //     QUETTA: "Balochistan",
-    //   };
-
-    //   // ───── Australia States ─────
-    //   const australiaMap: Record<string, string> = {
-    //     VIC: "VIC",
-    //     VICTORIA: "VIC",
-    //     NSW: "NSW",
-    //     "NEW SOUTH WALES": "NSW",
-    //     QLD: "QLD",
-    //     QUEENSLAND: "QLD",
-    //     WA: "WA",
-    //     "WESTERN AUSTRALIA": "WA",
-    //     SA: "SA",
-    //     "SOUTH AUSTRALIA": "SA",
-    //     TAS: "TAS",
-    //     TASMANIA: "TAS",
-    //     ACT: "ACT",
-    //     NT: "NT",
-    //   };
-
-    //   const parts = address
-    //     .split(",")
-    //     .map((p) => p.trim())
-    //     .filter(Boolean);
-
-    //   // 1. Check from the end (most accurate)
-    //   for (let i = parts.length - 1; i >= 0; i--) {
-    //     const part = parts[i].toUpperCase();
-
-    //     // Pakistan Province / City check
-    //     for (const [key, value] of Object.entries(pakistanMap)) {
-    //       if (part.includes(key)) {
-    //         return value;
-    //       }
-    //     }
-
-    //     // Australia check
-    //     for (const [key, value] of Object.entries(australiaMap)) {
-    //       if (part.includes(key)) {
-    //         return value;
-    //       }
-    //     }
-    //   }
-
-    //   // 2. Full address scan (for cities like Lahore anywhere in address)
-    //   for (const [key, value] of Object.entries(pakistanMap)) {
-    //     if (upper.includes(key)) {
-    //       return value;
-    //     }
-    //   }
-
-    //   // 3. Country fallback (only if nothing else found)
-    //   if (upper.includes("PAKISTAN")) return "Pakistan";
-    //   if (upper.includes("AUSTRALIA")) return "Australia";
-
-    //   // 4. Last resort - return last part if it looks like a state
-    //   const lastPart = parts[parts.length - 1];
-    //   if (lastPart && lastPart.length > 2 && !/^\d+$/.test(lastPart)) {
-    //     return lastPart;
-    //   }
-
-    //   return "";
-    // };
     const getStateFromAddress = (address: string): string => {
       if (!address) return "";
 
@@ -867,8 +610,20 @@ export default function ReviewConfirmScreen() {
       setProcessing(false);
     }
   };
-
+  const handleEditDetails = () => {
+    (navigation as any).navigate("MainTabs", {
+      screen: "CreateJob",
+      params: {
+        isEdit: true,
+        jobData: jobData,
+      },
+    });
+  };
   // ─── Fetch rates ──────────────────────────────────────────────────────────
+  // FIX (bug #1): parseInt-based level matching. Comparing String(level)
+  // strictly (e.g. " 2" !== "2", or 2 !== "2") silently falls through to
+  // res.data.data[0] (always Level 1), which is why the wrong unit price
+  // could show up regardless of which job level was actually selected.
   useEffect(() => {
     (async () => {
       try {
@@ -887,13 +642,18 @@ export default function ReviewConfirmScreen() {
           throw new Error("Invalid rates response");
         }
 
-        const jobLevelStr = String(jobData.jobLevel ?? "1");
+        const jobLevelNum = parseInt(String(jobData.jobLevel ?? "1"), 10) || 1;
         const matched =
           res.data.data.find(
-            (item: any) => String(item.level) === jobLevelStr,
+            (item: any) => parseInt(String(item.level), 10) === jobLevelNum,
           ) ?? res.data.data[0];
 
+        console.log(
+          `[RATES] Requested level ${jobLevelNum} → matched "${matched?.title}" (level ${matched?.level})`,
+        );
+
         const r = matched;
+        setMatchedRateRow(r);
         const builtRates: RatesConfig = {
           charge: {
             weekday: {
@@ -929,7 +689,7 @@ export default function ReviewConfirmScreen() {
         setRatesLoading(false);
       }
     })();
-  }, []);
+  }, [jobData.jobLevel]);
 
   const costBreakdown = useMemo(() => {
     if (!rates || !jobData.shifts?.length) {
@@ -1014,7 +774,11 @@ export default function ReviewConfirmScreen() {
         </Text>
         <TouchableOpacity
           style={styles.backButton}
-          onPress={() => navigation.goBack()}
+          onPress={() =>
+            (navigation as any).navigate("MainTabs", {
+              screen: "CreateJob",
+            })
+          }
         >
           <Text style={styles.backButtonText}>Go Back</Text>
         </TouchableOpacity>
@@ -1026,8 +790,8 @@ export default function ReviewConfirmScreen() {
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <ChevronLeft size={28} color="#fff" />
+        <TouchableOpacity onPress={handleEditDetails}>
+          <ChevronLeft size={22} color="#fff" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Review & Confirm</Text>
         <View style={{ width: 28 }} />
@@ -1035,6 +799,18 @@ export default function ReviewConfirmScreen() {
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
         {/* ── Job Level Badge ─────────────────────────────────────────────── */}
+        {/* {matchedRateRow?.title ? (
+          <View style={styles.levelBadgeRow}>
+            <View style={styles.levelBadge}>
+              <Text style={styles.levelBadgeText}>
+                Level {jobData.jobLevel ?? 1}
+              </Text>
+            </View>
+            <Text style={styles.levelBadgeDesc} numberOfLines={1}>
+              Rates applied: {matchedRateRow.title}
+            </Text>
+          </View>
+        ) : null} */}
 
         {/* ── Job Details ─────────────────────────────────────────────────── */}
         <View style={styles.card}>
@@ -1371,10 +1147,7 @@ export default function ReviewConfirmScreen() {
           </Text>
         </TouchableOpacity>
 
-        <TouchableOpacity
-          style={styles.editButton}
-          onPress={() => navigation.goBack()}
-        >
+        <TouchableOpacity style={styles.editButton} onPress={handleEditDetails}>
           <ArrowLeft size={20} color="#0A7C6E" />
           <Text style={styles.editButtonText}>Edit Details</Text>
         </TouchableOpacity>

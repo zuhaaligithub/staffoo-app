@@ -3088,7 +3088,6 @@ const s = StyleSheet.create({
   yesNoText: { fontSize: 13, color: "#94A3B8", fontWeight: "600" },
   yesNoTextOn: { color: BRAND },
 
-
   sigModalHeader: {
     height: 56,
     flexDirection: "row",
@@ -3239,49 +3238,49 @@ const s = StyleSheet.create({
   },
 
   idTable: {
-  borderWidth: 1,
-  borderColor: "rgba(137, 231, 208, 0.2)",
-  borderRadius: 12,
-  overflow: "hidden",
-  marginBottom: 10,
-  backgroundColor: BRAND_LIGHT,
-},
+    borderWidth: 1,
+    borderColor: "rgba(137, 231, 208, 0.2)",
+    borderRadius: 12,
+    overflow: "hidden",
+    marginBottom: 10,
+    backgroundColor: BRAND_LIGHT,
+  },
 
-idRow: {
-  flexDirection: "row",
-  justifyContent: "space-between",
-  alignItems: "center",
-  paddingVertical: 10,
-  paddingHorizontal: 10,
-  borderBottomWidth: 1,
-  borderBottomColor: "rgba(137, 231, 208, 0.1)",
-  minHeight: 58,           // ← Ensures consistent height
-},
+  idRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: 10,
+    paddingHorizontal: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: "rgba(137, 231, 208, 0.1)",
+    minHeight: 58, // ← Ensures consistent height
+  },
 
-idRowText: {
-  flex: 1,
-  color: "#94A3B8",
-  fontSize: 12.5,          // Slightly smaller for better fit
-  lineHeight: 18,
-  paddingRight: 12,
-},
+  idRowText: {
+    flex: 1,
+    color: "#94A3B8",
+    fontSize: 12.5, // Slightly smaller for better fit
+    lineHeight: 18,
+    paddingRight: 12,
+  },
 
-idCheckCircle: {
-  width: 24,
-  height: 24,
-  borderRadius: 6,
-  borderWidth: 2,
-  borderColor: "#475569",
-  justifyContent: "center",
-  alignItems: "center",
-  flexShrink: 0,           // ← Prevents shrinking
-  marginLeft: 8,
-},
+  idCheckCircle: {
+    width: 24,
+    height: 24,
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: "#475569",
+    justifyContent: "center",
+    alignItems: "center",
+    flexShrink: 0, // ← Prevents shrinking
+    marginLeft: 8,
+  },
 
-idCheckCircleOn: {
-  backgroundColor: BRAND,
-  borderColor: BRAND,
-},
+  idCheckCircleOn: {
+    backgroundColor: BRAND,
+    borderColor: BRAND,
+  },
 });
 
 export default StaffFormsScreen;

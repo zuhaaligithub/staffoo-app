@@ -416,7 +416,7 @@ export default function StaffInductionScreen({
         {inductions.length === 0 && !loading && (
           <View style={{ alignItems: "center", marginTop: 40 }}>
             <Text style={{ fontSize: 16, fontWeight: "600", color: "#64748b" }}>
-              No Induction Found
+              No induction found
             </Text>
           </View>
         )}

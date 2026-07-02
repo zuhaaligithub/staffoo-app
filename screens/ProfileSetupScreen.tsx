@@ -1707,8 +1707,11 @@ const styles = StyleSheet.create({
     paddingTop: 25,
   },
   phoneInputVerified: {
-    borderColor: "#0A7C6E", // Green border when verified
+    borderColor: "#0A7C6E",
     backgroundColor: "rgba(10, 124, 110, 0.1)",
+    // Make it fully rounded when verified
+    borderTopRightRadius: 50,
+    borderBottomRightRadius: 50,
   },
   scrollContent: {
     paddingHorizontal: 15,
@@ -1852,13 +1855,14 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: "row",
     alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#5d5c5ccc",
+    height: 42,
+    // Default: left side rounded only
     borderTopLeftRadius: 50,
     borderBottomLeftRadius: 50,
     borderTopRightRadius: 0,
     borderBottomRightRadius: 0,
-    borderWidth: 1,
-    borderColor: "#5d5c5ccc",
-    height: 42,
   },
   phoneInputNotVerified: {
     borderColor: COLORS.error,

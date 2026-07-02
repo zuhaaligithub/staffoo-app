@@ -5,8 +5,8 @@ import {
   TouchableOpacity,
   StyleSheet,
   Alert,
-  Platform,
   ActivityIndicator,
+  Animated,
 } from "react-native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -19,6 +19,7 @@ import {
   Calendar,
   Lock,
 } from "lucide-react-native";
+import { Keyboard } from "react-native";
 import HomeScreen from "./HomeScreen";
 import ApplicationsScreen from "./ApplicationsScreen";
 import MessageScreen from "./MessageScreen";
@@ -28,8 +29,9 @@ import { getUserProfile } from "../services/authApi";
 import { useFocusEffect } from "@react-navigation/native";
 import CreateJobScreen from "./CreateJobScreen";
 import ReviewConfirmScreen from "./ReviewConfirmScreen";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-type UserType = "staff" | "contractor" | "customer" | null;
+import { Platform, Easing } from "react-native";
 
 const Tab = createBottomTabNavigator();
 const COLORS = {
@@ -51,54 +53,66 @@ const COLORS = {
   heroBg1: "#0D1F2D",
   heroBg2: "#061014",
 };
-function CustomTabBar({ state, navigation }: any) {
-  // 1. Initialize from cache immediately to avoid empty states
-  const [userData, setUserData] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
 
-  // Derive values from state instead of keeping separate state variables
+function CustomTabBar({ state, navigation, userData }: any) {
+  const insets = useSafeAreaInsets();
+
+  const translateY = React.useRef(new Animated.Value(0)).current;
+  const opacity = React.useRef(new Animated.Value(1)).current;
+  const [hidden, setHidden] = useState(false);
+
+  useEffect(() => {
+    const showEvent =
+      Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow";
+
+    const hideEvent =
+      Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide";
+
+    const showSub = Keyboard.addListener(showEvent, () => {
+      setHidden(true);
+
+      Animated.parallel([
+        Animated.timing(translateY, {
+          toValue: 120,
+          duration: 180,
+          easing: Easing.out(Easing.ease),
+          useNativeDriver: true,
+        }),
+        Animated.timing(opacity, {
+          toValue: 0,
+          duration: 120,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    });
+
+    const hideSub = Keyboard.addListener(hideEvent, () => {
+      Animated.parallel([
+        Animated.timing(translateY, {
+          toValue: 0,
+          duration: 180,
+          easing: Easing.out(Easing.ease),
+          useNativeDriver: true,
+        }),
+        Animated.timing(opacity, {
+          toValue: 1,
+          duration: 180,
+          useNativeDriver: true,
+        }),
+      ]).start(() => {
+        setHidden(false);
+      });
+    });
+
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
+
   const userType = userData?.user_type ?? null;
   const isActive = userData?.is_active === true;
   const isFullyAccessible = userType === "customer" ? true : isActive;
-
-  useFocusEffect(
-    useCallback(() => {
-      let mounted = true;
-
-      const loadUserData = async () => {
-        // Load cache instantly
-        const cached = await AsyncStorage.getItem("user");
-        if (cached && mounted) {
-          setUserData(JSON.parse(cached));
-          setLoading(false); // We have enough to show UI
-        }
-
-        // Fetch fresh data
-        const userId = await AsyncStorage.getItem("@user_id");
-        if (!userId) return;
-
-        try {
-          const response = await getUserProfile(userId);
-          if (response?.success && response?.data && mounted) {
-            await AsyncStorage.setItem("user", JSON.stringify(response.data));
-            setUserData(response.data);
-          }
-        } catch (error) {
-          console.log("Profile Error:", error);
-        }
-      };
-
-      loadUserData();
-      return () => {
-        mounted = false;
-      };
-    }, []),
-  );
-
-  // 2. Hide tab bar or show skeleton until initial load
-  if (loading && !userData) {
-    return null; // Or return a simple empty view to prevent flicker
-  }
 
   const canAccess = (routeName: string) => {
     if (routeName === "Profile") return true;
@@ -106,23 +120,6 @@ function CustomTabBar({ state, navigation }: any) {
   };
 
   const handlePress = (routeName: string, isFocused: boolean) => {
-    if (routeName === "CreateJob" || routeName === "ReviewConfirm") {
-      if (!isFullyAccessible) {
-        Alert.alert(
-          "Account Not Active",
-          "Your account must be active to access this section.",
-          [
-            {
-              text: "Go to Profile",
-              onPress: () => navigation.navigate("Profile"),
-            },
-            { text: "OK", style: "cancel" },
-          ],
-        );
-        return;
-      }
-    }
-
     if (!canAccess(routeName)) {
       Alert.alert(
         "Account Not Active",
@@ -163,11 +160,22 @@ function CustomTabBar({ state, navigation }: any) {
   const currentRouteName = state.routes[state.index]?.name;
 
   return (
-    <View style={styles.wrapper}>
+    <Animated.View
+      pointerEvents={hidden ? "none" : "auto"}
+      style={[
+        styles.wrapper,
+        {
+          paddingBottom: insets.bottom,
+          opacity,
+          transform: [{ translateY }],
+        },
+      ]}
+    >
       <View style={styles.bottomTab}>
         {visibleTabs.map((tab: any) => {
           const isFocused = currentRouteName === tab.name;
           const accessible = canAccess(tab.name);
+
           const iconColor =
             !accessible && tab.name !== "Profile"
               ? "#cbd5e1"
@@ -203,10 +211,12 @@ function CustomTabBar({ state, navigation }: any) {
                 ]}
               >
                 <tab.Icon size={20} color={iconColor} />
+
                 {!accessible && tab.name !== "Profile" && (
                   <Lock size={11} color="#ef4444" style={styles.lockIcon} />
                 )}
               </View>
+
               <Text
                 style={[
                   styles.tabLabel,
@@ -220,47 +230,78 @@ function CustomTabBar({ state, navigation }: any) {
           );
         })}
       </View>
-    </View>
+    </Animated.View>
   );
 }
 
+// ────────────────────────────────────────────────────────────────────────────
+// MainTabs — single source of truth for user data.
+// ────────────────────────────────────────────────────────────────────────────
 export default function MainTabs() {
+  const [userData, setUserData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [initialData, setInitialData] = useState(null);
 
-  useEffect(() => {
-    // Initial fetch to get user before rendering tabs
-    const init = async () => {
-      const cached = await AsyncStorage.getItem("user");
-      if (cached) setInitialData(JSON.parse(cached));
+  const fetchUserData = useCallback(async (showLoader: boolean) => {
+    if (showLoader) setLoading(true);
 
+    try {
       const userId = await AsyncStorage.getItem("@user_id");
-      if (userId) {
-        const response = await getUserProfile(userId);
-        if (response?.success) {
-          await AsyncStorage.setItem("user", JSON.stringify(response.data));
-          setInitialData(response.data);
-        }
+
+      if (!userId) {
+        setLoading(false);
+        return;
       }
-      setLoading(false);
-    };
-    init();
+
+      const response = await getUserProfile(userId);
+
+      if (response?.success && response?.data) {
+        await AsyncStorage.setItem("user", JSON.stringify(response.data));
+        setUserData(response.data);
+      } else if (showLoader) {
+        // Fresh fetch failed on initial load — fall back to cache
+        // only as a last resort so the app isn't stuck blank.
+        const cached = await AsyncStorage.getItem("user");
+        if (cached) setUserData(JSON.parse(cached));
+      }
+    } catch (error) {
+      console.log("Profile Error:", error);
+      if (showLoader) {
+        const cached = await AsyncStorage.getItem("user");
+        if (cached) setUserData(JSON.parse(cached));
+      }
+    } finally {
+      if (showLoader) setLoading(false);
+    }
   }, []);
+
+  // Always force a fresh fetch on first mount (e.g. right after login).
+  useEffect(() => {
+    fetchUserData(true);
+  }, [fetchUserData]);
+
+  // Quietly refresh whenever this tab stack regains focus
+  // (e.g. user just activated their account and came back from Profile).
+  useFocusEffect(
+    useCallback(() => {
+      fetchUserData(false);
+    }, [fetchUserData]),
+  );
 
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color={COLORS.primary} />
-        <Text style={styles.loadingText}>Loading data...</Text>
+        <Text style={styles.loadingText}>Loading profile...</Text>
       </View>
     );
   }
+
   return (
     <Tab.Navigator
-      tabBar={(props) => <CustomTabBar {...props} />}
+      tabBar={(props) => <CustomTabBar {...props} userData={userData} />}
       screenOptions={{
         headerShown: false,
-        lazy: false,
+        tabBarStyle: { display: "none" },
       }}
     >
       <Tab.Screen name="Home" component={HomeScreen} />
@@ -286,30 +327,6 @@ export default function MainTabs() {
 // Styles
 // ────────────────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
-  wrapper: {
-    backgroundColor: "transparent",
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
-  },
-  bottomTab: {
-    height: 60,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-around",
-    backgroundColor: "#fff",
-    borderTopLeftRadius: 30,
-    borderTopRightRadius: 30,
-    overflow: "hidden",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 8,
-    borderTopWidth: 1,
-    borderColor: "#E5E7EB",
-  },
   tabItem: {
     alignItems: "center",
     justifyContent: "center",
@@ -373,5 +390,26 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: COLORS.textSecondary,
     fontWeight: "500",
+  },
+  wrapper: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    zIndex: 10,
+  },
+  bottomTab: {
+    height: 60,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-around",
+    backgroundColor: "#fff",
+    borderTopLeftRadius: 30,
+    borderTopRightRadius: 30,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: -3 },
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    elevation: 10,
   },
 });
