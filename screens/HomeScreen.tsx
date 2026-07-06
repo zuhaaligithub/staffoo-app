@@ -231,8 +231,8 @@ export default function HomeScreen({ navigation }: any) {
         if (cachedImage) {
           setProfileImage(cachedImage);
         } else if (parsedUser?.staff?.profile_image) {
-          // const BASE_IMAGE_URL = "https://apis.staffoo.com.au/storage/";
-          const BASE_IMAGE_URL = "https://staging.apis.staffoo.com.au/storage/";
+          const BASE_IMAGE_URL = "https://apis.staffoo.com.au/storage/";
+          // const BASE_IMAGE_URL = "https://staging.apis.staffoo.com.au/storage/";
           setProfileImage(`${BASE_IMAGE_URL}${parsedUser.staff.profile_image}`);
         }
       }
@@ -540,7 +540,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.background,
-    paddingTop: 10,
+    paddingTop: 25,
   },
   header: {
     flexDirection: "row",

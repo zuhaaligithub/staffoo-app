@@ -514,6 +514,7 @@ export default function CreateIncidentReport({
   const submitReport = async () => {
     if (!selectedIncidentTypeId)
       return Alert.alert("Required", "Incident Type is required");
+
     if (!incidentDetails.trim())
       return Alert.alert("Required", "Incident Details are required");
     if (!signatureData)
@@ -698,6 +699,7 @@ export default function CreateIncidentReport({
               />
             </View>
           </TouchableOpacity>
+
           {openSection === "type" && (
             <View style={styles.cardContent}>
               <View style={styles.chipContainer}>
@@ -709,7 +711,12 @@ export default function CreateIncidentReport({
                       selectedIncidentTypeId === item.id && styles.chipActive,
                       { backgroundColor: item.background },
                     ]}
-                    onPress={() => setSelectedIncidentTypeId(item.id)}
+                    onPress={() => {
+                      setSelectedIncidentTypeId(item.id);
+                      if (item.id !== 6) {
+                        setOtherIncidentType(""); // Clear when switching away from Others
+                      }
+                    }}
                   >
                     <Text style={[styles.chipText, { color: item.color }]}>
                       {item.name}
@@ -717,13 +724,16 @@ export default function CreateIncidentReport({
                   </TouchableOpacity>
                 ))}
               </View>
-              {selectedIncidentName === "Others" && (
+
+              {/* Show input ONLY when "Others" is selected */}
+              {selectedIncidentTypeId === 6 && (
                 <TextInput
                   style={styles.input}
-                  placeholder="Specify other type..."
+                  placeholder="Please specify the other incident type..."
                   placeholderTextColor="#9CA3AF"
                   value={otherIncidentType}
                   onChangeText={setOtherIncidentType}
+                  multiline
                 />
               )}
             </View>

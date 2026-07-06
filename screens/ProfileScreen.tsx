@@ -121,7 +121,9 @@ export default function ProfileScreen({ navigation }: Props) {
     setIsActive(freshData.is_active === true);
 
     let imageUri = null;
-    const BASE_IMAGE_URL = "https://staging.apis.staffoo.com.au/storage/";
+    // const BASE_IMAGE_URL = "https://staging.apis.staffoo.com.au/storage/";
+    const BASE_IMAGE_URL = "https://apis.staffoo.com.au/storage/";
+  
 
     if (freshData.user_type === "customer") {
       imageUri = freshData.customer?.profile_image || freshData.profile_image;

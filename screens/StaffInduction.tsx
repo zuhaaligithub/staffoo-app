@@ -126,8 +126,8 @@ export default function StaffInductionScreen({
         if (imageUri) {
           const fullImage = imageUri.startsWith("http")
             ? imageUri
-            : // : `https://apis.staffoo.com.au/storage/${imageUri}`;
-              `https://staging.apis.staffoo.com.au/storage/${imageUri}`;
+            : `https://apis.staffoo.com.au/storage/${imageUri}`;
+          //  :  `https://staging.apis.staffoo.com.au/storage/${imageUri}`;
           setProfileImage(fullImage);
         }
       }

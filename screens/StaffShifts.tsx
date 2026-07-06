@@ -2246,6 +2246,11 @@ const getNotifKey = (job: any): string => {
   }
 };
 
+// Number of jobs requested per page from the API. Keeping this reasonably
+// small (rather than trying to ask for 1000+ in one call) is what makes the
+// "load more" pattern below safe and fast even with very large job counts.
+const JOBS_PAGE_SIZE = 50;
+
 // ─── Staff Assign Bottom Sheet Component ──────────────────────────────────────
 interface StaffAssignSheetProps {
   visible: boolean;
@@ -2547,6 +2552,16 @@ export default function StaffShifts({ navigation, route }: Props) {
   const [assignStaffList, setAssignStaffList] = useState<any[]>([]);
   const [assignLoadingStaff, setAssignLoadingStaff] = useState(false);
 
+  // ── Available Jobs pagination / "load more" state ───────────────────────
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [lastPage, setLastPage] = useState(1);
+  const [hasMore, setHasMore] = useState(false);
+  const [totalJobsCount, setTotalJobsCount] = useState<number | null>(null);
+  // Prevents overlapping requests (e.g. pull-to-refresh while a load-more
+  // request is already in flight)
+  const isFetchingJobsRef = useRef(false);
+
   // ─── Load user from storage ─────────────────────────────────────────────────
   useEffect(() => {
     const loadUser = async () => {
@@ -2560,7 +2575,8 @@ export default function StaffShifts({ navigation, route }: Props) {
             setProfileImage(cachedImage);
           } else if (parsedUser?.staff?.profile_image) {
             setProfileImage(
-              `https://staging.apis.staffoo.com.au/storage/${parsedUser.staff.profile_image}`,
+              // `https://staging.apis.staffoo.com.au/storage/${parsedUser.staff.profile_image}`,
+              `https://apis.staffoo.com.au/storage/${parsedUser.staff.profile_image}`,
             );
           }
         }
@@ -2579,10 +2595,6 @@ export default function StaffShifts({ navigation, route }: Props) {
   }, []);
 
   // ─── Robust bottom sheet opener ─────────────────────────────────────────────
-  // Retries (instead of a single fixed timeout) until the BottomSheet ref is
-  // actually mounted. This is the main fix for "sometimes it doesn't open":
-  // a single setTimeout(300) could fire before the sheet had mounted,
-  // especially right after a cold-start navigation from a notification tap.
   const openBottomSheet = useCallback((job: any) => {
     setNotificationJob(job);
     setSheetOpen(true);
@@ -2602,7 +2614,6 @@ export default function StaffShifts({ navigation, route }: Props) {
       }
       attempts += 1;
       if (attempts < 15) {
-        // retry every 150ms for up to ~2.25s while the sheet mounts
         setTimeout(tryExpand, 150);
       }
     };
@@ -2644,116 +2655,164 @@ export default function StaffShifts({ navigation, route }: Props) {
     fetchProfile();
   }, []);
 
-  // ─── Fetch available jobs ───────────────────────────────────────────────────
-  const fetchAvailableJobs = async () => {
-    try {
-      setLoadingAvailable(true);
+  // ─── Helper: map a raw API job object into our AvailableJob shape ──────────
+  const mapAvailableJob = (job: any): AvailableJob => {
+    let formattedDate = "TBD";
 
+    if (job.start_time || job.start) {
+      const d = new Date(job.start_time || job.start);
+      formattedDate = `${String(d.getDate()).padStart(2, "0")}/${String(
+        d.getMonth() + 1,
+      ).padStart(2, "0")}/${d.getFullYear()}`;
+    }
+
+    const startRaw = job.start_time || job.start;
+    const endRaw = job.end_time || job.end;
+
+    const startTime = startRaw
+      ? new Date(startRaw).toLocaleTimeString("en-AU", {
+          hour: "2-digit",
+          minute: "2-digit",
+          hour12: false,
+        })
+      : "TBD";
+
+    const endTime = endRaw
+      ? new Date(endRaw).toLocaleTimeString("en-AU", {
+          hour: "2-digit",
+          minute: "2-digit",
+          hour12: false,
+        })
+      : "TBD";
+
+    return {
+      id: job.id,
+      title: job.title || "Security Guard Shift",
+      siteName: job.site_name || job.site?.site_name || "N/A",
+      location: job.state ? job.state.toUpperCase() : "N/A",
+      address:
+        job.site_address ||
+        job.address ||
+        job.site?.address ||
+        "Address not available",
+      date: formattedDate,
+      startTime,
+      endTime,
+      rate: job.hourly_rate ? `$${job.hourly_rate}/hour` : "$32.50/hour",
+      status: job.job_status
+        ? job.job_status.charAt(0).toUpperCase() + job.job_status.slice(1)
+        : undefined,
+      raw: job,
+    };
+  };
+
+  const sortAvailableJobs = (list: AvailableJob[]) =>
+    [...list].sort((a, b) => {
+      const aStart = a.raw?.start_time || a.raw?.start;
+      const bStart = b.raw?.start_time || b.raw?.start;
+      const startDiff = new Date(bStart).getTime() - new Date(aStart).getTime();
+      if (startDiff !== 0) return startDiff;
+
+      const aEnd = a.raw?.end_time || a.raw?.end;
+      const bEnd = b.raw?.end_time || b.raw?.end;
+      return new Date(bEnd).getTime() - new Date(aEnd).getTime();
+    });
+
+  // ─── Fetch available jobs (paginated) ───────────────────────────────────────
+  // page=1, append=false  -> fresh load / pull-to-refresh (replaces the list)
+  // page>1, append=true   -> "Load More" tap (appends to the existing list)
+  const fetchAvailableJobs = useCallback(async (page = 1, append = false) => {
+    if (isFetchingJobsRef.current) return;
+    isFetchingJobsRef.current = true;
+
+    if (page === 1) setLoadingAvailable(true);
+    else setLoadingMore(true);
+
+    try {
       const token = await AsyncStorage.getItem("@auth_token");
 
       const response = await axios.get(`${BASE_URL}/jobs/available`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
+        params: {
+          page,
+          per_page: JOBS_PAGE_SIZE,
+        },
       });
 
-      let apiJobs: any[] = [];
-
-      if (
-        response.data?.data?.jobs?.data &&
-        Array.isArray(response.data.data.jobs.data)
-      ) {
-        apiJobs = response.data.data.jobs.data;
-      } else if (
-        response.data?.jobs?.data &&
-        Array.isArray(response.data.jobs.data)
-      ) {
-        apiJobs = response.data.jobs.data;
+      // Try to find a Laravel-style paginator object first (current_page,
+      // last_page, data, total, next_page_url). Fall back to a plain array
+      // if the API isn't paginated for some reason.
+      let paginator: any = null;
+      if (response.data?.data?.jobs?.data) {
+        paginator = response.data.data.jobs;
+      } else if (response.data?.jobs?.data) {
+        paginator = response.data.jobs;
       } else if (Array.isArray(response.data?.data)) {
-        apiJobs = response.data.data;
+        paginator = {
+          data: response.data.data,
+          current_page: 1,
+          last_page: 1,
+          total: response.data.data.length,
+          next_page_url: null,
+        };
       } else if (Array.isArray(response.data)) {
-        apiJobs = response.data;
+        paginator = {
+          data: response.data,
+          current_page: 1,
+          last_page: 1,
+          total: response.data.length,
+          next_page_url: null,
+        };
       }
 
-      apiJobs.sort((a, b) => {
-        const startDiff =
-          new Date(b.start_time || b.start).getTime() -
-          new Date(a.start_time || a.start).getTime();
+      const apiJobs: any[] = Array.isArray(paginator?.data)
+        ? paginator.data
+        : [];
+      const current = Number(paginator?.current_page) || page;
+      const last = Number(paginator?.last_page) || 1;
+      const total =
+        typeof paginator?.total === "number" ? paginator.total : null;
 
-        if (startDiff !== 0) {
-          return startDiff;
-        }
+      const formatted = apiJobs.map(mapAvailableJob);
 
-        return (
-          new Date(b.end_time || b.end).getTime() -
-          new Date(a.end_time || a.end).getTime()
-        );
+      setAvailableJobs((prev) => {
+        const base = append ? prev : [];
+        // De-dupe in case a page overlaps with what we already have
+        const seen = new Set(base.map((j) => j.id));
+        const merged = [...base];
+        formatted.forEach((j) => {
+          if (!seen.has(j.id)) {
+            merged.push(j);
+            seen.add(j.id);
+          }
+        });
+        return sortAvailableJobs(merged);
       });
 
-      const formatted: AvailableJob[] = apiJobs.map((job: any) => {
-        let formattedDate = "TBD";
-
-        if (job.start_time || job.start) {
-          const d = new Date(job.start_time || job.start);
-
-          formattedDate = `${String(d.getDate()).padStart(2, "0")}/${String(
-            d.getMonth() + 1,
-          ).padStart(2, "0")}/${d.getFullYear()}`;
-        }
-
-        const startRaw = job.start_time || job.start;
-        const endRaw = job.end_time || job.end;
-
-        const startTime = startRaw
-          ? new Date(startRaw).toLocaleTimeString("en-AU", {
-              hour: "2-digit",
-              minute: "2-digit",
-              hour12: false,
-            })
-          : "TBD";
-
-        const endTime = endRaw
-          ? new Date(endRaw).toLocaleTimeString("en-AU", {
-              hour: "2-digit",
-              minute: "2-digit",
-              hour12: false,
-            })
-          : "TBD";
-
-        return {
-          id: job.id,
-          title: job.title || "Security Guard Shift",
-          siteName: job.site_name || job.site?.site_name || "N/A",
-          location: job.state ? job.state.toUpperCase() : "N/A",
-          address:
-            job.site_address ||
-            job.address ||
-            job.site?.address ||
-            "Address not available",
-          date: formattedDate,
-          startTime,
-          endTime,
-          rate: job.hourly_rate ? `$${job.hourly_rate}/hour` : "$32.50/hour",
-          status: job.job_status
-            ? job.job_status.charAt(0).toUpperCase() + job.job_status.slice(1)
-            : undefined,
-          raw: job,
-        };
-      });
-
-      setAvailableJobs(formatted);
+      setCurrentPage(current);
+      setLastPage(last);
+      setTotalJobsCount(total);
+      setHasMore(current < last);
     } catch (error: any) {
       console.error("Available jobs error:", error);
-
       Toast.show({
         type: "error",
         text1: "Failed to load available jobs",
         text2: "Pull down to retry",
       });
     } finally {
-      setLoadingAvailable(false);
+      isFetchingJobsRef.current = false;
+      if (page === 1) setLoadingAvailable(false);
+      else setLoadingMore(false);
     }
-  };
+  }, []);
+
+  const loadMoreAvailableJobs = useCallback(() => {
+    if (loadingMore || loadingAvailable || !hasMore) return;
+    fetchAvailableJobs(currentPage + 1, true);
+  }, [loadingMore, loadingAvailable, hasMore, currentPage, fetchAvailableJobs]);
 
   // ─── Fetch accepted shifts ──────────────────────────────────────────────────
   const fetchAcceptedShifts = useCallback(async () => {
@@ -2781,8 +2840,8 @@ export default function StaffShifts({ navigation, route }: Props) {
   useFocusEffect(
     useCallback(() => {
       fetchAcceptedShifts();
-      fetchAvailableJobs();
-    }, [fetchAcceptedShifts]),
+      fetchAvailableJobs(1, false);
+    }, [fetchAcceptedShifts, fetchAvailableJobs]),
   );
 
   // ─── Load contractor staff for assign sheet ─────────────────────────────────
@@ -2821,32 +2880,19 @@ export default function StaffShifts({ navigation, route }: Props) {
     return deepSearch(notif) || notif;
   };
 
-  // 1) App is in the FOREGROUND and a notification is tapped: it arrives via
-  //    route.params.notificationJob. This no longer waits on `userType` —
-  //    that was the main cause of "sometimes doesn't open" because userType
-  //    loads asynchronously and could still be empty when the tap happens.
   useEffect(() => {
     const job = route?.params?.notificationJob;
     if (!job) return;
 
     const key = getNotifKey(job);
-    if (lastHandledNotifKeyRef.current === key) return; // already handled this exact tap
+    if (lastHandledNotifKeyRef.current === key) return;
     lastHandledNotifKeyRef.current = key;
 
     openBottomSheet(job);
 
-    // Clear the param so navigating back to this screen later doesn't
-    // re-trigger the same notification, while still allowing a *new*
-    // notification tap (new param object) to open again.
     navigation.setParams?.({ notificationJob: undefined });
   }, [route?.params?.notificationJob, navigation, openBottomSheet]);
 
-  // 2) App was in the BACKGROUND or fully CLOSED when the notification was
-  //    tapped: your push-notification handler (outside this file) should be
-  //    writing the payload to AsyncStorage under PENDING_NOTIF_KEY. We read
-  //    it here — on screen focus AND whenever the app comes back to the
-  //    foreground — so it isn't missed if this screen was already focused
-  //    when the app resumed.
   const checkPendingNotification = useCallback(async () => {
     try {
       const pending = await AsyncStorage.getItem(PENDING_NOTIF_KEY);
@@ -2874,8 +2920,6 @@ export default function StaffShifts({ navigation, route }: Props) {
     }, [checkPendingNotification]),
   );
 
-  // Catch the case where the app resumes from background while this screen
-  // is already focused (useFocusEffect won't fire again in that case).
   useEffect(() => {
     const sub = AppState.addEventListener("change", (state: AppStateStatus) => {
       if (state === "active") {
@@ -2929,13 +2973,11 @@ export default function StaffShifts({ navigation, route }: Props) {
   // ─── Handle "Accept Job" tap in New tab ────────────────────────────────
   const handleAcceptJobTap = (job: AvailableJob) => {
     if (userType === "contractor") {
-      // Show assign-staff bottom sheet instead of navigating directly
       setAssignSheetJob(job);
       setAssignSelectedStaff(null);
       setAssignSheetVisible(true);
       loadAssignStaff();
     } else {
-      // Guard: go directly
       const shaped = shapeJobForDetails(job.raw);
       navigation.navigate("AsapJobDetails", {
         job: shaped,
@@ -2949,7 +2991,6 @@ export default function StaffShifts({ navigation, route }: Props) {
     }
   };
 
-  // When contractor confirms staff selection from the assign sheet
   const handleAssignSheetAccept = () => {
     if (!assignSheetJob) return;
     if (assignStaffList.length > 0 && !assignSelectedStaff) {
@@ -3196,9 +3237,47 @@ export default function StaffShifts({ navigation, route }: Props) {
     );
   };
 
+  // ─── Render: Load-more footer for the Available Jobs list ──────────────────
+  const renderJobsListFooter = () => {
+    if (loadingMore) {
+      return (
+        <View style={cardStyles.footerContainer}>
+          <ActivityIndicator size="small" color={COLORS.primary} />
+          <Text style={cardStyles.footerText}>Loading more jobs…</Text>
+        </View>
+      );
+    }
+    if (hasMore) {
+      return (
+        <TouchableOpacity
+          style={cardStyles.loadMoreButton}
+          onPress={loadMoreAvailableJobs}
+          activeOpacity={0.85}
+        >
+          <Text style={cardStyles.loadMoreButtonText}>
+            Load More Jobs
+            {totalJobsCount
+              ? ` (${availableJobs.length}/${totalJobsCount})`
+              : ""}
+          </Text>
+        </TouchableOpacity>
+      );
+    }
+    if (availableJobs.length > 0) {
+      return (
+        <View style={cardStyles.footerContainer}>
+          <Text style={cardStyles.footerEndText}>
+            All {availableJobs.length} jobs loaded
+          </Text>
+        </View>
+      );
+    }
+    return null;
+  };
+
   // ─── Render tab contents ────────────────────────────────────────────────────
   const renderNewTab = () => {
-    if (loadingAvailable) {
+    if (loadingAvailable && availableJobs.length === 0) {
       return (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={COLORS.primary} />
@@ -3224,6 +3303,7 @@ export default function StaffShifts({ navigation, route }: Props) {
         contentContainerStyle={{ paddingBottom: 30 }}
         scrollEnabled={false}
         showsVerticalScrollIndicator={false}
+        ListFooterComponent={renderJobsListFooter}
       />
     );
   };
@@ -3263,10 +3343,10 @@ export default function StaffShifts({ navigation, route }: Props) {
   const jobData = extractJobData(notificationJob);
   const isRefreshing =
     activeTab === "Available Jobs"
-      ? loadingAvailable
+      ? loadingAvailable && availableJobs.length === 0
       : loadingToday || loadingWeek;
   const onRefresh = () => {
-    if (activeTab === "Available Jobs") fetchAvailableJobs();
+    if (activeTab === "Available Jobs") fetchAvailableJobs(1, false);
     else fetchAcceptedShifts();
   };
 
@@ -3312,6 +3392,7 @@ export default function StaffShifts({ navigation, route }: Props) {
             tab === "Available Jobs" && availableJobs.length > 0
               ? availableJobs.length
               : null;
+
           return (
             <TouchableOpacity
               key={tab}
@@ -3639,7 +3720,6 @@ const assignStyles = StyleSheet.create({
     marginTop: 6,
     marginLeft: 4,
   },
-  // Staff picker modal
   pickerOverlay: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.7)",
@@ -3719,7 +3799,6 @@ const assignStyles = StyleSheet.create({
     fontWeight: "600",
     fontSize: 15,
   },
-  // Action buttons
   buttonRow: {
     flexDirection: "row",
     gap: 10,
@@ -3886,6 +3965,40 @@ const cardStyles = StyleSheet.create({
     fontSize: 13,
     marginTop: 6,
     textAlign: "center",
+  },
+  // Load-more footer
+  footerContainer: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    gap: 10,
+    paddingVertical: 18,
+  },
+  footerText: {
+    color: COLORS.textSecondary,
+    fontSize: 13,
+    fontWeight: "500",
+  },
+  footerEndText: {
+    color: COLORS.textMuted,
+    fontSize: 12,
+    fontWeight: "500",
+  },
+  loadMoreButton: {
+    marginTop: 6,
+    marginBottom: 20,
+    alignSelf: "center",
+    backgroundColor: COLORS.primaryGlow,
+    borderWidth: 1,
+    borderColor: COLORS.primary,
+    borderRadius: 999,
+    paddingHorizontal: 22,
+    paddingVertical: 12,
+  },
+  loadMoreButtonText: {
+    color: COLORS.primary,
+    fontSize: 13,
+    fontWeight: "700",
   },
 });
 

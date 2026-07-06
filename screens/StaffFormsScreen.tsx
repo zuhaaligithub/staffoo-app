@@ -42,8 +42,8 @@ import { generatePDF as pdfConvert } from "react-native-html-to-pdf";
 import * as DocumentPicker from "@react-native-documents/picker";
 import { pick, types } from "@react-native-documents/picker";
 
-// const BASE_URL = "https://apis.staffoo.com.au";
-const BASE_URL = "https://staging.apis.staffoo.com.au";
+const BASE_URL = "https://apis.staffoo.com.au";
+// const BASE_URL = "https://staging.apis.staffoo.com.au";
 const GOOGLE_API_KEY = "AIzaSyCS-DB39Kk-Z25C5GWymVGshXIALbjXPGY";
 const BRAND = "#89E7D0";
 const BRAND_DARK = "#111111";

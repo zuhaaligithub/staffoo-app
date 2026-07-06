@@ -206,7 +206,7 @@ export default function PaymentMethodsScreen({ navigation }: Props) {
         <View style={{ width: 28 }} />
       </View>
 
-      <Text style={styles.subtitle}>Your Saved Cards</Text>
+      <Text style={styles.subtitle}>Your saved cards</Text>
 
       {/* Single Scrollable Container with Fixed Height */}
       <View style={styles.cardsWrapper}>

@@ -139,8 +139,8 @@ export async function getEchoInstance(): Promise<any> {
       pongTimeout: 30000,
       authorizer: (channel: any) => ({
         authorize: (socketId: string, callback: Function) => {
-          // fetch('https://apis.staffoo.com.au/broadcasting/auth', {
-          fetch("https://staging.apis.staffoo.com.au/broadcasting/auth", {
+          fetch('https://apis.staffoo.com.au/broadcasting/auth', {
+          // fetch("https://staging.apis.staffoo.com.au/broadcasting/auth", {
             method: "POST",
             headers: {
               "Content-Type": "application/json",

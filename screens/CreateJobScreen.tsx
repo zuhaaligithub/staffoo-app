@@ -753,26 +753,54 @@ export default function CreateJobScreen() {
       // If isEdit is true → keep the data passed from ReviewConfirm
     }, [isEdit, resetForm]),
   );
+  // useEffect(() => {
+  //   if (autocompleteQuery.length < 3) {
+  //     setSuggestions([]);
+  //     return;
+  //   }
+  //   const timeout = setTimeout(async () => {
+  //     setLoadingSuggestions(true);
+  //     try {
+  //       const url = `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${encodeURIComponent(
+  //         autocompleteQuery,
+  //       )}&key=${GOOGLE_PLACES_KEY}`;
+  //       const res = await fetch(url);
+  //       const json = await res.json();
+  //       setSuggestions(json.status === "OK" ? json.predictions || [] : []);
+  //     } catch {
+  //       setSuggestions([]);
+  //     } finally {
+  //       setLoadingSuggestions(false);
+  //     }
+  //   }, 400);
+  //   return () => clearTimeout(timeout);
+  // }, [autocompleteQuery]);
+
   useEffect(() => {
     if (autocompleteQuery.length < 3) {
       setSuggestions([]);
       return;
     }
+
     const timeout = setTimeout(async () => {
       setLoadingSuggestions(true);
       try {
         const url = `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${encodeURIComponent(
           autocompleteQuery,
-        )}&key=${GOOGLE_PLACES_KEY}`;
+        )}&components=country:au&types=address&language=en&key=${GOOGLE_PLACES_KEY}`;
+
         const res = await fetch(url);
         const json = await res.json();
+
         setSuggestions(json.status === "OK" ? json.predictions || [] : []);
-      } catch {
+      } catch (err) {
+        console.error("Autocomplete error:", err);
         setSuggestions([]);
       } finally {
         setLoadingSuggestions(false);
       }
     }, 400);
+
     return () => clearTimeout(timeout);
   }, [autocompleteQuery]);
 
