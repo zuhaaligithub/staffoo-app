@@ -1790,7 +1790,7 @@ const StaffFormsScreen = ({ navigation }: any) => {
       <SafeAreaView style={s.container}>
         <View style={s.loadingWrap}>
           <ActivityIndicator size="large" color={BRAND} />
-          <Text style={s.loadingText}>Loading Your Profile…</Text>
+          <Text style={s.loadingText}>Loading your profile…</Text>
         </View>
       </SafeAreaView>
     );

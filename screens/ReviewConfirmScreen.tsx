@@ -148,10 +148,65 @@ function nextBoundary(t: Date): Date {
   } else if (h < 18) {
     n.setHours(18, 0, 0, 0);
   } else {
+    // Night should split at midnight so the day type changes on the next calendar day.
     n.setDate(n.getDate() + 1);
-    n.setHours(6, 0, 0, 0);
+    n.setHours(0, 0, 0, 0);
   }
   return n;
+}
+
+/**
+ * FIX (defensive, matches CreateJobScreen's shiftDurationHours logic):
+ * Some upstream shift objects can end up with an `endTime` that is not
+ * strictly after `startTime` as raw Date values (e.g. a shift that spans
+ * midnight, mis-anchored to the same calendar day). Previously,
+ * normalizeShift() passed such Dates straight through, and any code that
+ * walked `while (cursor < endDt)` would treat that shift as zero-length,
+ * silently dropping its hours from the quotation total.
+ *
+ * This normalizes any shift whose end is not after its start by rolling
+ * the end forward by 24h, which matches how overnight shifts are meant to
+ * be interpreted everywhere else in the app.
+ */
+function parseLocalDateTime(value: any): Date {
+  if (value instanceof Date) return new Date(value);
+  if (typeof value === "string") {
+    const match = value.match(
+      /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2}))?$/,
+    );
+    if (match) {
+      const [, year, month, day, hour, minute, second] = match;
+      return new Date(
+        Number(year),
+        Number(month) - 1,
+        Number(day),
+        Number(hour),
+        Number(minute),
+        Number(second || "0"),
+        0,
+      );
+    }
+    const parsed = new Date(value);
+    return isNaN(parsed.getTime()) ? new Date() : parsed;
+  }
+  const parsed = new Date(value);
+  return isNaN(parsed.getTime()) ? new Date() : parsed;
+}
+
+function normalizeShift(shift: any) {
+  const start = parseLocalDateTime(shift.startTime);
+  let end = parseLocalDateTime(shift.endTime);
+
+  if (!isNaN(start.getTime()) && !isNaN(end.getTime()) && end <= start) {
+    end = new Date(end.getTime() + 24 * 60 * 60 * 1000);
+  }
+
+  return {
+    ...shift,
+    startTime: start,
+    endTime: end,
+    guardsCount: Number(shift.guardsCount || 1),
+  };
 }
 
 function calcBreakdown(shiftsInput: any[], r: RatesConfig): CostBreakdown {
@@ -167,9 +222,20 @@ function calcBreakdown(shiftsInput: any[], r: RatesConfig): CostBreakdown {
   let totalShiftHours = 0;
 
   shiftsInput.forEach((shift) => {
-    const guards = Math.max(1, Number(shift.guardsCount || 1));
-    const startDt = new Date(shift.startTime);
-    const endDt = new Date(shift.endTime);
+    const normalized = normalizeShift(shift);
+    const guards = Math.max(1, Number(normalized.guardsCount || 1));
+    const startDt = normalized.startTime;
+    const endDt = normalized.endTime;
+
+    if (
+      isNaN(startDt.getTime()) ||
+      isNaN(endDt.getTime()) ||
+      endDt <= startDt
+    ) {
+      // Still invalid after normalization (bad/missing data) — skip safely
+      // instead of ever producing a negative or NaN contribution.
+      return;
+    }
 
     const shiftClockHours = (endDt.getTime() - startDt.getTime()) / 3_600_000;
     totalShiftHours += shiftClockHours;
@@ -692,7 +758,11 @@ export default function ReviewConfirmScreen() {
   }, [jobData.jobLevel]);
 
   const costBreakdown = useMemo(() => {
-    if (!rates || !jobData.shifts?.length) {
+    const shifts = Array.isArray(jobData.shifts)
+      ? jobData.shifts.map(normalizeShift)
+      : [];
+
+    if (!rates || !shifts.length) {
       return {
         chargeTotal: 0,
         guardHours: 0,
@@ -700,8 +770,10 @@ export default function ReviewConfirmScreen() {
         totalShiftHours: 0,
       };
     }
-    return calcBreakdown(jobData.shifts, rates);
+    return calcBreakdown(shifts, rates);
   }, [rates, jobData.shifts]);
+
+  const totalBillableHours = costBreakdown.guardHours;
 
   const subtotal = costBreakdown.chargeTotal;
   const gst = subtotal * 0.1;
@@ -930,7 +1002,7 @@ export default function ReviewConfirmScreen() {
           <View style={styles.rateMainHeader}>
             <Text style={styles.rateMainTitle}>Quotation Breakdown</Text>
             <Text style={styles.rateMainSubtitle}>
-              {costBreakdown.totalShiftHours.toFixed(2)} Total Billable Hours
+              {totalBillableHours.toFixed(2)} Total Billable Hours
             </Text>
           </View>
 

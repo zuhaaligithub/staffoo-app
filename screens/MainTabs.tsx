@@ -56,26 +56,23 @@ const COLORS = {
 
 function CustomTabBar({ state, navigation, userData }: any) {
   const insets = useSafeAreaInsets();
-
   const translateY = React.useRef(new Animated.Value(0)).current;
   const opacity = React.useRef(new Animated.Value(1)).current;
   const [hidden, setHidden] = useState(false);
 
+  // Keyboard handling
   useEffect(() => {
     const showEvent =
       Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow";
-
     const hideEvent =
       Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide";
 
     const showSub = Keyboard.addListener(showEvent, () => {
       setHidden(true);
-
       Animated.parallel([
         Animated.timing(translateY, {
           toValue: 120,
           duration: 180,
-          easing: Easing.out(Easing.ease),
           useNativeDriver: true,
         }),
         Animated.timing(opacity, {
@@ -91,7 +88,6 @@ function CustomTabBar({ state, navigation, userData }: any) {
         Animated.timing(translateY, {
           toValue: 0,
           duration: 180,
-          easing: Easing.out(Easing.ease),
           useNativeDriver: true,
         }),
         Animated.timing(opacity, {
@@ -99,9 +95,7 @@ function CustomTabBar({ state, navigation, userData }: any) {
           duration: 180,
           useNativeDriver: true,
         }),
-      ]).start(() => {
-        setHidden(false);
-      });
+      ]).start(() => setHidden(false));
     });
 
     return () => {
@@ -134,10 +128,7 @@ function CustomTabBar({ state, navigation, userData }: any) {
       );
       return;
     }
-
-    if (!isFocused) {
-      navigation.navigate(routeName);
-    }
+    if (!isFocused) navigation.navigate(routeName);
   };
 
   const visibleTabs =
@@ -145,7 +136,7 @@ function CustomTabBar({ state, navigation, userData }: any) {
       ? [
           { name: "Home", label: "Home", Icon: Home },
           { name: "Applications", label: "My Jobs", Icon: FileText },
-          { name: "CreateJob", label: "Post Job", Icon: Plus, isAdd: true },
+          { name: "CreateJob", label: "", Icon: Plus, isAdd: true },
           { name: "Messages", label: "Messages", Icon: MessageCircle },
           { name: "Profile", label: "Profile", Icon: User },
         ]
@@ -164,18 +155,13 @@ function CustomTabBar({ state, navigation, userData }: any) {
       pointerEvents={hidden ? "none" : "auto"}
       style={[
         styles.wrapper,
-        {
-          paddingBottom: insets.bottom,
-          opacity,
-          transform: [{ translateY }],
-        },
+        { paddingBottom: insets.bottom, opacity, transform: [{ translateY }] },
       ]}
     >
       <View style={styles.bottomTab}>
-        {visibleTabs.map((tab: any) => {
+        {visibleTabs.map((tab: any, index) => {
           const isFocused = currentRouteName === tab.name;
           const accessible = canAccess(tab.name);
-
           const iconColor =
             !accessible && tab.name !== "Profile"
               ? "#cbd5e1"
@@ -185,16 +171,17 @@ function CustomTabBar({ state, navigation, userData }: any) {
 
           if (tab.isAdd) {
             return (
-              <TouchableOpacity
-                key={tab.name}
-                style={[
-                  styles.tabAdd,
-                  !isFullyAccessible && styles.tabAddDisabled,
-                ]}
-                onPress={() => handlePress(tab.name, isFocused)}
-              >
-                <Plus size={30} color="#fff" />
-              </TouchableOpacity>
+              <View key={tab.name} style={styles.addButtonContainer}>
+                <TouchableOpacity
+                  style={styles.floatingAddButton}
+                  onPress={() => handlePress(tab.name, isFocused)}
+                  activeOpacity={0.9}
+                >
+                  <View style={styles.floatingInner}>
+                    <Plus size={32} color="#fff" strokeWidth={2.8} />
+                  </View>
+                </TouchableOpacity>
+              </View>
             );
           }
 
@@ -211,19 +198,11 @@ function CustomTabBar({ state, navigation, userData }: any) {
                 ]}
               >
                 <tab.Icon size={20} color={iconColor} />
-
                 {!accessible && tab.name !== "Profile" && (
                   <Lock size={11} color="#ef4444" style={styles.lockIcon} />
                 )}
               </View>
-
-              <Text
-                style={[
-                  styles.tabLabel,
-                  isFocused && styles.activeLabel,
-                  !accessible && tab.name !== "Profile" && styles.disabledLabel,
-                ]}
-              >
+              <Text style={[styles.tabLabel, isFocused && styles.activeLabel]}>
                 {tab.label}
               </Text>
             </TouchableOpacity>
@@ -233,6 +212,186 @@ function CustomTabBar({ state, navigation, userData }: any) {
     </Animated.View>
   );
 }
+
+// function CustomTabBar({ state, navigation, userData }: any) {
+//   const insets = useSafeAreaInsets();
+
+//   const translateY = React.useRef(new Animated.Value(0)).current;
+//   const opacity = React.useRef(new Animated.Value(1)).current;
+//   const [hidden, setHidden] = useState(false);
+
+//   useEffect(() => {
+//     const showEvent =
+//       Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow";
+
+//     const hideEvent =
+//       Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide";
+
+//     const showSub = Keyboard.addListener(showEvent, () => {
+//       setHidden(true);
+
+//       Animated.parallel([
+//         Animated.timing(translateY, {
+//           toValue: 120,
+//           duration: 180,
+//           easing: Easing.out(Easing.ease),
+//           useNativeDriver: true,
+//         }),
+//         Animated.timing(opacity, {
+//           toValue: 0,
+//           duration: 120,
+//           useNativeDriver: true,
+//         }),
+//       ]).start();
+//     });
+
+//     const hideSub = Keyboard.addListener(hideEvent, () => {
+//       Animated.parallel([
+//         Animated.timing(translateY, {
+//           toValue: 0,
+//           duration: 180,
+//           easing: Easing.out(Easing.ease),
+//           useNativeDriver: true,
+//         }),
+//         Animated.timing(opacity, {
+//           toValue: 1,
+//           duration: 180,
+//           useNativeDriver: true,
+//         }),
+//       ]).start(() => {
+//         setHidden(false);
+//       });
+//     });
+
+//     return () => {
+//       showSub.remove();
+//       hideSub.remove();
+//     };
+//   }, []);
+
+//   const userType = userData?.user_type ?? null;
+//   const isActive = userData?.is_active === true;
+//   const isFullyAccessible = userType === "customer" ? true : isActive;
+
+//   const canAccess = (routeName: string) => {
+//     if (routeName === "Profile") return true;
+//     return isFullyAccessible;
+//   };
+
+//   const handlePress = (routeName: string, isFocused: boolean) => {
+//     if (!canAccess(routeName)) {
+//       Alert.alert(
+//         "Account Not Active",
+//         "Your account must be active to access this section.",
+//         [
+//           {
+//             text: "Go to Profile",
+//             onPress: () => navigation.navigate("Profile"),
+//           },
+//           { text: "OK", style: "cancel" },
+//         ],
+//       );
+//       return;
+//     }
+
+//     if (!isFocused) {
+//       navigation.navigate(routeName);
+//     }
+//   };
+
+//   const visibleTabs =
+//     userType === "customer"
+//       ? [
+//           { name: "Home", label: "Home", Icon: Home },
+//           { name: "Applications", label: "My Jobs", Icon: FileText },
+//           { name: "CreateJob", label: "Post Job", Icon: Plus, isAdd: true },
+//           { name: "Messages", label: "Messages", Icon: MessageCircle },
+//           { name: "Profile", label: "Profile", Icon: User },
+//         ]
+//       : [
+//           { name: "Home", label: "Home", Icon: Home },
+//           { name: "Applications", label: "My Jobs", Icon: FileText },
+//           { name: "StaffShifts", label: "Shifts", Icon: Calendar },
+//           { name: "Messages", label: "Messages", Icon: MessageCircle },
+//           { name: "Profile", label: "Profile", Icon: User },
+//         ];
+
+//   const currentRouteName = state.routes[state.index]?.name;
+
+//   return (
+//     <Animated.View
+//       pointerEvents={hidden ? "none" : "auto"}
+//       style={[
+//         styles.wrapper,
+//         {
+//           paddingBottom: insets.bottom,
+//           opacity,
+//           transform: [{ translateY }],
+//         },
+//       ]}
+//     >
+//       <View style={styles.bottomTab}>
+//         {visibleTabs.map((tab: any) => {
+//           const isFocused = currentRouteName === tab.name;
+//           const accessible = canAccess(tab.name);
+
+//           const iconColor =
+//             !accessible && tab.name !== "Profile"
+//               ? "#cbd5e1"
+//               : isFocused
+//               ? "#0A7C6E"
+//               : "#64748b";
+
+//           if (tab.isAdd) {
+//             return (
+//               <TouchableOpacity
+//                 key={tab.name}
+//                 style={[
+//                   styles.tabAdd,
+//                   !isFullyAccessible && styles.tabAddDisabled,
+//                 ]}
+//                 onPress={() => handlePress(tab.name, isFocused)}
+//               >
+//                 <Plus size={30} color="#fff" />
+//               </TouchableOpacity>
+//             );
+//           }
+
+//           return (
+//             <TouchableOpacity
+//               key={tab.name}
+//               style={styles.tabItem}
+//               onPress={() => handlePress(tab.name, isFocused)}
+//             >
+//               <View
+//                 style={[
+//                   styles.iconWrapper,
+//                   isFocused && styles.activeIconWrapper,
+//                 ]}
+//               >
+//                 <tab.Icon size={20} color={iconColor} />
+
+//                 {!accessible && tab.name !== "Profile" && (
+//                   <Lock size={11} color="#ef4444" style={styles.lockIcon} />
+//                 )}
+//               </View>
+
+//               <Text
+//                 style={[
+//                   styles.tabLabel,
+//                   isFocused && styles.activeLabel,
+//                   !accessible && tab.name !== "Profile" && styles.disabledLabel,
+//                 ]}
+//               >
+//                 {tab.label}
+//               </Text>
+//             </TouchableOpacity>
+//           );
+//         })}
+//       </View>
+//     </Animated.View>
+//   );
+// }
 
 // ────────────────────────────────────────────────────────────────────────────
 // MainTabs — single source of truth for user data.
@@ -327,14 +486,10 @@ export default function MainTabs() {
 // Styles
 // ────────────────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
-  tabItem: {
-    alignItems: "center",
-    justifyContent: "center",
-  },
   iconWrapper: {
-    width: 35,
-    height: 35,
-    borderRadius: 25,
+    width: 32,
+    height: 32,
+    borderRadius: 24,
     justifyContent: "center",
     alignItems: "center",
     position: "relative",
@@ -398,18 +553,54 @@ const styles = StyleSheet.create({
     right: 0,
     zIndex: 10,
   },
+
   bottomTab: {
     height: 60,
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-around",
+    justifyContent: "space-around", // This helps equal spacing
     backgroundColor: "#fff",
     borderTopLeftRadius: 30,
-    borderTopRightRadius: 30,
+    borderTopRightRadius:30,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: -3 },
+    shadowOffset: { width: 0, height: -4 },
     shadowOpacity: 0.15,
-    shadowRadius: 6,
-    elevation: 10,
+    shadowRadius: 8,
+    elevation: 12,
+    position: "relative",
+  },
+
+  tabItem: {
+    alignItems: "center",
+    justifyContent: "center",
+    flex: 1, // Equal space distribution
+  },
+
+  addButtonContainer: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    position: "relative",
+    zIndex: 10,
+  },
+
+  floatingAddButton: {
+    position: "absolute",
+    bottom: -14,
+    alignSelf: "center",
+  },
+
+  floatingInner: {
+    width: 68,
+    height: 68,
+    borderRadius: 34,
+    backgroundColor: "#0A7C6E",
+    justifyContent: "center",
+    alignItems: "center",
+    shadowColor: "#0A7C6E",
+    shadowOffset: { width: 0, height: 10 },
+    elevation: 4,
+    borderWidth: 4,
+    borderColor: "#fff",
   },
 });

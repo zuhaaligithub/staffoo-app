@@ -169,16 +169,7 @@ const safeUnlink = async (path: string) => {
   } catch (_) {}
 };
 
-/**
- * Download a PDF to a given destination path.
- * Returns the final path where the file was saved, or throws on failure.
- *
- * FIX 1: Removed `trusty: false` — it triggers "Use of own trust manager but
- *         none defined" on Android when no custom TrustManager is registered.
- * FIX 2: Removed the two-step tmp→final move for the plain fetch path.
- *         ReactNativeBlobUtil writes directly to `path`; the tmp rename was
- *         racing with itself and leaving a dangling .tmp reference.
- */
+
 const downloadPdfToPath = async (
   url: string,
   destPath: string,

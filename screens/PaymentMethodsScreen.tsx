@@ -10,12 +10,12 @@ import {
   ActivityIndicator,
   Dimensions,
 } from "react-native";
-import { ChevronLeft, Plus, Trash2 } from "lucide-react-native";
+import { ChevronLeft, Pencil, Plus, Trash2 } from "lucide-react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import { useFocusEffect } from "@react-navigation/native";
 import { BASE_URL } from "../services/authApi";
-
+import { normalizeBankDetails } from "../utils/paymentCards";
 
 const { height: SCREEN_HEIGHT } = Dimensions.get("window");
 
@@ -118,13 +118,7 @@ export default function PaymentMethodsScreen({ navigation }: Props) {
       }
 
       const raw = res.data.data.customer.bank_details;
-      let parsed: any[] = [];
-      try {
-        parsed = JSON.parse(raw);
-      } catch (e) {
-        console.warn("Invalid bank_details JSON");
-      }
-      setCards(Array.isArray(parsed) ? parsed : []);
+      setCards(normalizeBankDetails(raw));
     } catch (err) {
       console.error("Load cards error:", err);
       Alert.alert("Error", "Could not load payment methods");
@@ -149,14 +143,28 @@ export default function PaymentMethodsScreen({ navigation }: Props) {
     return (
       <View style={styles.creditCard}>
         <View style={styles.cardHeader}>
-          <TouchableOpacity
-            style={styles.deleteButton}
-            onPress={() => handleDeleteCard(index)}
-          >
-            <Trash2 size={14} color="#fff" />
-          </TouchableOpacity>
-        </View>
+          <View style={{ flexDirection: "row" }}>
+            <TouchableOpacity
+              style={styles.editButton}
+              onPress={() =>
+                navigation.navigate("PaymentHistory", {
+                  editIndex: index,
+                  card: item,
+                  onCardAdded: fetchCards,
+                })
+              }
+            >
+              <Pencil size={14} color="#fff" />
+            </TouchableOpacity>
 
+            <TouchableOpacity
+              style={styles.deleteButton}
+              onPress={() => handleDeleteCard(index)}
+            >
+              <Trash2 size={14} color="#fff" />
+            </TouchableOpacity>
+          </View>
+        </View>
         <View style={styles.cardTop}>
           <View style={styles.chipContainer}>
             <View style={styles.chip}>
@@ -314,7 +322,15 @@ const styles = StyleSheet.create({
   rightSection: {
     alignItems: "flex-end",
   },
-
+  editButton: {
+    width: 30,
+    height: 30,
+    borderRadius: 6,
+    backgroundColor: "#2563EB",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 8,
+  },
   chipShine: {
     position: "absolute",
     top: 6,

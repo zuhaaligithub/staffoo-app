@@ -1553,6 +1553,15 @@ export default function CreateJobScreen() {
     const payableNow = totalQuotation - discountAmount;
     const splitAmount = totalQuotation / 2;
 
+    const normalizedShifts = activeSchedules.flatMap((day) =>
+      (day?.shifts || []).map((s) => ({
+        date: day.date,
+        startTime: s.startTime,
+        endTime: s.endTime,
+        guardsCount: Number(s.guardsCount || 1),
+      })),
+    );
+
     navigation.navigate("ReviewConfirm", {
       jobData: {
         category:
@@ -1565,14 +1574,7 @@ export default function CreateJobScreen() {
         startTime: first.shifts[0]?.startTime ?? new Date(),
         endDate: last.date,
         endTime: last.shifts[last.shifts.length - 1]?.endTime ?? new Date(),
-        shifts: activeSchedules.flatMap((day) =>
-          (day?.shifts || []).map((s) => ({
-            date: day.date,
-            startTime: s.startTime,
-            endTime: s.endTime,
-            guardsCount: Number(s.guardsCount || 1),
-          })),
-        ),
+        shifts: normalizedShifts,
         totalManHours,
         subtotal: parseFloat(subtotal.toFixed(2)),
         gstAmount: parseFloat(gstAmount.toFixed(2)),

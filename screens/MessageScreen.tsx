@@ -370,23 +370,28 @@ const styles = StyleSheet.create({
     color: COLORS.text,
   },
   // siteCardInner:{padding:16},
-
   searchContainer: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#ffff",
+    backgroundColor: "#FFFFFF", // White background
     margin: 16,
     borderRadius: 12,
     paddingHorizontal: 14,
-    // paddingVertical: 10,
+   
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: "#E5E7EB", // Light border
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
 
   searchInput: {
     flex: 1,
     fontSize: 16,
-    color: COLORS.text,
+    color: "#111827", // ← Dark color (blackish)
+    paddingVertical: 10,
   },
 
   scrollView: {

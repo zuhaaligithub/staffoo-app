@@ -2503,7 +2503,7 @@ export default function DocumentsScreen({ navigation }: Props) {
 
         const payload = {
           passport: documentNumber.trim(),
-          origin_country: originCountryCode,
+          country: originCountryCode,
           family_name,
           given_name,
           dob,
@@ -2511,12 +2511,16 @@ export default function DocumentsScreen({ navigation }: Props) {
 
         console.log("Payload:", JSON.stringify(payload, null, 2));
 
-        response = await axios.post(`${BASE_URL}/admin/visa-check`, payload, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
+        response = await axios.post(
+          `${BASE_URL}/admin/visa-expiry-check`,
+          payload,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
           },
-        });
+        );
       } else {
         // Security License verification...
         const payload = {

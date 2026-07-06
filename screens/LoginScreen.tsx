@@ -250,51 +250,7 @@ export default function LoginScreen({ navigation }: Props) {
       setLoading(false);
     }
   };
-  // const handleGoogleLogin = async () => {
-  //   try {
-  //     setLoading(true);
 
-  //     console.log("🚀 [GOOGLE] Starting Google Sign-In...");
-
-  //     await GoogleSignin.hasPlayServices({
-  //       showPlayServicesUpdateDialog: true,
-  //     });
-
-  //     await GoogleSignin.signOut().catch(() => {});
-
-  //     const userInfo = await GoogleSignin.signIn();
-
-  //     if (userInfo.type !== "success" || !userInfo.data) {
-  //       throw new Error("Google sign-in failed");
-  //     }
-
-  //     const tokens = await GoogleSignin.getTokens();
-
-  //     const credential = tokens.accessToken;
-
-  //     if (!credential) {
-  //       throw new Error("Failed to get Google credential");
-  //     }
-
-  //     console.log("✅ Google credential received");
-
-  //     setGoogleCredential(credential);
-
-  //     // Open popup like web version
-  //     setShowAccountTypeModal(true);
-  //   } catch (error: any) {
-  //     console.error("❌ Google Login Error:", error);
-
-  //     Toast.show({
-  //       type: "error",
-  //       text1: "Google Login Failed",
-  //       text2: error.message || "Please try again",
-  //       position: "bottom",
-  //     });
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
   const completeGoogleLogin = async () => {
     if (!selectedAccountType) {
       return Toast.show({
@@ -439,68 +395,129 @@ export default function LoginScreen({ navigation }: Props) {
 
   // const redirectAfterLogin = (user: any) => {
   //   const type = (user.user_type || "").toLowerCase();
-  //   if (type === "customer") {
-  //     navigation.reset({ index: 0, routes: [{ name: "CreateJob" }] });
-  //   } else {
-  //     navigation.reset({ index: 0, routes: [{ name: "Profile" }] });
-  //   }
+
+  //   setNavigationLoading(true);
+
+  //   setTimeout(() => {
+  //     if (type === "customer") {
+  //       navigation.reset({
+  //         index: 0,
+  //         routes: [
+  //           {
+  //             name: "MainTabs",
+  //             params: {
+  //               screen: "CreateJob",
+  //             },
+  //           },
+  //         ],
+  //       });
+  //     } else {
+  //       navigation.reset({
+  //         index: 0,
+  //         routes: [
+  //           {
+  //             name: "MainTabs",
+  //             params: {
+  //               screen: "Profile",
+  //             },
+  //           },
+  //         ],
+  //       });
+  //     }
+
+  //     setTimeout(() => {
+  //       setNavigationLoading(false);
+  //     }, 2000);
+  //   }, 100);
   // };
 
-  const redirectAfterLogin = (user: any) => {
-    const type = (user.user_type || "").toLowerCase();
+  // const handleSignIn = async () => {
+  //   if (!email.trim()) {
+  //     Toast.show({
+  //       type: "error",
+  //       text1: "Email Required",
+  //       position: "bottom",
+  //     });
+  //     return;
+  //   }
 
-    setNavigationLoading(true);
+  //   if (!password.trim()) {
+  //     Toast.show({
+  //       type: "error",
+  //       text1: "Password Required",
+  //       position: "bottom",
+  //     });
+  //     return;
+  //   }
 
-    setTimeout(() => {
-      if (type === "customer") {
-        navigation.reset({
-          index: 0,
-          routes: [
-            {
-              name: "MainTabs",
-              params: {
-                screen: "CreateJob",
-              },
-            },
-          ],
-        });
-      } else {
-        navigation.reset({
-          index: 0,
-          routes: [
-            {
-              name: "MainTabs",
-              params: {
-                screen: "Profile",
-              },
-            },
-          ],
-        });
-      }
+  //   setLoading(true);
 
-      setTimeout(() => {
-        setNavigationLoading(false);
-      }, 2000);
-    }, 100);
-  };
+  //   try {
+  //     const netState = await NetInfo.fetch();
+  //     if (!netState.isConnected) {
+  //       throw new Error("No internet connection. Please try again.");
+  //     }
 
+  //     const response = await loginUser({
+  //       email: email.trim(),
+  //       password: password.trim(),
+  //     });
+  //     const user = response;
+  //     const token = response.token;
+  //     await AsyncStorage.setItem("@auth_token", token);
+  //     await AsyncStorage.setItem("@user_id", String(user.id));
+  //     const userTypeValue = user.user_type || "staff";
+  //     await AsyncStorage.setItem("@user_type", userTypeValue);
+  //     await AsyncStorage.setItem("user", JSON.stringify(user));
+  //     const allKeys = await AsyncStorage.getAllKeys();
+  //     console.log("AsyncStorage keys after login:", allKeys);
+  //     console.log("✅ Login Success - Saved:");
+  //     console.log("   • User ID   :", user.id);
+  //     console.log("   • User Type :", userTypeValue);
+  //     console.log("   • Token     :", token ? "Saved" : "Missing");
+  //     try {
+  //       await new Promise((r) => setTimeout(r, 1200));
+  //       const playerId = await OneSignal.User.pushSubscription.getIdAsync();
+  //       if (playerId) {
+  //         await sendNotificationTokenToServer(playerId, String(user.id));
+  //         OneSignal.login(String(user.id));
+  //       }
+  //     } catch (e) {
+  //       console.log("OneSignal error:", e);
+  //     }
+
+  //     Toast.show({
+  //       type: "success",
+  //       text1: "Login Successful",
+  //       position: "bottom",
+  //     });
+
+  //     setTimeout(() => redirectAfterLogin(user), 500);
+  //   } catch (err: any) {
+  //     Toast.show({
+  //       type: "error",
+  //       text1: "Login Failed",
+  //       text2: err.message || "Please try again",
+  //       position: "bottom",
+  //     });
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
   const handleSignIn = async () => {
     if (!email.trim()) {
-      Toast.show({
+      return Toast.show({
         type: "error",
         text1: "Email Required",
         position: "bottom",
       });
-      return;
     }
-
     if (!password.trim()) {
-      Toast.show({
+      return Toast.show({
         type: "error",
         text1: "Password Required",
         position: "bottom",
       });
-      return;
     }
 
     setLoading(true);
@@ -515,21 +532,34 @@ export default function LoginScreen({ navigation }: Props) {
         email: email.trim(),
         password: password.trim(),
       });
+
       const user = response;
       const token = response.token;
-      await AsyncStorage.setItem("@auth_token", token);
-      await AsyncStorage.setItem("@user_id", String(user.id));
-      const userTypeValue = user.user_type || "staff";
-      await AsyncStorage.setItem("@user_type", userTypeValue);
-      await AsyncStorage.setItem("user", JSON.stringify(user));
-      const allKeys = await AsyncStorage.getAllKeys();
-      console.log("AsyncStorage keys after login:", allKeys);
-      console.log("✅ Login Success - Saved:");
-      console.log("   • User ID   :", user.id);
-      console.log("   • User Type :", userTypeValue);
-      console.log("   • Token     :", token ? "Saved" : "Missing");
+
+      // ── Check for Admin BEFORE saving data ──
+      if (user.user_type?.toLowerCase() === "admin") {
+        Toast.show({
+          type: "error",
+          text1: "Admin Access Denied",
+          text2: "Please login through the Admin Portal",
+          position: "top",
+          visibilityTime: 5000,
+        });
+
+        // Do NOT save admin credentials
+        return;
+      }
+
+      // ── Normal User Flow ──
+      await AsyncStorage.multiSet([
+        ["@auth_token", token],
+        ["@user_id", String(user.id)],
+        ["@user_type", user.user_type || "staff"],
+        ["user", JSON.stringify(user)],
+      ]);
+
+      // OneSignal setup
       try {
-        await new Promise((r) => setTimeout(r, 1200));
         const playerId = await OneSignal.User.pushSubscription.getIdAsync();
         if (playerId) {
           await sendNotificationTokenToServer(playerId, String(user.id));
@@ -542,19 +572,35 @@ export default function LoginScreen({ navigation }: Props) {
       Toast.show({
         type: "success",
         text1: "Login Successful",
-        position: "bottom",
+        position: "top",
       });
 
-      setTimeout(() => redirectAfterLogin(user), 500);
+      setTimeout(() => redirectAfterLogin(user), 600);
     } catch (err: any) {
       Toast.show({
         type: "error",
         text1: "Login Failed",
         text2: err.message || "Please try again",
-        position: "bottom",
+        position: "top",
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const redirectAfterLogin = (user: any) => {
+    const type = (user.user_type || "").toLowerCase();
+
+    if (type === "customer") {
+      navigation.reset({
+        index: 0,
+        routes: [{ name: "MainTabs", params: { screen: "CreateJob" } }],
+      });
+    } else {
+      navigation.reset({
+        index: 0,
+        routes: [{ name: "MainTabs", params: { screen: "Profile" } }],
+      });
     }
   };
 

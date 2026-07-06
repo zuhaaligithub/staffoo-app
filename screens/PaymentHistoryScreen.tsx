@@ -18,8 +18,10 @@ import { ChevronLeft } from "lucide-react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import { BASE_URL } from "../services/authApi";
-
-
+import {
+  buildBankDetailsFormData,
+  normalizeBankDetails,
+} from "../utils/paymentCards";
 
 type Props = {
   navigation: any;
@@ -45,13 +47,19 @@ const COLORS = {
 };
 
 export default function PaymentHistoryScreen({ navigation, route }: Props) {
-  const { onCardAdded } = route.params || {};
-
-  const [name, setName] = useState("");
-  const [cardNumber, setCardNumber] = useState(""); // formatted with spaces
-  const [expMonth, setExpMonth] = useState("");
-  const [expYear, setExpYear] = useState("");
-  const [cvv, setCvv] = useState("");
+  const { card, editIndex, onCardAdded } = route.params || {};
+  const [name, setName] = useState(card?.card_holder_name || "");
+  const [cardNumber, setCardNumber] = useState(card?.card_number || "");
+  const [expMonth, setExpMonth] = useState(card?.expiry_month || "");
+  const [expYear, setExpYear] = useState(card?.expiry_year || "");
+  const [cvv, setCvv] = useState(card?.cvv || "");
+  const newCard = {
+    card_holder_name: name.trim(),
+    card_number: cardNumber,
+    expiry_month: expMonth.padStart(2, "0"),
+    expiry_year: expYear,
+    cvv,
+  };
   const [saving, setSaving] = useState(false);
 
   // Format card number for display (spaces every 4 digits)
@@ -113,7 +121,9 @@ export default function PaymentHistoryScreen({ navigation, route }: Props) {
         });
 
         if (res.data?.success && res.data?.data?.customer?.bank_details) {
-          currentCards = JSON.parse(res.data.data.customer.bank_details) || [];
+          currentCards = normalizeBankDetails(
+            res.data.data.customer.bank_details,
+          );
         }
       } catch (fetchErr) {
         console.warn("Could not fetch existing cards", fetchErr);
@@ -127,22 +137,24 @@ export default function PaymentHistoryScreen({ navigation, route }: Props) {
         expiry_year: expYear.padStart(2, "0"),
       };
 
-      const updatedCards = [...currentCards, newCard];
+      let updatedCards = [...currentCards];
 
-      const payload = {
-        bank_details: JSON.stringify(updatedCards),
-      };
+      if (editIndex !== undefined) {
+        updatedCards[editIndex] = newCard;
+      } else {
+        updatedCards.push(newCard);
+      }
 
-      console.log("Payload:", payload);
+      const formData = buildBankDetailsFormData(updatedCards);
 
       // 3️⃣ Save card
       const response = await axios.post(
         `${BASE_URL}/user-update/${USER_ID}`,
-        payload,
+        formData,
         {
           headers: {
             Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
+            "Content-Type": "multipart/form-data",
             Accept: "application/json",
           },
         },
@@ -227,8 +239,8 @@ export default function PaymentHistoryScreen({ navigation, route }: Props) {
               <View style={styles.expirySection}>
                 <Text style={styles.labelSmall}>EXPIRES</Text>
                 <Text style={styles.valueText}>
-                {expMonth.padStart(2, "0") || "MM"}/
-{expYear ? expYear.slice(-2) : "YY"}
+                  {expMonth.padStart(2, "0") || "MM"}/
+                  {expYear ? expYear.slice(-2) : "YY"}
                 </Text>
               </View>
             </View>
