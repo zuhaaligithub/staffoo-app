@@ -43,16 +43,16 @@ import * as DocumentPicker from "@react-native-documents/picker";
 import { pick, types } from "@react-native-documents/picker";
 
 const BASE_URL = "https://apis.staffoo.com.au";
-// const BASE_URL = "https://staging.apis.staffoo.com.au";
+// const BASE_URL = "https://apis-staging.staffoo.com.au";
 const GOOGLE_API_KEY = "AIzaSyCS-DB39Kk-Z25C5GWymVGshXIALbjXPGY";
 const BRAND = "#89E7D0";
-const BRAND_DARK = "#111111";
-const BRAND_LIGHT = "#111111";
+const BRAND_DARK = "#030508";
+const BRAND_LIGHT = "#030508";
 const ACCENT = "#0047FF";
 const SUCCESS = "#89E7D0";
 const ERROR = "#EF4444";
 const GRAY_BG = "#001F3F";
-const CARD_BG = "#111111";
+const CARD_BG = "#030508";
 
 type StaffTab = "tfn" | "super" | "onboarding";
 
@@ -79,8 +79,7 @@ const StaffFormsScreen = ({ navigation }: any) => {
   // ── TFN Fields ──────────────────────────────────────────────────────────────
   const [tfnNumber, setTfnNumber] = useState("");
   const [tfnTitle, setTfnTitle] = useState("");
-  const [tfnFirstName, setTfnFirstName] = useState("");
-  const [tfnSurname, setTfnSurname] = useState("");
+  const [tfnFullName, setTfnFullName] = useState("");
   const [tfnPrevName, setTfnPrevName] = useState("");
   const [tfnDob, setTfnDob] = useState("");
   const [tfnDobBackend, setTfnDobBackend] = useState("");
@@ -150,9 +149,10 @@ const StaffFormsScreen = ({ navigation }: any) => {
     null,
   );
 
-  // ── Security Licence Verification State ────────────────────────────────────
   const [verifyingSecurity, setVerifyingSecurity] = useState(false);
   const [isSecurityVerified, setIsSecurityVerified] = useState(false);
+
+  const [staffState, setStaffState] = useState("");
 
   const [idChecks, setIdChecks] = useState({
     primary_id: false,
@@ -198,9 +198,7 @@ const StaffFormsScreen = ({ navigation }: any) => {
 
   const Api_Url = "https://apis.thescouts.com.au/api";
   const titleOptions = ["Mr", "Mrs", "Miss"];
-  const autoFullName = [tfnTitle, tfnFirstName, tfnSurname]
-    .filter(Boolean)
-    .join(" ");
+  const autoFullName = tfnFullName;
 
   // ── Google Places Address Fetch ─────────────────────────────────────────────
   const fetchAddressSuggestions = async (
@@ -213,19 +211,24 @@ const StaffFormsScreen = ({ navigation }: any) => {
       setShow(false);
       return;
     }
+
     try {
       const url = `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${encodeURIComponent(
         text,
-      )}&key=${GOOGLE_API_KEY}&language=en`;
+      )}&components=country:au&types=address&language=en&key=${GOOGLE_API_KEY}`;
+
       const res = await axios.get(url);
+
       const predictions: PlaceSuggestion[] =
         res.data?.predictions?.map((p: any) => ({
           place_id: p.place_id,
           description: p.description,
         })) || [];
+
       setSuggestions(predictions);
       setShow(predictions.length > 0);
     } catch (e) {
+      console.error("Google Places Error:", e);
       setSuggestions([]);
       setShow(false);
     }
@@ -253,6 +256,54 @@ const StaffFormsScreen = ({ navigation }: any) => {
         setShowOnboardSuggestions,
       );
     }, 400);
+  };
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // NOTE (FIX): getStaffInfo now runs BEFORE fetchFormData on every tab load.
+  // getStaffInfo seeds sensible *defaults* (name/address/dob/idChecks) from the
+  // staff profile; fetchFormData then overrides those defaults with whatever
+  // was actually saved for this specific form (if anything was saved before).
+  // Previously fetchFormData ran first and getStaffInfo ran second, which could
+  // silently stomp on saved data — and idChecks was never defaulted from the
+  // profile at all, so a staff member with verified documents on file would
+  // still see all four 100-point checkboxes unticked on a fresh onboarding form.
+  // ═══════════════════════════════════════════════════════════════════════════
+  useEffect(() => {
+    const loadAllFormData = async () => {
+      if (userId && activeStaffTab) {
+        resetAllFields();
+        setTabLoading(true);
+        await getStaffInfo(userId); // ← defaults first (name, address, dob, idChecks, etc.)
+        await fetchFormData(userId); // ← saved form data overrides defaults where present
+        applyDefaultSignedDate();
+        setTabLoading(false);
+      }
+    };
+
+    loadAllFormData();
+
+    const unsubscribe = navigation.addListener("focus", () => {
+      loadAllFormData();
+    });
+
+    return unsubscribe;
+  }, [activeStaffTab, userId, navigation]);
+
+  const applyDefaultSignedDate = () => {
+    const { display, backend } = getTodayParts();
+
+    setDateTfnBackend((prev) => {
+      if (!prev) setDateTfn(display);
+      return prev || backend;
+    });
+    setDateSuperBackend((prev) => {
+      if (!prev) setDateSuper(display);
+      return prev || backend;
+    });
+    setDateOnboardBackend((prev) => {
+      if (!prev) setDateOnboard(display);
+      return prev || backend;
+    });
   };
 
   // ── Init + Auto-fill from get-staff-info API ────────────────────────────────
@@ -294,16 +345,7 @@ const StaffFormsScreen = ({ navigation }: any) => {
       // ── Auto-fill name fields ──────────────────────────────────────────────
       if (data.name) {
         const fullName = data.name.trim();
-        const nameParts = fullName.split(" ");
-        const firstName = nameParts[0] || "";
-        // Last name = everything after the first word
-        const lastName = nameParts.slice(1).join(" ") || "";
-
-        // TFN: first_name = first word, surname = rest
-        setTfnFirstName(firstName);
-        setTfnSurname(lastName);
-
-        // Super & Onboarding: full name
+        setTfnFullName(fullName);
         setSuperFullName(fullName);
         setOnboardFullName(fullName);
       }
@@ -322,6 +364,17 @@ const StaffFormsScreen = ({ navigation }: any) => {
       if (data.address) {
         setTfnAddress(data.address);
         setOnboardAddress(data.address);
+      }
+
+      // ── State (used for online verification payload) ───────────────────────
+      const rawState =
+        data.state ||
+        data.staff?.state ||
+        data.contractor?.state ||
+        data.address_state ||
+        "";
+      if (rawState) {
+        setStaffState(rawState);
       }
 
       // ── Date of Birth ──────────────────────────────────────────────────────
@@ -347,7 +400,6 @@ const StaffFormsScreen = ({ navigation }: any) => {
         setPassportDocName(data.passport_attachment);
       }
 
-      // ── Security Licence ──────────────────────────────────────────────────
       if (data.security_license_no) {
         setSecurityLicence(data.security_license_no);
       }
@@ -376,6 +428,21 @@ const StaffFormsScreen = ({ navigation }: any) => {
         setFirstAidDoc(data.first_aid_file);
         setFirstAidDocName(data.first_aid_file);
       }
+
+      setIdChecks((prev) => ({
+        primary_id:
+          !!(data.passport_checkbox || data.passport_no) || prev.primary_id,
+        drivers_license:
+          !!(data.driving_license_checkbox || data.driving_license_no) ||
+          prev.drivers_license,
+        security_license:
+          !!(data.security_license_checkbox || data.security_license_no) ||
+          prev.security_license,
+        // No dedicated "Medicare / utility bill" flag comes back from
+        // get-staff-info, so this stays whatever the user has already set
+        // (or false by default) — it is not auto-derived.
+        medicare_or_utility: prev.medicare_or_utility,
+      }));
     } catch (error) {
       console.log("get-staff-info error", error);
     }
@@ -442,58 +509,46 @@ const StaffFormsScreen = ({ navigation }: any) => {
     setShowSignatureModal(true);
   };
 
-  useEffect(() => {
-    const loadAllFormData = async () => {
-      if (userId && activeStaffTab) {
-        resetAllFields();
-        setTabLoading(true);
-        await fetchExistingForms(userId);
-        await fetchFormData(userId);
-        // Re-apply staff info autofill after tab switch
-        await getStaffInfo(userId);
-        setTabLoading(false);
-      }
-    };
-
-    loadAllFormData();
-
-    const unsubscribe = navigation.addListener("focus", () => {
-      loadAllFormData();
-    });
-
-    return unsubscribe;
-  }, [activeStaffTab, userId, navigation]);
-
-  const fetchExistingForms = async (id: number | string) => {
-    try {
-      const token = await getToken();
-      if (!token) return;
-
-      const res = await axios.get(`${BASE_URL}/api/form-data`, {
-        params: { user_id: id, type: "all" },
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const data = res.data?.data || {};
-      setFormUrls({
-        tfn: data.tfn_form ? `${BASE_URL}/storage/${data.tfn_form}` : undefined,
-        super_form: data.super_form
-          ? `${BASE_URL}/storage/${data.super_form}`
-          : undefined,
-        onboarding: data.onboarding_form
-          ? `${BASE_URL}/storage/${data.onboarding_form}`
-          : undefined,
-      });
-    } catch (e) {
-      console.log("Failed to fetch existing forms", e);
-    }
-  };
-
-  // ── Security Licence Verification ─────────────────────────────────────────
   const handleVerifySecurityLicence = async () => {
     if (!securityLicence.trim()) {
       Toast.show({
         type: "error",
         text1: "Please enter Security Licence Number",
+        position: "bottom",
+      });
+      return;
+    }
+
+    // ── STRICT: State is required for online verification ──────────────────
+    let userState = staffState;
+    if (!userState) {
+      // Attempt a fresh fetch in case staff info wasn't loaded yet
+      try {
+        const uid = userId || (await AsyncStorage.getItem("@user_id"));
+        if (uid) {
+          const token = await getToken();
+          const res = await axios.get(`${BASE_URL}/api/get-staff-info/${uid}`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          const data = res.data?.data || {};
+          userState =
+            data.state ||
+            data.staff?.state ||
+            data.contractor?.state ||
+            data.address_state ||
+            "";
+          if (userState) setStaffState(userState);
+        }
+      } catch (e) {
+        console.log("Failed to re-fetch state:", e);
+      }
+    }
+
+    if (!userState) {
+      Toast.show({
+        type: "error",
+        text1: "State is required",
+        text2: "Please add your State in Profile first",
         position: "bottom",
       });
       return;
@@ -506,6 +561,7 @@ const StaffFormsScreen = ({ navigation }: any) => {
       const payload = {
         document_type: "Security License",
         license_number: securityLicence.trim(),
+        state: userState,
       };
 
       const response = await axios.post(
@@ -552,7 +608,7 @@ const StaffFormsScreen = ({ navigation }: any) => {
 
           Toast.show({
             type: "success",
-            text1: "✓ Security License verified successfully!",
+            text1: "✓ Security Licence verified successfully!",
           });
           return;
         }
@@ -618,11 +674,37 @@ const StaffFormsScreen = ({ navigation }: any) => {
         uploadResponse?.url || uploadResponse?.file || uploadResponse?.path;
       if (!uploadedSignature) throw new Error("Signature upload failed");
 
-      if (currentSignatureField === "tfn") setSignatureTfn(uploadedSignature);
-      if (currentSignatureField === "super")
+      // today's date, used only if the field isn't already populated (e.g. from API)
+      const now = new Date();
+      const todayDisplay = `${String(now.getDate()).padStart(2, "0")}/${String(
+        now.getMonth() + 1,
+      ).padStart(2, "0")}/${now.getFullYear()}`;
+      const todayBackend = now.toISOString().split("T")[0];
+
+      if (currentSignatureField === "tfn") {
+        setSignatureTfn(uploadedSignature);
+        if (!dateTfnBackend) {
+          const { display, backend } = getTodayParts();
+          setDateTfn(display);
+          setDateTfnBackend(backend);
+        }
+      }
+      if (currentSignatureField === "super") {
         setSignatureSuper(uploadedSignature);
-      if (currentSignatureField === "onboard")
+        if (!dateSuperBackend) {
+          const { display, backend } = getTodayParts();
+          setDateSuper(display);
+          setDateSuperBackend(backend);
+        }
+      }
+      if (currentSignatureField === "onboard") {
         setSignatureOnboard(uploadedSignature);
+        if (!dateOnboardBackend) {
+          const { display, backend } = getTodayParts();
+          setDateOnboard(display);
+          setDateOnboardBackend(backend);
+        }
+      }
 
       setShowSignatureModal(false);
       Toast.show({
@@ -638,6 +720,14 @@ const StaffFormsScreen = ({ navigation }: any) => {
     } finally {
       setLoading(false);
     }
+  };
+  const getTodayParts = () => {
+    const now = new Date();
+    const display = `${String(now.getDate()).padStart(2, "0")}/${String(
+      now.getMonth() + 1,
+    ).padStart(2, "0")}/${now.getFullYear()}`;
+    const backend = now.toISOString().split("T")[0];
+    return { display, backend };
   };
 
   const getToken = async () =>
@@ -780,25 +870,22 @@ const StaffFormsScreen = ({ navigation }: any) => {
       <div class="field">${data.tfn || "—"}</div>
     </div>
     <div class="section">
-      <div class="label">2. Name</div>
-      <div style="display:flex; gap:15px;">
-        <div style="flex:0.6"><small>Title:</small><div class="field">${
-          data.title || ""
-        }</div></div>
-        <div style="flex:1"><small>First Name:</small><div class="field">${
-          data.first_name || ""
-        }</div></div>
-        <div style="flex:1"><small>Surname:</small><div class="field">${
-          data.surname || ""
-        }</div></div>
-      </div>
-    </div>
+  <div class="label">2. Name</div>
+  <div style="display:flex; gap:15px;">
+    <div style="flex:0.6"><small>Title:</small><div class="field">${
+      data.title || ""
+    }</div></div>
+    <div style="flex:1"><small>Full Name:</small><div class="field">${
+      data.full_name || ""
+    }</div></div>
+  </div>
+</div>
     <div class="section">
       <div class="label">3. Previous name (if applicable)</div>
       <div class="field">${data.previous_name || "—"}</div>
     </div>
     <div class="section">
-      <div class="label">4. Date of birth</div>
+      <div class="label">4. Date of Birth</div>
       <div class="field">${formatAUDate(data.dob)}</div>
     </div>
     <div class="section">
@@ -1096,7 +1183,7 @@ const StaffFormsScreen = ({ navigation }: any) => {
       }</div></div>
     </div>
     <div class="row">
-      <div class="field"><div class="field-label">Mobile Phone Number:</div><div class="field-input">${
+      <div class="field"><div class="field-label">Phone Number:</div><div class="field-input">${
         data.mobile || ""
       }</div></div>
       <div class="field"><div class="field-label">Personal Email Address:</div><div class="field-input">${
@@ -1182,7 +1269,7 @@ const StaffFormsScreen = ({ navigation }: any) => {
       }</div></div>
     </div>
 
-    <div class="section-title">5. LICENCES &amp; CERTIFICATIONS</div>
+    <div class="section-title">5. LICENCE &amp; CERTIFICATION</div>
     <div class="row">
       <div class="field"><div class="field-label">Security licence No:</div><div class="field-input">${
         data.security_license || ""
@@ -1388,8 +1475,7 @@ const StaffFormsScreen = ({ navigation }: any) => {
         setTfnNumber(formData.tfn || "");
         setTfnTitle(formData.title || "");
         // Only set name from form data if it exists (staff info autofill takes priority on first load)
-        if (formData.first_name) setTfnFirstName(formData.first_name);
-        if (formData.surname) setTfnSurname(formData.surname);
+        if (formData.full_name) setTfnFullName(formData.full_name);
         setTfnPrevName(formData.previous_name || "");
         if (formData.address) setTfnAddress(formData.address);
         setBasisOfPayment(formData.basis_of_payment || "");
@@ -1456,21 +1542,29 @@ const StaffFormsScreen = ({ navigation }: any) => {
           }
         }
 
-        let checks = formData.id_checks;
-        if (typeof checks === "string") {
-          try {
-            checks = JSON.parse(checks);
-          } catch {
-            checks = {};
+        // ── FIX: only override idChecks when the saved record actually has
+        // an id_checks value. Previously this always ran with `formData.id_checks
+        // || {}`, which reset every checkbox to false whenever an onboarding
+        // record existed but had no id_checks saved yet — wiping out the
+        // profile-derived defaults set by getStaffInfo(). ──────────────────────
+        if (formData.id_checks) {
+          let checks = formData.id_checks;
+          if (typeof checks === "string") {
+            try {
+              checks = JSON.parse(checks);
+            } catch {
+              checks = {};
+            }
           }
-        }
 
-        setIdChecks({
-          primary_id: !!checks?.primary_id,
-          drivers_license: !!checks?.drivers_license,
-          security_license: !!checks?.security_license,
-          medicare_or_utility: !!checks?.medicare_or_utility,
-        });
+          setIdChecks({
+            primary_id: !!checks?.primary_id,
+            drivers_license: !!checks?.drivers_license,
+            security_license: !!checks?.security_license,
+            medicare_or_utility: !!checks?.medicare_or_utility,
+          });
+        }
+        // else: leave idChecks as whatever getStaffInfo() already defaulted it to.
 
         setResidentialStatus(formData.residential_status || "");
         setBankName(formData.bank_name || "");
@@ -1549,6 +1643,15 @@ const StaffFormsScreen = ({ navigation }: any) => {
     setSecurityExpiry("");
     setSecurityExpiryBackend("");
 
+    // ── FIX: also reset the 100-point ID checks so a stale value from a
+    // previous tab/user doesn't linger while the fresh defaults load. ───────
+    setIdChecks({
+      primary_id: false,
+      drivers_license: false,
+      security_license: false,
+      medicare_or_utility: false,
+    });
+
     setDateTfn("");
     setDateTfnBackend("");
     setDateSuper("");
@@ -1604,8 +1707,7 @@ const StaffFormsScreen = ({ navigation }: any) => {
           user_id: userId,
           tfn: tfnNumber,
           title: tfnTitle,
-          first_name: tfnFirstName,
-          surname: tfnSurname,
+          full_name: tfnFullName,
           previous_name: tfnPrevName,
           dob: tfnDobBackend,
           address: tfnAddress,
@@ -1616,6 +1718,9 @@ const StaffFormsScreen = ({ navigation }: any) => {
           signature: signatureTfn,
           date: dateTfnBackend,
         };
+
+        console.log("📤 TFN Payload:");
+        console.log(JSON.stringify(tfnPayload, null, 2));
         await axios.post(`${BASE_URL}/api/tfn-declaration`, tfnPayload, {
           headers,
         });
@@ -1633,6 +1738,8 @@ const StaffFormsScreen = ({ navigation }: any) => {
           date: dateSuperBackend,
           super_confirm: superConfirmation ? 1 : 0,
         };
+        console.log("📤 Super Payload:");
+        console.log(JSON.stringify(superPayload, null, 2));
         await axios.post(`${BASE_URL}/api/superannuation`, superPayload, {
           headers,
         });
@@ -1681,8 +1788,8 @@ const StaffFormsScreen = ({ navigation }: any) => {
           signature: signatureOnboard,
           date: formatDateSafe(dateOnboardBackend, "date"),
         };
-
-        console.log(onboardingPayload, "Onboarding Payload");
+        console.log("📤 Onboarding Payload:");
+        console.log(JSON.stringify(onboardingPayload, null, 2));
         await axios.post(`${BASE_URL}/api/onboarding`, onboardingPayload, {
           headers,
         });
@@ -1716,8 +1823,7 @@ const StaffFormsScreen = ({ navigation }: any) => {
       return !!(
         tfnNumber &&
         tfnTitle &&
-        tfnFirstName &&
-        tfnSurname &&
+        tfnFullName &&
         tfnDobBackend &&
         tfnAddress &&
         basisOfPayment &&
@@ -1853,7 +1959,7 @@ const StaffFormsScreen = ({ navigation }: any) => {
             </Field>
 
             <SectionLabel>Personal Details</SectionLabel>
-            <View style={s.row3}>
+            <View style={s.row2}>
               <View style={{ flex: 1 }}>
                 <Field label="Title">
                   <TouchableOpacity
@@ -1870,22 +1976,11 @@ const StaffFormsScreen = ({ navigation }: any) => {
                 </Field>
               </View>
               <View style={{ flex: 1 }}>
-                {/* First Name — editable, autofilled from name.split(" ")[0] */}
-                <Field label="First Name">
+                <Field label="Full Name">
                   <StyledInput
-                    value={tfnFirstName}
-                    onChangeText={setTfnFirstName}
-                    placeholder="Jane"
-                  />
-                </Field>
-              </View>
-              <View style={{ flex: 1 }}>
-                {/* Surname = Last Name — editable, autofilled from rest of name */}
-                <Field label="Last Name">
-                  <StyledInput
-                    value={tfnSurname}
-                    onChangeText={setTfnSurname}
-                    placeholder="Smith"
+                    value={tfnFullName}
+                    onChangeText={setTfnFullName}
+                    placeholder="Jane Smith"
                   />
                 </Field>
               </View>
@@ -1902,25 +1997,18 @@ const StaffFormsScreen = ({ navigation }: any) => {
                 </Field>
               </View>
               <View style={{ flex: 1 }}>
-                <Field label="Date of birth">
+                <Field label="Date of Birth">
                   <DateButton
+                    disabled
                     value={tfnDob}
                     placeholder="dd/mm/yyyy"
-                    onPress={() => openDatePicker("tfnDob")}
+                    // onPress={() => openDatePicker("tfnDob")}
                   />
                 </Field>
               </View>
             </View>
 
             <SectionLabel>Residential Address</SectionLabel>
-            {/* ── TFN Address with Google Places ── */}
-            {/* <Field label="Residential Address">
-              <StyledInput
-                value={tfnAddress}
-                onChangeText={handleTfnAddressChange}
-                placeholder="Start typing your address..."
-              />
-            </Field> */}
             <Field label="Residential Address">
               <StyledInput
                 value={tfnAddress}
@@ -1929,7 +2017,6 @@ const StaffFormsScreen = ({ navigation }: any) => {
                 multiline={true}
                 numberOfLines={3}
                 textAlignVertical="top"
-                // style={{ minHeight: 70, textAlign: "left" }}
               />
             </Field>
             {showTfnSuggestions && tfnAddressSuggestions.length > 0 && (
@@ -1993,7 +2080,8 @@ const StaffFormsScreen = ({ navigation }: any) => {
                   <DateButton
                     value={dateTfn}
                     placeholder="dd/mm/yyyy"
-                    onPress={() => openDatePicker("dateTfn")}
+                    disabled
+                    // onPress={() => openDatePicker("dateTfn")}
                   />
                 </Field>
               </View>
@@ -2103,7 +2191,8 @@ const StaffFormsScreen = ({ navigation }: any) => {
                   <DateButton
                     value={dateSuper}
                     placeholder="dd/mm/yyyy"
-                    onPress={() => openDatePicker("dateSuper")}
+                    disabled
+                    // onPress={() => openDatePicker("dateSuper")}
                   />
                 </Field>
               </View>
@@ -2204,17 +2293,17 @@ const StaffFormsScreen = ({ navigation }: any) => {
             </View>
 
             <View style={{ flex: 1 }}>
-              <Field label="Date of birth">
+              <Field label="Date of Birth">
                 <DateButton
+                  disabled
                   value={onboardDob}
                   placeholder="dd/mm/yyyy"
-                  onPress={() => openDatePicker("onboardDob")}
+                  // onPress={() => openDatePicker("onboardDob")}
                 />
               </Field>
             </View>
 
             <SectionLabel>Residential Details</SectionLabel>
-            {/* ── Onboarding Address with Google Places ── */}
             <Field label="Residential Address">
               <StyledInput
                 value={onboardAddress}
@@ -2318,46 +2407,47 @@ const StaffFormsScreen = ({ navigation }: any) => {
                 />
               </Field>
             )}
-
-            <SectionLabel>3. 100-Point Identification Check</SectionLabel>
-            <View style={s.idTable}>
-              <IdCheckRow
-                label="Birth Certificate, Passport, or Citizenship Certificate - 70 Points"
-                checked={idChecks.primary_id}
-                onPress={() =>
-                  setIdChecks((p) => ({ ...p, primary_id: !p.primary_id }))
-                }
-              />
-              <IdCheckRow
-                label="Driver Licence or Government Issued Photo ID - 40 Points"
-                checked={idChecks.drivers_license}
-                onPress={() =>
-                  setIdChecks((p) => ({
-                    ...p,
-                    drivers_license: !p.drivers_license,
-                  }))
-                }
-              />
-              <IdCheckRow
-                label="Security Licence (Mandatory) - 40 Points"
-                checked={idChecks.security_license}
-                onPress={() =>
-                  setIdChecks((p) => ({
-                    ...p,
-                    security_license: !p.security_license,
-                  }))
-                }
-              />
-              <IdCheckRow
-                label="Medicare Card, Utility Bill, or Bank Statement - 25 Points"
-                checked={idChecks.medicare_or_utility}
-                onPress={() =>
-                  setIdChecks((p) => ({
-                    ...p,
-                    medicare_or_utility: !p.medicare_or_utility,
-                  }))
-                }
-              />
+            <View style={{ opacity: 0.5 }} pointerEvents="none">
+              <SectionLabel>3. 100-Point Identification Check</SectionLabel>
+              <View style={s.idTable}>
+                <IdCheckRow
+                  label="Birth Certificate, Passport, or Citizenship Certificate - 70 Points"
+                  checked={idChecks.primary_id}
+                  onPress={() =>
+                    setIdChecks((p) => ({ ...p, primary_id: !p.primary_id }))
+                  }
+                />
+                <IdCheckRow
+                  label="Driver Licence or Government Issued Photo ID - 40 Points"
+                  checked={idChecks.drivers_license}
+                  onPress={() =>
+                    setIdChecks((p) => ({
+                      ...p,
+                      drivers_license: !p.drivers_license,
+                    }))
+                  }
+                />
+                <IdCheckRow
+                  label="Security Licence (Mandatory) - 40 Points"
+                  checked={idChecks.security_license}
+                  onPress={() =>
+                    setIdChecks((p) => ({
+                      ...p,
+                      security_license: !p.security_license,
+                    }))
+                  }
+                />
+                <IdCheckRow
+                  label="Medicare Card, Utility Bill, or Bank Statement - 25 Points"
+                  checked={idChecks.medicare_or_utility}
+                  onPress={() =>
+                    setIdChecks((p) => ({
+                      ...p,
+                      medicare_or_utility: !p.medicare_or_utility,
+                    }))
+                  }
+                />
+              </View>
             </View>
 
             <SectionLabel>4. Bank Details</SectionLabel>
@@ -2429,7 +2519,7 @@ const StaffFormsScreen = ({ navigation }: any) => {
               />
             </Field>
 
-            <SectionLabel>6. License & Certs</SectionLabel>
+            <SectionLabel>6. Licence & Certification</SectionLabel>
 
             <View style={{ flex: 1 }}>
               <Field label="Security licence No.">
@@ -2500,15 +2590,6 @@ const StaffFormsScreen = ({ navigation }: any) => {
                 </TouchableOpacity>
               </Field>
             </View>
-
-            {/* {isSecurityVerified && (
-              <View style={s.secVerifiedBadge}>
-                <Check size={14} color={BRAND_DARK} />
-                <Text style={s.secVerifiedBadgeText}>
-                  Verified — expiry auto-filled and locked
-                </Text>
-              </View>
-            )} */}
 
             <DocUploadField
               label="Upload Security Licence Document"
@@ -2585,9 +2666,10 @@ const StaffFormsScreen = ({ navigation }: any) => {
               <View style={{ flex: 1 }}>
                 <Field label="Date">
                   <DateButton
+                    disabled
                     value={dateOnboard}
                     placeholder="dd/mm/yyyy"
-                    onPress={() => openDatePicker("dateOnboard")}
+                    // onPress={() => openDatePicker("dateOnboard")}
                   />
                 </Field>
               </View>
@@ -2721,11 +2803,25 @@ const StyledInput = (props: any) => (
   />
 );
 
-const DateButton = ({ value, placeholder, onPress }: any) => (
-  <TouchableOpacity style={s.dateBtn} onPress={onPress}>
-    <Text style={[s.dateBtnText, !value && { color: "rgba(255,255,255,0.4)" }]}>
+const DateButton = ({ value, placeholder, onPress, disabled }: any) => (
+  <TouchableOpacity
+    style={[s.dateBtn, disabled && s.dateBtnLocked]}
+    onPress={disabled ? undefined : onPress}
+    disabled={disabled}
+    activeOpacity={disabled ? 1 : 0.7}
+  >
+    <Text
+      style={[
+        s.dateBtnText,
+        !value && { color: "rgba(255,255,255,0.4)" },
+        disabled && value && { color: BRAND },
+      ]}
+    >
       {value || placeholder}
     </Text>
+    {disabled && value ? (
+      <Lock size={16} color={BRAND} style={{ marginLeft: 8 }} />
+    ) : null}
   </TouchableOpacity>
 );
 
@@ -2856,7 +2952,7 @@ const DocUploadField = ({
     {storedName ? (
       <TouchableOpacity style={s.docViewBtn} onPress={onView}>
         <FileText size={14} color={BRAND} />
-        <Text style={s.docViewBtnText}>View Attached Document</Text>
+        <Text style={s.docViewBtnText}>View Already Attached Document</Text>
       </TouchableOpacity>
     ) : null}
   </View>
@@ -2866,7 +2962,7 @@ const DocUploadField = ({
 // STYLES
 // ═══════════════════════════════════════════════════════════════════════════
 const s = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#111111", paddingTop: 25 },
+  container: { flex: 1, backgroundColor: "#030508", paddingTop: 25 },
   fieldWrapper: { marginBottom: 16 },
   label: { fontSize: 10, fontWeight: "600", color: "#929294", marginBottom: 5 },
   asterisk: { color: "#EF4444", fontWeight: "bold" },
@@ -3218,7 +3314,7 @@ const s = StyleSheet.create({
     minWidth: 80,
     minHeight: 44,
   },
-  secVerifyBtnText: { color: "#111111", fontWeight: "700", fontSize: 12 },
+  secVerifyBtnText: { color: "#030508", fontWeight: "700", fontSize: 12 },
   secVerifiedBadge: {
     flexDirection: "row",
     alignItems: "center",

@@ -216,7 +216,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.background,
     padding: 20,
-    marginBottom: 30, // ✅ FIXED BOTTOM SPACE
+    // marginBottom: 30, 
     paddingTop: 30,
   },
 

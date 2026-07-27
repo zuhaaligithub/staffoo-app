@@ -21,6 +21,7 @@ import {
   Modal,
   StatusBar,
   Dimensions,
+  Pressable,
 } from "react-native";
 import {
   useFocusEffect,
@@ -588,8 +589,8 @@ export default function CreateJobScreen() {
       value: "Guard with a Trained Security Dog",
     },
     {
-      label: "Armed Security Guard (Cash-in-Transit / Low-complexity)",
-      value: "Armed Security Guard (Cash-in-Transit / Low-complexity)",
+      label: "Armed Security Guard (Cash-in-Transit / Low-Complexity)",
+      value: "Armed Security Guard (Cash-in-Transit / Low-Complexity)",
     },
     {
       label: "Control Room Operator (Advanced/Full Systems)",
@@ -1440,58 +1441,63 @@ export default function CreateJobScreen() {
 
   const handleUpload = async () => {
     try {
-      const result = await pick({
-        type: [types.allFiles],
-        allowMultiSelection: true,
+      const [file] = await pick({
+        type: [
+          types.images, // JPG, PNG, HEIC, etc.
+          types.pdf, // PDF files
+        ],
       });
-      if (!result || result.length === 0) return;
+
+      if (!file) return;
+
       setUploading(true);
-      const newPaths: string[] = [];
-      for (const file of result) {
-        let fileToUpload = file;
-        if (file.type?.startsWith("image/")) {
-          try {
-            const resized = await ImageResizer.createResizedImage(
-              file.uri,
-              1024,
-              1024,
-              "JPEG",
-              75,
-              0,
-            );
-            fileToUpload = {
-              ...file,
-              uri: resized.uri,
-              name: file.name || "compressed_image.jpg",
-              type: "image/jpeg",
-            };
-          } catch (e) {
-            console.warn("Compression failed:", e);
-          }
-        }
-        const uploaded = await uploadFile(fileToUpload);
-        const fp = uploaded?.url || uploaded?.path || uploaded?.file || "";
-        if (fp) {
-          newPaths.push(fp);
-          setSelectedFiles((prev) => [...prev, file]);
+
+      let fileToUpload = file;
+
+      // Auto-compress images (optional but recommended)
+      if (file.type?.startsWith("image/")) {
+        try {
+          const resized = await ImageResizer.createResizedImage(
+            file.uri,
+            1024,
+            1024,
+            "JPEG",
+            75,
+            0,
+          );
+
+          fileToUpload = {
+            ...file,
+            uri: resized.uri,
+            name: file.name || `image_${Date.now()}.jpg`,
+            type: "image/jpeg",
+          };
+        } catch (e) {
+          console.warn("Image compression failed:", e);
         }
       }
-      if (newPaths.length > 0) {
-        setUploadedFilePaths((prev) => [...prev, ...newPaths]);
+
+      const uploaded = await uploadFile(fileToUpload);
+      const fp = uploaded?.url || uploaded?.path || uploaded?.file || "";
+
+      if (fp) {
+        setSelectedFiles([file]);
+        setUploadedFilePaths([fp]);
+
         Toast.show({
           type: "success",
-          text1: `${newPaths.length} File${
-            newPaths.length !== 1 ? "s" : ""
-          } Uploaded`,
+          text1: "File Uploaded",
+          text2: `${file.name || "Document"} added successfully`,
           position: "bottom",
         });
       }
     } catch (err: any) {
       if (isCancel(err)) return;
+
       Toast.show({
         type: "error",
         text1: "Upload Failed",
-        text2: err?.message || "Try again",
+        text2: "Only Images and PDF files are allowed",
         position: "bottom",
       });
     } finally {
@@ -2221,7 +2227,7 @@ export default function CreateJobScreen() {
           >
             <Text style={{ color: TEXT_MUTED }}>Calculated Hours</Text>
             <Text style={{ color: "#FFF", fontWeight: "700" }}>
-              {totalManHours.toFixed(1)} Hours
+              {totalManHours} Hours
             </Text>
           </View>
         </View>
@@ -2283,62 +2289,69 @@ export default function CreateJobScreen() {
         </View>
 
         {/* Documents */}
-        <Text style={styles.inputLabel}>Required Documents</Text>
-        <View style={styles.toggleContainer}>
-          {documentOptions.slice(0, 3).map((doc) => {
-            const isActive = form.documents.includes(doc.value);
-            return (
-              <LinearGradient
-                key={doc.value}
-                colors={["rgba(255,255,255,0.25)", "rgba(255,255,255,0.08)"]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.toggleCard}
-              >
-                <View style={styles.toggleRow}>
-                  <Text style={styles.toggleLabel}>{doc.label}</Text>
-                  <TouchableOpacity
-                    activeOpacity={1}
-                    style={styles.toggleSwitch}
-                    onPress={() => toggleDocument(doc.value)}
-                  >
-                    <View
-                      style={[
-                        styles.toggleOption,
-                        isActive && styles.toggleOptionActiveYes,
-                      ]}
+        <View style={styles.sectionCard}>
+          <Text style={styles.inputLabel}>Required Documents</Text>
+          <View style={styles.toggleContainer}>
+            {documentOptions.slice(0, 3).map((doc) => {
+              const isActive = form.documents.includes(doc.value);
+              return (
+                <LinearGradient
+                  key={doc.value}
+                  colors={[
+                    "rgba(255,255,255,0.41)",
+                    "rgba(255,255,255,0.35)",
+                    "rgba(255,255,255,0.2)",
+                    "rgba(255,255,255,0.10)",
+                    "rgba(255,255,255,0.22)",
+                  ]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={styles.toggleCard}
+                >
+                  <View style={styles.toggleRow}>
+                    <Text style={styles.toggleLabel}>{doc.label}</Text>
+                    <TouchableOpacity
+                      activeOpacity={1}
+                      style={styles.toggleSwitch}
+                      onPress={() => toggleDocument(doc.value)}
                     >
-                      <Text
+                      <View
                         style={[
-                          styles.toggleText,
-                          isActive && styles.toggleTextActive,
+                          styles.toggleOption,
+                          isActive && styles.toggleOptionActiveYes,
                         ]}
                       >
-                        Yes
-                      </Text>
-                    </View>
-                    <View
-                      style={[
-                        styles.toggleOption,
-                        !isActive && styles.toggleOptionActiveNo,
-                      ]}
-                    >
-                      <Text
+                        <Text
+                          style={[
+                            styles.toggleText,
+                            isActive && styles.toggleTextActive,
+                          ]}
+                        >
+                          Yes
+                        </Text>
+                      </View>
+                      <View
                         style={[
-                          styles.toggleText,
-                          !isActive && styles.toggleTextActive,
+                          styles.toggleOption,
+                          !isActive && styles.toggleOptionActiveNo,
                         ]}
                       >
-                        No
-                      </Text>
-                    </View>
-                  </TouchableOpacity>
-                </View>
-              </LinearGradient>
-            );
-          })}
+                        <Text
+                          style={[
+                            styles.toggleText,
+                            !isActive && styles.toggleTextActive,
+                          ]}
+                        >
+                          No
+                        </Text>
+                      </View>
+                    </TouchableOpacity>
+                  </View>
+                </LinearGradient>
+              );
+            })}
+          </View>
         </View>
-
         {/* Description */}
         <View style={styles.sectionCard}>
           <View
@@ -2573,18 +2586,24 @@ export default function CreateJobScreen() {
         </View>
       </Modal>
 
-      {/* Category Modal */}
       <Modal
         visible={showCategoryModal}
         transparent
         animationType="slide"
         onRequestClose={() => setShowCategoryModal(false)}
       >
-        <View style={styles.modalBackgroundOverlay}>
-          <View style={styles.bottomSheetContent}>
+        <Pressable
+          style={styles.modalBackgroundOverlay}
+          onPress={() => setShowCategoryModal(false)}
+        >
+          <Pressable
+            style={styles.bottomSheetContent}
+            onPress={(e) => e.stopPropagation()}
+          >
             <Text style={styles.modalTitleHeader}>
               Select Job Position Category
             </Text>
+
             <ScrollView
               showsVerticalScrollIndicator={false}
               contentContainerStyle={{ paddingBottom: 20 }}
@@ -2607,14 +2626,15 @@ export default function CreateJobScreen() {
                   >
                     {opt.label}
                   </Text>
+
                   {form.category === opt.value && (
                     <Check size={18} color={ACCENT_TEAL} />
                   )}
                 </TouchableOpacity>
               ))}
             </ScrollView>
-          </View>
-        </View>
+          </Pressable>
+        </Pressable>
       </Modal>
       {/* </KeyboardAvoidingView> */}
       {/* <BottomTab navigation={navigation} activeTab="CreateJob" /> */}
@@ -2623,7 +2643,7 @@ export default function CreateJobScreen() {
 }
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: "#111111", paddingTop: 25 },
+  safeArea: { flex: 1, backgroundColor: "#030508", paddingTop: 25 },
   header: {
     height: 60,
     flexDirection: "row",
@@ -2970,7 +2990,6 @@ const styles = StyleSheet.create({
     color: TEXT_MUTED,
     fontSize: 11,
     fontWeight: "700",
-    textTransform: "uppercase",
   },
   toggleKnob: {
     width: 24,
@@ -3020,7 +3039,7 @@ const styles = StyleSheet.create({
     padding: 13,
     minHeight: 100,
     justifyContent: "space-between",
-    backgroundColor: "#1E1E1E",
+    backgroundColor: CHIP_DARK,
     borderRadius: 12,
   },
   toggleContent: { gap: 6 },

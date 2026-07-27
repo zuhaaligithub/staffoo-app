@@ -350,6 +350,30 @@
         }
       }
     },
+    "react-native-device-info": {
+      "root": "/Users/test/Desktop/infomatic/staffooApp/staffoo-app/node_modules/react-native-device-info",
+      "name": "react-native-device-info",
+      "platforms": {
+        "ios": {
+          "podspecPath": "/Users/test/Desktop/infomatic/staffooApp/staffoo-app/node_modules/react-native-device-info/RNDeviceInfo.podspec",
+          "version": "15.0.2",
+          "configurations": [],
+          "scriptPhases": []
+        },
+        "android": {
+          "sourceDir": "/Users/test/Desktop/infomatic/staffooApp/staffoo-app/node_modules/react-native-device-info/android",
+          "packageImportPath": "import com.learnium.RNDeviceInfo.RNDeviceInfo;",
+          "packageInstance": "new RNDeviceInfo()",
+          "buildTypes": [],
+          "componentDescriptors": [],
+          "cmakeListsPath": "/Users/test/Desktop/infomatic/staffooApp/staffoo-app/node_modules/react-native-device-info/android/build/generated/source/codegen/jni/CMakeLists.txt",
+          "cxxModuleCMakeListsModuleName": null,
+          "cxxModuleCMakeListsPath": null,
+          "cxxModuleHeaderName": null,
+          "isPureCxxDependency": false
+        }
+      }
+    },
     "react-native-file-viewer": {
       "root": "/Users/test/Desktop/infomatic/staffooApp/staffoo-app/node_modules/react-native-file-viewer",
       "name": "react-native-file-viewer",

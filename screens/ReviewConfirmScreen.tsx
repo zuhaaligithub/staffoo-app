@@ -155,19 +155,6 @@ function nextBoundary(t: Date): Date {
   return n;
 }
 
-/**
- * FIX (defensive, matches CreateJobScreen's shiftDurationHours logic):
- * Some upstream shift objects can end up with an `endTime` that is not
- * strictly after `startTime` as raw Date values (e.g. a shift that spans
- * midnight, mis-anchored to the same calendar day). Previously,
- * normalizeShift() passed such Dates straight through, and any code that
- * walked `while (cursor < endDt)` would treat that shift as zero-length,
- * silently dropping its hours from the quotation total.
- *
- * This normalizes any shift whose end is not after its start by rolling
- * the end forward by 24h, which matches how overnight shifts are meant to
- * be interpreted everywhere else in the app.
- */
 function parseLocalDateTime(value: any): Date {
   if (value instanceof Date) return new Date(value);
   if (typeof value === "string") {
@@ -577,14 +564,27 @@ export default function ReviewConfirmScreen() {
       };
     });
 
+    const filteredDocuments = (selectedDocuments || []).filter(
+      (doc: string) => {
+        const normalized = doc.toLowerCase().replace(/[_-]/g, " ").trim();
+
+        return normalized !== "security license";
+      },
+    );
+
     const payload = {
       user_id: user.id,
+
       job_type: jobData.category || "others",
+
       description: jobData.description || "No description provided",
+
       address: jobData.location || "Not specified",
+
       coordinates: `${jobData.lat},${jobData.lng}`,
 
       state: extractedState || "open",
+
       posting_type: "broadcast",
 
       shifts: formattedShifts,
@@ -608,9 +608,12 @@ export default function ReviewConfirmScreen() {
             : 0,
       },
 
-      is_document: selectedDocuments.length > 0,
+      is_document: filteredDocuments.length > 0,
+
       document_list: uploadedFileUrls || [],
-      document_types: selectedDocuments || [],
+
+      // security_license removed
+      document_types: filteredDocuments,
 
       job_instruction: jobData.description || "",
 
@@ -1293,6 +1296,7 @@ export default function ReviewConfirmScreen() {
         </SafeAreaView>
       </Modal>
 
+      {/* Payment Modal */}
       <Modal
         visible={paymentModalVisible}
         animationType="slide"
@@ -1305,7 +1309,7 @@ export default function ReviewConfirmScreen() {
           <View style={styles.modalOverlay}>
             <TouchableWithoutFeedback>
               <View style={pmStyles.container}>
-                {/* Header & Amount Bar (unchanged) */}
+                {/* Header */}
                 <View style={pmStyles.headerRow}>
                   <View>
                     <Text style={pmStyles.title}>Complete Payment</Text>
@@ -1316,7 +1320,6 @@ export default function ReviewConfirmScreen() {
                   <View style={pmStyles.securedBadge}>
                     <Lock size={12} color="#6366F1" />
                     <Text style={pmStyles.securedText}>
-                      {" "}
                       Secured By <Text style={pmStyles.stripeBlue}>Stripe</Text>
                     </Text>
                   </View>
@@ -1330,6 +1333,7 @@ export default function ReviewConfirmScreen() {
                   <X size={22} color="#6B7280" />
                 </TouchableOpacity>
 
+                {/* Amount Bar */}
                 <View style={pmStyles.amountBar}>
                   <Text style={pmStyles.amountBarTitle} numberOfLines={1}>
                     {jobData.title ||
@@ -1337,7 +1341,7 @@ export default function ReviewConfirmScreen() {
                         getCategoryDisplay(jobData.category),
                       ) ||
                       "Security Service"}{" "}
-                    — Level {jobData.jobLevel ?? 1}
+                    {/* — Level {jobData.jobLevel ?? 1} */}
                   </Text>
                   <Text style={pmStyles.amountBarValue}>
                     $
@@ -1348,9 +1352,10 @@ export default function ReviewConfirmScreen() {
                   </Text>
                 </View>
 
+                {/* Payment Method Section - NON SCROLLABLE */}
                 <Text style={pmStyles.sectionLabel}>Payment Method</Text>
 
-                {/* Tabs */}
+                {/* Tabs - Fixed */}
                 <View style={pmStyles.tabRow}>
                   {(["saved", "new"] as const).map((tab) => (
                     <TouchableOpacity
@@ -1389,9 +1394,13 @@ export default function ReviewConfirmScreen() {
                   ))}
                 </View>
 
-                {/* Saved Cards - Display Only */}
+                {/* Scrollable Saved Cards Only */}
                 {paymentTab === "saved" && (
-                  <>
+                  <ScrollView
+                    style={pmStyles.savedCardsScroll}
+                    contentContainerStyle={pmStyles.savedCardsContent}
+                    showsVerticalScrollIndicator={false}
+                  >
                     {savedCards.length === 0 ? (
                       <Text style={pmStyles.noCardsText}>
                         No saved cards available. Please enter new card details
@@ -1399,10 +1408,6 @@ export default function ReviewConfirmScreen() {
                       </Text>
                     ) : (
                       <View style={pmStyles.savedCardsBox}>
-                        <Text style={pmStyles.savedCardsHint}>
-                          Select a card to view its details, then enter them
-                          below.
-                        </Text>
                         {savedCards.map((item, index) => (
                           <TouchableOpacity
                             key={index}
@@ -1445,11 +1450,12 @@ export default function ReviewConfirmScreen() {
                         ))}
                       </View>
                     )}
-                  </>
+                  </ScrollView>
                 )}
 
-                {/* Card Details - Always Required */}
+                {/* Card Details - Fixed (Non-scrollable) */}
                 <Text style={pmStyles.sectionLabel}>Card Details</Text>
+
                 <TextInput
                   placeholder="Card Holder Name"
                   value={cardHolderName}
@@ -1489,6 +1495,7 @@ export default function ReviewConfirmScreen() {
                   Powered By <Text style={pmStyles.stripeBlue}>Stripe</Text>
                 </Text>
 
+                {/* Fixed Action Buttons */}
                 <View style={pmStyles.actionRow}>
                   <TouchableOpacity
                     style={[
@@ -1581,17 +1588,24 @@ const pmStyles = StyleSheet.create({
     flex: 1,
     marginRight: 8,
   },
+  savedCardsScroll: {
+    maxHeight: 150, // Adjust this value as needed
+    marginBottom: 12,
+  },
+  savedCardsContent: {
+    paddingBottom: 8,
+  },
   amountBarValue: { color: "#fff", fontSize: 15, fontWeight: "800" },
   sectionLabel: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: "700",
     color: "#111827",
-    marginBottom: 5,
-    marginTop: 4,
+    marginBottom: 3,
+    // marginTop: 4,
   },
-  tabRow: { flexDirection: "row", gap: 10, marginBottom: 14 },
+  tabRow: { flexDirection: "row", gap: 10, marginBottom: 5 },
   tabBtn: {
-    paddingVertical: 12,
+    paddingVertical: 10,
     paddingHorizontal: 18,
     borderRadius: 10,
     borderWidth: 1.5,
@@ -1607,7 +1621,7 @@ const pmStyles = StyleSheet.create({
     borderRadius: 12,
     padding: 8,
     backgroundColor: "#F9FAFB",
-    marginBottom: 12,
+    marginBottom: 10,
   },
   savedCardsHint: { fontSize: 12, color: "#6B7280", marginBottom: 8 },
   savedCardRow: {
@@ -1615,7 +1629,7 @@ const pmStyles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: "#F3F4F6",
     borderRadius: 10,
-    padding: 12,
+    padding: 5,
     marginBottom: 8,
     borderWidth: 1.5,
     borderColor: "#E5E7EB",
@@ -1710,7 +1724,7 @@ const pmStyles = StyleSheet.create({
 
 // ─── Main Styles ──────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#111111", paddingTop: 55 },
+  container: { flex: 1, backgroundColor: "#030508", paddingTop: 55 },
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -1753,7 +1767,7 @@ const styles = StyleSheet.create({
   },
   levelRateBadgeText: { color: "#14E6C9", fontSize: 11, fontWeight: "700" },
   card: {
-    backgroundColor: "#111111",
+    backgroundColor: "#030508",
     borderRadius: 24,
     padding: 18,
     marginBottom: 14,
@@ -1794,7 +1808,7 @@ const styles = StyleSheet.create({
   },
   inputCardText: { fontSize: 12, color: "#030303", fontWeight: "700" },
   rateCard: {
-    backgroundColor: "#111111",
+    backgroundColor: "#030508",
     borderRadius: 24,
     padding: 18,
     marginBottom: 18,
@@ -1894,7 +1908,7 @@ const styles = StyleSheet.create({
     paddingBottom: 8,
   },
   paymentOptionsCard: {
-    backgroundColor: "#111111",
+    backgroundColor: "#030508",
     borderRadius: 24,
     padding: 18,
     marginBottom: 18,
@@ -1961,7 +1975,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#111111",
+    backgroundColor: "#030508",
   },
   loadingText: { marginTop: 16, fontSize: 16, color: "#94A3B8" },
   errorContainer: {
@@ -1969,7 +1983,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     padding: 40,
-    backgroundColor: "#111111",
+    backgroundColor: "#030508",
   },
   backButton: {
     backgroundColor: "#0A7C6E",
@@ -2133,7 +2147,7 @@ const styles = StyleSheet.create({
   policyContainer: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#111111",
+    backgroundColor: "#030508",
     padding: 16,
     borderRadius: 18,
     borderWidth: 1,

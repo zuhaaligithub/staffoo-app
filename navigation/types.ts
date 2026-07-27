@@ -1,7 +1,7 @@
 // src/navigation/types.ts
 
-import { NavigatorScreenParams } from '@react-navigation/native';
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { NavigatorScreenParams } from "@react-navigation/native";
+import { createNativeStackNavigator } from "@react-navigation/native-stack";
 
 // ── Auth Stack ──────────────────────────────────────────────────
 export type AuthStackParamList = {
@@ -43,6 +43,10 @@ export type RootStackParamList = {
     name?: string;
     avatar?: string;
     conversation?: any;
+  };
+
+  NewMessage: {
+    adminList?: any; // ← Added
   };
   Profile: undefined;
   ApplyJob: undefined;
@@ -86,7 +90,7 @@ export type RootStackParamList = {
       jobLevel: string;
 
       totalAmount: number;
-      paymentOption?: 'full' | 'split';
+      paymentOption?: "full" | "split";
 
       tasks?: {
         title?: string;
@@ -142,4 +146,4 @@ export interface ChargeRate {
   updated_at?: string;
 }
 
-export type ChargeRateFormData = Omit<ChargeRate, 'id'>;
+export type ChargeRateFormData = Omit<ChargeRate, "id">;

@@ -12,42 +12,29 @@ import {
   ActivityIndicator,
   TextInput,
   Platform,
+  Modal,
 } from "react-native";
-import { ChevronLeft, Search } from "lucide-react-native";
-import { CheckCheck } from "lucide-react-native";
+import { ChevronLeft, Plus, Search } from "lucide-react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import axios from "axios";
-import BottomTab from "./BottomTab";
-import { getConversations } from "../services/authApi";
+import Toast from "react-native-toast-message";
 import LinearGradient from "react-native-linear-gradient";
 
-const COLORS = {
-  // 🌿 Primary Brand
-  primary: "#89E7D0", // mint accent
-  primaryDark: "#4FCBB3",
+import { BASE_URL, getConversations } from "../services/authApi";
 
-  // 🌙 Background system (clean dark navy)
+const COLORS = {
+  primary: "#89E7D0",
+  primaryDark: "#4FCBB3",
   background: "#001F3F",
   surface: "#20b72c",
   surface2: "#12243A",
-
-  // ✨ Card / Glass
-  card: "rgba(255,255,255,0.06)",
-  cardBorder: "rgba(255,255,255,0.08)",
-
-  // ✍️ Text
   text: "#FFFFFF",
   textSecondary: "rgba(255,255,255,0.7)",
   textMuted: "rgba(255,255,255,0.5)",
-
-  // 🔴🟡🟢 Status
   success: "#22C55E",
-  warning: "#F59E0B",
   danger: "#EF4444",
-
-  // Border
   border: "rgba(255,255,255,0.08)",
 };
+
 type ChatUser = {
   id: string | number;
   name: string;
@@ -89,69 +76,14 @@ const formatMessageRuntime = (value?: string | number | Date) => {
   return d.toLocaleDateString();
 };
 
-const getLatestMessageItem = (item: any) => {
-  if (!item) return null;
-
-  if (item.last_message) return item.last_message;
-  if (item.message) return item.message;
-  if (Array.isArray(item.messages?.data) && item.messages.data.length > 0)
-    return item.messages.data[item.messages.data.length - 1];
-  if (Array.isArray(item.messages) && item.messages.length > 0)
-    return item.messages[item.messages.length - 1];
-  if (Array.isArray(item.data) && item.data.length > 0)
-    return item.data[item.data.length - 1];
-
-  return item;
-};
-
-const getMessageText = (item: any) => {
-  const last = getLatestMessageItem(item);
-  if (!last) return "";
-  if (typeof last === "string") return last;
-  return (
-    last.message ||
-    last.text ||
-    last.body ||
-    last.note ||
-    last.description ||
-    ""
-  );
-};
-
-const getMessageTimestamp = (item: any) => {
-  const last = getLatestMessageItem(item);
-  return (
-    last?.created_at ||
-    last?.updated_at ||
-    last?.time ||
-    last?.date ||
-    item?.last_message_time ||
-    item?.updated_at ||
-    item?.created_at ||
-    ""
-  );
-};
-
-const getChatUnreadCount = (item: any) => {
-  if (typeof item.unread_count === "number") return item.unread_count;
-  if (typeof item.unread === "number") return item.unread;
-  const messagesArray = item.messages?.data || item.messages || item.data;
-  if (Array.isArray(messagesArray)) {
-    return messagesArray.filter(
-      (m: any) =>
-        m &&
-        (m.is_read === false || m.read_at === null || m.read_at === undefined),
-    ).length;
-  }
-  return 0;
-};
-
 export default function MessageScreen({ navigation }: Props) {
   const [chats, setChats] = useState<ChatUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-
+  const [showAdminModal, setShowAdminModal] = useState(false);
+  const [admins, setAdmins] = useState<any[]>([]);
+  const [adminLoading, setAdminLoading] = useState(false);
   const fetchChats = async () => {
     setLoading(true);
     try {
@@ -168,7 +100,6 @@ export default function MessageScreen({ navigation }: Props) {
           const user =
             item.user || item.receiver || item.sender || item.admin || {};
 
-          // Only show if it's Admin (adjust this condition if needed)
           const isAdmin =
             user?.user_type === "admin" ||
             user?.email?.toLowerCase().includes("admin") ||
@@ -198,6 +129,61 @@ export default function MessageScreen({ navigation }: Props) {
       setLoading(false);
     }
   };
+
+  const handleFabPress = async () => {
+    try {
+      setAdminLoading(true);
+
+      const token = await AsyncStorage.getItem("@auth_token");
+
+      const response = await fetch(`${BASE_URL}/admin`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Accept: "application/json",
+        },
+      });
+
+      const json = await response.json();
+
+      if (json.success) {
+        setAdmins(json.data || []);
+        setShowAdminModal(true);
+      } else {
+        Toast.show({
+          type: "error",
+          text1: "Unable to load admins",
+        });
+      }
+    } catch (e) {
+      Toast.show({
+        type: "error",
+        text1: "Something went wrong",
+      });
+    } finally {
+      setAdminLoading(false);
+    }
+  };
+
+  const getLatestMessageItem = (item: any) => {
+    if (!item) return null;
+    if (item.last_message) return item.last_message;
+    if (item.message) return item.message;
+    return item;
+  };
+
+  const getMessageText = (item: any) => {
+    const last = getLatestMessageItem(item);
+    if (!last) return "";
+    return last.message || last.text || last.body || "";
+  };
+
+  const getMessageTimestamp = (item: any) => {
+    const last = getLatestMessageItem(item);
+    return last?.created_at || item?.created_at || "";
+  };
+
+  const getChatUnreadCount = (item: any) =>
+    item?.unread_count || item?.unread || 0;
 
   useEffect(() => {
     fetchChats();
@@ -230,7 +216,6 @@ export default function MessageScreen({ navigation }: Props) {
         <View style={{ width: 40 }} />
       </View>
 
-      {/* Search Bar */}
       <View style={styles.searchContainer}>
         <Search size={20} color="#6B7280" style={{ marginRight: 10 }} />
         <TextInput
@@ -275,13 +260,8 @@ export default function MessageScreen({ navigation }: Props) {
               <LinearGradient
                 colors={[
                   "rgba(255, 255, 255, 0.42)",
-                  "rgba(255, 255, 255, 0.35)",
-                  "rgba(255, 255, 255, 0.22)",
                   "rgba(255, 255, 255, 0.12)",
-                  "rgba(255, 255, 255, 0.25)",
                 ]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
                 style={styles.chatItem}
               >
                 <View style={styles.chatItems}>
@@ -321,13 +301,13 @@ export default function MessageScreen({ navigation }: Props) {
                     <Text style={styles.timeText}>
                       {formatMessageRuntime(chat.timeRaw)}
                     </Text>
-                    {Number(chat.unread) > 0 ? (
+                    {Number(chat.unread) > 0 && (
                       <View style={styles.unreadBadge}>
                         <Text style={styles.unreadCount}>
                           {String(chat.unread)}
                         </Text>
                       </View>
-                    ) : null}
+                    )}
                   </View>
                 </View>
               </LinearGradient>
@@ -336,7 +316,58 @@ export default function MessageScreen({ navigation }: Props) {
         )}
       </ScrollView>
 
-      {/* <BottomTab navigation={navigation} activeTab="Messages" /> */}
+      <TouchableOpacity
+        style={styles.fab}
+        onPress={handleFabPress}
+        disabled={adminLoading}
+      >
+        {adminLoading ? (
+          <ActivityIndicator color="#fff" />
+        ) : (
+          <Plus size={28} color="#fff" />
+        )}
+      </TouchableOpacity>
+      <Modal
+        visible={showAdminModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowAdminModal(false)}
+      >
+        <TouchableOpacity
+          activeOpacity={1}
+          style={styles.modalOverlay}
+          onPress={() => setShowAdminModal(false)}
+        >
+          <View style={styles.adminPopup}>
+            <Text style={styles.popupTitle}>Start Conversation</Text>
+
+            <ScrollView showsVerticalScrollIndicator={false}>
+              {admins.map((admin) => (
+                <TouchableOpacity
+                  key={admin.id}
+                  style={styles.adminItem}
+                  onPress={() => {
+                    setShowAdminModal(false);
+
+                    navigation.navigate("MessageDetail", {
+                      chatId: admin.id,
+                      name: admin.name,
+                    });
+                  }}
+                >
+                  <View style={styles.avatarInitial}>
+                    <Text style={styles.avatarInitialText}>
+                      {admin.name.charAt(0)}
+                    </Text>
+                  </View>
+
+                  <Text style={styles.adminName}>{admin.name}</Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        </TouchableOpacity>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -345,155 +376,80 @@ export default function MessageScreen({ navigation }: Props) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    // backgroundColor: COLORS.background,
-    backgroundColor: "#111111",
+    backgroundColor: "#030508",
     paddingTop: Platform.OS === "android" ? 20 : 0,
   },
-
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     paddingHorizontal: 20,
     paddingVertical: 14,
-    // backgroundColor: COLORS.surface2,
-    // marginHorizontal: 16,
-    // borderRadius: 16,
-    // marginBottom: 10,
-    // borderWidth: 1,
-    // borderColor: COLORS.border,
   },
-
   screenTitle: {
     fontSize: 18,
     fontWeight: "600",
     color: COLORS.text,
   },
-  // siteCardInner:{padding:16},
   searchContainer: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#FFFFFF", // White background
+    backgroundColor: "#FFFFFF",
     margin: 16,
     borderRadius: 12,
     paddingHorizontal: 14,
-   
     borderWidth: 1,
-    borderColor: "#E5E7EB", // Light border
+    borderColor: "#E5E7EB",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
   },
-
   searchInput: {
     flex: 1,
     fontSize: 16,
-    color: "#111827", // ← Dark color (blackish)
+    color: "#111827",
     paddingVertical: 10,
   },
-
-  scrollView: {
-    flex: 1,
-  },
-
+  scrollView: { flex: 1 },
   center: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
     paddingTop: 100,
   },
-
-  loadingText: {
-    marginTop: 12,
-    color: COLORS.textSecondary,
-  },
-
-  emptyText: {
-    color: COLORS.textSecondary,
-    fontSize: 16,
-  },
+  loadingText: { marginTop: 12, color: COLORS.textSecondary },
+  emptyText: { color: COLORS.textSecondary, fontSize: 16 },
   chatItems: {
     flexDirection: "row",
     alignItems: "center",
-
     paddingHorizontal: 16,
     paddingVertical: 16,
-
     width: "100%",
   },
-
   chatItem: {
-    flexDirection: "row",
-    alignItems: "center",
-
-    // paddingHorizontal: 14,
-    // paddingVertical: 14,
-
     marginHorizontal: 16,
     marginBottom: 15,
-
     borderRadius: 20,
-
-    // borderWidth: 1,
-    // borderColor: 'rgba(255,255,255,0.15)',
-
     overflow: "hidden",
   },
-
-  avatarContainer: {
-    position: "relative",
-  },
-
-  avatar: {
-    width: 54,
-    height: 54,
-    borderRadius: 27,
-  },
-
+  avatarContainer: { position: "relative" },
+  avatar: { width: 54, height: 54, borderRadius: 27 },
   avatarInitial: {
-    width: 54,
-    height: 54,
-    borderRadius: 27,
+    width: 34,
+    height: 34,
+    borderRadius: 20,
     backgroundColor: COLORS.primaryDark,
     justifyContent: "center",
     alignItems: "center",
   },
-
-  avatarInitialText: {
-    color: COLORS.text,
-    fontSize: 20,
-    fontWeight: "700",
-  },
-
-  chatInfo: {
-    flex: 1,
-    marginLeft: 14,
-  },
-
-  chatName: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: COLORS.text,
-  },
-
-  lastMessage: {
-    fontSize: 14,
-    color: COLORS.textSecondary,
-    marginTop: 2,
-  },
-
-  rightColumn: {
-    alignItems: "flex-end",
-    minWidth: 70,
-  },
-
-  timeText: {
-    fontSize: 12,
-    color: COLORS.textMuted,
-  },
-
+  avatarInitialText: { color: COLORS.text, fontSize: 15, fontWeight: "700" },
+  chatInfo: { flex: 1, marginLeft: 14 },
+  chatName: { fontSize: 16, fontWeight: "700", color: COLORS.text },
+  lastMessage: { fontSize: 14, color: COLORS.textSecondary, marginTop: 2 },
+  rightColumn: { alignItems: "flex-end", minWidth: 70 },
+  timeText: { fontSize: 12, color: COLORS.textMuted },
   unreadBadge: {
     backgroundColor: COLORS.danger,
     borderRadius: 12,
@@ -504,10 +460,63 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6,
     marginTop: 4,
   },
+  unreadCount: { color: COLORS.text, fontSize: 12, fontWeight: "600" },
 
-  unreadCount: {
-    color: COLORS.text,
-    fontSize: 12,
-    fontWeight: "600",
+  fab: {
+    position: "absolute",
+    bottom: 90,
+    right: 20,
+    width: 62,
+    height: 62,
+    borderRadius: 31,
+    backgroundColor: "#0A7C6E",
+    justifyContent: "center",
+    alignItems: "center",
+    elevation: 10,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 5 },
+    shadowOpacity: 0.4,
+    shadowRadius: 8,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.2)",
+  },
+
+  adminPopup: {
+    position: "absolute",
+    right: 0,
+    bottom: 80,
+
+    width: 220,
+
+    maxHeight: 400,
+
+    backgroundColor: "#12243A",
+
+    borderRadius: 16,
+
+    padding: 15,
+
+    elevation: 8,
+  },
+
+  popupTitle: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "700",
+    marginBottom: 12,
+  },
+
+  adminItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 10,
+  },
+
+  adminName: {
+    color: "#fff",
+    fontSize: 15,
+    marginLeft: 12,
   },
 });

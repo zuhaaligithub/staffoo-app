@@ -21,7 +21,7 @@ const { height: SCREEN_HEIGHT } = Dimensions.get("window");
 
 const COLORS = {
   primary: "#89E7D0",
-  background: "#111111",
+  background: "#030508",
   surface: "#12243A",
   text: "#FFFFFF",
   textSecondary: "rgba(255,255,255,0.7)",
@@ -44,7 +44,7 @@ export default function PaymentMethodsScreen({ navigation }: Props) {
   const [loading, setLoading] = useState(true);
 
   const handleDeleteCard = (index: number) => {
-    Alert.alert("Delete Card", "Are you sure you want to delete this card?", [
+    Alert.alert("Delete card", "Are you sure you want to delete this card?", [
       {
         text: "Cancel",
         style: "cancel",
@@ -178,14 +178,21 @@ export default function PaymentMethodsScreen({ navigation }: Props) {
 
         <Text style={styles.cardNumberLarge}>•••• •••• •••• {last4}</Text>
         <View style={styles.cardBottom}>
-          <View>
-            <Text style={styles.cardLabel}>CARD HOLDER</Text>
-            <Text style={styles.cardValue}>
+          <View style={styles.cardHolderContainer}>
+            <Text style={styles.cardLabel}>Card Holder</Text>
+
+            <Text
+              style={styles.cardValue}
+              numberOfLines={1}
+              ellipsizeMode="tail"
+            >
               {item.card_holder_name.toUpperCase()}
             </Text>
           </View>
-          <View>
-            <Text style={styles.cardLabel}>EXPIRES</Text>
+
+          <View style={styles.expiryContainer}>
+            <Text style={styles.cardLabel}>Expires</Text>
+
             <Text style={styles.cardValue}>
               {item.expiry_month.padStart(2, "0")}/{item.expiry_year.slice(-2)}
             </Text>
@@ -241,7 +248,7 @@ export default function PaymentMethodsScreen({ navigation }: Props) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#111111",
+    backgroundColor: "#030508",
     paddingTop: 20,
   },
   header: {
@@ -294,7 +301,7 @@ const styles = StyleSheet.create({
   },
 
   creditCard: {
-    backgroundColor: "#173F73",
+    backgroundColor: "#rgb(30, 60, 114)",
     borderRadius: 10,
     padding: 10,
     marginBottom: 9,
@@ -302,12 +309,12 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
   },
 
-  chipContainer: { width: 48, height: 35 },
+  chipContainer: { width: 48, height: 32 },
   chip: {
     width: "100%",
     height: "100%",
     backgroundColor: "#D4AF37",
-    borderRadius: 10,
+    borderRadius: 6,
     overflow: "hidden",
     borderWidth: 1,
     borderColor: "#f6d365",
@@ -315,7 +322,7 @@ const styles = StyleSheet.create({
   chipInner: {
     ...StyleSheet.absoluteFillObject,
     margin: 5,
-    borderRadius: 8,
+    borderRadius: 5,
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.3)",
   },
@@ -341,15 +348,14 @@ const styles = StyleSheet.create({
     borderRadius: 20,
   },
   cardBrand: {
-    color: "#fff",
-    fontSize: 22,
-    fontWeight: "700",
+    color: "#FFFFFF",
+    fontSize: 18,
+    fontWeight: "500",
+    fontStyle: "italic",
+    letterSpacing: -1,
+    textTransform: "uppercase",
   },
 
-  cardBottom: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-  },
   cardLabel: {
     color: "rgba(255,255,255,0.7)",
     fontSize: 10,
@@ -357,8 +363,8 @@ const styles = StyleSheet.create({
   },
   cardValue: {
     color: "#fff",
-    fontSize: 15,
-    fontWeight: "600",
+    fontSize: 13,
+    fontWeight: "700",
     marginTop: 4,
   },
 
@@ -413,6 +419,21 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     letterSpacing: 2,
     marginTop: 9,
-    marginBottom: 9,
+    marginBottom: 4,
+  },
+  cardBottom: {
+    flexDirection: "row",
+    alignItems: "flex-end",
+    marginTop: 8,
+  },
+
+  cardHolderContainer: {
+    flex: 1,
+    marginRight: 18,
+  },
+
+  expiryContainer: {
+    width: 70,
+    alignItems: "flex-end",
   },
 });

@@ -4,7 +4,7 @@ import { Platform } from "react-native";
 import { ChargeRate, ChargeRateFormData } from "../navigation/types";
 
 export const BASE_URL = "https://apis.staffoo.com.au/api";
-// export const BASE_URL = "https://staging.apis.staffoo.com.au/api";
+// export const BASE_URL = "https://apis-staging.staffoo.com.au/api";
 
 export interface UserData {
   id: number | string;
@@ -20,27 +20,7 @@ export interface LoginPayload {
   email: string;
   password: string;
 }
-// ==================== UPDATED INTERFACE ====================
-export interface ProfileUpdatePayload {
-  name?: string;
-  phone?: string;
-  email?: string;
-  email_otp?: string;
-  gender?: string | null;
-  staff_document_type?: string | null;
-  security_license_no?: string; // ← Added
-  date_of_birth?: string;
-  address?: string;
-  city?: string;
-  state?: string;
-  country?: string;
-  origin_country?: string;
-  coordinates?: string;
-  company_name?: string;
-  registration_number?: string;
-  acn?: string;
-  abn?: string;
-}
+
 export const getAuthToken = async (): Promise<string | null> => {
   let token = await AsyncStorage.getItem("@auth_token");
   if (!token) token = await AsyncStorage.getItem("auth_token");
@@ -234,95 +214,139 @@ export const getUserTransactions = async (userId: number) => {
     );
   }
 };
+// ==================== UPDATED INTERFACE ====================
+export interface ProfileUpdatePayload {
+  name?: string;
+  phone?: string;
+  email?: string;
+  email_otp?: string;
+  gender?: string | null;
+  staff_document_type?: string | null;
+  security_license_no?: string;
+  date_of_birth?: string;
+  address?: string;
+  city?: string;
+  state?: string;
+  country?: string;
+  origin_country?: string;
+  coordinates?: string;
+  company_name?: string;
+  registration_number?: string;
+  acn?: string;
+  abn?: string;
+}
 
+// ==================== UPDATE USER PROFILE ====================
+// NOTE: every optional field below is appended whenever it's *present*
+// in the payload (`!== undefined`), not when it's *truthy*. The old
+// `if (payload.acn)` style check silently dropped the field from the
+// FormData whenever the value was an empty string "" — which is exactly
+// what happens when a contractor leaves ACN/ABN blank and saves. Since
+// the caller (ProfileSetupScreen) always sets these keys (even to ""),
+// switching to `!== undefined` means:
+//   - a value you typed is always sent
+//   - an intentionally-cleared field is sent as "" (so the backend can
+//     actually clear it, instead of silently keeping the old value)
 export const updateUserProfile = async (
   userId: string | number,
   payload: ProfileUpdatePayload & { profile_image?: any },
 ) => {
   const token = await getAuthToken();
-  if (!token) {
-    throw new Error("No authentication token found");
-  }
+  if (!token) throw new Error("No authentication token found");
 
   const endpoint = `${BASE_URL}/user-update/${userId}`;
   const formData = new FormData();
 
-  // ==================== BASIC FIELDS ====================
-  if (payload.name) formData.append("name", payload.name);
-  if (payload.phone) formData.append("phone", payload.phone);
-  if (payload.email) formData.append("email", payload.email);
-  if (payload.email_otp) formData.append("email_otp", payload.email_otp);
-  if (payload.gender) formData.append("gender", payload.gender);
-  if (payload.staff_document_type)
-    formData.append("staff_document_type", payload.staff_document_type);
+  // ==================== APPEND FIELDS ====================
 
-  // ==================== SECURITY LICENSE (Staff) ====================
+  // Basic fields
+  if (payload.name !== undefined) formData.append("name", payload.name);
+  if (payload.phone !== undefined) formData.append("phone", payload.phone);
+  if (payload.email !== undefined) formData.append("email", payload.email);
+  if (payload.email_otp !== undefined)
+    formData.append("email_otp", payload.email_otp);
+
+  // Staff fields
+  if (payload.gender !== undefined && payload.gender !== null) {
+    formData.append("gender", payload.gender);
+  }
   if (payload.security_license_no !== undefined) {
     formData.append("security_license_no", payload.security_license_no);
   }
-
-  // ==================== DATE OF BIRTH ====================
-  if (payload.date_of_birth) {
+  if (
+    payload.staff_document_type !== undefined &&
+    payload.staff_document_type !== null
+  ) {
+    formData.append("staff_document_type", payload.staff_document_type);
+  }
+  if (payload.date_of_birth !== undefined) {
     formData.append("date_of_birth", payload.date_of_birth);
   }
-
-  // ==================== ADDRESS ====================
-  if (payload.address) formData.append("address", payload.address);
-  if (payload.city) formData.append("city", payload.city);
-  if (payload.state) formData.append("state", payload.state);
-  if (payload.country) formData.append("country", payload.country);
-  if (payload.origin_country)
+  if (payload.origin_country !== undefined) {
     formData.append("origin_country", payload.origin_country);
-  if (payload.coordinates) formData.append("coordinates", payload.coordinates);
+  }
 
-  // ==================== CONTRACTOR ====================
-  if (payload.company_name)
+  // Address
+  if (payload.address !== undefined)
+    formData.append("address", payload.address);
+  if (payload.city !== undefined) formData.append("city", payload.city);
+  if (payload.state !== undefined) formData.append("state", payload.state);
+  if (payload.country !== undefined)
+    formData.append("country", payload.country);
+  if (payload.coordinates !== undefined)
+    formData.append("coordinates", payload.coordinates);
+
+  // Contractor — these three were the ones silently dropping when blank
+  if (payload.company_name !== undefined)
     formData.append("company_name", payload.company_name);
-  if (payload.registration_number)
+  if (payload.registration_number !== undefined) {
     formData.append("registration_number", payload.registration_number);
-  if (payload.acn) formData.append("acn", payload.acn);
-  if (payload.abn) formData.append("abn", payload.abn);
+  }
+  if (payload.acn !== undefined) formData.append("acn", payload.acn);
+  if (payload.abn !== undefined) formData.append("abn", payload.abn);
 
-  // ==================== PROFILE IMAGE ====================
+  // Profile Image
   if (payload.profile_image) {
     formData.append("profile_image", {
       uri: payload.profile_image.uri,
-      name: payload.profile_image.name || "profile.jpg",
+      name: payload.profile_image.name || `profile_${Date.now()}.jpg`,
       type: payload.profile_image.type || "image/jpeg",
     } as any);
   }
 
-  // ==================== LOGGING ====================
+  // ==================== SAFE LOGGING ====================
   console.log("[UPDATE PROFILE] Sending to:", endpoint);
-  const logData: Record<string, any> = {
+  console.log("[UPDATE PROFILE] Payload fields:");
+
+  const loggable: Record<string, any> = {
     name: payload.name,
     phone: payload.phone,
     email: payload.email,
     gender: payload.gender,
+    security_license_no: payload.security_license_no,
     staff_document_type: payload.staff_document_type,
-    security_license_no: payload.security_license_no, // ← Added
     date_of_birth: payload.date_of_birth,
-    company_name: payload.company_name,
-    registration_number: payload.registration_number,
-    acn: payload.acn,
-    abn: payload.abn,
+    origin_country: payload.origin_country,
     address: payload.address,
     city: payload.city,
     state: payload.state,
     country: payload.country,
-    origin_country: payload.origin_country,
     coordinates: payload.coordinates,
+    company_name: payload.company_name,
+    registration_number: payload.registration_number,
+    acn: payload.acn,
+    abn: payload.abn,
+    has_profile_image: !!payload.profile_image,
   };
-  console.log("[UPDATE PROFILE] FormData contents:", logData);
+
+  console.log(JSON.stringify(loggable, null, 2), "im here");
 
   try {
     const response = await axios.post(endpoint, formData, {
       headers: {
         Authorization: `Bearer ${token}`,
         "Content-Type": "multipart/form-data",
-        Accept: "application/json",
       },
-      timeout: 15000,
     });
 
     console.log("[UPDATE PROFILE] ← Success:", response.data);
@@ -332,15 +356,121 @@ export const updateUserProfile = async (
       "[UPDATE PROFILE] Full Error:",
       error?.response?.data || error,
     );
-    const errorMessage =
+    const errorMsg =
       error?.response?.data?.message ||
       error?.response?.data?.error ||
-      error?.response?.data?.errors?.[0] ||
-      error.message ||
+      error?.message ||
       "Failed to update profile";
-    throw new Error(errorMessage);
+    throw new Error(errorMsg);
   }
 };
+
+// export const updateUserProfile = async (
+//   userId: string | number,
+//   payload: ProfileUpdatePayload & { profile_image?: any },
+// ) => {
+//   const token = await getAuthToken();
+//   if (!token) {
+//     throw new Error("No authentication token found");
+//   }
+
+//   const endpoint = `${BASE_URL}/user-update/${userId}`;
+//   const formData = new FormData();
+
+//   // ==================== BASIC FIELDS ====================
+//   if (payload.name) formData.append("name", payload.name);
+//   if (payload.phone) formData.append("phone", payload.phone);
+//   if (payload.email) formData.append("email", payload.email);
+//   if (payload.email_otp) formData.append("email_otp", payload.email_otp);
+//   if (payload.gender) formData.append("gender", payload.gender);
+//   if (payload.staff_document_type)
+//     formData.append("staff_document_type", payload.staff_document_type);
+
+//   // ==================== SECURITY LICENSE (Staff) ====================
+//   if (payload.security_license_no !== undefined) {
+//     formData.append("security_license_no", payload.security_license_no);
+//   }
+
+//   // ==================== DATE OF BIRTH ====================
+//   if (payload.date_of_birth) {
+//     formData.append("date_of_birth", payload.date_of_birth);
+//   }
+
+//   // ==================== ADDRESS ====================
+//   if (payload.address) formData.append("address", payload.address);
+//   if (payload.city) formData.append("city", payload.city);
+//   if (payload.state) formData.append("state", payload.state);
+//   if (payload.country) formData.append("country", payload.country);
+//   if (payload.origin_country)
+//     formData.append("origin_country", payload.origin_country);
+//   if (payload.coordinates) formData.append("coordinates", payload.coordinates);
+
+//   // ==================== CONTRACTOR ====================
+//   if (payload.company_name)
+//     formData.append("company_name", payload.company_name);
+//   if (payload.registration_number)
+//     formData.append("registration_number", payload.registration_number);
+//   if (payload.acn) formData.append("acn", payload.acn);
+//   if (payload.abn) formData.append("abn", payload.abn);
+
+//   // ==================== PROFILE IMAGE ====================
+//   if (payload.profile_image) {
+//     formData.append("profile_image", {
+//       uri: payload.profile_image.uri,
+//       name: payload.profile_image.name || "profile.jpg",
+//       type: payload.profile_image.type || "image/jpeg",
+//     } as any);
+//   }
+
+//   // ==================== LOGGING ====================
+//   console.log("[UPDATE PROFILE] Sending to:", endpoint);
+//   const logData: Record<string, any> = {
+//     name: payload.name,
+//     phone: payload.phone,
+//     email: payload.email,
+//     gender: payload.gender,
+//     staff_document_type: payload.staff_document_type,
+//     security_license_no: payload.security_license_no, // ← Added
+//     date_of_birth: payload.date_of_birth,
+//     company_name: payload.company_name,
+//     registration_number: payload.registration_number,
+//     acn: payload.acn,
+//     abn: payload.abn,
+//     address: payload.address,
+//     city: payload.city,
+//     state: payload.state,
+//     country: payload.country,
+//     origin_country: payload.origin_country,
+//     coordinates: payload.coordinates,
+//   };
+//   console.log("[UPDATE PROFILE] FormData contents:", logData);
+
+//   try {
+//     const response = await axios.post(endpoint, formData, {
+//       headers: {
+//         Authorization: `Bearer ${token}`,
+//         "Content-Type": "multipart/form-data",
+//         Accept: "application/json",
+//       },
+//       timeout: 15000,
+//     });
+
+//     console.log("[UPDATE PROFILE] ← Success:", response.data);
+//     return response.data;
+//   } catch (error: any) {
+//     console.error(
+//       "[UPDATE PROFILE] Full Error:",
+//       error?.response?.data || error,
+//     );
+//     const errorMessage =
+//       error?.response?.data?.message ||
+//       error?.response?.data?.error ||
+//       error?.response?.data?.errors?.[0] ||
+//       error.message ||
+//       "Failed to update profile";
+//     throw new Error(errorMessage);
+//   }
+// };
 
 export const uploadFile = async (file: any) => {
   try {

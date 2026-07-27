@@ -13,6 +13,7 @@ import {
   Alert,
   ScrollView,
   Platform,
+  Linking,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import ReactNativeBlobUtil from "react-native-blob-util";
@@ -34,7 +35,7 @@ import {
 const COLORS = {
   primary: "#4FCBB3",
   primaryLight: "#89E7D0",
-  background: "#0A0F1E",
+  background: "#030508",
   surface: "#111827",
   surface2: "#1A2438",
   card: "rgba(255,255,255,0.05)",
@@ -157,18 +158,16 @@ const getStatusMeta = (status: string) => {
 };
 
 const BASE_URL = "https://apis.staffoo.com.au";
-// const BASE_URL = "https://staging.apis.staffoo.com.au";
+// const BASE_URL = "https://apis-staging.staffoo.com.au";
 
-/**
- * Safe file unlink — never throws, just logs.
- */
 const safeUnlink = async (path: string) => {
   try {
     const exists = await ReactNativeBlobUtil.fs.exists(path);
-    if (exists) await ReactNativeBlobUtil.fs.unlink(path);
-  } catch (_) {}
+    if (exists) {
+      await ReactNativeBlobUtil.fs.unlink(path);
+    }
+  } catch (e) {}
 };
-
 
 const downloadPdfToPath = async (
   url: string,
@@ -259,46 +258,18 @@ export default function JobPaymentHistory({ navigation }: Props) {
     }
   }, [userId]);
 
-  const handleViewInvoice = async (item: Transaction) => {
-    if (!item.invoice_filename) {
-      Alert.alert("No Invoice", "Invoice not available for this transaction.");
+  const handleViewInvoice = (item: Transaction) => {
+    if (!item?.invoice_filename) {
+      Alert.alert("No Invoice", "Invoice not available.");
       return;
     }
 
     const pdfUrl = `${BASE_URL}/storage/invoices/${item.invoice_filename}`;
-    const filename = item.invoice_filename || `invoice_${item.id}.pdf`;
-    const cachePath = `${ReactNativeBlobUtil.fs.dirs.CacheDir}/${filename}`;
 
-    try {
-      // Clean existing files
-      if (await ReactNativeBlobUtil.fs.exists(cachePath)) {
-        await ReactNativeBlobUtil.fs.unlink(cachePath);
-      }
-
-      const tmpPath = cachePath + ".tmp";
-
-      // Download with better config
-      const res = await ReactNativeBlobUtil.config({
-        path: tmpPath,
-        trusty: true, // ← Important fix for trust manager
-        timeout: 30000,
-      }).fetch("GET", pdfUrl, {});
-
-      if (res.info().status === 200) {
-        await ReactNativeBlobUtil.fs.mv(tmpPath, cachePath);
-        setPdfUri(`file://${cachePath}`);
-        setPdfModalVisible(true);
-      } else {
-        throw new Error("Failed to download");
-      }
-    } catch (err: any) {
-      console.error("PDF View Error:", err);
-      // Fallback: Open directly from URL
-      setPdfUri(pdfUrl);
-      setPdfModalVisible(true);
-    }
+    Linking.openURL(pdfUrl).catch(() => {
+      Alert.alert("Cannot Open", "Please check your internet connection.");
+    });
   };
-
   // ── Download PDF to Downloads / Documents folder ──────────────────────────
   const handleDownloadInvoice = async (item: Transaction) => {
     if (!item.invoice_filename) {
@@ -383,12 +354,14 @@ export default function JobPaymentHistory({ navigation }: Props) {
     }
   };
 
-  // ── Share ──────────────────────────────────────────────────────────────────
-  const handleOpenShare = (item: Transaction) => {
+  const handleOpenShare = async (item: Transaction) => {
     setSelectedTransaction(item);
     setEmailInput("");
     setEmailList([]);
     setShareModalVisible(true);
+
+    // Automatically load history when share modal opens
+    await loadInvoiceHistory(item);
   };
 
   const handleAddEmail = () => {
@@ -408,12 +381,34 @@ export default function JobPaymentHistory({ navigation }: Props) {
 
   const handleRemoveEmail = (email: string) =>
     setEmailList((prev) => prev.filter((e) => e !== email));
-
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   const handleSendDocument = async () => {
     if (!selectedTransaction) return;
+
+    const typedEmail = emailInput.trim().toLowerCase();
+
+    // Start with already added emails
+    let emails = [...emailList];
+
+    // If user typed a valid email but didn't press Add, include it automatically
+    if (
+      typedEmail &&
+      emailRegex.test(typedEmail) &&
+      !emails.includes(typedEmail)
+    ) {
+      emails.push(typedEmail);
+    }
+
+    if (emails.length === 0) {
+      Alert.alert("Invalid Email", "Please enter at least one valid email.");
+      return;
+    }
+
     try {
       setSharing(true);
+
       const token = await getAuthToken();
+
       const response = await fetch(`${BASE_URL}/api/share-invoice`, {
         method: "POST",
         headers: {
@@ -421,25 +416,87 @@ export default function JobPaymentHistory({ navigation }: Props) {
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-          emails: emailList,
+          emails,
           transaction_id: selectedTransaction.id,
           invoice_filename: selectedTransaction.invoice_filename,
         }),
       });
+
       const data = await response.json();
+
       if (response.ok) {
         Alert.alert("Success", "Invoice sent successfully!");
+
+        // Reset state
+        setEmailInput("");
+        setEmailList([]);
         setShareModalVisible(false);
       } else {
         Alert.alert("Error", data?.message || "Failed to send invoice.");
       }
-    } catch {
+    } catch (error) {
+      console.error(error);
       Alert.alert("Error", "Network error. Please try again.");
     } finally {
       setSharing(false);
     }
   };
+  // Load invoice share history
+  const loadInvoiceHistory = async (item: Transaction) => {
+    if (!item) return;
 
+    setHistoryLoading(true);
+    try {
+      const token = await getAuthToken();
+      const response = await fetch(
+        `${BASE_URL}/api/admin/invoice/history/${item.id}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            Accept: "application/json",
+          },
+        },
+      );
+
+      const data = await response.json();
+
+      let shares: ShareRecord[] = [];
+
+      if (Array.isArray(data?.data)) {
+        shares = data.data.map((s: any) => ({
+          email: s.email,
+          created_at: s.created_at,
+          status: s.status || s.state || "sent",
+          message: s.response || s.message || "",
+          file_name: s.file_name || s.invoice_filename || "",
+        }));
+      } else if (data?.data?.shares) {
+        shares = data.data.shares.map((s: any) => ({
+          email: s.email,
+          created_at: s.created_at,
+          status: s.status || "sent",
+          message: s.response || s.message || "",
+        }));
+      }
+
+      setHistoryData({
+        total_shares: shares.length,
+        successful: shares.filter((s) => s.status === "sent").length,
+        recipients: new Set(shares.map((s) => s.email)).size,
+        shares: shares,
+      });
+    } catch (error) {
+      console.error("Failed to load share history:", error);
+      setHistoryData({
+        total_shares: 0,
+        successful: 0,
+        recipients: 0,
+        shares: [],
+      });
+    } finally {
+      setHistoryLoading(false);
+    }
+  };
   // ── History ────────────────────────────────────────────────────────────────
   const handleOpenHistory = async (item: Transaction) => {
     setHistoryTransaction(item);
@@ -551,7 +608,7 @@ export default function JobPaymentHistory({ navigation }: Props) {
             <Text style={styles.actionBtnPrimaryText}>View</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity
+          {/* <TouchableOpacity
             style={[styles.actionBtn, styles.actionBtnDownload]}
             onPress={() => handleDownloadInvoice(item)}
             disabled={isDownloading}
@@ -565,7 +622,7 @@ export default function JobPaymentHistory({ navigation }: Props) {
                 <Text style={styles.actionBtnDownloadText}>Save</Text>
               </>
             )}
-          </TouchableOpacity>
+          </TouchableOpacity> */}
 
           <TouchableOpacity
             style={[styles.actionBtn, styles.actionBtnOutline]}
@@ -576,14 +633,14 @@ export default function JobPaymentHistory({ navigation }: Props) {
             <Text style={styles.actionBtnOutlineText}>Share</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity
+          {/* <TouchableOpacity
             style={[styles.actionBtn, styles.actionBtnGhost]}
             onPress={() => handleOpenHistory(item)}
             activeOpacity={0.75}
           >
             <History size={14} color={COLORS.textSecondary} />
             <Text style={styles.actionBtnGhostText}>History</Text>
-          </TouchableOpacity>
+          </TouchableOpacity> */}
         </View>
       </View>
     );
@@ -599,6 +656,10 @@ export default function JobPaymentHistory({ navigation }: Props) {
       </View>
     );
   }
+
+  const canSend =
+    !sharing &&
+    (emailList.length > 0 || emailRegex.test(emailInput.trim().toLowerCase()));
 
   return (
     <View style={styles.container}>
@@ -643,6 +704,7 @@ export default function JobPaymentHistory({ navigation }: Props) {
       />
 
       {/* Share Modal */}
+      {/* ── Share Invoice Modal (New Design) ── */}
       <Modal
         visible={shareModalVisible}
         transparent
@@ -650,87 +712,132 @@ export default function JobPaymentHistory({ navigation }: Props) {
         onRequestClose={() => setShareModalVisible(false)}
       >
         <View style={styles.modalOverlay}>
-          <View style={styles.modalSheet}>
-            <View style={styles.modalHeader}>
-              <View style={styles.modalIconWrap}>
-                <Share2 size={20} color={COLORS.primary} />
+          <View style={styles.shareModalContainer}>
+            {/* Header */}
+            <View style={styles.shareHeader}>
+              <View style={styles.shareIcon}>
+                <Send size={18} color="#fff" />
               </View>
-              <View style={{ flex: 1, marginLeft: 12 }}>
-                <Text style={styles.modalTitle}>Share Document</Text>
-                {selectedTransaction?.invoice_filename && (
-                  <Text style={styles.modalSubtitle} numberOfLines={1}>
-                    {selectedTransaction.invoice_filename}
-                  </Text>
-                )}
+              <View style={{ flex: 1 }}>
+                <Text style={styles.shareTitle}>Share Invoice</Text>
+                <Text style={styles.shareSubtitle}>
+                  Send {selectedTransaction?.invoice_filename || "Invoice"}{" "}
+                  securely to the provided email addresses.
+                </Text>
               </View>
               <TouchableOpacity
                 onPress={() => setShareModalVisible(false)}
                 style={styles.closeBtn}
               >
-                <X size={18} color={COLORS.textSecondary} />
+                <X size={15} color={COLORS.textSecondary} />
               </TouchableOpacity>
             </View>
 
-            <Text style={styles.modalDesc}>
-              Enter email addresses to send the invoice to.
+            {/* Recipient Emails */}
+            <Text style={styles.labeltext}>
+              Recipient Emails <Text style={{ color: COLORS.danger }}>*</Text>
             </Text>
 
-            <View style={styles.emailInputRow}>
-              <TextInput
-                style={styles.emailInput}
-                value={emailInput}
-                onChangeText={setEmailInput}
-                placeholder="e.g. user@example.com"
-                placeholderTextColor={COLORS.textMuted}
-                keyboardType="email-address"
-                autoCapitalize="none"
-                onSubmitEditing={handleAddEmail}
-                returnKeyType="done"
-              />
+            <View style={styles.emailInputContainer}>
+              <View style={styles.emailInputWrapper}>
+                <Mail
+                  size={20}
+                  color={COLORS.textSecondary}
+                  style={{ marginRight: 8 }}
+                />
+                <TextInput
+                  style={styles.emailInput}
+                  value={emailInput}
+                  onChangeText={setEmailInput}
+                  placeholder="name@example.com"
+                  placeholderTextColor={COLORS.textMuted}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  onSubmitEditing={handleAddEmail}
+                />
+              </View>
               <TouchableOpacity
-                style={styles.addEmailBtn}
+                style={styles.addButton}
                 onPress={handleAddEmail}
               >
-                <Plus size={18} color="#fff" />
+                <Plus size={20} color="#fff" />
+                <Text style={styles.addButtonText}>Add</Text>
               </TouchableOpacity>
             </View>
 
+            {/* Added Emails */}
             {emailList.length > 0 && (
-              <View style={styles.tagContainer}>
-                {emailList.map((email) => (
-                  <View key={email} style={styles.emailTag}>
-                    <Text style={styles.emailTagText} numberOfLines={1}>
-                      {email}
-                    </Text>
-                    <TouchableOpacity
-                      onPress={() => handleRemoveEmail(email)}
-                      style={styles.tagRemove}
-                    >
-                      <X size={12} color={COLORS.textSecondary} />
+              <View style={styles.addedEmailsContainer}>
+                {emailList.map((email, index) => (
+                  <View key={index} style={styles.emailChip}>
+                    <Text style={styles.emailChipText}>{email}</Text>
+                    <TouchableOpacity onPress={() => handleRemoveEmail(email)}>
+                      <X size={16} color={COLORS.textMuted} />
                     </TouchableOpacity>
                   </View>
                 ))}
               </View>
             )}
 
-            <View style={styles.modalActions}>
+            {/* Previously Sent To */}
+            <Text style={styles.labeltext}>Previously Sent To</Text>
+
+            <View style={styles.historyContainer}>
+              {historyLoading ? (
+                <View style={{ padding: 20, alignItems: "center" }}>
+                  <ActivityIndicator color={COLORS.primary} />
+                </View>
+              ) : historyData && historyData.shares.length > 0 ? (
+                historyData.shares
+                  .slice(0, 3)
+                  .map((share: ShareRecord, index: number) => (
+                    <View key={index} style={styles.historyRow}>
+                      <View style={styles.historyAvatar}>
+                        <Mail size={16} color={COLORS.textSecondary} />
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.historyEmailText} numberOfLines={1}>
+                          {share.email}
+                        </Text>
+                        <Text style={styles.historyDateText}>
+                          {formatHistoryDate(share.created_at)}
+                        </Text>
+                      </View>
+                      <View style={styles.sentBadge}>
+                        <Text style={styles.sentBadgeText}>✓ Sent</Text>
+                      </View>
+                    </View>
+                  ))
+              ) : (
+                <Text style={styles.noHistoryText}>
+                  No previous shares yet.
+                </Text>
+              )}
+            </View>
+
+            {/* Bottom Buttons */}
+            <View style={styles.bottomButtons}>
               <TouchableOpacity
-                style={styles.cancelBtn}
+                style={styles.cancelButton}
                 onPress={() => setShareModalVisible(false)}
               >
-                <Text style={styles.cancelBtnText}>Cancel</Text>
+                <Text style={styles.cancelButtonText}>Cancel</Text>
               </TouchableOpacity>
+
               <TouchableOpacity
-                style={[styles.sendBtn, sharing && styles.sendBtnDisabled]}
+                style={[
+                  styles.sendButton,
+                  !canSend && styles.sendButtonDisabled,
+                ]}
                 onPress={handleSendDocument}
-                disabled={sharing}
+                disabled={!canSend}
               >
                 {sharing ? (
-                  <ActivityIndicator size="small" color="#fff" />
+                  <ActivityIndicator color="#fff" />
                 ) : (
                   <>
-                    <Send size={15} color="#fff" />
-                    <Text style={styles.sendBtnText}>Send Document</Text>
+                    <Send size={18} color="#fff" />
+                    <Text style={styles.sendButtonText}>Send Invoice</Text>
                   </>
                 )}
               </TouchableOpacity>
@@ -769,7 +876,7 @@ export default function JobPaymentHistory({ navigation }: Props) {
                 onPress={() => setHistoryModalVisible(false)}
                 style={styles.closeBtn}
               >
-                <X size={18} color={COLORS.textSecondary} />
+                <X size={20} color={COLORS.textSecondary} />
               </TouchableOpacity>
             </View>
 
@@ -1060,8 +1167,8 @@ const styles = StyleSheet.create({
   modalTitle: { fontSize: 17, fontWeight: "700", color: COLORS.text },
   modalSubtitle: { fontSize: 12, color: COLORS.textMuted, marginTop: 2 },
   closeBtn: {
-    width: 32,
-    height: 32,
+    width: 30,
+    height: 30,
     borderRadius: 16,
     backgroundColor: COLORS.surface2,
     alignItems: "center",
@@ -1074,17 +1181,7 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   emailInputRow: { flexDirection: "row", gap: 10, marginBottom: 12 },
-  emailInput: {
-    flex: 1,
-    backgroundColor: COLORS.surface2,
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    fontSize: 14,
-    color: COLORS.text,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-  },
+
   addEmailBtn: {
     width: 46,
     height: 46,
@@ -1205,4 +1302,228 @@ const styles = StyleSheet.create({
     minHeight: 16,
   },
   historyMessage: { fontSize: 12, color: COLORS.textSecondary, flex: 1 },
+
+  shareModalContainer: {
+    backgroundColor: COLORS.surface,
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    padding: 20,
+    // paddingBottom: 30,
+    maxHeight: "100%",
+  },
+
+  shareHeader: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    marginBottom: 10,
+  },
+
+  shareIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: COLORS.primary,
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 10,
+  },
+
+  shareTitle: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: COLORS.text,
+    marginBottom: 4,
+  },
+
+  shareSubtitle: {
+    fontSize: 12,
+    color: COLORS.textSecondary,
+    // lineHeight: 20,
+    marginBottom: 10,
+  },
+
+  label: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: COLORS.text,
+    marginBottom: 8,
+  },
+  labeltext: {
+    fontSize: 12,
+    fontWeight: "500",
+    color: COLORS.text,
+    marginBottom: 8,
+  },
+
+  emailInputContainer: {
+    flexDirection: "row",
+    gap: 10,
+    marginBottom: 16,
+  },
+
+  emailInputWrapper: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: COLORS.surface2,
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+
+  emailInput: {
+    flex: 1,
+    fontSize: 12,
+    color: COLORS.text,
+    paddingVertical: 12,
+  },
+
+  addButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: COLORS.primary,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    gap: 6,
+  },
+
+  addButtonText: {
+    color: "#fff",
+    fontWeight: "600",
+    fontSize: 15,
+  },
+
+  addedEmailsContainer: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    marginBottom: 20,
+  },
+
+  emailChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: COLORS.surface2,
+    borderRadius: 20,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    gap: 8,
+  },
+
+  emailChipText: {
+    color: COLORS.text,
+    fontSize: 14,
+  },
+
+  historyTitle: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: COLORS.text,
+    marginBottom: 12,
+  },
+
+  historyContainer: {
+    backgroundColor: COLORS.surface2,
+    borderRadius: 16,
+    padding: 12,
+    marginBottom: 24,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+
+  historyRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+  },
+
+  historyRowLast: {
+    borderBottomWidth: 0,
+  },
+
+  historyAvatar: {
+    width: 35,
+    height: 35,
+    borderRadius: 20,
+    backgroundColor: COLORS.surface,
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 8,
+  },
+
+  historyEmailText: {
+    fontSize: 12,
+    color: COLORS.text,
+    fontWeight: "500",
+  },
+
+  historyDateText: {
+    fontSize: 12,
+    color: COLORS.textMuted,
+    marginTop: 2,
+  },
+
+  sentBadge: {
+    backgroundColor: COLORS.successBg,
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 20,
+  },
+
+  sentBadgeText: {
+    color: COLORS.success,
+    fontSize: 13,
+    fontWeight: "600",
+  },
+
+  noHistoryText: {
+    textAlign: "center",
+    color: COLORS.textMuted,
+    paddingVertical: 20,
+  },
+
+  bottomButtons: {
+    flexDirection: "row",
+    gap: 12,
+  },
+
+  cancelButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 14,
+    backgroundColor: COLORS.surface2,
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+
+  cancelButtonText: {
+    color: COLORS.textSecondary,
+    fontWeight: "600",
+    fontSize: 16,
+  },
+
+  sendButton: {
+    flex: 1.6,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 10,
+    backgroundColor: COLORS.primary,
+    paddingVertical: 12,
+    borderRadius: 14,
+  },
+
+  sendButtonDisabled: {
+    opacity: 0.5,
+  },
+
+  sendButtonText: {
+    color: "#fff",
+    fontWeight: "700",
+    fontSize: 16,
+  },
 });

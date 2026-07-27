@@ -127,7 +127,7 @@ export default function StaffInductionScreen({
           const fullImage = imageUri.startsWith("http")
             ? imageUri
             : `https://apis.staffoo.com.au/storage/${imageUri}`;
-          //  :  `https://staging.apis.staffoo.com.au/storage/${imageUri}`;
+          // :  `https://apis-staging.staffoo.com.au/storage/${imageUri}`;
           setProfileImage(fullImage);
         }
       }
@@ -179,7 +179,7 @@ export default function StaffInductionScreen({
         .map((item: any) => ({
           id: item.id,
           title: item.title,
-          subtitle: item.sub_heading?.[0] || "Mandatory",
+          subtitle: item.sub_heading?.[0] || "",
           status: item.status || "pending",
           questions: item.questionnaire?.length || 0,
           date: item.created_at
@@ -267,10 +267,12 @@ export default function StaffInductionScreen({
 
         <View style={styles.listContent}>
           <Text style={styles.listTitle}>{capitalizeText(item.title)}</Text>
-          <Text style={styles.listSubtitle}>
+          {/* <Text style={styles.listSubtitle}>
             {item.subtitle} • {item.date}
+          </Text> */}
+          <Text style={styles.questionsText}>
+            {item.questions} {item.questions === 1 ? "Question" : "Questions"}
           </Text>
-          <Text style={styles.questionsText}>{item.questions} Questions</Text>
 
           {done ? (
             <View style={styles.completedBadge}>
@@ -377,7 +379,8 @@ export default function StaffInductionScreen({
               <Text style={styles.recentDate}>{recentInduction.date}</Text>
 
               <Text style={styles.questionsCount}>
-                {recentInduction.questions} Questions
+                {recentInduction.questions}{" "}
+                {recentInduction.questions === 1 ? "Question" : "Questions"}
               </Text>
 
               {/* ✅ START BUTTON / COMPLETED */}

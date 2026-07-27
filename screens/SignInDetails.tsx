@@ -19,12 +19,15 @@ import Toast from "react-native-toast-message";
 import {
   Clock,
   X,
+  Check,
   Camera,
   FileText,
   MapPin,
+  MapPinOff,
   AlertCircle,
-  ChevronLeft,
+  RefreshCw,
   ArrowLeft,
+  RotateCcw,
 } from "lucide-react-native";
 import { launchCamera } from "react-native-image-picker";
 import Geolocation from "react-native-geolocation-service";
@@ -34,19 +37,27 @@ import { signInShift } from "../services/authApi";
 import ImageResizer from "react-native-image-resizer";
 
 const COLORS = {
-  primary: "#89E7D0",
-  primaryDark: "#4FCBB3",
-  background: "#001F3F",
-  surface: "#12243A",
-  card: "rgba(255,255,255,0.06)",
-  cardBorder: "rgba(255,255,255,0.08)",
+  background: "#030508",
+  surface: "#0A121C",
+  card: "#0F1A28",
+  cardAlt: "#0D1621",
+  cardBorder: "rgba(255,255,255,0.06)",
+  cardBorderStrong: "rgba(255,255,255,0.10)",
+  primary: "#00C2B2",
+  primaryDark: "#00A99D",
+  primaryGlow: "rgba(0,194,178,0.16)",
+  primaryBorder: "rgba(0,194,178,0.35)",
   text: "#FFFFFF",
-  textSecondary: "rgba(255,255,255,0.7)",
-  textMuted: "rgba(255,255,255,0.5)",
-  success: "#22C55E",
-  warning: "#F59E0B",
-  danger: "#EF4444",
-  border: "rgba(255,255,255,0.08)",
+  textSecondary: "#9AAABC",
+  textMuted: "#5C6E85",
+  success: "#34D399",
+  successBg: "rgba(52,211,153,0.12)",
+  danger: "#F87171",
+  dangerBg: "rgba(248,113,113,0.12)",
+  warning: "#FBBF24",
+  warningBg: "rgba(251,191,36,0.10)",
+  disabled: "#26313F",
+  disabledText: "#5C6E85",
 };
 
 interface SignInDetailsProps {
@@ -62,7 +73,6 @@ export default function SignInDetails({
   const [selfieBase64, setSelfieBase64] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  // ── Added Explicit Coordinate States ────────────────────────
   const [latitude, setLatitude] = useState<number | null>(null);
   const [longitude, setLongitude] = useState<number | null>(null);
   const [locationError, setLocationError] = useState<string>("");
@@ -78,7 +88,6 @@ export default function SignInDetails({
     route?.params?.shiftId ||
     route?.params?.id;
 
-  // Format time helper
   const formatTime = (isoString: string | undefined | null): string => {
     if (!isoString) return "--:--";
     const parts = isoString.split(" ");
@@ -89,7 +98,7 @@ export default function SignInDetails({
     startTime: formatTime(rawShift.start) || "09:00",
     endTime: formatTime(rawShift.end) || "17:00",
     break: rawShift.break || "No",
-    event: rawShift.event || rawShift.job_title || "Security Duty",
+    event: rawShift.event || rawShift.job_title || "",
     address:
       rawShift.site?.address ||
       rawShift.address ||
@@ -98,9 +107,10 @@ export default function SignInDetails({
     tasks: rawShift.tasks || "No task is available",
     notes:
       rawShift.shift_instructions ||
+      rawShift.site?.description ||
       rawShift.notes ||
       rawShift.instructions ||
-      rawShift.site_description ||
+      rawShift.description ||
       "",
   };
 
@@ -120,38 +130,6 @@ export default function SignInDetails({
       return granted === PermissionsAndroid.RESULTS.GRANTED;
     } catch (err) {
       console.warn("Camera permission error:", err);
-      return false;
-    }
-  };
-
-  const requestLocationPermission = async (): Promise<boolean> => {
-    try {
-      if (Platform.OS === "android") {
-        const hasFinePermission = await PermissionsAndroid.check(
-          PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
-        );
-
-        if (hasFinePermission) {
-          return true;
-        }
-
-        const granted = await PermissionsAndroid.request(
-          PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
-          {
-            title: "Location Permission",
-            message: "This app needs access to your location.",
-            buttonPositive: "OK",
-            buttonNegative: "Cancel",
-          },
-        );
-
-        return granted === PermissionsAndroid.RESULTS.GRANTED;
-      }
-
-      const auth = await Geolocation.requestAuthorization("whenInUse");
-      return auth === "granted";
-    } catch (error) {
-      console.log("Permission Error:", error);
       return false;
     }
   };
@@ -183,11 +161,12 @@ export default function SignInDetails({
     } catch (error) {
       console.log("Google Location Error:", error);
 
-      setLocationError("Unable to get location (network-based)");
+      setLocationError("Unable to get your location");
       setLocationReady(false);
       setLocationLoading(false);
     }
   };
+
   const openCamera = async () => {
     const hasPermission = await requestCameraPermission();
     if (!hasPermission) return;
@@ -262,12 +241,11 @@ export default function SignInDetails({
           date.getMinutes(),
         )}`;
 
-      // ── Passing explicit coordinates in the payload ───────────────
       const payload = {
         time: formatDateTime(now),
-        location: `${latitude},${longitude}`, // kept for backwards compatibility
-        latitude: latitude, // exact latitude
-        longitude: longitude, // exact longitude
+        location: `${latitude},${longitude}`,
+        latitude: latitude,
+        longitude: longitude,
         selfie: selfieBase64,
         notes: shift.notes || "",
         signin_time: formatDateTime(now),
@@ -331,288 +309,205 @@ export default function SignInDetails({
       mounted = false;
     };
   }, []);
+
   const canStart = !!selfieUri && locationReady && !loading;
 
   if (!shiftId) {
     return (
       <SafeAreaView style={styles.container}>
-        <Text
-          style={{
-            padding: 40,
-            textAlign: "center",
-            color: "red",
-            fontSize: 16,
-          }}
-        >
-          Error: No shift information received.
-        </Text>
+        <View style={styles.emptyStateWrap}>
+          <View style={styles.emptyIconCircle}>
+            <AlertCircle size={28} color={COLORS.danger} />
+          </View>
+          <Text style={styles.emptyTitle}>No shift details available</Text>
+          <Text style={styles.emptySubtitle}>
+            Go back and select a shift to sign in.
+          </Text>
+        </View>
       </SafeAreaView>
     );
   }
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#111111" />
+      <StatusBar barStyle="light-content" backgroundColor={COLORS.background} />
 
+      {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <ArrowLeft size={24} color="#fff" />
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => navigation.goBack()}
+          activeOpacity={0.7}
+        >
+          <ArrowLeft size={18} color={COLORS.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Sign In Details</Text>
-        <View style={{ width: 24 }} />
+        <View style={styles.headerTextWrap}>
+          <Text style={styles.headerTitle}>Shift Sign-in</Text>
+          <Text style={styles.headerSubtitle}>{shift.event}</Text>
+        </View>
+        <View style={styles.headerSpacer} />
       </View>
 
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        <View style={styles.mainCard}>
-          {/* Time Row */}
-          <View style={styles.timeRow}>
-            <LinearGradient
-              colors={[
-                "rgba(255, 255, 255, 0.42)",
-                "rgba(255, 255, 255, 0.35)",
-                "rgba(255, 255, 255, 0.22)",
-                "rgba(255, 255, 255, 0.12)",
-                "rgba(255, 255, 255, 0.25)",
-              ]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.timeCard}
-            >
-              <View style={styles.siteCardInner}>
-                <View style={styles.iconCircle}>
-                  <Clock size={20} color="#3b82f6" />
-                </View>
-                <Text style={styles.timeLabel}>Start Time</Text>
-                <Text style={styles.timeValue}>{shift.startTime}</Text>
-              </View>
-            </LinearGradient>
-            <LinearGradient
-              colors={[
-                "rgba(255, 255, 255, 0.42)",
-                "rgba(255, 255, 255, 0.35)",
-                "rgba(255, 255, 255, 0.22)",
-                "rgba(255, 255, 255, 0.12)",
-                "rgba(255, 255, 255, 0.25)",
-              ]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.timeCard}
-            >
-              <View style={styles.siteCardInner}>
-                <View style={styles.iconCircle}>
-                  <Clock size={20} color="#3b82f6" />
-                </View>
-                <Text style={styles.timeLabel}>End Time</Text>
-                <Text style={styles.timeValue}>{shift.endTime}</Text>
-              </View>
-            </LinearGradient>
-          </View>
-
-          {/* Break + Notes + Selfie */}
-          <View style={styles.combinedRow}>
-            <View style={styles.leftColumn}>
-              <LinearGradient
-                colors={[
-                  "rgba(255, 255, 255, 0.42)",
-                  "rgba(255, 255, 255, 0.35)",
-                  "rgba(255, 255, 255, 0.22)",
-                  "rgba(255, 255, 255, 0.12)",
-                  "rgba(255, 255, 255, 0.25)",
-                ]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.halfCardcontainer}
-              >
-                <View style={styles.halfCard}>
-                  <View style={styles.smallIconCircle}>
-                    <X size={18} color="#3b82f6" />
-                  </View>
-                  <View>
-                    <Text style={styles.smallTitle}>Shift Status</Text>
-                    <Text style={styles.smallValue}>Sign In</Text>
-                  </View>
-                </View>
-              </LinearGradient>
-
-              <LinearGradient
-                colors={[
-                  "rgba(255, 255, 255, 0.42)",
-                  "rgba(255, 255, 255, 0.35)",
-                  "rgba(255, 255, 255, 0.22)",
-                  "rgba(255, 255, 255, 0.12)",
-                  "rgba(255, 255, 255, 0.25)",
-                ]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.Cardcontainer}
-              >
-                <View style={[styles.halfCard]}>
-                  <View style={styles.smallIconCircle}>
-                    <FileText size={18} color="#3b82f6" />
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.smallTitle}>Sign in Notes</Text>
-                    <Text style={[styles.smallValue, { marginTop: 4 }]}>
-                      {shift.notes || "Not added yet"}
-                    </Text>
-                  </View>
-                </View>
-              </LinearGradient>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Time Cards */}
+        <View style={styles.timeRow}>
+          <View style={styles.timeCard}>
+            <View style={styles.timeIconCircle}>
+              <Clock size={18} color={COLORS.primary} />
             </View>
+            <Text style={styles.timeLabel}>SHIFT START</Text>
+            <Text style={styles.timeValue}>{shift.startTime}</Text>
+          </View>
 
-            {/* Selfie Card */}
-            <View style={styles.rightColumn}>
-              <LinearGradient
-                colors={[
-                  "rgba(255, 255, 255, 0.42)",
-                  "rgba(255, 255, 255, 0.35)",
-                  "rgba(255, 255, 255, 0.22)",
-                  "rgba(255, 255, 255, 0.12)",
-                  "rgba(255, 255, 255, 0.25)",
-                ]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.halfCardcontainer}
-              >
-                <View style={styles.selfieCard}>
-                  <TouchableOpacity
-                    activeOpacity={0.8}
-                    onPress={openCamera}
-                    style={{
-                      alignItems: "center",
-                      flex: 1,
-                      justifyContent: "center",
-                    }}
-                  >
-                    {selfieUri ? (
-                      <Image
-                        source={{ uri: selfieUri }}
-                        style={styles.selfieImage}
-                        resizeMode="cover"
-                      />
-                    ) : (
-                      <>
-                        <View style={styles.selfieIconCircle}>
-                          <Camera size={20} color="#3b82f6" />
-                        </View>
-                        <Text style={styles.smallTitle}>SignIn Selfie</Text>
-                        <Text
-                          style={{
-                            fontSize: 12,
-                            color: "#3b82f6",
-                            marginTop: 4,
-                          }}
-                        >
-                          Tap to take photo
-                        </Text>
-                      </>
-                    )}
-                  </TouchableOpacity>
-                </View>
-              </LinearGradient>
+          <View style={styles.timeDivider} />
+
+          <View style={styles.timeCard}>
+            <View style={styles.timeIconCircle}>
+              <Clock size={18} color={COLORS.primary} />
             </View>
+            <Text style={styles.timeLabel}>SHIFT END</Text>
+            <Text style={styles.timeValue}>{shift.endTime}</Text>
           </View>
-          <View style={styles.statusBadge}>
-            <View style={styles.dot} />
-            <Text style={styles.statusText}>Ready to Sign In</Text>
-          </View>
+        </View>
 
-          {/* ── Updated Location Banner showing exact Lat/Lng ── */}
-          {/* <View style={styles.locationBanner}>
-            {locationLoading ? (
-              <ActivityIndicator size="small" color="#3b82f6" />
-            ) : (
-              <MapPin size={16} color={locationReady ? "#10b981" : "#ef4444"} />
-            )}
-            <Text
-              style={[
-                styles.locationText,
-                {
-                  color: locationReady
-                    ? "#10b981"
-                    : locationLoading
-                    ? "#3b82f6"
-                    : "#ef4444",
-                },
-              ]}
-            >
-              {locationLoading
-                ? "Fetching location..."
-                : locationReady
-                ? `Lat: ${latitude?.toFixed(5)}, Lng: ${longitude?.toFixed(5)}`
-                : locationError}
+        {/* Location status banner */}
+        {/* {locationLoading ? (
+          <View style={[styles.statusBanner, styles.infoBanner]}>
+            <ActivityIndicator size="small" color={COLORS.primary} />
+            <Text style={styles.statusBannerText}>
+              Fetching your current location…
             </Text>
-          </View> */}
+          </View>
+        ) : locationError ? (
+          <TouchableOpacity
+            style={[styles.statusBanner, styles.errorBanner]}
+            onPress={fetchLocation}
+            activeOpacity={0.8}
+          >
+            <MapPinOff size={18} color={COLORS.danger} />
+            <Text style={[styles.statusBannerText, { color: COLORS.danger }]}>
+              {locationError}
+            </Text>
+            <View style={styles.retryPill}>
+              <RefreshCw size={13} color={COLORS.danger} />
+              <Text style={styles.retryPillText}>Retry</Text>
+            </View>
+          </TouchableOpacity>
+        ) : (
+          <View style={[styles.statusBanner, styles.successBanner]}>
+            <MapPin size={18} color={COLORS.success} />
+            <Text style={[styles.statusBannerText, { color: COLORS.success }]}>
+              Location confirmed
+            </Text>
+            <Check size={16} color={COLORS.success} />
+          </View>
+        )} */}
 
-          {/* Event */}
-          {/* <View style={styles.fieldCard}>
-            <View style={styles.fieldIcon}>
-              <FileText size={20} color="#3b82f6" />
+        {/* Status + Notes */}
+        <View style={styles.mainContentRow}>
+          <View style={styles.leftPanel}>
+            <View style={styles.statusPanel}>
+              <View style={styles.panelIcon}>
+                <AlertCircle size={17} color={COLORS.primary} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.panelTitle}>Status</Text>
+                <Text style={styles.panelValue}>Ready to Sign-in</Text>
+              </View>
             </View>
-            <View style={styles.fieldContent}>
-              <Text style={styles.fieldLabel}>Event</Text>
-              <Text style={styles.fieldValue}>{shift.event}</Text>
-            </View>
-          </View> */}
 
-          {/* Address */}
-          <View style={styles.fieldCard}>
-            <View style={styles.fieldIcon}>
-              <MapPin size={20} color="#3b82f6" />
-            </View>
-            <View style={styles.fieldContent}>
-              <Text style={styles.addressText}>{shift.address}</Text>
+            <View style={styles.notesPanel}>
+              <View style={styles.panelIcon}>
+                <FileText size={17} color={COLORS.primary} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.panelTitle}>Site Description</Text>
+                <Text style={styles.notesText} numberOfLines={4}>
+                  {shift.notes || "No site description available."}
+                </Text>
+              </View>
             </View>
           </View>
 
-          {/* Tasks */}
-          {/* <View style={styles.fieldCard}>
-            <View style={styles.fieldIcon}>
-              <AlertCircle size={20} color="#3b82f6" />
-            </View>
-            <View style={styles.fieldContent}>
-              <Text style={styles.fieldLabel}>Tasks</Text>
-              <Text style={styles.fieldValue}>{shift.tasks}</Text>
-            </View>
-          </View> */}
+          {/* Selfie */}
+          <TouchableOpacity
+            style={styles.selfiePanel}
+            onPress={openCamera}
+            activeOpacity={0.9}
+          >
+            {selfieUri ? (
+              <>
+                <Image
+                  source={{ uri: selfieUri }}
+                  style={styles.selfieImage}
+                  resizeMode="cover"
+                />
+                <View style={styles.selfieOverlay}>
+                  <View style={styles.retakeBadge}>
+                    <RotateCcw size={13} color={COLORS.text} />
+                    <Text style={styles.retakeBadgeText}>Retake</Text>
+                  </View>
+                </View>
+                <View style={styles.selfieCheck}>
+                  <Check size={13} color={COLORS.background} />
+                </View>
+              </>
+            ) : (
+              <View style={styles.selfiePlaceholder}>
+                <View style={styles.cameraIconContainer}>
+                  <Camera size={30} color={COLORS.primary} />
+                </View>
+                <Text style={styles.selfieTitle}>Sign-In Selfie</Text>
+                <Text style={styles.selfieSubtitle}>Tap to take photo</Text>
+              </View>
+            )}
+          </TouchableOpacity>
+        </View>
 
-          {/* Notes */}
-          {shift.notes ? (
-            <View style={styles.fieldCard}>
-              <View style={styles.fieldIcon}>
-                <FileText size={20} color="#3b82f6" />
-              </View>
-              <View style={styles.fieldContent}>
-                <Text style={styles.fieldLabel}>Notes</Text>
-                <Text style={styles.fieldValue}>{shift.notes}</Text>
-              </View>
-            </View>
-          ) : null}
+        {/* Address */}
+        <View style={styles.addressCard}>
+          <View style={styles.panelIcon}>
+            <MapPin size={17} color={COLORS.primary} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.panelTitle}>Site Address</Text>
+            <Text style={styles.addressText}>{shift.address}</Text>
+          </View>
         </View>
       </ScrollView>
 
       {/* Start Button */}
-      <TouchableOpacity
-        style={[
-          styles.startButton,
-          { backgroundColor: canStart ? "#10b981" : "#9ca3af" },
-        ]}
-        activeOpacity={0.8}
-        disabled={!canStart || loading}
-        onPress={handleStartShift}
-      >
-        {loading ? (
-          <ActivityIndicator color="#fff" />
-        ) : (
-          <Text style={styles.startButtonText}>
-            {selfieUri
-              ? locationReady
-                ? "START SHIFT"
-                : "Waiting for location..."
-              : "Take Selfie First"}
-          </Text>
-        )}
-      </TouchableOpacity>
+      <View style={styles.startButtonWrap}>
+        <TouchableOpacity
+          style={[styles.startButton, !canStart && styles.startButtonDisabled]}
+          activeOpacity={0.85}
+          disabled={!canStart || loading}
+          onPress={handleStartShift}
+        >
+          {loading ? (
+            <ActivityIndicator color={COLORS.background} />
+          ) : (
+            <>
+              {canStart && <Check size={18} color={COLORS.background} />}
+              <Text
+                style={[
+                  styles.startButtonText,
+                  !canStart && styles.startButtonTextDisabled,
+                ]}
+              >
+                {!selfieUri
+                  ? "Take your selfie to continue"
+                  : !locationReady
+                  ? "Waiting for location…"
+                  : "Start Shift"}
+              </Text>
+            </>
+          )}
+        </TouchableOpacity>
+      </View>
     </SafeAreaView>
   );
 }
@@ -620,231 +515,348 @@ export default function SignInDetails({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#111111",
-    paddingTop: 20,
+    backgroundColor: COLORS.background,
+    paddingTop: 25,
   },
+
+  // Header
   header: {
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
-    paddingHorizontal: 15,
-    paddingVertical: 14,
-    marginHorizontal: 16,
-    borderRadius: 16,
-    marginBottom: 10,
+    paddingHorizontal: 16,
+    paddingTop: 30,
+    paddingBottom: 14,
+    // paddingVertical: 20,
+  },
+  backButton: {
+    width: 38,
+    height: 38,
+    borderRadius: 12,
+    backgroundColor: COLORS.card,
+    borderWidth: 1,
+    borderColor: COLORS.cardBorder,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  headerTextWrap: {
+    flex: 1,
+    marginLeft: 80,
+    marginTop: 10,
   },
   headerTitle: {
     fontSize: 18,
     fontWeight: "700",
     color: COLORS.text,
   },
-  screenTitle: {
-    fontSize: 18,
-    fontWeight: "600",
-    color: "#fff",
-  },
-  statusBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    alignSelf: "flex-start",
-    backgroundColor: "#dcfce7",
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 999,
-    marginBottom: 14,
-  },
-  siteCardInner: {
-    padding: 12,
-  },
-  dot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: "#22c55e",
-    marginRight: 8,
-  },
-  statusText: {
-    color: "#15803d",
-    fontWeight: "700",
+  headerSubtitle: {
     fontSize: 12,
+    color: COLORS.textMuted,
+    marginTop: 2,
   },
-  backBox: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    backgroundColor: "#ffffff",
+  headerSpacer: {
+    width: 38,
+  },
+
+  // Empty state
+  emptyStateWrap: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 40,
+  },
+  emptyIconCircle: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: COLORS.dangerBg,
     justifyContent: "center",
     alignItems: "center",
+    marginBottom: 16,
   },
+  emptyTitle: {
+    color: COLORS.text,
+    fontSize: 16,
+    fontWeight: "700",
+    marginBottom: 6,
+    textAlign: "center",
+  },
+  emptySubtitle: {
+    color: COLORS.textMuted,
+    fontSize: 13,
+    textAlign: "center",
+  },
+
   scrollContent: {
-    padding: 14,
-    paddingBottom: 140,
+    paddingHorizontal: 16,
+    paddingBottom: 130,
   },
-  mainCard: {
-    borderRadius: 28,
-  },
+
+  // Time row
   timeRow: {
     flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: COLORS.card,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: COLORS.cardBorder,
+    paddingVertical: 10,
     marginBottom: 10,
   },
   timeCard: {
     flex: 1,
-    backgroundColor: COLORS.card,
-    borderRadius: 24,
     alignItems: "center",
-    marginHorizontal: 5,
+  },
+  timeDivider: {
+    width: 1,
+    height: 44,
+    backgroundColor: COLORS.cardBorder,
+  },
+  timeIconCircle: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: COLORS.primaryGlow,
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 8,
   },
   timeLabel: {
-    fontSize: 11,
-    color: COLORS.textSecondary,
-    marginBottom: 2,
+    fontSize: 10,
+    color: COLORS.textMuted,
+    letterSpacing: 0.8,
+    marginBottom: 4,
+    fontWeight: "600",
   },
   timeValue: {
-    fontSize: 14,
+    fontSize: 17,
     fontWeight: "700",
     color: COLORS.text,
   },
-  iconCircle: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    backgroundColor: "#dbeafe",
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: 10,
-  },
-  halfCardcontainer: {
-    borderRadius: 18,
-  },
-  Cardcontainer: { borderRadius: 18, marginTop: 10 },
-  combinedRow: {
+
+  // Status banners
+  statusBanner: {
     flexDirection: "row",
-    marginBottom: 14,
+    alignItems: "center",
+    borderRadius: 16,
+    paddingVertical: 5,
+    paddingHorizontal: 14,
+    marginBottom: 10,
+    borderWidth: 1,
     gap: 10,
   },
-  leftColumn: {
+  infoBanner: {
+    backgroundColor: COLORS.primaryGlow,
+    borderColor: COLORS.primaryBorder,
+  },
+  successBanner: {
+    backgroundColor: COLORS.successBg,
+    borderColor: "rgba(52,211,153,0.3)",
+  },
+  errorBanner: {
+    backgroundColor: COLORS.dangerBg,
+    borderColor: "rgba(248,113,113,0.3)",
+  },
+  statusBannerText: {
     flex: 1,
+    fontSize: 13,
+    fontWeight: "600",
+    color: COLORS.primary,
   },
-  rightColumn: {
-    width: 140,
-  },
-  halfCard: {
+  retryPill: {
     flexDirection: "row",
     alignItems: "center",
+    gap: 4,
+    backgroundColor: "rgba(248,113,113,0.15)",
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 999,
+  },
+  retryPillText: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: COLORS.danger,
+  },
+
+  // Main content row
+  mainContentRow: {
+    flexDirection: "row",
+    gap: 12,
+    marginBottom: 14,
+  },
+  leftPanel: {
+    flex: 1,
+    gap: 10,
+  },
+  statusPanel: {
+    // height: 72,
     backgroundColor: COLORS.card,
     borderRadius: 18,
-    padding: 12,
+    padding: 14,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    borderWidth: 1,
+    borderColor: COLORS.cardBorder,
   },
-  smallIconCircle: {
-    width: 40,
-    height: 40,
-    borderRadius: 22,
-    backgroundColor: "#dbeafe",
+  notesPanel: {
+    // height: 92,
+    backgroundColor: COLORS.card,
+    borderRadius: 18,
+    padding: 14,
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 12,
+    borderWidth: 1,
+    borderColor: COLORS.cardBorder,
+  },
+  panelIcon: {
+    width: 34,
+    height: 34,
+    borderRadius: 12,
+    backgroundColor: COLORS.primaryGlow,
     justifyContent: "center",
     alignItems: "center",
-    marginRight: 9,
   },
-  smallTitle: {
-    fontSize: 12,
-    fontWeight: "600",
-    color: "#fff",
-  },
-  smallValue: {
+  panelTitle: {
     fontSize: 11,
+    color: COLORS.textMuted,
+    fontWeight: "700",
+    letterSpacing: 0.3,
+    marginBottom: 3,
+  },
+  panelValue: {
+    fontSize: 13,
     fontWeight: "600",
-    color: "#fff",
+    color: COLORS.text,
   },
-  selfieCard: {
-    flex: 1,
+  notesText: {
+    fontSize: 11.5,
+    color: COLORS.textSecondary,
+    lineHeight: 16,
+  },
+
+  // Selfie
+  selfiePanel: {
+    width: 158,
+    height: 164,
     backgroundColor: COLORS.card,
-    borderRadius: 22,
-    borderWidth: 2,
-    borderColor: "#dbeafe",
+    borderRadius: 20,
+    borderWidth: 1.5,
+    borderColor: COLORS.primaryBorder,
     borderStyle: "dashed",
-    padding: 12,
     overflow: "hidden",
-    minHeight: 140,
+    justifyContent: "center",
+    alignItems: "center",
   },
-  selfieIconCircle: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: "#e2e8f0",
+  selfiePlaceholder: {
+    alignItems: "center",
+    paddingHorizontal: 12,
+  },
+  cameraIconContainer: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: COLORS.primaryGlow,
     justifyContent: "center",
     alignItems: "center",
     marginBottom: 12,
   },
+  selfieTitle: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: COLORS.text,
+    textAlign: "center",
+  },
+  selfieSubtitle: {
+    fontSize: 11,
+    color: COLORS.textMuted,
+    marginTop: 3,
+    textAlign: "center",
+  },
   selfieImage: {
     width: "100%",
     height: "100%",
-    borderRadius: 18,
   },
-  locationBanner: {
+  selfieOverlay: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    paddingVertical: 8,
+    alignItems: "center",
+    backgroundColor: "rgba(3,5,8,0.55)",
+  },
+  retakeBadge: {
     flexDirection: "row",
     alignItems: "center",
+    gap: 5,
+  },
+  retakeBadgeText: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: COLORS.text,
+  },
+  selfieCheck: {
+    position: "absolute",
+    top: 8,
+    right: 8,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: COLORS.success,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  // Address
+  addressCard: {
     backgroundColor: COLORS.card,
     borderRadius: 18,
-    padding: 14,
-    marginBottom: 18,
+    padding: 16,
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 12,
     borderWidth: 1,
     borderColor: COLORS.cardBorder,
   },
-  locationText: {
-    fontSize: 13,
-    flex: 1,
-    color: COLORS.textSecondary,
-    marginLeft: 8,
-  },
-  fieldCard: {
-    flexDirection: "row",
-    backgroundColor: COLORS.card,
-    borderRadius: 22,
-    padding: 16,
-    marginBottom: 14,
-    alignItems: "flex-start",
-  },
-  fieldLabel: {
-    fontSize: 12,
-    fontWeight: "600",
-    marginBottom: 4,
-    color: COLORS.text,
-  },
-  fieldValue: {
-    fontSize: 11,
-    color: COLORS.textSecondary,
-    lineHeight: 22,
-  },
-  fieldIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    backgroundColor: "#e0ecff",
-    justifyContent: "center",
-    alignItems: "center",
-    marginRight: 10,
-  },
-  fieldContent: {
-    flex: 1,
-  },
   addressText: {
-    fontSize: 12,
-    color: "#0ea5a4",
-    fontWeight: "600",
-    lineHeight: 15,
+    fontSize: 12.5,
+    fontWeight: "500",
+    color: COLORS.textSecondary,
+    lineHeight: 19,
+  },
+
+  // Start button
+  startButtonWrap: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: Platform.OS === "ios" ? 28 : 18,
+    backgroundColor: COLORS.background,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.cardBorder,
   },
   startButton: {
-    position: "absolute",
-    bottom: 28,
-    left: 16,
-    right: 16,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
     paddingVertical: 16,
     borderRadius: 16,
-    alignItems: "center",
-    backgroundColor: COLORS.primaryDark,
+    backgroundColor: COLORS.primary,
+  },
+  startButtonDisabled: {
+    backgroundColor: COLORS.disabled,
   },
   startButtonText: {
-    color: "#ffffff",
-    fontSize: 17,
+    color: COLORS.background,
+    fontSize: 16,
     fontWeight: "700",
+  },
+  startButtonTextDisabled: {
+    color: COLORS.disabledText,
   },
 });

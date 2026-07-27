@@ -40,32 +40,31 @@ import LinearGradient from "react-native-linear-gradient";
 
 const LOGO = require("../assets/staffoo.png");
 
+// ── Same palette/tokens as the redesigned LoginScreen, so both auth
+// screens read as one visual system. ──
 const COLORS = {
-  // 🌿 Primary Brand
-  primary: "#0A7C6E",
-  // 0A7C6E
+  background: "#030508",
+  surface: "#07111A",
+  card: "#0D1421",
 
-  primaryDark: "#4FCBB3",
+  cardBorder: "rgba(98,97,97,0.35)",
 
-  // 🌙 Background system
-  background: "#001F3F",
-  surface: "#0B2A4A",
-  surface2: "#12243A",
+  primary: "#00A99D",
+  primaryDark: "#007E76",
+  primaryGlow: "rgba(0,169,157,0.25)",
 
-  // ✨ Glass Cards
-  card: "rgba(255,255,255,0.06)",
-  cardBorder: "rgba(255,255,255,0.08)",
+  text: "#FFFFFF",
+  textSecondary: "#B7C4D4",
+  textMuted: "#738295",
+  danger: "#F87171",
 
-  // ✍️ Text
-  text: "#a3a1a1",
-  textSecondary: "rgba(255, 254, 254, 0.75)",
-  textMuted: "rgba(51, 50, 50, 0.45)",
-
-  // Status
   success: "#0A7C6E",
   warning: "#F59E0B",
-  danger: "#EF4444",
 
+  heroBg1: "#0D1F2D",
+  heroBg2: "#061014",
+
+  surface2: "#12243A",
   border: "rgba(255,255,255,0.08)",
 };
 
@@ -82,7 +81,7 @@ Staffoo (operated by Capital Services Pty Ltd) is committed to protecting the pr
 
 1.2 Information Collection & GPS Tracking
 Customer Data: We collect business details, site addresses, contact information, and service requirements.
-Workforce Data: We collect identity documents, ABNs, State-specific Security Licenses, and certifications.
+Workforce Data: We collect identity documents, ABNs, State-specific Security Licences, and certifications.
 GPS Movement Tracking: To ensure site security, lone-worker safety, and proof-of-attendance, Staffoo tracks the GPS location of all staff and contractors. This tracking is active only while a user is "Clocked In" for a shift. By using the app, workforce users consent to real-time location monitoring for the duration of their work assignment.
 
 1.3 Payment Security (Stripe)
@@ -100,9 +99,9 @@ The "1-Hour Rule": In accordance with Australian security industry standards, if
 
 Part 3: Workforce Compliance (Staff & Contractors)
 3.1 National Licensing & Credentials
-Valid Credentials: All personnel must hold a current and valid Security License for the specific State or Territory in which they are performing services.
+Valid Credentials: All personnel must hold a current and valid Security Licence for the specific State or Territory in which they are performing services.
 ABN Requirements: Independent contractors must maintain a valid ABN and hold any required Business or Master Licensing relevant to their jurisdiction.
-Updates: It is the individual’s responsibility to ensure licenses and First Aid certifications are kept up to date within the Staffoo app.
+Updates: It is the individual’s responsibility to ensure licences and First Aid certifications are kept up to date within the Staffoo app.
 
 3.2 Safety and Reporting
 Personnel must comply with the Work Health and Safety (WHS) laws applicable to their location. Any incidents or hazards must be logged immediately via the Staffoo app for client transparency.
@@ -124,6 +123,7 @@ export default function SignUpScreen({ navigation }: { navigation: any }) {
   // const [userType, setUserType] = useState<'staff' | 'customer' | 'contractor'>(
   //   'customer',
   // );
+
   const [userType, setUserType] = useState<
     "staff" | "customer" | "contractor" | null
   >(null);
@@ -133,6 +133,8 @@ export default function SignUpScreen({ navigation }: { navigation: any }) {
   const fadeAnim = useRef(new Animated.Value(1)).current;
   const { width } = useWindowDimensions();
   const isTablet = width >= 768;
+  // Same responsive label/subtitle scaling as LoginScreen.
+  const scale = (size: number) => (width / 375) * size;
   const [showVerifyModal, setShowVerifyModal] = useState(false);
   const [registeredEmail, setRegisteredEmail] = useState("");
   // Form fields
@@ -144,6 +146,14 @@ export default function SignUpScreen({ navigation }: { navigation: any }) {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  // Focus states purely for the same "glow on focus" input treatment used
+  // on the redesigned LoginScreen — visual only, no effect on submission.
+  const [nameFocused, setNameFocused] = useState(false);
+  const [emailFocused, setEmailFocused] = useState(false);
+  const [passwordFocused, setPasswordFocused] = useState(false);
+  const [confirmFocused, setConfirmFocused] = useState(false);
+  const [phoneFocused, setPhoneFocused] = useState(false);
 
   useEffect(() => {
     if (Platform.OS === "android") {
@@ -181,19 +191,6 @@ export default function SignUpScreen({ navigation }: { navigation: any }) {
     if (newType === userType) return;
 
     setUserType(newType);
-
-    Animated.sequence([
-      Animated.timing(fadeAnim, {
-        toValue: 0.7,
-        duration: 100,
-        useNativeDriver: true,
-      }),
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 200,
-        useNativeDriver: true,
-      }),
-    ]).start();
   };
 
   const getDisplayName = (type: "staff" | "customer" | "contractor") => {
@@ -302,17 +299,16 @@ export default function SignUpScreen({ navigation }: { navigation: any }) {
       <TouchableOpacity
         style={[styles.radioOption, isSelected && styles.radioOptionSelected]}
         onPress={() => handleUserTypeChange(type)}
+        activeOpacity={0.85}
       >
-        {/* Icon on LEFT only */}
         <View style={styles.radioIconWrapper}>
           {isSelected ? (
-            <CheckCircle size={20} color={COLORS.primary} />
+            <CheckCircle size={18} color={COLORS.primary} />
           ) : (
-            <Circle size={20} color={COLORS.textMuted} />
+            <Circle size={18} color={COLORS.textMuted} />
           )}
         </View>
 
-        {/* Text in center */}
         <Text
           style={[styles.radioText, isSelected && styles.radioTextSelected]}
         >
@@ -324,187 +320,236 @@ export default function SignUpScreen({ navigation }: { navigation: any }) {
 
   return (
     <SafeAreaView style={styles.container}>
+      <StatusBar barStyle="light-content" backgroundColor={COLORS.background} />
+
+      {/* ── Decorative background artifacts — same treatment as
+          LoginScreen: purely visual, sit behind everything, never
+          intercept touches. ── */}
+      <View style={StyleSheet.absoluteFill} pointerEvents="none">
+        <View style={styles.orbTopRight}>
+          <LinearGradient
+            colors={[COLORS.primaryGlow, "transparent"]}
+            start={{ x: 0.25, y: 0.15 }}
+            end={{ x: 1, y: 1 }}
+            style={StyleSheet.absoluteFill}
+          />
+        </View>
+        <View style={styles.orbBottomLeft}>
+          <LinearGradient
+            colors={[COLORS.primaryGlow, "transparent"]}
+            start={{ x: 0.7, y: 0.8 }}
+            end={{ x: 0, y: 0 }}
+            style={StyleSheet.absoluteFill}
+          />
+        </View>
+        <View style={styles.ringOutline} />
+        <View style={styles.dotAccent1} />
+        <View style={styles.dotAccent2} />
+        <View style={styles.dotAccent3} />
+      </View>
+
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
       >
         <ScrollView
           contentContainerStyle={{
-            paddingHorizontal: isTablet ? width * 0.2 : 24,
+            paddingHorizontal: isTablet ? width * 0.25 : 24,
+            paddingBottom: 24,
           }}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
         >
-          <View style={styles.content}>
-            <View style={styles.logoContainer}>
-              <Image source={LOGO} style={styles.logo} resizeMode="contain" />
-              <Text style={styles.subtitle}>
-                Create your account to get started
-              </Text>
+          <View style={styles.logoContainer}>
+            <View style={styles.logoGlow} pointerEvents="none" />
+            <Image
+              source={LOGO}
+              resizeMode="contain"
+              style={{ width: width * 0.6, height: width * 0.17 }}
+            />
+            <Text style={[styles.subtitle, { fontSize: scale(14) }]}>
+              Create your account to get started.
+            </Text>
+          </View>
+
+          <Animated.View style={[styles.formCard, { opacity: fadeAnim }]}>
+            {/* Name */}
+            <Text style={[styles.label, { fontSize: scale(12) }]}>
+              Full Name <Text style={{ color: "red" }}>*</Text>
+            </Text>
+            <View
+              style={[
+                styles.inputContainer,
+                nameFocused && styles.inputContainerFocused,
+              ]}
+            >
+              <View style={styles.inputInner}>
+                <View style={styles.inputIconBadge}>
+                  <UserRound size={16} color={COLORS.primary} />
+                </View>
+                <TextInput
+                  style={[styles.input, { color: COLORS.text }]}
+                  placeholder="Full name"
+                  placeholderTextColor={COLORS.textMuted}
+                  value={name}
+                  onFocus={() => setNameFocused(true)}
+                  onBlur={() => setNameFocused(false)}
+                  onChangeText={setName}
+                />
+              </View>
             </View>
 
-            <Animated.View style={{ opacity: fadeAnim }}>
-              {/* Name */}
-              <Text style={styles.label}>Full Name *</Text>
-              <LinearGradient
-                colors={[
-                  "rgba(233, 231, 231, 0.87)",
-                  "rgba(233, 231, 231, 0.87)",
-                  "rgba(233, 231, 231, 0.87)",
-                ]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.gradientInput}
-              >
-                <View style={styles.inputInner}>
-                  <UserRound size={22} color={COLORS.textMuted} />
-                  <TextInput
-                    style={styles.input}
-                    placeholder="Full name"
-                    placeholderTextColor={COLORS.textMuted}
-                    value={name}
-                    onChangeText={setName}
-                  />
+            {/* Email */}
+            <Text style={[styles.label, { fontSize: scale(12) }]}>
+              Email Address <Text style={{ color: "red" }}>*</Text>
+            </Text>
+            <View
+              style={[
+                styles.inputContainer,
+                emailFocused && styles.inputContainerFocused,
+              ]}
+            >
+              <View style={styles.inputInner}>
+                <View style={styles.inputIconBadge}>
+                  <Mail size={16} color={COLORS.primary} />
                 </View>
-              </LinearGradient>
-
-              <Text style={styles.label}>Email Address *</Text>
-              <LinearGradient
-                colors={[
-                  "rgba(233, 231, 231, 0.87)",
-                  "rgba(233, 231, 231, 0.87)",
-                  "rgba(233, 231, 231, 0.87)",
-                ]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.gradientInput}
-              >
-                <View style={styles.inputInner}>
-                  <Mail size={22} color={COLORS.textMuted} />
-                  <TextInput
-                    style={styles.input}
-                    placeholder="your@email.com"
-                    placeholderTextColor={COLORS.textMuted}
-                    value={email}
-                    onChangeText={setEmail}
-                    keyboardType="email-address"
-                    autoCapitalize="none"
-                  />
-                </View>
-              </LinearGradient>
-              {/* Password */}
-              <Text style={styles.label}>Password *</Text>
-              <LinearGradient
-                colors={[
-                  "rgba(233, 231, 231, 0.87)",
-                  "rgba(233, 231, 231, 0.87)",
-                  "rgba(233, 231, 231, 0.87)",
-                ]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.gradientInput}
-              >
-                <View style={styles.inputInner}>
-                  <LockIcon size={22} color={COLORS.textMuted} />
-                  <TextInput
-                    style={styles.input}
-                    placeholder="At least 8 characters"
-                    placeholderTextColor={COLORS.textMuted}
-                    value={password}
-                    onChangeText={setPassword}
-                    secureTextEntry={!showPassword}
-                  />
-                  <TouchableOpacity
-                    onPress={() => setShowPassword(!showPassword)}
-                  >
-                    {showPassword ? (
-                      <Eye size={22} color={COLORS.textMuted} />
-                    ) : (
-                      <EyeOff size={22} color={COLORS.textMuted} />
-                    )}
-                  </TouchableOpacity>
-                </View>
-              </LinearGradient>
-
-              {password.length > 0 && !passwordValidation.valid && (
-                <Text style={styles.passwordError}>
-                  {passwordValidation.message}
-                </Text>
-              )}
-
-              {/* Confirm Password */}
-              <Text style={styles.label}>Confirm Password *</Text>
-              <LinearGradient
-                colors={[
-                  "rgba(233, 231, 231, 0.87)",
-                  "rgba(233, 231, 231, 0.87)",
-                  "rgba(233, 231, 231, 0.87)",
-                ]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.gradientInput}
-              >
-                <View style={styles.inputInner}>
-                  <LockIcon size={22} color={COLORS.textMuted} />
-                  <TextInput
-                    style={styles.input}
-                    placeholder="Confirm password"
-                    placeholderTextColor={COLORS.textMuted}
-                    value={confirmPassword}
-                    onChangeText={setConfirmPassword}
-                    secureTextEntry={!showConfirmPassword}
-                  />
-                  <TouchableOpacity
-                    onPress={() => setShowConfirmPassword(!showConfirmPassword)}
-                  >
-                    {showConfirmPassword ? (
-                      <Eye size={22} color={COLORS.textMuted} />
-                    ) : (
-                      <EyeOff size={22} color={COLORS.textMuted} />
-                    )}
-                  </TouchableOpacity>
-                </View>
-              </LinearGradient>
-
-              {/* Phone Number */}
-              <Text style={styles.label}>Phone Number (Optional)</Text>
-              <LinearGradient
-                colors={[
-                  "rgba(233, 231, 231, 0.87)",
-                  "rgba(233, 231, 231, 0.87)",
-                  "rgba(233, 231, 231, 0.87)",
-                ]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.gradientInput}
-              >
-                <View style={styles.inputInner}>
-                  <Phone size={22} color={COLORS.textMuted} />
-                  <TextInput
-                    style={styles.input}
-                    placeholder="Phone number"
-                    placeholderTextColor={COLORS.textMuted}
-                    value={phone}
-                    onChangeText={setPhone}
-                    keyboardType="phone-pad"
-                  />
-                </View>
-              </LinearGradient>
-
-              {/* User Type Selection */}
-              {/* User Type Selection */}
-              <Text style={styles.label}>Account Type *</Text>
-              <View style={styles.radioContainer}>
-                <View style={styles.radioRow}>
-                  <UserTypeOption type="customer" />
-                  <UserTypeOption type="staff" />
-                  <UserTypeOption type="contractor" />
-                </View>
+                <TextInput
+                  style={[styles.input, { color: COLORS.text }]}
+                  placeholder="your@email.com"
+                  placeholderTextColor={COLORS.textMuted}
+                  value={email}
+                  onFocus={() => setEmailFocused(true)}
+                  onBlur={() => setEmailFocused(false)}
+                  onChangeText={setEmail}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                />
               </View>
-            </Animated.View>
+            </View>
 
-            {/* Privacy Policy Checkbox */}
+            {/* Password */}
+            <Text style={[styles.label, { fontSize: scale(12) }]}>
+              Password <Text style={{ color: "red" }}>*</Text>
+            </Text>
+            <View
+              style={[
+                styles.inputContainer,
+                passwordFocused && styles.inputContainerFocused,
+              ]}
+            >
+              <View style={styles.inputInner}>
+                <View style={styles.inputIconBadge}>
+                  <LockIcon size={16} color={COLORS.primary} />
+                </View>
+                <TextInput
+                  style={[styles.input, { color: COLORS.text }]}
+                  placeholder="At least 8 characters"
+                  placeholderTextColor={COLORS.textMuted}
+                  value={password}
+                  onFocus={() => setPasswordFocused(true)}
+                  onBlur={() => setPasswordFocused(false)}
+                  onChangeText={setPassword}
+                  secureTextEntry={!showPassword}
+                />
+                <TouchableOpacity
+                  onPress={() => setShowPassword(!showPassword)}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                >
+                  {showPassword ? (
+                    <Eye size={22} color="#6B7280" />
+                  ) : (
+                    <EyeOff size={22} color="#6B7280" />
+                  )}
+                </TouchableOpacity>
+              </View>
+            </View>
+            {password.length > 0 && !passwordValidation.valid && (
+              <Text style={styles.passwordError}>
+                {passwordValidation.message}
+              </Text>
+            )}
+
+            {/* Confirm Password */}
+            <Text style={[styles.label, { fontSize: scale(12) }]}>
+              Confirm Password <Text style={{ color: "red" }}>*</Text>
+            </Text>
+            <View
+              style={[
+                styles.inputContainer,
+                confirmFocused && styles.inputContainerFocused,
+              ]}
+            >
+              <View style={styles.inputInner}>
+                <View style={styles.inputIconBadge}>
+                  <LockIcon size={16} color={COLORS.primary} />
+                </View>
+                <TextInput
+                  style={[styles.input, { color: COLORS.text }]}
+                  placeholder="Confirm password"
+                  placeholderTextColor={COLORS.textMuted}
+                  value={confirmPassword}
+                  onFocus={() => setConfirmFocused(true)}
+                  onBlur={() => setConfirmFocused(false)}
+                  onChangeText={setConfirmPassword}
+                  secureTextEntry={!showConfirmPassword}
+                />
+                <TouchableOpacity
+                  onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                >
+                  {showConfirmPassword ? (
+                    <Eye size={22} color="#6B7280" />
+                  ) : (
+                    <EyeOff size={22} color="#6B7280" />
+                  )}
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            {/* Phone */}
+            <Text style={[styles.label, { fontSize: scale(12) }]}>
+              Phone Number (Optional)
+            </Text>
+            <View
+              style={[
+                styles.inputContainer,
+                phoneFocused && styles.inputContainerFocused,
+              ]}
+            >
+              <View style={styles.inputInner}>
+                <View style={styles.inputIconBadge}>
+                  <Phone size={16} color={COLORS.primary} />
+                </View>
+                <TextInput
+                  style={[styles.input, { color: COLORS.text }]}
+                  placeholder="Phone number"
+                  placeholderTextColor={COLORS.textMuted}
+                  value={phone}
+                  onFocus={() => setPhoneFocused(true)}
+                  onBlur={() => setPhoneFocused(false)}
+                  onChangeText={setPhone}
+                  keyboardType="phone-pad"
+                />
+              </View>
+            </View>
+
+            {/* Account Type */}
+            <Text style={[styles.label, { fontSize: scale(12) }]}>
+              Account Type <Text style={{ color: "red" }}>*</Text>
+            </Text>
+            <View style={styles.radioContainer}>
+              <View style={styles.radioRow}>
+                <UserTypeOption type="customer" />
+                <UserTypeOption type="staff" />
+                <UserTypeOption type="contractor" />
+              </View>
+            </View>
+
+            {/* Privacy Policy */}
             <TouchableOpacity
               style={styles.policyContainer}
               onPress={() => setAcceptedPolicy(!acceptedPolicy)}
+              activeOpacity={0.85}
             >
               <View
                 style={[
@@ -531,29 +576,37 @@ export default function SignUpScreen({ navigation }: { navigation: any }) {
             <TouchableOpacity
               style={[
                 styles.signUpButton,
-                (loading || !acceptedPolicy) && styles.buttonDisabled,
+                (loading || !acceptedPolicy) && { opacity: 0.7 },
               ]}
               onPress={handleSignUp}
               disabled={loading || !acceptedPolicy}
+              activeOpacity={0.88}
             >
-              {loading ? (
-                <ActivityIndicator color={COLORS.background} />
-              ) : (
-                <Text style={styles.signUpText}>Create Account</Text>
-              )}
+              <LinearGradient
+                colors={[COLORS.primary, COLORS.primaryDark]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={styles.signUpGradient}
+              >
+                {loading ? (
+                  <ActivityIndicator color="#fff" />
+                ) : (
+                  <Text style={styles.signUpText}>Create Account</Text>
+                )}
+              </LinearGradient>
             </TouchableOpacity>
+          </Animated.View>
 
-            <View style={styles.footer}>
-              <Text style={styles.footerText}>Already have an account? </Text>
-              <TouchableOpacity onPress={() => navigation.navigate("Login")}>
-                <Text style={styles.loginLink}>Login</Text>
-              </TouchableOpacity>
-            </View>
+          <View style={styles.footer}>
+            <Text style={{ color: "#fff" }}>Already have an account? </Text>
+            <TouchableOpacity onPress={() => navigation.navigate("Login")}>
+              <Text style={styles.loginLink}>Login</Text>
+            </TouchableOpacity>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
 
-      {/* Privacy Policy Modal */}
+      {/* Privacy Policy Modal — unchanged */}
       <Modal
         visible={showPolicyModal}
         animationType="slide"
@@ -627,7 +680,8 @@ export default function SignUpScreen({ navigation }: { navigation: any }) {
           </View>
         </SafeAreaView>
       </Modal>
-      {/* Email Verification Modal */}
+
+      {/* Email Verification Modal — unchanged */}
       <RNModal
         visible={showVerifyModal}
         transparent={true}
@@ -678,11 +732,145 @@ export default function SignUpScreen({ navigation }: { navigation: any }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    // backgroundColor: COLORS.background,
-    backgroundColor: "#111111",
-    paddingTop: StatusBar.currentHeight || 15,
+    backgroundColor: COLORS.background,
+    paddingTop: Platform.OS === "android" ? StatusBar.currentHeight : 0,
+    position: "relative",
+    overflow: "hidden",
   },
 
+  // ── Decorative background artifacts (same palette/positions as
+  // LoginScreen, purely visual) ──
+  orbTopRight: {
+    position: "absolute",
+    top: -90,
+    right: -70,
+    width: 260,
+    height: 260,
+    borderRadius: 130,
+    overflow: "hidden",
+  },
+  orbBottomLeft: {
+    position: "absolute",
+    bottom: -110,
+    left: -90,
+    width: 300,
+    height: 300,
+    borderRadius: 150,
+    overflow: "hidden",
+  },
+  ringOutline: {
+    position: "absolute",
+    top: "36%",
+    right: -46,
+    width: 150,
+    height: 150,
+    borderRadius: 75,
+    borderWidth: 1,
+    borderColor: "rgba(0,169,157,0.18)",
+  },
+  dotAccent1: {
+    position: "absolute",
+    top: 90,
+    left: 28,
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: COLORS.primary,
+    opacity: 0.45,
+  },
+  dotAccent2: {
+    position: "absolute",
+    top: 160,
+    left: 60,
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: COLORS.primary,
+    opacity: 0.3,
+  },
+  dotAccent3: {
+    position: "absolute",
+    bottom: 140,
+    right: 40,
+    width: 5,
+    height: 5,
+    borderRadius: 2.5,
+    backgroundColor: COLORS.primary,
+    opacity: 0.35,
+  },
+
+  logoContainer: {
+    marginVertical: 32,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  logoGlow: {
+    position: "absolute",
+    top: -30,
+    alignSelf: "center",
+    width: 220,
+    height: 220,
+    borderRadius: 110,
+    backgroundColor: COLORS.primaryGlow,
+    opacity: 0.35,
+  },
+  subtitle: {
+    color: COLORS.textSecondary,
+    marginTop: 10,
+    textAlign: "center",
+  },
+
+  // ── Floating card that groups the whole form, matching LoginScreen ──
+  formCard: {
+    backgroundColor: COLORS.card,
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: COLORS.cardBorder,
+    padding: 20,
+    paddingTop: 24,
+    shadowColor: COLORS.primary,
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.15,
+    shadowRadius: 24,
+    elevation: 8,
+  },
+
+  label: {
+    fontWeight: "600",
+    color: COLORS.text,
+    marginBottom: 5,
+  },
+  inputContainer: {
+    backgroundColor: COLORS.surface,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: COLORS.cardBorder,
+    marginBottom: 16,
+  },
+  inputContainerFocused: {
+    borderColor: COLORS.primary,
+    backgroundColor: COLORS.heroBg1,
+  },
+  inputInner: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 12,
+    height: 47,
+  },
+  inputIconBadge: {
+    width: 28,
+    height: 28,
+    borderRadius: 9,
+    backgroundColor: COLORS.primaryGlow,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  input: {
+    flex: 1,
+    marginLeft: 10,
+    fontSize: 14,
+    color: COLORS.text,
+  },
   passwordError: {
     color: COLORS.danger,
     fontSize: 12,
@@ -691,154 +879,104 @@ const styles = StyleSheet.create({
     marginLeft: 4,
   },
 
-  content: {
-    paddingHorizontal: 2,
-    paddingBottom: 40,
-  },
-
-  logoContainer: {
-    marginVertical: 24,
-    alignItems: "center",
-  },
-
-  logo: {
-    width: 170,
-    height: 58,
-  },
-
-  subtitle: {
-    color: COLORS.textSecondary,
-    fontSize: 14,
-    marginTop: 10,
-    textAlign: "center",
-  },
-
-  gradientInput: {
-    width: "100%",
-    borderRadius: 12,
-    marginBottom: 16,
-  },
-
-  inputInner: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 16,
-    height: 45,
-    width: "100%",
-  },
-
-  input: {
+  // ── Account type tiles — same card language as the inputs, stacked
+  // icon-over-label so longer labels ("Resource Partner") wrap cleanly. ──
+  radioContainer: { marginBottom: 18 },
+  radioRow: { flexDirection: "row", gap: 10 },
+  radioOption: {
     flex: 1,
-    fontSize: 16,
-    color: "#111111",
-    marginLeft: 12,
+    flexDirection: "column",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    backgroundColor: COLORS.surface,
+    borderWidth: 1,
+    borderColor: COLORS.cardBorder,
+    borderRadius: 14,
+    paddingVertical: 14,
+    paddingHorizontal: 6,
+    minHeight: 76,
   },
-
-  passwordHint: {
-    color: COLORS.textMuted,
+  radioOptionSelected: {
+    borderColor: COLORS.primary,
+    backgroundColor: COLORS.heroBg1,
+  },
+  radioIconWrapper: { alignItems: "center", justifyContent: "center" },
+  radioText: {
     fontSize: 12,
-    marginTop: -8,
-    marginBottom: 14,
-    marginLeft: 4,
-    lineHeight: 18,
-  },
-
-  // ================= LABEL =================
-
-  label: {
-    fontSize: 14,
-    color: COLORS.text,
-    marginBottom: 7,
+    color: COLORS.textSecondary,
     fontWeight: "600",
-    marginLeft: 2,
+    textAlign: "center",
+    minHeight: 34, // reserve space for 2 lines
+    lineHeight: 16,
+  },
+  radioTextSelected: {
+    color: COLORS.primary,
+    fontWeight: "800",
   },
 
-  // ================= POLICY =================
-
+  // ── Privacy policy row ──
   policyContainer: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 22,
-    paddingHorizontal: 4,
-    marginTop: 14,
+    marginBottom: 18,
   },
-
   checkbox: {
     width: 22,
     height: 22,
     borderRadius: 7,
     borderWidth: 2,
     borderColor: COLORS.primary,
-    marginRight: 12,
+    marginRight: 10,
     justifyContent: "center",
     alignItems: "center",
   },
-
-  checkboxChecked: {
-    backgroundColor: COLORS.primary,
-  },
-
+  checkboxChecked: { backgroundColor: COLORS.primary },
   policyText: {
-    fontSize: 14.5,
+    fontSize: 13,
     color: COLORS.textSecondary,
     flex: 1,
-    lineHeight: 22,
+    lineHeight: 19,
   },
-
   policyLink: {
     color: COLORS.primary,
     fontWeight: "700",
   },
 
-  // ================= BUTTON =================
-
+  // ── Primary CTA — same gradient pill as LoginScreen's "Sign in" ──
   signUpButton: {
-    backgroundColor: "#0A7C6E",
     borderRadius: 50,
-    height: 50,
+    height: 52,
+    overflow: "hidden",
+    shadowColor: COLORS.primary,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.35,
+    shadowRadius: 12,
+    elevation: 6,
+  },
+  signUpGradient: {
+    flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    marginBottom: 24,
-    shadowColor: COLORS.primary,
-    shadowOffset: {
-      width: 0,
-      height: 10,
-    },
-    shadowOpacity: 0.15,
-    shadowRadius: 14,
-    elevation: 5,
   },
-
-  buttonDisabled: {
-    opacity: 0.45,
-  },
-
   signUpText: {
-    color: "#ffff",
-    fontSize: 17,
-    fontWeight: "600",
+    color: "#fff",
+    fontWeight: "800",
+    fontSize: 16,
   },
-
-  // ================= FOOTER =================
 
   footer: {
     flexDirection: "row",
     justifyContent: "center",
-    marginBottom: 30,
+    marginTop: 24,
+    paddingBottom: 30,
   },
-
-  footerText: {
-    color: COLORS.textSecondary,
-    fontSize: 14,
-  },
-
   loginLink: {
     color: COLORS.primary,
-    fontWeight: "700",
-    fontSize: 14,
+    fontWeight: "600",
   },
 
-  // ================= MODAL =================
+  // ================= MODALS (unchanged) =================
 
   modalContainer: {
     flex: 1,
@@ -946,7 +1084,7 @@ const styles = StyleSheet.create({
 
   acceptBtn: {
     backgroundColor: COLORS.primary,
-    paddingVertical: 18,
+    paddingVertical: 14,
     borderRadius: 18,
     alignItems: "center",
     flexDirection: "row",
@@ -1049,53 +1187,5 @@ const styles = StyleSheet.create({
     color: "#475569",
     fontSize: 16,
     fontWeight: "600",
-  },
-
-  // ================= RADIO =================
-  radioContainer: {
-    marginBottom: 5,
-  },
-
-  radioRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    gap: 14,
-  },
-
-  radioOption: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: COLORS.card,
-    borderWidth: 1.5,
-    borderColor: COLORS.border,
-    borderRadius: 10,
-    paddingVertical: 3,
-    paddingHorizontal: 5,
-    // minHeight: 20,
-  },
-
-  radioOptionSelected: {
-    borderColor: COLORS.primary,
-    backgroundColor: "rgba(137,231,208,0.12)",
-  },
-
-  radioIconWrapper: {
-    marginRight: 0,
-    width: 20,
-    alignItems: "center",
-  },
-
-  radioText: {
-    fontSize: 13, // ← Increased text size
-    fontWeight: "300",
-    color: COLORS.text,
-    flex: 1,
-    textAlign: "center", // Text centered
-  },
-
-  radioTextSelected: {
-    color: COLORS.primary,
-    fontWeight: "700",
   },
 });

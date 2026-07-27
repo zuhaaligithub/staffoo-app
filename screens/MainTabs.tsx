@@ -17,6 +17,7 @@ import {
   MessageCircle,
   User,
   Calendar,
+  CheckCircle,
   Lock,
 } from "lucide-react-native";
 import { Keyboard } from "react-native";
@@ -24,14 +25,16 @@ import HomeScreen from "./HomeScreen";
 import ApplicationsScreen from "./ApplicationsScreen";
 import MessageScreen from "./MessageScreen";
 import ProfileScreen from "./ProfileScreen";
-import StaffShifts from "./StaffShifts";
-import { getUserProfile } from "../services/authApi";
+import AvailableJobsScreen from "./AvailableJobsScreen";
+import AcceptedJobsScreen from "./AcceptedJobsScreen";
+import { BASE_URL, getUserProfile } from "../services/authApi";
 import { useFocusEffect } from "@react-navigation/native";
 import CreateJobScreen from "./CreateJobScreen";
 import ReviewConfirmScreen from "./ReviewConfirmScreen";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { Platform, Easing } from "react-native";
+import axios from "axios";
 
 const Tab = createBottomTabNavigator();
 const COLORS = {
@@ -54,7 +57,12 @@ const COLORS = {
   heroBg2: "#061014",
 };
 
-function CustomTabBar({ state, navigation, userData }: any) {
+function CustomTabBar({
+  state,
+  navigation,
+  userData,
+  availableJobsCount,
+}: any) {
   const insets = useSafeAreaInsets();
   const translateY = React.useRef(new Animated.Value(0)).current;
   const opacity = React.useRef(new Animated.Value(1)).current;
@@ -105,6 +113,10 @@ function CustomTabBar({ state, navigation, userData }: any) {
   }, []);
 
   const userType = userData?.user_type ?? null;
+  // "staff" covers two different people: Staffoo's own staff (account id 1)
+  // and a contractor's guards (any other staff account). Only the former
+  // gets the "Available Jobs" tab, same as contractors.
+  const isStaffooStaff = Number(userData?.user_id) === 1;
   const isActive = userData?.is_active === true;
   const isFullyAccessible = userType === "customer" ? true : isActive;
 
@@ -118,35 +130,69 @@ function CustomTabBar({ state, navigation, userData }: any) {
       Alert.alert(
         "Account Not Active",
         "Your account must be active to access this section.",
-        [
-          {
-            text: "Go to Profile",
-            onPress: () => navigation.navigate("Profile"),
-          },
-          { text: "OK", style: "cancel" },
-        ],
+        [{ text: "OK" }],
       );
       return;
     }
     if (!isFocused) navigation.navigate(routeName);
   };
 
+  // "AcceptedJobs" and "StaffShifts" are separate Tab.Screens rendering
+  // AcceptedJobsScreen and AvailableJobsScreen respectively (both built on
+  // the shared useStaffShiftsController hook). "Applications" (My Jobs) is still
+  // registered too, but only customers get a visible tab button for it;
+  // the other three types reach it from the "Job History" box on Profile.
+  const customerTabs = [
+    { name: "Home", label: "Home", Icon: Home },
+    { name: "Applications", label: "My Jobs", Icon: FileText },
+    { name: "CreateJob", label: "", Icon: Plus, isAdd: true },
+    { name: "Messages", label: "Messages", Icon: MessageCircle },
+    { name: "Profile", label: "Profile", Icon: User },
+  ];
+
+  const staffooStaffTabs = [
+    { name: "Home", label: "Home", Icon: Home },
+    { name: "AcceptedJobs", label: "Accepted Job", Icon: CheckCircle },
+    {
+      name: "StaffShifts",
+      label: "Available Jobs",
+      badge: availableJobsCount,
+      Icon: Calendar,
+    },
+    { name: "Messages", label: "Messages", Icon: MessageCircle },
+    { name: "Profile", label: "Profile", Icon: User },
+  ];
+
+  const contractorTabs = [
+    { name: "Home", label: "Home", Icon: Home },
+    { name: "AcceptedJobs", label: "Accepted Jobs", Icon: CheckCircle },
+    {
+      name: "StaffShifts",
+      label: "Available Jobs",
+      badge: availableJobsCount,
+      Icon: Calendar,
+    },
+    { name: "Messages", label: "Messages", Icon: MessageCircle },
+    { name: "Profile", label: "Profile", Icon: User },
+  ];
+
+  const contractorGuardTabs = [
+    { name: "Home", label: "Home", Icon: Home },
+    { name: "AcceptedJobs", label: "Assigned Job", Icon: CheckCircle },
+    { name: "Messages", label: "Messages", Icon: MessageCircle },
+    { name: "Profile", label: "Profile", Icon: User },
+  ];
+
   const visibleTabs =
     userType === "customer"
-      ? [
-          { name: "Home", label: "Home", Icon: Home },
-          { name: "Applications", label: "My Jobs", Icon: FileText },
-          { name: "CreateJob", label: "", Icon: Plus, isAdd: true },
-          { name: "Messages", label: "Messages", Icon: MessageCircle },
-          { name: "Profile", label: "Profile", Icon: User },
-        ]
-      : [
-          { name: "Home", label: "Home", Icon: Home },
-          { name: "Applications", label: "My Jobs", Icon: FileText },
-          { name: "StaffShifts", label: "Shifts", Icon: Calendar },
-          { name: "Messages", label: "Messages", Icon: MessageCircle },
-          { name: "Profile", label: "Profile", Icon: User },
-        ];
+      ? customerTabs
+      : userType === "contractor"
+      ? contractorTabs
+      : userType === "staff" && isStaffooStaff
+      ? staffooStaffTabs
+      : userType === "staff"
+      ? contractorGuardTabs
+      : customerTabs; // fallback while userType is unrecognised
 
   const currentRouteName = state.routes[state.index]?.name;
 
@@ -198,6 +244,15 @@ function CustomTabBar({ state, navigation, userData }: any) {
                 ]}
               >
                 <tab.Icon size={20} color={iconColor} />
+
+                {tab.badge > 0 && (
+                  <View style={styles.badge}>
+                    <Text style={styles.badgeText}>
+                      {tab.badge > 99 ? "99+" : tab.badge}
+                    </Text>
+                  </View>
+                )}
+
                 {!accessible && tab.name !== "Profile" && (
                   <Lock size={11} color="#ef4444" style={styles.lockIcon} />
                 )}
@@ -212,191 +267,26 @@ function CustomTabBar({ state, navigation, userData }: any) {
     </Animated.View>
   );
 }
-
-// function CustomTabBar({ state, navigation, userData }: any) {
-//   const insets = useSafeAreaInsets();
-
-//   const translateY = React.useRef(new Animated.Value(0)).current;
-//   const opacity = React.useRef(new Animated.Value(1)).current;
-//   const [hidden, setHidden] = useState(false);
-
-//   useEffect(() => {
-//     const showEvent =
-//       Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow";
-
-//     const hideEvent =
-//       Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide";
-
-//     const showSub = Keyboard.addListener(showEvent, () => {
-//       setHidden(true);
-
-//       Animated.parallel([
-//         Animated.timing(translateY, {
-//           toValue: 120,
-//           duration: 180,
-//           easing: Easing.out(Easing.ease),
-//           useNativeDriver: true,
-//         }),
-//         Animated.timing(opacity, {
-//           toValue: 0,
-//           duration: 120,
-//           useNativeDriver: true,
-//         }),
-//       ]).start();
-//     });
-
-//     const hideSub = Keyboard.addListener(hideEvent, () => {
-//       Animated.parallel([
-//         Animated.timing(translateY, {
-//           toValue: 0,
-//           duration: 180,
-//           easing: Easing.out(Easing.ease),
-//           useNativeDriver: true,
-//         }),
-//         Animated.timing(opacity, {
-//           toValue: 1,
-//           duration: 180,
-//           useNativeDriver: true,
-//         }),
-//       ]).start(() => {
-//         setHidden(false);
-//       });
-//     });
-
-//     return () => {
-//       showSub.remove();
-//       hideSub.remove();
-//     };
-//   }, []);
-
-//   const userType = userData?.user_type ?? null;
-//   const isActive = userData?.is_active === true;
-//   const isFullyAccessible = userType === "customer" ? true : isActive;
-
-//   const canAccess = (routeName: string) => {
-//     if (routeName === "Profile") return true;
-//     return isFullyAccessible;
-//   };
-
-//   const handlePress = (routeName: string, isFocused: boolean) => {
-//     if (!canAccess(routeName)) {
-//       Alert.alert(
-//         "Account Not Active",
-//         "Your account must be active to access this section.",
-//         [
-//           {
-//             text: "Go to Profile",
-//             onPress: () => navigation.navigate("Profile"),
-//           },
-//           { text: "OK", style: "cancel" },
-//         ],
-//       );
-//       return;
-//     }
-
-//     if (!isFocused) {
-//       navigation.navigate(routeName);
-//     }
-//   };
-
-//   const visibleTabs =
-//     userType === "customer"
-//       ? [
-//           { name: "Home", label: "Home", Icon: Home },
-//           { name: "Applications", label: "My Jobs", Icon: FileText },
-//           { name: "CreateJob", label: "Post Job", Icon: Plus, isAdd: true },
-//           { name: "Messages", label: "Messages", Icon: MessageCircle },
-//           { name: "Profile", label: "Profile", Icon: User },
-//         ]
-//       : [
-//           { name: "Home", label: "Home", Icon: Home },
-//           { name: "Applications", label: "My Jobs", Icon: FileText },
-//           { name: "StaffShifts", label: "Shifts", Icon: Calendar },
-//           { name: "Messages", label: "Messages", Icon: MessageCircle },
-//           { name: "Profile", label: "Profile", Icon: User },
-//         ];
-
-//   const currentRouteName = state.routes[state.index]?.name;
-
-//   return (
-//     <Animated.View
-//       pointerEvents={hidden ? "none" : "auto"}
-//       style={[
-//         styles.wrapper,
-//         {
-//           paddingBottom: insets.bottom,
-//           opacity,
-//           transform: [{ translateY }],
-//         },
-//       ]}
-//     >
-//       <View style={styles.bottomTab}>
-//         {visibleTabs.map((tab: any) => {
-//           const isFocused = currentRouteName === tab.name;
-//           const accessible = canAccess(tab.name);
-
-//           const iconColor =
-//             !accessible && tab.name !== "Profile"
-//               ? "#cbd5e1"
-//               : isFocused
-//               ? "#0A7C6E"
-//               : "#64748b";
-
-//           if (tab.isAdd) {
-//             return (
-//               <TouchableOpacity
-//                 key={tab.name}
-//                 style={[
-//                   styles.tabAdd,
-//                   !isFullyAccessible && styles.tabAddDisabled,
-//                 ]}
-//                 onPress={() => handlePress(tab.name, isFocused)}
-//               >
-//                 <Plus size={30} color="#fff" />
-//               </TouchableOpacity>
-//             );
-//           }
-
-//           return (
-//             <TouchableOpacity
-//               key={tab.name}
-//               style={styles.tabItem}
-//               onPress={() => handlePress(tab.name, isFocused)}
-//             >
-//               <View
-//                 style={[
-//                   styles.iconWrapper,
-//                   isFocused && styles.activeIconWrapper,
-//                 ]}
-//               >
-//                 <tab.Icon size={20} color={iconColor} />
-
-//                 {!accessible && tab.name !== "Profile" && (
-//                   <Lock size={11} color="#ef4444" style={styles.lockIcon} />
-//                 )}
-//               </View>
-
-//               <Text
-//                 style={[
-//                   styles.tabLabel,
-//                   isFocused && styles.activeLabel,
-//                   !accessible && tab.name !== "Profile" && styles.disabledLabel,
-//                 ]}
-//               >
-//                 {tab.label}
-//               </Text>
-//             </TouchableOpacity>
-//           );
-//         })}
-//       </View>
-//     </Animated.View>
-//   );
-// }
-
-// ────────────────────────────────────────────────────────────────────────────
-// MainTabs — single source of truth for user data.
-// ────────────────────────────────────────────────────────────────────────────
 export default function MainTabs() {
+  const [availableJobsCount, setAvailableJobsCount] = useState(0);
+
+  const fetchAvailableJobsCount = useCallback(async () => {
+    try {
+      const token = await AsyncStorage.getItem("@auth_token");
+      const userId = await AsyncStorage.getItem("@user_id");
+      if (!token || !userId) return;
+      const response = await axios.get(`${BASE_URL}/jobs/available/${userId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      // Same shape here: data.jobs is the paginator, total lives on it directly.
+      const jobsPaginator = response.data?.data?.jobs;
+      if (jobsPaginator)
+        setAvailableJobsCount(Number(jobsPaginator.total) || 0);
+    } catch (error) {
+      console.log("Available Jobs Count Error:", error);
+    }
+  }, []);
+
   const [userData, setUserData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
@@ -433,17 +323,23 @@ export default function MainTabs() {
     }
   }, []);
 
-  // Always force a fresh fetch on first mount (e.g. right after login).
   useEffect(() => {
     fetchUserData(true);
-  }, [fetchUserData]);
+    fetchAvailableJobsCount();
 
-  // Quietly refresh whenever this tab stack regains focus
-  // (e.g. user just activated their account and came back from Profile).
+    // Refresh available jobs count every 30 seconds
+    const interval = setInterval(() => {
+      fetchAvailableJobsCount();
+    }, 20 * 1000); // 30 seconds
+
+    return () => clearInterval(interval);
+  }, [fetchUserData, fetchAvailableJobsCount]);
+
   useFocusEffect(
     useCallback(() => {
       fetchUserData(false);
-    }, [fetchUserData]),
+      fetchAvailableJobsCount();
+    }, [fetchUserData, fetchAvailableJobsCount]),
   );
 
   if (loading) {
@@ -457,7 +353,13 @@ export default function MainTabs() {
 
   return (
     <Tab.Navigator
-      tabBar={(props) => <CustomTabBar {...props} userData={userData} />}
+      tabBar={(props) => (
+        <CustomTabBar
+          {...props}
+          userData={userData}
+          availableJobsCount={availableJobsCount}
+        />
+      )}
       screenOptions={{
         headerShown: false,
         tabBarStyle: { display: "none" },
@@ -465,7 +367,12 @@ export default function MainTabs() {
     >
       <Tab.Screen name="Home" component={HomeScreen} />
       <Tab.Screen name="Applications" component={ApplicationsScreen} />
-      <Tab.Screen name="StaffShifts" component={StaffShifts} />
+      <Tab.Screen name="StaffShifts" component={AvailableJobsScreen} />
+      <Tab.Screen
+        name="AcceptedJobs"
+        component={AcceptedJobsScreen}
+        options={{ tabBarButton: () => null }}
+      />
       <Tab.Screen name="Messages" component={MessageScreen} />
       <Tab.Screen name="Profile" component={ProfileScreen} />
       <Tab.Screen
@@ -561,13 +468,33 @@ const styles = StyleSheet.create({
     justifyContent: "space-around", // This helps equal spacing
     backgroundColor: "#fff",
     borderTopLeftRadius: 30,
-    borderTopRightRadius:30,
+    borderTopRightRadius: 30,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: -4 },
     shadowOpacity: 0.15,
     shadowRadius: 8,
     elevation: 12,
     position: "relative",
+  },
+  badge: {
+    position: "absolute",
+    top: -4,
+    right: -6,
+    minWidth: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: "#EF4444",
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 4,
+    borderWidth: 1.5,
+    borderColor: "#fff",
+  },
+
+  badgeText: {
+    color: "#fff",
+    fontSize: 9,
+    fontWeight: "700",
   },
 
   tabItem: {

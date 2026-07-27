@@ -31,16 +31,25 @@ import LinearGradient from "react-native-linear-gradient";
 const LOGO = require("../assets/staffoo.png");
 
 const COLORS = {
-  primary: "#89E7D0",
-  primaryDark: "#4FCBB3",
-  background: "#001F3F",
-  surface: "#0B2A4A",
-  surface2: "#12243A",
-  card: "rgba(255,255,255,0.06)",
-  border: "rgba(255,255,255,0.08)",
+  background: "#030508",
+  surface: "#07111A",
+  card: "#0D1421",
+
+  cardBorder: "rgba(98,97,97,0.35)",
+
+  primary: "#00A99D",
+  primaryDark: "#007E76",
+  primaryGlow: "rgba(0,169,157,0.25)",
+
   text: "#FFFFFF",
-  textSecondary: "rgba(255,255,255,0.75)",
-  textMuted: "rgba(255,255,255,0.45)",
+  textSecondary: "#B7C4D4",
+  textMuted: "#738295",
+
+  success: "#34C88A",
+  danger: "#F87171",
+
+  heroBg1: "#0D1F2D",
+  heroBg2: "#061014",
 };
 
 type Props = { navigation: any };
@@ -56,7 +65,8 @@ export const sendNotificationTokenToServer = async (
 
     const payload: any = { notification_token: playerId };
     if (userId) payload.id = userId;
-
+    console.log("📦 Payload being sent:", payload);
+    console.log("📦 Payload JSON:", JSON.stringify(payload, null, 2));
     const response = await fetch(`${BASE_URL}/store-notification-token`, {
       method: "POST",
       headers: {
@@ -85,6 +95,8 @@ export default function LoginScreen({ navigation }: Props) {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
+  const [emailFocused, setEmailFocused] = useState(false);
+  const [passwordFocused, setPasswordFocused] = useState(false);
 
   const hasRequestedLocation = useRef(false);
   const [showAccountTypeModal, setShowAccountTypeModal] = useState(false);
@@ -92,6 +104,7 @@ export default function LoginScreen({ navigation }: Props) {
   const [selectedAccountType, setSelectedAccountType] = useState<
     "customer" | "staff" | "contractor" | null
   >(null);
+
   useEffect(() => {
     (async () => {
       try {
@@ -118,41 +131,87 @@ export default function LoginScreen({ navigation }: Props) {
     }
   }, []);
 
+  // Location permission is requested once, on mount — NOT tied to a
+  // TextInput's onFocus. Requesting it on focus was popping a native
+  // system dialog the instant the keyboard opened, which steals focus
+  // and immediately closes the keyboard again (the "shows then hides"
+  // flicker). A short delay lets the screen finish its entrance
+  // animation first so the dialog doesn't appear mid-transition.
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      requestLocationPermission();
+    }, 600);
+    return () => clearTimeout(timer);
+  }, []);
+
+  // const requestLocationPermission = async () => {
+  //   if (Platform.OS === "android") {
+  //     const granted = await PermissionsAndroid.request(
+  //       PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+  //       {
+  //         title: "Location Permission",
+  //         message:
+  //           "This app needs your location for security and shift tracking.",
+  //         buttonNeutral: "Ask Me Later",
+  //         buttonNegative: "Cancel",
+  //         buttonPositive: "OK",
+  //       },
+  //     );
+  //     return granted === PermissionsAndroid.RESULTS.GRANTED;
+  //   }
+
+  //   const result = await request(PERMISSIONS.IOS.LOCATION_WHEN_IN_USE);
+  //   return result === RESULTS.GRANTED;
+  // };
+
   const requestLocationPermission = async () => {
+    if (hasRequestedLocation.current) return true;
+    hasRequestedLocation.current = true;
+
+    const message = Platform.select({
+      android:
+        "Staffoo collects location data to find and display available shifts near you, " +
+        "track your attendance during shifts, and verify your presence at job sites. " +
+        "This data is collected even when the app is closed or not in use.",
+      ios:
+        "Staffoo collects location data to find and display available shifts near you, " +
+        "track your attendance during shifts, and verify your presence at job sites.",
+    });
+
     if (Platform.OS === "android") {
       const granted = await PermissionsAndroid.request(
         PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
         {
-          title: "Location Permission",
-          message:
-            "This app needs your location for security and shift tracking.",
+          title: "Staffoo Needs Location Access",
+          message: message!,
           buttonNeutral: "Ask Me Later",
-          buttonNegative: "Cancel",
-          buttonPositive: "OK",
+          buttonNegative: "Deny",
+          buttonPositive: "Allow",
         },
       );
       return granted === PermissionsAndroid.RESULTS.GRANTED;
+    } else {
+      // iOS
+      const result = await request(PERMISSIONS.IOS.LOCATION_WHEN_IN_USE);
+      // If you need background location too, request BACKGROUND too
+      return result === RESULTS.GRANTED;
     }
-
-    const result = await request(PERMISSIONS.IOS.LOCATION_WHEN_IN_USE);
-    return result === RESULTS.GRANTED;
   };
 
-  const handleInputFocus = async () => {
-    if (hasRequestedLocation.current) return;
-    hasRequestedLocation.current = true;
-    await requestLocationPermission();
-  };
   const handleGoogleLogin = async () => {
     try {
       setLoading(true);
 
-      console.log("🚀 [GOOGLE] Starting Google Sign-In...");
+      const netState = await NetInfo.fetch();
+      if (!netState.isConnected) {
+        throw new Error("No internet connection. Please check your network.");
+      }
+
+      console.log("🌐 Network connected. BASE_URL:", BASE_URL);
 
       await GoogleSignin.hasPlayServices({
         showPlayServicesUpdateDialog: true,
       });
-
       await GoogleSignin.signOut().catch(() => {});
 
       const userInfo = await GoogleSignin.signIn();
@@ -162,7 +221,6 @@ export default function LoginScreen({ navigation }: Props) {
       }
 
       const tokens = await GoogleSignin.getTokens();
-
       const credential = tokens.accessToken;
 
       if (!credential) {
@@ -170,27 +228,31 @@ export default function LoginScreen({ navigation }: Props) {
       }
 
       console.log("✅ Google credential received");
-
-      // Save credential in case we need it for account creation
       setGoogleCredential(credential);
 
-      // FIRST CHECK IF USER ALREADY EXISTS
+      console.log("📤 Checking user with backend...");
+
       const response = await fetch(`${BASE_URL}/auth/google/callback`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Accept: "application/json",
         },
-        body: JSON.stringify({
-          credential,
-        }),
+        body: JSON.stringify({ credential }),
       });
 
-      const data = await response.json();
+      console.log("📥 Response Status:", response.status);
 
-      console.log("📥 Google Response:", data);
+      let data: any = {};
+      try {
+        data = await response.json();
+      } catch (e) {
+        console.log("Could not parse JSON response");
+      }
 
-      // Existing user -> Login directly
+      console.log("📥 Response Data:", JSON.stringify(data, null, 2));
+
+      // === SUCCESS: Existing User ===
       if (response.ok && data.success && data.user && data.token) {
         const user = data.user;
 
@@ -203,7 +265,6 @@ export default function LoginScreen({ navigation }: Props) {
 
         try {
           const playerId = await OneSignal.User.pushSubscription.getIdAsync();
-
           if (playerId) {
             await sendNotificationTokenToServer(playerId, String(user.id));
             OneSignal.login(String(user.id));
@@ -219,26 +280,28 @@ export default function LoginScreen({ navigation }: Props) {
           position: "bottom",
         });
 
-        setTimeout(() => {
-          redirectAfterLogin(user);
-        }, 500);
-
+        setTimeout(() => redirectAfterLogin(user), 500);
         return;
       }
 
-      // New user -> Open account type modal
+      // === NEW USER: Show Account Type Modal ===
       if (
         data.needs_account_type ||
+        response.status === 401 ||
         response.status === 404 ||
-        response.status === 422
+        response.status === 422 ||
+        data.message?.toLowerCase().includes("user not found") ||
+        data.message?.toLowerCase().includes("not found")
       ) {
+        console.log("🆕 New user detected → Showing account type modal");
         setShowAccountTypeModal(true);
         return;
       }
 
+      // === Other Errors ===
       throw new Error(data.message || "Google login failed");
     } catch (error: any) {
-      console.error("❌ Google Login Error:", error);
+      console.error("❌ Google Login Error:", error.message);
 
       Toast.show({
         type: "error",
@@ -250,7 +313,6 @@ export default function LoginScreen({ navigation }: Props) {
       setLoading(false);
     }
   };
-
   const completeGoogleLogin = async () => {
     if (!selectedAccountType) {
       return Toast.show({
@@ -263,13 +325,18 @@ export default function LoginScreen({ navigation }: Props) {
     try {
       setLoading(true);
 
+      const netState = await NetInfo.fetch();
+      if (!netState.isConnected) {
+        throw new Error("No internet connection.");
+      }
+
       const payload = {
         credential: googleCredential,
         user_type: selectedAccountType,
       };
 
       console.log(
-        "📤 Sending Google Payload:",
+        "📤 Creating account with payload:",
         JSON.stringify(payload, null, 2),
       );
 
@@ -282,19 +349,13 @@ export default function LoginScreen({ navigation }: Props) {
         body: JSON.stringify(payload),
       });
 
-      const data = await response.json();
+      console.log("📥 Create Account Response Status:", response.status);
 
-      console.log(
-        "📥 Google Callback Response:",
-        JSON.stringify(data, null, 2),
-      );
+      const data = await response.json().catch(() => ({}));
+      console.log("📥 Create Account Response:", JSON.stringify(data, null, 2));
 
-      if (!response.ok) {
-        throw new Error(data?.message || "Login failed");
-      }
-
-      if (!data.success) {
-        throw new Error(data?.message || "Login failed");
+      if (!response.ok || !data.success) {
+        throw new Error(data?.message || "Failed to create account");
       }
 
       const user = data.user;
@@ -311,12 +372,11 @@ export default function LoginScreen({ navigation }: Props) {
         ["@user_type", user.user_type || selectedAccountType],
       ]);
 
+      // OneSignal setup
       try {
         const playerId = await OneSignal.User.pushSubscription.getIdAsync();
-
         if (playerId) {
           await sendNotificationTokenToServer(playerId, String(user.id));
-
           OneSignal.login(String(user.id));
         }
       } catch (e) {
@@ -327,22 +387,45 @@ export default function LoginScreen({ navigation }: Props) {
 
       Toast.show({
         type: "success",
-        text1: "Login Successful",
+        text1: "Account Created Successfully",
         text2: `Welcome ${user.name || user.email}`,
         position: "bottom",
       });
 
+      // ←←← UPDATED NAVIGATION LOGIC
       setTimeout(() => {
-        navigation.navigate("MainTabs", {
-          screen: "Profile",
-        });
-      }, 500);
+        const isClient =
+          selectedAccountType === "customer" ||
+          user.user_type?.toLowerCase() === "customer";
+
+        if (isClient) {
+          navigation.reset({
+            index: 0,
+            routes: [
+              {
+                name: "MainTabs",
+                params: { screen: "CreateJob" },
+              },
+            ],
+          });
+        } else {
+          navigation.reset({
+            index: 0,
+            routes: [
+              {
+                name: "MainTabs",
+                params: { screen: "Profile" },
+              },
+            ],
+          });
+        }
+      }, 600);
     } catch (error: any) {
-      console.error("❌ Google Callback Error:", error);
+      console.error("❌ Complete Google Login Error:", error);
 
       Toast.show({
         type: "error",
-        text1: "Login Failed",
+        text1: "Account Creation Failed",
         text2: error.message || "Please try again",
         position: "bottom",
       });
@@ -350,6 +433,213 @@ export default function LoginScreen({ navigation }: Props) {
       setLoading(false);
     }
   };
+  // const handleGoogleLogin = async () => {
+  //   try {
+  //     setLoading(true);
+
+  //     console.log("🚀 [GOOGLE] Starting Google Sign-In...");
+
+  //     await GoogleSignin.hasPlayServices({
+  //       showPlayServicesUpdateDialog: true,
+  //     });
+
+  //     await GoogleSignin.signOut().catch(() => {});
+
+  //     const userInfo = await GoogleSignin.signIn();
+
+  //     if (userInfo.type !== "success" || !userInfo.data) {
+  //       throw new Error("Google sign-in failed");
+  //     }
+
+  //     const tokens = await GoogleSignin.getTokens();
+
+  //     const credential = tokens.accessToken;
+
+  //     if (!credential) {
+  //       throw new Error("Failed to get Google credential");
+  //     }
+
+  //     console.log("✅ Google credential received");
+
+  //     // Save credential in case we need it for account creation
+  //     setGoogleCredential(credential);
+
+  //     // FIRST CHECK IF USER ALREADY EXISTS
+  //     const response = await fetch(`${BASE_URL}/auth/google/callback`, {
+  //       method: "POST",
+  //       headers: {
+  //         "Content-Type": "application/json",
+  //         Accept: "application/json",
+  //       },
+  //       body: JSON.stringify({
+  //         credential,
+  //       }),
+  //     });
+
+  //     const data = await response.json();
+
+  //     console.log("📥 Google Response:", data);
+
+  //     // Existing user -> Login directly
+  //     if (response.ok && data.success && data.user && data.token) {
+  //       const user = data.user;
+
+  //       await AsyncStorage.multiSet([
+  //         ["@auth_token", data.token],
+  //         ["user", JSON.stringify(user)],
+  //         ["@user_id", String(user.id)],
+  //         ["@user_type", user.user_type],
+  //       ]);
+
+  //       try {
+  //         const playerId = await OneSignal.User.pushSubscription.getIdAsync();
+
+  //         if (playerId) {
+  //           await sendNotificationTokenToServer(playerId, String(user.id));
+  //           OneSignal.login(String(user.id));
+  //         }
+  //       } catch (e) {
+  //         console.log("OneSignal Error:", e);
+  //       }
+
+  //       Toast.show({
+  //         type: "success",
+  //         text1: "Login Successful",
+  //         text2: `Welcome ${user.name || user.email}`,
+  //         position: "bottom",
+  //       });
+
+  //       setTimeout(() => {
+  //         redirectAfterLogin(user);
+  //       }, 500);
+
+  //       return;
+  //     }
+
+  //     // New user -> Open account type modal
+  //     if (
+  //       data.needs_account_type ||
+  //       response.status === 404 ||
+  //       response.status === 422
+  //     ) {
+  //       setShowAccountTypeModal(true);
+  //       return;
+  //     }
+
+  //     throw new Error(data.message || "Google login failed");
+  //   } catch (error: any) {
+  //     console.error("❌ Google Login Error:", error);
+
+  //     Toast.show({
+  //       type: "error",
+  //       text1: "Google Login Failed",
+  //       text2: error.message || "Please try again",
+  //       position: "bottom",
+  //     });
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
+
+  // const completeGoogleLogin = async () => {
+  //   if (!selectedAccountType) {
+  //     return Toast.show({
+  //       type: "error",
+  //       text1: "Please select account type",
+  //       position: "bottom",
+  //     });
+  //   }
+
+  //   try {
+  //     setLoading(true);
+
+  //     const payload = {
+  //       credential: googleCredential,
+  //       user_type: selectedAccountType,
+  //     };
+
+  //     console.log(
+  //       "📤 Sending Google Payload:",
+  //       JSON.stringify(payload, null, 2),
+  //     );
+
+  //     const response = await fetch(`${BASE_URL}/auth/google/callback`, {
+  //       method: "POST",
+  //       headers: {
+  //         "Content-Type": "application/json",
+  //         Accept: "application/json",
+  //       },
+  //       body: JSON.stringify(payload),
+  //     });
+
+  //     const data = await response.json();
+
+  //     console.log(
+  //       "📥 Google Callback Response:",
+  //       JSON.stringify(data, null, 2),
+  //     );
+
+  //     if (!response.ok) {
+  //       throw new Error(data?.message || "Login failed");
+  //     }
+
+  //     if (!data.success) {
+  //       throw new Error(data?.message || "Login failed");
+  //     }
+
+  //     const user = data.user;
+  //     const token = data.token;
+
+  //     if (!user?.id || !token) {
+  //       throw new Error("Invalid server response");
+  //     }
+
+  //     await AsyncStorage.multiSet([
+  //       ["@auth_token", token],
+  //       ["user", JSON.stringify(user)],
+  //       ["@user_id", String(user.id)],
+  //       ["@user_type", user.user_type || selectedAccountType],
+  //     ]);
+
+  //     try {
+  //       const playerId = await OneSignal.User.pushSubscription.getIdAsync();
+
+  //       if (playerId) {
+  //         await sendNotificationTokenToServer(playerId, String(user.id));
+
+  //         OneSignal.login(String(user.id));
+  //       }
+  //     } catch (e) {
+  //       console.log("OneSignal Error:", e);
+  //     }
+
+  //     setShowAccountTypeModal(false);
+
+  //     Toast.show({
+  //       type: "success",
+  //       text1: "Login Successful",
+  //       text2: `Welcome ${user.name || user.email}`,
+  //       position: "bottom",
+  //     });
+
+  //     setTimeout(() => {
+  //       navigation.navigate("MainTabs", {
+  //         screen: "Profile",
+  //       });
+  //     }, 500);
+  //   } catch (error: any) {
+  //     console.error("❌ Google Callback Error:", error);
+
+  //     Toast.show({
+  //       type: "error",
+  //       text1: "Login Failed",
+  //       text2: error.message || "Please try again",
+  //       position: "bottom",
+  //     });
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
   const handleForgotPassword = async () => {
     if (!email.trim()) {
       return Toast.show({
@@ -606,6 +896,33 @@ export default function LoginScreen({ navigation }: Props) {
 
   return (
     <SafeAreaView style={styles.container}>
+      <StatusBar barStyle="light-content" backgroundColor={COLORS.background} />
+
+      {/* ── Decorative background artifacts — purely visual, same palette,
+          sit behind everything and never intercept touches. ── */}
+      <View style={StyleSheet.absoluteFill} pointerEvents="none">
+        <View style={styles.orbTopRight}>
+          <LinearGradient
+            colors={[COLORS.primaryGlow, "transparent"]}
+            start={{ x: 0.25, y: 0.15 }}
+            end={{ x: 1, y: 1 }}
+            style={StyleSheet.absoluteFill}
+          />
+        </View>
+        <View style={styles.orbBottomLeft}>
+          <LinearGradient
+            colors={[COLORS.primaryGlow, "transparent"]}
+            start={{ x: 0.7, y: 0.8 }}
+            end={{ x: 0, y: 0 }}
+            style={StyleSheet.absoluteFill}
+          />
+        </View>
+        <View style={styles.ringOutline} />
+        <View style={styles.dotAccent1} />
+        <View style={styles.dotAccent2} />
+        <View style={styles.dotAccent3} />
+      </View>
+
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
@@ -613,105 +930,146 @@ export default function LoginScreen({ navigation }: Props) {
         <ScrollView
           contentContainerStyle={{
             paddingHorizontal: isTablet ? width * 0.25 : 24,
+            paddingBottom: 24,
           }}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
           <View style={styles.logoContainer}>
+            <View style={styles.logoGlow} pointerEvents="none" />
             <Image
               source={LOGO}
               resizeMode="contain"
               style={{ width: width * 0.6, height: width * 0.17 }}
             />
             <Text style={[styles.subtitle, { fontSize: scale(14) }]}>
-              Please enter your email and password.
+              Sign in to access your account securely.
             </Text>
           </View>
 
-          <Text style={[styles.label, { fontSize: scale(14) }]}>Email</Text>
-          <View style={styles.inputContainer}>
-            <View style={styles.inputInner}>
-              <Mail size={22} color="#6B7280" />
-              <TextInput
-                style={[styles.input, { color: "#111827" }]}
-                placeholder="Type your email"
-                placeholderTextColor="#797777"
-                value={email}
-                onFocus={handleInputFocus}
-                onChangeText={setEmail}
-                keyboardType="email-address"
-                autoCapitalize="none"
-                autoCorrect={false}
-              />
-            </View>
-          </View>
-
-          <Text style={[styles.label, { fontSize: scale(14) }]}>Password</Text>
-          <View style={styles.inputContainer}>
-            <View style={styles.inputInner}>
-              <Lock size={22} color="#6B7280" />
-              <TextInput
-                style={[styles.input, { color: "#111827" }]}
-                placeholder="Type your password"
-                placeholderTextColor="#797777"
-                value={password}
-                onChangeText={setPassword}
-                secureTextEntry={!showPassword}
-              />
-              <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
-                {showPassword ? (
-                  <Eye size={22} color="#6B7280" />
-                ) : (
-                  <EyeOff size={22} color="#6B7280" />
-                )}
-              </TouchableOpacity>
-            </View>
-          </View>
-          <TouchableOpacity
-            onPress={() => navigation.navigate("ForgotPassword", { email })}
-            style={{ alignSelf: "flex-end", marginBottom: 10 }}
-          >
-            <Text style={{ color: "#89E7D0", fontSize: 13, fontWeight: "600" }}>
-              Forgot password?
+          <View style={styles.formCard}>
+            <Text style={[styles.label, { fontSize: scale(12) }]}>
+              Email Address <Text style={{ color: "red" }}>*</Text>
             </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.signInButton, loading && { opacity: 0.7 }]}
-            onPress={handleSignIn}
-            disabled={loading}
-          >
-            {loading ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <Text style={styles.signInText}>Log In</Text>
-            )}
-          </TouchableOpacity>
-
-          <View style={styles.orContainer}>
-            <View style={styles.orLine} />
-            <Text style={styles.orText}>OR</Text>
-            <View style={styles.orLine} />
-          </View>
-
-          {Platform.OS === "android" && (
-            <TouchableOpacity
-              style={styles.googleButton}
-              onPress={handleGoogleLogin}
-              disabled={loading}
+            <View
+              style={[
+                styles.inputContainer,
+                emailFocused && styles.inputContainerFocused,
+              ]}
             >
-              <Image
-                source={require("../assets/google-img.png")}
-                style={{ width: 22, height: 22, marginRight: 10 }}
-              />
-              <Text style={styles.googleText}>Continue with Google</Text>
+              <View style={styles.inputInner}>
+                <View style={styles.inputIconBadge}>
+                  <Mail size={16} color={COLORS.primary} />
+                </View>
+                <TextInput
+                  style={[styles.input, { color: COLORS.text }]}
+                  placeholder="name@example.com"
+                  placeholderTextColor={COLORS.textMuted}
+                  value={email}
+                  onFocus={() => setEmailFocused(true)}
+                  onBlur={() => setEmailFocused(false)}
+                  onChangeText={setEmail}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                />
+              </View>
+            </View>
+
+            <Text style={[styles.label, { fontSize: scale(12) }]}>
+              Password <Text style={{ color: "red" }}>*</Text>
+            </Text>
+            <View
+              style={[
+                styles.inputContainer,
+                passwordFocused && styles.inputContainerFocused,
+              ]}
+            >
+              <View style={styles.inputInner}>
+                <View style={styles.inputIconBadge}>
+                  <Lock size={16} color={COLORS.primary} />
+                </View>
+                <TextInput
+                  style={[styles.input, { color: COLORS.text }]}
+                  placeholder="Password"
+                  placeholderTextColor={COLORS.textMuted}
+                  value={password}
+                  onFocus={() => setPasswordFocused(true)}
+                  onBlur={() => setPasswordFocused(false)}
+                  onChangeText={setPassword}
+                  secureTextEntry={!showPassword}
+                />
+                <TouchableOpacity
+                  onPress={() => setShowPassword(!showPassword)}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                >
+                  {showPassword ? (
+                    <Eye size={22} color="#6B7280" />
+                  ) : (
+                    <EyeOff size={22} color="#6B7280" />
+                  )}
+                </TouchableOpacity>
+              </View>
+            </View>
+            <TouchableOpacity
+              onPress={() => navigation.navigate("ForgotPassword", { email })}
+              style={{ alignSelf: "flex-end", marginBottom: 5 }}
+            >
+              <Text
+                style={{ color: "#89E7D0", fontSize: 13, fontWeight: "600" }}
+              >
+                Forgot password?
+              </Text>
             </TouchableOpacity>
-          )}
+
+            <TouchableOpacity
+              style={[styles.signInButton, loading && { opacity: 0.7 }]}
+              onPress={handleSignIn}
+              disabled={loading}
+              activeOpacity={0.88}
+            >
+              <LinearGradient
+                colors={[COLORS.primary, COLORS.primaryDark]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={styles.signInGradient}
+              >
+                {loading ? (
+                  <ActivityIndicator color="#fff" />
+                ) : (
+                  <Text style={styles.signInText}>Sign in</Text>
+                )}
+              </LinearGradient>
+            </TouchableOpacity>
+
+            <View style={styles.orContainer}>
+              <View style={styles.orLine} />
+              <Text style={styles.orText}>OR</Text>
+              <View style={styles.orLine} />
+            </View>
+
+            {Platform.OS === "android" && (
+              <TouchableOpacity
+                style={styles.googleButton}
+                onPress={handleGoogleLogin}
+                disabled={loading}
+                activeOpacity={0.85}
+              >
+                <View style={styles.googleIconBadge}>
+                  <Image
+                    source={require("../assets/google-img.png")}
+                    style={{ width: 18, height: 18 }}
+                  />
+                </View>
+                <Text style={styles.googleText}>Continue with Google</Text>
+              </TouchableOpacity>
+            )}
+          </View>
 
           <View style={styles.signupRow}>
             <Text style={{ color: "#fff" }}>Don't have an account? </Text>
             <TouchableOpacity onPress={() => navigation.navigate("SignUp")}>
-              <Text style={styles.signupLink}>Sign Up</Text>
+              <Text style={styles.signupLink}>Sign up</Text>
             </TouchableOpacity>
           </View>
         </ScrollView>
@@ -723,11 +1081,20 @@ export default function LoginScreen({ navigation }: Props) {
         animationType="fade"
         onRequestClose={() => setShowAccountTypeModal(false)}
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContainer}>
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setShowAccountTypeModal(false)}
+        >
+          <TouchableOpacity
+            style={styles.modalContainer}
+            activeOpacity={1}
+            onPress={() => {}}
+          >
             <TouchableOpacity
               style={styles.closeButton}
               onPress={() => setShowAccountTypeModal(false)}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             >
               <Text style={styles.closeText}>✕</Text>
             </TouchableOpacity>
@@ -803,15 +1170,27 @@ export default function LoginScreen({ navigation }: Props) {
             </View>
 
             <TouchableOpacity
-              style={styles.createAccountBtn}
+              style={[styles.createAccountBtn, loading && { opacity: 0.7 }]}
               onPress={completeGoogleLogin}
+              disabled={loading}
             >
-              <Text style={styles.createAccountBtnText}>
-                Create Account & Login
-              </Text>
+              {loading ? (
+                <View style={{ flexDirection: "row", alignItems: "center" }}>
+                  <ActivityIndicator color="#fff" size="small" />
+                  <Text
+                    style={[styles.createAccountBtnText, { marginLeft: 10 }]}
+                  >
+                    Creating Account...
+                  </Text>
+                </View>
+              ) : (
+                <Text style={styles.createAccountBtnText}>
+                  Create Account & Login
+                </Text>
+              )}
             </TouchableOpacity>
-          </View>
-        </View>
+          </TouchableOpacity>
+        </TouchableOpacity>
       </Modal>
     </SafeAreaView>
   );
@@ -821,23 +1200,112 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     // backgroundColor: COLORS.background,
-    backgroundColor: "#111111",
+    backgroundColor: "#030508",
     paddingTop: Platform.OS === "android" ? StatusBar.currentHeight : 0,
+    position: "relative",
+    overflow: "hidden",
   },
+
+  // ── Decorative background artifacts (same palette, purely visual) ──
+  orbTopRight: {
+    position: "absolute",
+    top: -90,
+    right: -70,
+    width: 260,
+    height: 260,
+    borderRadius: 130,
+    overflow: "hidden",
+  },
+  orbBottomLeft: {
+    position: "absolute",
+    bottom: -110,
+    left: -90,
+    width: 300,
+    height: 300,
+    borderRadius: 150,
+    overflow: "hidden",
+  },
+  ringOutline: {
+    position: "absolute",
+    top: "36%",
+    right: -46,
+    width: 150,
+    height: 150,
+    borderRadius: 75,
+    borderWidth: 1,
+    borderColor: "rgba(0,169,157,0.18)",
+  },
+  dotAccent1: {
+    position: "absolute",
+    top: 90,
+    left: 28,
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: COLORS.primary,
+    opacity: 0.45,
+  },
+  dotAccent2: {
+    position: "absolute",
+    top: 160,
+    left: 60,
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: COLORS.primary,
+    opacity: 0.3,
+  },
+  dotAccent3: {
+    position: "absolute",
+    bottom: 140,
+    right: 40,
+    width: 5,
+    height: 5,
+    borderRadius: 2.5,
+    backgroundColor: COLORS.primary,
+    opacity: 0.35,
+  },
+
   logoContainer: {
     marginVertical: 40,
     justifyContent: "center",
     alignItems: "center",
   },
+  logoGlow: {
+    position: "absolute",
+    top: -30,
+    alignSelf: "center",
+    width: 220,
+    height: 220,
+    borderRadius: 110,
+    backgroundColor: COLORS.primaryGlow,
+    opacity: 0.35,
+  },
   subtitle: {
     color: COLORS.textSecondary,
-    marginTop: 20,
+    marginTop: 10,
     textAlign: "center",
   },
+
+  // ── Floating card that groups the whole form ──
+  formCard: {
+    backgroundColor: COLORS.card,
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: COLORS.cardBorder,
+    padding: 20,
+    paddingTop: 24,
+    shadowColor: COLORS.primary,
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.15,
+    shadowRadius: 24,
+    elevation: 8,
+  },
+
   label: {
     fontWeight: "600",
     color: COLORS.text,
-    marginBottom: 7,
+    marginBottom: 5,
   },
   gradientInput: {
     borderRadius: 12,
@@ -846,13 +1314,21 @@ const styles = StyleSheet.create({
   inputInner: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 16,
-    height: 42,
+    paddingHorizontal: 12,
+    height: 47,
+  },
+  inputIconBadge: {
+    width: 28,
+    height: 28,
+    borderRadius: 9,
+    backgroundColor: COLORS.primaryGlow,
+    justifyContent: "center",
+    alignItems: "center",
   },
   input: {
     flex: 1,
-    marginLeft: 12,
-    fontSize: 16,
+    marginLeft: 10,
+    fontSize: 14,
     color: COLORS.text,
   },
   checkbox: {
@@ -873,12 +1349,12 @@ const styles = StyleSheet.create({
   orLine: {
     flex: 1,
     height: 1,
-    backgroundColor: "#888",
+    backgroundColor: COLORS.cardBorder,
   },
 
   orText: {
     marginHorizontal: 10,
-    color: "#ccc",
+    color: COLORS.textMuted,
     fontSize: 14,
     fontWeight: "500",
   },
@@ -886,12 +1362,20 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.primary,
   },
   signInButton: {
-    backgroundColor: "#0A7C6E",
     borderRadius: 50,
     height: 52,
+    marginVertical: 10,
+    overflow: "hidden",
+    shadowColor: COLORS.primary,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.35,
+    shadowRadius: 12,
+    elevation: 6,
+  },
+  signInGradient: {
+    flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    marginVertical: 10,
   },
   signInText: {
     color: "#ffff",
@@ -899,22 +1383,35 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   inputContainer: {
-    backgroundColor: "#cacaca",
-    borderRadius: 10,
-    marginBottom: 16,
+    backgroundColor: COLORS.surface,
+    borderRadius: 14,
     borderWidth: 1,
-    borderColor: "#E5E7EB",
+    borderColor: COLORS.cardBorder,
+    marginBottom: 18,
+  },
+  inputContainerFocused: {
+    borderColor: COLORS.primary,
+    backgroundColor: COLORS.heroBg1,
   },
   googleButton: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 1,
-    borderColor: COLORS.border,
-    backgroundColor: COLORS.card,
-    padding: 14,
-    borderRadius: 12,
-    marginTop: 10,
+    borderColor: COLORS.cardBorder,
+    borderRadius: 14,
+    paddingVertical: 14,
+    backgroundColor: COLORS.surface,
+    marginTop: 4,
+  },
+  googleIconBadge: {
+    width: 26,
+    height: 26,
+    borderRadius: 8,
+    backgroundColor: "#fff",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 10,
   },
   googleText: {
     fontSize: 15,
@@ -924,7 +1421,7 @@ const styles = StyleSheet.create({
   signupRow: {
     flexDirection: "row",
     justifyContent: "center",
-    marginTop: 30,
+    marginTop: 24,
     paddingBottom: 30,
   },
   signupLink: {
@@ -945,6 +1442,7 @@ const styles = StyleSheet.create({
     maxWidth: 650,
     backgroundColor: "#fff",
     borderRadius: 24,
+
     paddingHorizontal: 25,
     paddingVertical: 25,
     paddingTop: 20,
@@ -953,15 +1451,21 @@ const styles = StyleSheet.create({
 
   closeButton: {
     position: "absolute",
-    right: 20,
+    right: 14,
     top: 14,
     zIndex: 99,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: "#F1F1F1",
+    justifyContent: "center",
+    alignItems: "center",
   },
 
   closeText: {
-    fontSize: 20,
-    color: "#8B8B8B",
-    fontWeight: "300",
+    fontSize: 16,
+    color: "#555",
+    fontWeight: "700",
   },
 
   modalTitle: {
@@ -994,7 +1498,7 @@ const styles = StyleSheet.create({
   accountTypeBtn: {
     borderWidth: 1,
     borderColor: "#D8D8D8",
-    borderRadius: 30,
+    borderRadius: 10,
     paddingHorizontal: 10,
     paddingVertical: 8,
     marginRight: 10,

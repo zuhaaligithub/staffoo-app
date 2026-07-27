@@ -13,6 +13,7 @@ import {
   Alert,
   Dimensions,
   Platform,
+  Linking,
 } from "react-native";
 import {
   LogOut,
@@ -30,7 +31,9 @@ import {
   Shield,
   Briefcase,
   MapPin,
+  Users,
 } from "lucide-react-native";
+import DeviceInfo from "react-native-device-info";
 import Geolocation from "@react-native-community/geolocation";
 import { PermissionsAndroid } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -121,9 +124,8 @@ export default function ProfileScreen({ navigation }: Props) {
     setIsActive(freshData.is_active === true);
 
     let imageUri = null;
-    // const BASE_IMAGE_URL = "https://staging.apis.staffoo.com.au/storage/";
+    // const BASE_IMAGE_URL = "https://apis-staging.staffoo.com.au/storage/";
     const BASE_IMAGE_URL = "https://apis.staffoo.com.au/storage/";
-  
 
     if (freshData.user_type === "customer") {
       imageUri = freshData.customer?.profile_image || freshData.profile_image;
@@ -145,6 +147,7 @@ export default function ProfileScreen({ navigation }: Props) {
   useFocusEffect(
     useCallback(() => {
       let mounted = true;
+      let isFirstLoad = !hasLoadedOnceRef.current;
 
       const loadProfile = async () => {
         try {
@@ -158,9 +161,8 @@ export default function ProfileScreen({ navigation }: Props) {
 
           setUserId(uid);
 
-          // 1. Show cached profile instantly on first mount so the
-          //    Active/Inactive chip never flashes a wrong default value.
-          if (!hasLoadedOnceRef.current) {
+          // 1. Show cached data immediately (fast UI)
+          if (isFirstLoad) {
             const cached = await AsyncStorage.getItem("user");
             if (cached && mounted) {
               applyProfileData(JSON.parse(cached));
@@ -169,9 +171,8 @@ export default function ProfileScreen({ navigation }: Props) {
             }
           }
 
-          // 2. Refresh from the server in the background. Don't flip
-          //    `loading` back to true here — that's what was causing the
-          //    "Inactive" flash on every refocus.
+          // 2. ALWAYS fetch fresh data from server (but only once per focus if possible)
+          console.log("🔹 getUserProfile called with ID:", uid);
           const profileResponse = await getUserProfile(uid);
 
           if (profileResponse?.success && profileResponse?.data && mounted) {
@@ -179,8 +180,8 @@ export default function ProfileScreen({ navigation }: Props) {
             applyProfileData(freshData);
             await AsyncStorage.setItem("user", JSON.stringify(freshData));
 
-            if (!hasUpdatedRef.current) {
-              hasUpdatedRef.current = true;
+            // Only update location on first real load
+            if (isFirstLoad) {
               updateCoordinatesWithGoogle(uid);
             }
           }
@@ -199,7 +200,7 @@ export default function ProfileScreen({ navigation }: Props) {
       return () => {
         mounted = false;
       };
-    }, [applyProfileData]),
+    }, [navigation, applyProfileData]), // Important: stable dependencies
   );
 
   useEffect(() => {
@@ -367,19 +368,139 @@ export default function ProfileScreen({ navigation }: Props) {
       console.error("❌ Failed to update coordinates:", error);
     }
   };
+
+  // const updateCoordinatesWithGoogle = async (uid: string) => {
+  //   // Prevent multiple simultaneous calls
+  //   if (updateCoordinatesWithGoogle.isRunning) {
+  //     console.log("⏭️ Location update already in progress");
+  //     return;
+  //   }
+
+  //   updateCoordinatesWithGoogle.isRunning = true;
+
+  //   try {
+  //     const token = await AsyncStorage.getItem("@auth_token");
+  //     if (!token || !uid) {
+  //       console.log("❌ Missing token or user id");
+  //       return;
+  //     }
+
+  //     // Permission
+  //     if (Platform.OS === "android") {
+  //       const granted = await PermissionsAndroid.request(
+  //         PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+  //       );
+
+  //       if (granted !== PermissionsAndroid.RESULTS.GRANTED) {
+  //         console.log("❌ Location permission denied");
+  //         return;
+  //       }
+  //     }
+
+  //     console.log("📍 Requesting location...");
+
+  //     Geolocation.getCurrentPosition(
+  //       async (position) => {
+  //         const { latitude, longitude } = position.coords;
+  //         console.log(`✅ Location Success: ${latitude}, ${longitude}`);
+
+  //         try {
+  //           const response = await fetch(
+  //             `${BASE_URL}/update-coordinates/${uid}`,
+  //             {
+  //               method: "POST",
+  //               headers: {
+  //                 "Content-Type": "application/json",
+  //                 Authorization: `Bearer ${token}`,
+  //               },
+  //               body: JSON.stringify({
+  //                 current_coordinates: `${latitude},${longitude}`,
+  //               }),
+  //             },
+  //           );
+
+  //           const data = await response.json();
+
+  //           if (response.ok) {
+  //             console.log("✅ Coordinates updated on server");
+  //           }
+  //         } catch (apiErr) {
+  //           console.log("API Error while updating coordinates:", apiErr);
+  //         } finally {
+  //           updateCoordinatesWithGoogle.isRunning = false;
+  //         }
+  //       },
+
+  //       (error) => {
+  //         console.log("❌ Geolocation Error:", error);
+
+  //         let message = "Failed to get location.";
+  //         if (error.code === 3) {
+  //           message =
+  //             "Location request timed out. Please try again outdoors with strong GPS signal.";
+  //         } else if (error.code === 2) {
+  //           message = "Location service unavailable. Check GPS is enabled.";
+  //         } else if (error.code === 1) {
+  //           message = "Location permission denied.";
+  //         }
+
+  //         // Only show alert once
+  //         if (!updateCoordinatesWithGoogle.hasShownError) {
+  //           Alert.alert("Location Error", message);
+  //           updateCoordinatesWithGoogle.hasShownError = true;
+  //         }
+
+  //         updateCoordinatesWithGoogle.isRunning = false;
+  //       },
+
+  //       {
+  //         enableHighAccuracy: true,
+  //         timeout: 60000, // 60 seconds
+  //         maximumAge: 30000, // Accept up to 30s old location
+  //       },
+  //     );
+  //   } catch (err) {
+  //     console.log("Unexpected error in location update:", err);
+  //     updateCoordinatesWithGoogle.isRunning = false;
+  //   }
+  // };
+
+  // Add this outside the component
+  updateCoordinatesWithGoogle.isRunning = false;
+  updateCoordinatesWithGoogle.hasShownError = false;
+
+  // Single source of truth for location updates
   useEffect(() => {
     if (!userId) return;
 
-    // Initial call
-    updateCoordinatesWithGoogle(userId);
+    let interval: NodeJS.Timeout | null = null;
 
-    // Every 5 minutes
-    const interval = setInterval(() => {
+    const updateLocation = async () => {
+      if ((updateCoordinatesWithGoogle as any).isRunning) {
+        console.log(
+          "⏭️ Location update already in progress, skipping duplicate call",
+        );
+        return;
+      }
+
       console.log("📍 Updating coordinates...");
-      updateCoordinatesWithGoogle(userId);
-    }, 5 * 60 * 1000); // 300000 ms = 5 min
+      await updateCoordinatesWithGoogle(userId);
+    };
 
-    return () => clearInterval(interval);
+    // Initial call (delayed)
+    const initialTimer = setTimeout(() => {
+      updateLocation();
+    }, 2500);
+
+    // Update every 10 minutes (better for battery & less spam)
+    interval = setInterval(() => {
+      updateLocation();
+    }, 10 * 60 * 1000); // 10 minutes
+
+    return () => {
+      clearTimeout(initialTimer);
+      if (interval) clearInterval(interval);
+    };
   }, [userId]);
 
   const getProfileSections = (userType: string | undefined) => {
@@ -426,8 +547,14 @@ export default function ProfileScreen({ navigation }: Props) {
         route: "Payslip",
       },
       {
+        title: "Job History",
+        icon: <Briefcase size={20} color="#00A99D" />,
+        iconBg: "rgba(0,169,157,0.15)",
+        route: "Applications",
+      },
+      {
         title: "Staff Management",
-        icon: <Wallet size={20} color="#F59E0B" />,
+        icon: <Users size={20} color="#F59E0B" />,
         iconBg: "rgba(245,158,11,0.15)",
         route: "StaffManagement",
       },
@@ -457,14 +584,16 @@ export default function ProfileScreen({ navigation }: Props) {
       const staffTabs = [
         "Personal Information",
         "Documents",
-        "Induction",
+
         "Privacy Policy",
+        "Job History",
 
         "Log Out",
       ];
 
       if (isSuperStaff) {
         staffTabs.splice(2, 0, "Verification Forms");
+        staffTabs.splice(2, 0, "Induction");
       }
 
       return allSections.filter((s) => staffTabs.includes(s.title));
@@ -476,6 +605,7 @@ export default function ProfileScreen({ navigation }: Props) {
           "Personal Information",
           "Documents",
           "Staff Management",
+          "Job History",
 
           "Log Out",
         ].includes(s.title),
@@ -499,23 +629,32 @@ export default function ProfileScreen({ navigation }: Props) {
 
   const handleSectionPress = (route: string) => {
     if (route === "Logout") {
-      Alert.alert("Log Out", "Are you sure you want to log out?", [
-        { text: "Cancel", style: "cancel" },
+      Alert.alert("log out", "Are you sure you want to log out?", [
+        { text: "cancel", style: "cancel" },
         {
-          text: "Log Out",
+          text: "log out",
           style: "destructive",
           onPress: async () => {
             try {
               const token = await AsyncStorage.getItem("@auth_token");
               if (token) await logoutUser();
+
               await AsyncStorage.multiRemove([
                 "@user_id",
                 "@auth_token",
                 "user",
                 "profileImage",
               ]);
-              Toast.show({ type: "success", text1: "Logged out successfully" });
-              navigation.reset({ index: 0, routes: [{ name: "Login" }] });
+
+              Toast.show({
+                type: "success",
+                text1: "Logged out successfully",
+              });
+
+              navigation.reset({
+                index: 0,
+                routes: [{ name: "Login" }],
+              });
             } catch {
               await AsyncStorage.multiRemove([
                 "@user_id",
@@ -523,7 +662,11 @@ export default function ProfileScreen({ navigation }: Props) {
                 "user",
                 "profileImage",
               ]);
-              navigation.reset({ index: 0, routes: [{ name: "Login" }] });
+
+              navigation.reset({
+                index: 0,
+                routes: [{ name: "Login" }],
+              });
             }
           },
         },
@@ -603,12 +746,12 @@ export default function ProfileScreen({ navigation }: Props) {
           <View style={styles.innercontainer}>
             <View style={styles.heroTopRow}>
               <Text style={styles.heroTitle}>My Profile</Text>
-              <TouchableOpacity
+              {/* <TouchableOpacity
                 style={styles.settingsBtn}
                 onPress={() => navigation.navigate("ProfileSetup")}
               >
                 <Settings size={18} color={COLORS.primary} />
-              </TouchableOpacity>
+              </TouchableOpacity> */}
             </View>
 
             <View style={styles.profileInfoContainer}>
@@ -632,7 +775,7 @@ export default function ProfileScreen({ navigation }: Props) {
 
               <View style={styles.nameSection}>
                 <Text style={styles.greeting}>
-                  {capitalizeName(user?.name || "User")} 👋
+                  {capitalizeName(user?.name || "User")}
                 </Text>
 
                 {!!user?.email && (
@@ -772,11 +915,11 @@ const CARD_WIDTH = (width - 36) / 3;
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: "#111111",
+    backgroundColor: "#030508",
   },
   container: {
     flex: 1,
-    backgroundColor: "#111111",
+    backgroundColor: "#030508",
     paddingTop: 20,
   },
 
@@ -796,9 +939,11 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   heroSection: {
-    paddingBottom: 28,
+    paddingBottom: 10,
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.primaryBorder,
+    // borderBottomColor: COLORS.primaryBorder,
+    borderBottomLeftRadius: 26,
+    borderBottomRightRadius: 26,
   },
   greeting: {
     fontSize: 20,
@@ -997,17 +1142,17 @@ const styles = StyleSheet.create({
     paddingBottom: 12,
   },
   sectionTitle: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: "600",
     color: "#ffff",
     letterSpacing: 0.8,
-    textTransform: "uppercase",
+    // textTransform: "uppercase",
   },
 
   gridContainer: {
     flexDirection: "row",
     flexWrap: "wrap",
-    justifyContent: "space-between",
+    // justifyContent: "space-between",
     paddingHorizontal: 12,
     gap: 5,
   },

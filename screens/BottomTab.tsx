@@ -9,6 +9,7 @@ import {
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useFocusEffect } from "@react-navigation/native";
+import axios from "axios";
 import {
   Home,
   FileText,
@@ -16,9 +17,10 @@ import {
   MessageCircle,
   User,
   Calendar,
+  CheckCircle,
   Lock,
 } from "lucide-react-native";
-import { getUserProfile } from "../services/authApi";
+import { getUserProfile, BASE_URL } from "../services/authApi";
 
 type Props = {
   navigation: any;
@@ -29,6 +31,13 @@ export default function BottomTab({ navigation, activeTab = "Home" }: Props) {
   const [userType, setUserType] = useState<string | null>(null);
   const [isActive, setIsActive] = useState(false);
   const [loading, setLoading] = useState(true);
+  // "staff" covers two different people: Staffoo's own staff (account id 1)
+  // and a contractor's guards (any other staff account). Only the former
+  // gets the "Available Jobs" tab.
+  const [isStaffooStaff, setIsStaffooStaff] = useState(false);
+  // Badge count for the "Available Jobs" tab — shown for staffoo staff and
+  // contractors only.
+  const [availableJobsCount, setAvailableJobsCount] = useState(0);
 
   useFocusEffect(
     useCallback(() => {
@@ -85,6 +94,30 @@ export default function BottomTab({ navigation, activeTab = "Home" }: Props) {
           if (userData) {
             setUserType(userData.user_type ?? null);
             setIsActive(userData.is_active === true);
+            setIsStaffooStaff(Number(userData.id) === 1);
+          }
+
+          // ── Available Jobs badge — only relevant for staffoo staff
+          // (userData.id === 1) and contractors, since they're the only
+          // ones who see the "Available Jobs" tab. Fetch is best-effort:
+          // a failure here just means no badge, never a broken nav.
+          const showsAvailableJobsTab =
+            userData?.user_type === "contractor" ||
+            (userData?.user_type === "staff" && Number(userData?.id) === 1);
+
+          if (showsAvailableJobsTab) {
+            try {
+              const countRes = await axios.get(
+                `${BASE_URL}/jobs/available/${userId}`,
+                { headers: { Authorization: `Bearer ${token}` } },
+              );
+              const total = Number(countRes?.data?.data?.jobs?.total ?? 0);
+              setAvailableJobsCount(Number.isFinite(total) ? total : 0);
+            } catch (countErr) {
+              setAvailableJobsCount(0);
+            }
+          } else {
+            setAvailableJobsCount(0);
           }
         } catch (err) {
           await AsyncStorage.multiRemove(["@user_id", "@auth_token", "user"]);
@@ -140,7 +173,12 @@ export default function BottomTab({ navigation, activeTab = "Home" }: Props) {
     ];
   };
 
-  const renderTab = (screen: string, label: string, Icon: any) => (
+  const renderTab = (
+    screen: string,
+    label: string,
+    Icon: any,
+    badge?: number,
+  ) => (
     <TouchableOpacity
       key={screen}
       style={styles.tabItem}
@@ -159,6 +197,14 @@ export default function BottomTab({ navigation, activeTab = "Home" }: Props) {
         {!canAccess(screen) && screen !== "Profile" && (
           <Lock size={11} color="#ef4444" style={styles.lockIcon} />
         )}
+
+        {!!badge && canAccess(screen) && (
+          <View style={styles.tabBadge}>
+            <Text style={styles.tabBadgeText}>
+              {badge > 99 ? "99+" : badge}
+            </Text>
+          </View>
+        )}
       </View>
 
       <Text style={getLabelStyle(screen)}>{label}</Text>
@@ -175,30 +221,97 @@ export default function BottomTab({ navigation, activeTab = "Home" }: Props) {
     );
   }
 
+  // ── Per-user-type tab configs ──────────────────────────────────────────
+  // "staff" is two different people: Staffoo's own staff (isStaffooStaff,
+  // account id 1) and a contractor's guards (any other staff account).
+  // "AcceptedJobs" and "StaffShifts" are both registered as hidden-button
+  // Tab.Screens rendering the same StaffShifts component — it reads
+  // route.name to decide which section to show. "Applications" (My Jobs)
+  // is likewise still registered but no longer has a visible tab button
+  // for these three types — it's reached from the "Job History" box on
+  // Profile instead. Customers are the one exception and keep My Jobs
+  // as a bottom tab, unchanged.
+  type TabConfig = {
+    name: string;
+    label: string;
+    Icon: any;
+    isAdd?: boolean;
+    badge?: number;
+  };
+
+  const customerTabs: TabConfig[] = [
+    { name: "Home", label: "Home", Icon: Home },
+    { name: "Applications", label: "My Jobs", Icon: FileText },
+    { name: "CreateJob", label: "", Icon: Plus, isAdd: true },
+    { name: "Messages", label: "Messages", Icon: MessageCircle },
+    { name: "Profile", label: "Profile", Icon: User },
+  ];
+
+  const staffooStaffTabs: TabConfig[] = [
+    { name: "Home", label: "Home", Icon: Home },
+    { name: "AcceptedJobs", label: "Accepted Job", Icon: CheckCircle },
+    {
+      name: "StaffShifts",
+      label: "Available Jobs",
+      badge: availableJobsCount,
+      Icon: Calendar,
+    },
+    { name: "Messages", label: "Messages", Icon: MessageCircle },
+    { name: "Profile", label: "Profile", Icon: User },
+  ];
+
+  const contractorTabs: TabConfig[] = [
+    { name: "Home", label: "Home", Icon: Home },
+    { name: "AcceptedJobs", label: "Accepted Jobs", Icon: CheckCircle },
+    {
+      name: "StaffShifts",
+      label: "Available Jobs",
+      badge: availableJobsCount,
+      Icon: Calendar,
+    },
+    { name: "Messages", label: "Messages", Icon: MessageCircle },
+    { name: "Profile", label: "Profile", Icon: User },
+  ];
+
+  const contractorGuardTabs: TabConfig[] = [
+    { name: "Home", label: "Home", Icon: Home },
+    { name: "AcceptedJobs", label: "Assigned Job", Icon: CheckCircle },
+    { name: "Messages", label: "Messages", Icon: MessageCircle },
+    { name: "Profile", label: "Profile", Icon: User },
+  ];
+
+  const tabs =
+    userType === "customer"
+      ? customerTabs
+      : userType === "contractor"
+      ? contractorTabs
+      : userType === "staff" && isStaffooStaff
+      ? staffooStaffTabs
+      : userType === "staff"
+      ? contractorGuardTabs
+      : customerTabs; // fallback while userType is unrecognised
+
   return (
     <View style={styles.wrapper}>
       <View style={styles.bottomTab}>
-        {renderTab("Home", "Home", Home)}
-
-        {renderTab("Applications", "My Jobs", FileText)}
-
-        {userType === "customer" && (
-          <TouchableOpacity
-            style={[styles.tabAdd, !isFullyAccessible && styles.tabAddDisabled]}
-            onPress={() => handlePress("CreateJob")}
-            disabled={!isFullyAccessible}
-            activeOpacity={0.9}
-          >
-            <Plus size={30} color="#fff" strokeWidth={2.8} />
-          </TouchableOpacity>
+        {tabs.map((tab) =>
+          tab.isAdd ? (
+            <TouchableOpacity
+              key={tab.name}
+              style={[
+                styles.tabAdd,
+                !isFullyAccessible && styles.tabAddDisabled,
+              ]}
+              onPress={() => handlePress(tab.name)}
+              disabled={!isFullyAccessible}
+              activeOpacity={0.9}
+            >
+              <Plus size={30} color="#fff" strokeWidth={2.8} />
+            </TouchableOpacity>
+          ) : (
+            renderTab(tab.name, tab.label, tab.Icon, tab.badge)
+          ),
         )}
-
-        {(userType === "staff" || userType === "contractor") &&
-          renderTab("StaffShifts", "Shifts", Calendar)}
-
-        {renderTab("Messages", "Messages", MessageCircle)}
-
-        {renderTab("Profile", "Profile", User)}
       </View>
     </View>
   );
@@ -277,6 +390,27 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: 5,
     right: 4,
+  },
+
+  tabBadge: {
+    position: "absolute",
+    top: -2,
+    right: -6,
+    backgroundColor: "#ef4444",
+    borderRadius: 10,
+    minWidth: 18,
+    height: 18,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 4,
+    borderWidth: 1.5,
+    borderColor: "#ffffff",
+  },
+
+  tabBadgeText: {
+    color: "#fff",
+    fontSize: 9,
+    fontWeight: "700",
   },
 
   tabAdd: {

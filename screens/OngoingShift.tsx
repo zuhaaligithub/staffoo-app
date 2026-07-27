@@ -1,8 +1,4 @@
-
-
-
-
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -18,9 +14,9 @@ import {
   PermissionsAndroid,
   Vibration,
   Platform,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import RNFS from 'react-native-fs';
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import RNFS from "react-native-fs";
 import {
   ChevronLeft,
   Camera as CameraIcon,
@@ -28,40 +24,40 @@ import {
   Footprints,
   Plus,
   Clock,
-} from 'lucide-react-native';
-import { launchCamera } from 'react-native-image-picker';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import Geolocation from 'react-native-geolocation-service';
-import axios from 'axios';
-import SoundPlayer from 'react-native-sound-player';
-import ImageResizer from 'react-native-image-resizer';
-import { SvgXml } from 'react-native-svg';
+} from "lucide-react-native";
+import { launchCamera } from "react-native-image-picker";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import Geolocation from "react-native-geolocation-service";
+import axios from "axios";
+import SoundPlayer from "react-native-sound-player";
+import ImageResizer from "react-native-image-resizer";
+import { SvgXml } from "react-native-svg";
 import {
   Camera,
   useCameraDevice,
   useCodeScanner,
-} from 'react-native-vision-camera';
-import { BASE_URL } from '../services/authApi';
+} from "react-native-vision-camera";
+import { BASE_URL } from "../services/authApi";
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 const COLORS = {
-  background: '#030508',
-  surface: '#07111A',
-  card: '#0D1421',
-  cardBorder: 'rgba(98, 97, 97, 0.83)',
-  primary: '#00A99D',
-  primaryGlow: 'rgba(0,169,157,0.25)',
-  primaryBorder: 'rgba(0,169,157,0.25)',
-  text: '#FFFFFF',
-  textSecondary: '#94A3B8',
-  textMuted: '#4A6080',
-  success: '#34C88A',
-  danger: '#F87171',
-  dangerBg: 'rgba(248,88,88,0.12)',
-  warning: '#F5A623',
-  warningBg: 'rgba(245,166,35,0.08)',
-  heroBg1: '#0D1F2D',
-  heroBg2: '#061014',
+  background: "#030508",
+  surface: "#07111A",
+  card: "#0D1421",
+  cardBorder: "rgba(98, 97, 97, 0.83)",
+  primary: "#00A99D",
+  primaryGlow: "rgba(0,169,157,0.25)",
+  primaryBorder: "rgba(0,169,157,0.25)",
+  text: "#FFFFFF",
+  textSecondary: "#94A3B8",
+  textMuted: "#4A6080",
+  success: "#34C88A",
+  danger: "#F87171",
+  dangerBg: "rgba(248,88,88,0.12)",
+  warning: "#F5A623",
+  warningBg: "rgba(245,166,35,0.08)",
+  heroBg1: "#0D1F2D",
+  heroBg2: "#061014",
 };
 
 const getDistanceMeters = (
@@ -77,8 +73,8 @@ const getDistanceMeters = (
   const a =
     Math.sin(dLat / 2) ** 2 +
     Math.cos((lat1 * Math.PI) / 180) *
-    Math.cos((lat2 * Math.PI) / 180) *
-    Math.sin(dLon / 2) ** 2;
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLon / 2) ** 2;
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   return R * c;
 };
@@ -91,7 +87,7 @@ interface Task {
   task: string;
   task_start: string;
   task_end: string;
-  status: 'pending' | 'started' | 'completed';
+  status: "pending" | "started" | "completed";
   start_time?: string | null;
   end_time?: string | null;
   note?: string | null;
@@ -135,10 +131,10 @@ function QRScannerModal({
   onClose: () => void;
   onCodeScanned: (codes: any[]) => void;
 }) {
-  const device = useCameraDevice('back');
+  const device = useCameraDevice("back");
   const codeScanner = useCodeScanner({
-    codeTypes: ['qr'],
-    onCodeScanned: codes => {
+    codeTypes: ["qr"],
+    onCodeScanned: (codes) => {
       if (visible) onCodeScanned(codes);
     },
   });
@@ -146,8 +142,8 @@ function QRScannerModal({
   if (!visible) return null;
 
   return (
-    <Modal visible={visible} animationType="slide">
-      <SafeAreaView style={{ flex: 1, backgroundColor: 'black' }}>
+    <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: "black" }}>
         {device ? (
           <Camera
             style={StyleSheet.absoluteFill}
@@ -159,10 +155,10 @@ function QRScannerModal({
           <View
             style={[
               StyleSheet.absoluteFill,
-              { justifyContent: 'center', alignItems: 'center' },
+              { justifyContent: "center", alignItems: "center" },
             ]}
           >
-            <Text style={{ color: 'white' }}>
+            <Text style={{ color: "white" }}>
               Camera not available or not linked.
             </Text>
             <TouchableOpacity
@@ -214,12 +210,12 @@ export default function OngoingShift({
 
   // Sign-out
   const [isSigningOut, setIsSigningOut] = useState(false);
-  const [signoutNotes, setSignoutNotes] = useState('');
+  const [signoutNotes, setSignoutNotes] = useState("");
 
   // Break
   const [breakModalVisible, setBreakModalVisible] = useState(false);
-  const [breakNote, setBreakNote] = useState('');
-  const [informedTo, setInformedTo] = useState('');
+  const [breakNote, setBreakNote] = useState("");
+  const [informedTo, setInformedTo] = useState("");
   const [isOnBreak, setIsOnBreak] = useState(false);
   const [breakLoading, setBreakLoading] = useState(false);
   const [breakStartTime, setBreakStartTime] = useState<string | null>(null);
@@ -249,7 +245,6 @@ export default function OngoingShift({
   const hasAlarmedRef = useRef(false);
   const checkIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
-
   const RADIUS_METERS = 300;
   const POLL_INTERVAL_MS = 30000;
   const ALARM_REPEAT_INTERVAL = 15000;
@@ -261,19 +256,19 @@ export default function OngoingShift({
   const onCodeScanned = (codes: any[]) => {
     if (codes.length > 0 && isScannerVisible) {
       const value = codes[0].value;
-      console.log('Scanned QR raw value:', value);
+      console.log("Scanned QR raw value:", value);
       setIsScannerVisible(false);
 
       try {
         let scannedData: any;
         try {
-          scannedData = JSON.parse(value || '{}');
+          scannedData = JSON.parse(value || "{}");
         } catch {
           scannedData = { handover_token: value };
         }
         processScannedQR(scannedData);
       } catch (err) {
-        Alert.alert('Error', 'Invalid QR code format');
+        Alert.alert("Error", "Invalid QR code format");
       }
     }
   };
@@ -294,9 +289,9 @@ export default function OngoingShift({
       const now = new Date();
       let shiftEndDate: Date;
 
-      if (endTimeStr.includes(':')) {
+      if (endTimeStr.includes(":")) {
         const today = new Date();
-        const [hours, minutes] = endTimeStr.split(':').map(Number);
+        const [hours, minutes] = endTimeStr.split(":").map(Number);
         shiftEndDate = new Date(
           today.getFullYear(),
           today.getMonth(),
@@ -326,7 +321,7 @@ export default function OngoingShift({
   useEffect(() => {
     const shiftFromParams = route.params?.currentShift;
     if (!shiftFromParams) {
-      Alert.alert('Error', 'No shift data received.');
+      Alert.alert("Error", "No shift data received.");
       return;
     }
 
@@ -341,10 +336,10 @@ export default function OngoingShift({
 
     if (rawSigninTime) {
       try {
-        if (typeof rawSigninTime === 'string' && rawSigninTime.includes('-')) {
-          const [datePart, timePart] = rawSigninTime.trim().split(' ');
-          const [p1, p2, p3] = datePart.split('-');
-          const time = timePart || '00:00';
+        if (typeof rawSigninTime === "string" && rawSigninTime.includes("-")) {
+          const [datePart, timePart] = rawSigninTime.trim().split(" ");
+          const [p1, p2, p3] = datePart.split("-");
+          const time = timePart || "00:00";
           const now = Date.now();
 
           const dateA = new Date(`${p3}-${p1}-${p2}T${time}:00`);
@@ -403,13 +398,13 @@ export default function OngoingShift({
   useEffect(() => {
     const getUserFromStorage = async () => {
       try {
-        const storedUser = await AsyncStorage.getItem('user');
+        const storedUser = await AsyncStorage.getItem("user");
         if (storedUser) {
           const parsedUser = JSON.parse(storedUser);
           setLoginId(parsedUser?.id);
         }
       } catch (error) {
-        console.error('Error reading user from storage:', error);
+        console.error("Error reading user from storage:", error);
       }
     };
     getUserFromStorage();
@@ -432,16 +427,16 @@ export default function OngoingShift({
 
   const triggerAlarm = () => {
     if (!jobCoordinates) return;
-    if (Platform.OS === 'android') {
+    if (Platform.OS === "android") {
       Vibration.vibrate(VIBRATION_PATTERN, true);
     } else {
       Vibration.vibrate();
     }
     try {
-      const alarmAsset = require('../assets/tune/alarm.mp3');
+      const alarmAsset = require("../assets/tune/alarm.mp3");
       SoundPlayer.playAsset(alarmAsset);
     } catch (error) {
-      console.log('[ALARM] Sound failed:', error);
+      console.log("[ALARM] Sound failed:", error);
     }
   };
 
@@ -451,7 +446,7 @@ export default function OngoingShift({
     if (!currentShift || !jobCoordinates) return;
 
     const requestPermission = async () => {
-      if (Platform.OS === 'android') {
+      if (Platform.OS === "android") {
         const granted = await PermissionsAndroid.request(
           PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
         );
@@ -478,7 +473,7 @@ export default function OngoingShift({
       Vibration.cancel();
       try {
         SoundPlayer.stop();
-      } catch (_) { }
+      } catch (_) {}
     };
 
     const getGoogleLocation = async () => {
@@ -486,13 +481,13 @@ export default function OngoingShift({
         const response = await fetch(
           `https://www.googleapis.com/geolocation/v1/geolocate?key=AIzaSyCS-DB39Kk-Z25C5GWymVGshXIALbjXPGY`,
           {
-            method: 'POST',
-          }
+            method: "POST",
+          },
         );
 
         const data = await response.json();
 
-        if (!data.location) throw new Error('Location not found');
+        if (!data.location) throw new Error("Location not found");
 
         return {
           latitude: data.location.lat,
@@ -523,7 +518,7 @@ export default function OngoingShift({
           localStopAlarm();
         }
       } catch (err) {
-        console.warn('[Google Location Error]', err);
+        console.warn("[Google Location Error]", err);
       }
     };
 
@@ -549,13 +544,13 @@ export default function OngoingShift({
     const h = Math.floor(totalSeconds / 3600);
     const m = Math.floor((totalSeconds % 3600) / 60);
     const s = totalSeconds % 60;
-    return `${h.toString().padStart(2, '0')}:${m
+    return `${h.toString().padStart(2, "0")}:${m
       .toString()
-      .padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+      .padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
   };
 
   const openCamera = async () => {
-    if (Platform.OS === 'android') {
+    if (Platform.OS === "android") {
       const granted = await PermissionsAndroid.request(
         PermissionsAndroid.PERMISSIONS.CAMERA,
       );
@@ -564,8 +559,8 @@ export default function OngoingShift({
 
     try {
       const result = await launchCamera({
-        mediaType: 'photo',
-        cameraType: 'front',
+        mediaType: "photo",
+        cameraType: "front",
         quality: 0.8,
       });
 
@@ -575,17 +570,17 @@ export default function OngoingShift({
         result.assets[0].uri,
         600,
         600,
-        'JPEG',
+        "JPEG",
         60,
       );
 
-      const base64Data = await RNFS.readFile(compressed.uri, 'base64');
-      const cleanUri = compressed.uri.replace(/^file:\/\//, '');
+      const base64Data = await RNFS.readFile(compressed.uri, "base64");
+      const cleanUri = compressed.uri.replace(/^file:\/\//, "");
       setSelfieUri(`file://${cleanUri}`);
       setSelfieBase64(`data:image/jpeg;base64,${base64Data}`);
     } catch (err) {
-      console.error('Error processing image:', err);
-      Alert.alert('Error', 'Failed to process image.');
+      console.error("Error processing image:", err);
+      Alert.alert("Error", "Failed to process image.");
     }
   };
 
@@ -594,31 +589,31 @@ export default function OngoingShift({
   const handleStartTask = async (taskId: number) => {
     if (taskLoading !== null) return;
 
-    Alert.alert('Start Task', 'Do you want to start this task now?', [
-      { text: 'Cancel', style: 'cancel' },
+    Alert.alert("Start Task", "Do you want to start this task now?", [
+      { text: "Cancel", style: "cancel" },
       {
-        text: 'Start',
+        text: "Start",
         onPress: async () => {
           try {
             setTaskLoading(taskId);
 
-            const userJson = await AsyncStorage.getItem('user');
-            if (!userJson) throw new Error('User not found');
+            const userJson = await AsyncStorage.getItem("user");
+            if (!userJson) throw new Error("User not found");
 
             const user = JSON.parse(userJson);
             const guardId = user?.id;
-            if (!guardId) throw new Error('Guard ID missing');
+            if (!guardId) throw new Error("Guard ID missing");
 
-            const token = await AsyncStorage.getItem('@auth_token');
-            if (!token) throw new Error('No auth token');
+            const token = await AsyncStorage.getItem("@auth_token");
+            if (!token) throw new Error("No auth token");
 
             // ✅ Removed Geolocation, using stored shift/site coordinates
             const locationStr = jobCoordinates
               ? `${jobCoordinates.lat},${jobCoordinates.lng}`
-              : '0,0';
+              : "0,0";
 
             const now = new Date();
-            const pad = (n: number) => n.toString().padStart(2, '0');
+            const pad = (n: number) => n.toString().padStart(2, "0");
 
             const startTime = `${pad(now.getDate())}-${pad(
               now.getMonth() + 1,
@@ -634,29 +629,26 @@ export default function OngoingShift({
               location: locationStr,
             };
 
-            const response = await fetch(
-              `${BASE_URL}/start_task/${taskId}`,
-              {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                  Authorization: `Bearer ${token}`,
-                  Accept: 'application/json',
-                },
-                body: JSON.stringify(payload),
+            const response = await fetch(`${BASE_URL}/start_task/${taskId}`, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+                Accept: "application/json",
               },
-            );
+              body: JSON.stringify(payload),
+            });
 
             const result = await response.json();
 
             if (!response.ok || !result?.success) {
-              throw new Error(result?.message || 'Failed to start task');
+              throw new Error(result?.message || "Failed to start task");
             }
 
-            setStartedTasks(prev => new Set([...prev, taskId]));
-            Alert.alert('Success', 'Task started successfully!');
+            setStartedTasks((prev) => new Set([...prev, taskId]));
+            Alert.alert("Success", "Task started successfully!");
           } catch (error: any) {
-            Alert.alert('Error', error.message || 'Failed to start task');
+            Alert.alert("Error", error.message || "Failed to start task");
           } finally {
             setTaskLoading(null);
           }
@@ -669,32 +661,32 @@ export default function OngoingShift({
 
   const handleSignOut = async () => {
     if (!selfieUri || !selfieBase64) {
-      Alert.alert('Missing Selfie', 'Please take a sign-out selfie first.');
+      Alert.alert("Missing Selfie", "Please take a sign-out selfie first.");
       return;
     }
 
     Alert.alert(
-      'Confirm Sign Out',
-      'Are you sure you want to end this shift?',
+      "Confirm Sign Out",
+      "Are you sure you want to end this shift?",
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: "Cancel", style: "cancel" },
         {
-          text: 'End Shift',
-          style: 'destructive',
+          text: "End Shift",
+          style: "destructive",
           onPress: async () => {
             try {
               setIsSigningOut(true);
 
-              const token = await AsyncStorage.getItem('@auth_token');
-              if (!token) throw new Error('Authentication token not found');
+              const token = await AsyncStorage.getItem("@auth_token");
+              if (!token) throw new Error("Authentication token not found");
 
               // ✅ Use already stored job coordinates instead of Geolocation
               const locationStr = jobCoordinates
                 ? `${jobCoordinates.lat},${jobCoordinates.lng}`
-                : '0,0';
+                : "0,0";
 
               const now = new Date();
-              const pad = (n: number) => n.toString().padStart(2, '0');
+              const pad = (n: number) => n.toString().padStart(2, "0");
 
               const signoutTime = `${pad(now.getDate())}-${pad(
                 now.getMonth() + 1,
@@ -707,8 +699,8 @@ export default function OngoingShift({
                 location: locationStr,
                 jobId: currentShift?.id?.toString(),
                 selfie: selfieBase64,
-                notes: signoutNotes.trim() || 'No notes',
-                signin_time: currentShift?.signin_time || '',
+                notes: signoutNotes.trim() || "No notes",
+                signin_time: currentShift?.signin_time || "",
               };
 
               await axios.post(
@@ -717,18 +709,18 @@ export default function OngoingShift({
                 {
                   headers: {
                     Authorization: `Bearer ${token}`,
-                    'Content-Type': 'application/json',
+                    "Content-Type": "application/json",
                   },
                 },
               );
 
-              Alert.alert('Success', 'Shift ended successfully!', [
-                { text: 'OK', onPress: () => navigation.goBack() },
+              Alert.alert("Success", "Shift ended successfully!", [
+                { text: "OK", onPress: () => navigation.goBack() },
               ]);
             } catch (error: any) {
               Alert.alert(
-                'Sign Out Failed',
-                error.message || 'Error signing out',
+                "Sign Out Failed",
+                error.message || "Error signing out",
               );
             } finally {
               setIsSigningOut(false);
@@ -738,18 +730,70 @@ export default function OngoingShift({
       ],
     );
   };
+  const formatAustralianDateTime = (dateTime: string | null | undefined) => {
+    if (!dateTime) return "-";
 
+    try {
+      // Handle "07-20-2026 12:41" format
+      if (dateTime.includes("-")) {
+        const [datePart, timePart] = dateTime.split(" ");
+
+        if (datePart) {
+          const [month, day, year] = datePart.split("-").map(Number);
+
+          const formattedDate = `${String(day).padStart(2, "0")}-${String(
+            month,
+          ).padStart(2, "0")}-${year}`;
+
+          let formattedTime = timePart || "00:00";
+
+          // If time is already HH:mm, keep it
+          if (timePart && timePart.includes(":")) {
+            formattedTime = timePart;
+          } else {
+            // Try to parse with new Date for AM/PM cases
+            const tempDate = new Date(
+              `${month}-${day}-${year} ${timePart || ""}`,
+            );
+            if (!isNaN(tempDate.getTime())) {
+              const h = String(tempDate.getHours()).padStart(2, "0");
+              const m = String(tempDate.getMinutes()).padStart(2, "0");
+              formattedTime = `${h}:${m}`;
+            }
+          }
+
+          return `${formattedDate} ${formattedTime}`;
+        }
+      }
+
+      // Fallback
+      const date = new Date(dateTime);
+      if (!isNaN(date.getTime())) {
+        const day = String(date.getDate()).padStart(2, "0");
+        const month = String(date.getMonth() + 1).padStart(2, "0");
+        const year = date.getFullYear();
+        const hours = String(date.getHours()).padStart(2, "0");
+        const minutes = String(date.getMinutes()).padStart(2, "0");
+        return `${day}-${month}-${year} ${hours}:${minutes}`;
+      }
+
+      return dateTime;
+    } catch (e) {
+      // console.log("Date format error:", e);
+      return dateTime || "-";
+    }
+  };
   // ─── HANDOVER ──────────────────────────────────────────────────────────
 
   const handleHandoverShift = async () => {
-    Alert.alert('Handover Shift', 'Generate QR Code for next staff?', [
-      { text: 'Cancel', style: 'cancel' },
+    Alert.alert("Handover Shift", "Generate QR Code for next staff?", [
+      { text: "Cancel", style: "cancel" },
       {
-        text: 'Generate QR',
+        text: "Generate QR",
         onPress: async () => {
           try {
             setIsHandingOver(true);
-            const token = await AsyncStorage.getItem('@auth_token');
+            const token = await AsyncStorage.getItem("@auth_token");
 
             const response = await axios.get(
               `${BASE_URL}/roster/qr-code/${rosterId}`,
@@ -758,15 +802,15 @@ export default function OngoingShift({
               },
             );
 
-            const rawQr: string = response.data?.qr_base64 ?? '';
-            const svgPayload = rawQr.includes(',')
-              ? rawQr.substring(rawQr.indexOf(',') + 1)
+            const rawQr: string = response.data?.qr_base64 ?? "";
+            const svgPayload = rawQr.includes(",")
+              ? rawQr.substring(rawQr.indexOf(",") + 1)
               : rawQr;
 
             setQrSvgXml(svgPayload);
             setShowQR(true);
           } catch (error: any) {
-            Alert.alert('Error', error.message || 'Failed to generate QR');
+            Alert.alert("Error", error.message || "Failed to generate QR");
           } finally {
             setIsHandingOver(false);
           }
@@ -776,14 +820,14 @@ export default function OngoingShift({
   };
 
   const handleShakehandScan = async () => {
-    if (Platform.OS === 'android') {
+    if (Platform.OS === "android") {
       const granted = await PermissionsAndroid.request(
         PermissionsAndroid.PERMISSIONS.CAMERA,
       );
       if (granted !== PermissionsAndroid.RESULTS.GRANTED) {
         Alert.alert(
-          'Permission Denied',
-          'Camera permission is required to scan QR codes.',
+          "Permission Denied",
+          "Camera permission is required to scan QR codes.",
         );
         return;
       }
@@ -797,34 +841,34 @@ export default function OngoingShift({
     const scannerShiftId = currentShift?.id;
 
     if (!handoverToken) {
-      Alert.alert('Invalid QR', 'QR code is missing the handover token.');
+      Alert.alert("Invalid QR", "QR code is missing the handover token.");
       return;
     }
 
     if (!qrRosterId) {
       Alert.alert(
-        'Invalid QR',
-        'QR code is missing roster_id. Ask the outgoing guard to regenerate the QR.',
+        "Invalid QR",
+        "QR code is missing roster_id. Ask the outgoing guard to regenerate the QR.",
       );
       return;
     }
 
     if (!scannerShiftId) {
-      Alert.alert('Error', 'Could not determine your shift ID.');
+      Alert.alert("Error", "Could not determine your shift ID.");
       return;
     }
 
     await new Promise<void>((resolve, reject) => {
       Alert.alert(
-        'Confirm Handover',
+        "Confirm Handover",
         `Are you sure you want to accept this handover?`,
         [
           {
-            text: 'Cancel',
-            style: 'cancel',
-            onPress: () => reject(new Error('cancelled')),
+            text: "Cancel",
+            style: "cancel",
+            onPress: () => reject(new Error("cancelled")),
           },
-          { text: 'Confirm', onPress: () => resolve() },
+          { text: "Confirm", onPress: () => resolve() },
         ],
       );
     }).catch(() => {
@@ -835,7 +879,7 @@ export default function OngoingShift({
 
     try {
       setIsScanningHandover(true);
-      const authToken = await AsyncStorage.getItem('@auth_token');
+      const authToken = await AsyncStorage.getItem("@auth_token");
 
       const payload = {
         token: handoverToken,
@@ -849,24 +893,24 @@ export default function OngoingShift({
         {
           headers: {
             Authorization: `Bearer ${authToken}`,
-            'Content-Type': 'application/json',
+            "Content-Type": "application/json",
           },
         },
       );
 
       if (response.data?.success) {
-        Alert.alert('Success', 'Handover completed successfully!', [
-          { text: 'OK', onPress: () => navigation.goBack() },
+        Alert.alert("Success", "Handover completed successfully!", [
+          { text: "OK", onPress: () => navigation.goBack() },
         ]);
       } else {
-        throw new Error(response.data?.message || 'Handover failed');
+        throw new Error(response.data?.message || "Handover failed");
       }
     } catch (error: any) {
       Alert.alert(
-        'Handover Failed',
+        "Handover Failed",
         error?.response?.data?.message ||
-        error.message ||
-        'Handover scan failed',
+          error.message ||
+          "Handover scan failed",
       );
     } finally {
       setIsScanningHandover(false);
@@ -879,8 +923,8 @@ export default function OngoingShift({
     if (value) {
       if (elapsedSeconds < 18000) {
         Alert.alert(
-          'Break Not Allowed',
-          'You can only take a break after 5 hours of your shift.',
+          "Break Not Allowed",
+          "You can only take a break after 5 hours of your shift.",
         );
         return;
       }
@@ -893,7 +937,7 @@ export default function OngoingShift({
   const submitStartBreak = async () => {
     try {
       setBreakLoading(true);
-      const token = await AsyncStorage.getItem('@auth_token');
+      const token = await AsyncStorage.getItem("@auth_token");
       const response = await axios.post(
         `${BASE_URL}/break/${loginId}`,
         {
@@ -910,10 +954,10 @@ export default function OngoingShift({
         setBreakStartTime(new Date().toTimeString().slice(0, 5));
         setIsOnBreak(true);
         setBreakModalVisible(false);
-        Alert.alert('Success', 'Break started');
+        Alert.alert("Success", "Break started");
       }
     } catch {
-      Alert.alert('Error', 'Could not start break');
+      Alert.alert("Error", "Could not start break");
     } finally {
       setBreakLoading(false);
     }
@@ -922,7 +966,7 @@ export default function OngoingShift({
   const handleEndBreak = async () => {
     try {
       setBreakLoading(true);
-      const token = await AsyncStorage.getItem('@auth_token');
+      const token = await AsyncStorage.getItem("@auth_token");
       await axios.post(
         `${BASE_URL}/end_break/${loginId}`,
         {
@@ -934,9 +978,9 @@ export default function OngoingShift({
         },
       );
       setIsOnBreak(false);
-      Alert.alert('Success', 'Break ended');
+      Alert.alert("Success", "Break ended");
     } catch {
-      Alert.alert('Error', 'Could not end break');
+      Alert.alert("Error", "Could not end break");
     } finally {
       setBreakLoading(false);
     }
@@ -974,19 +1018,19 @@ export default function OngoingShift({
         <View style={styles.timerCard}>
           <Text style={styles.timerText}>{formatTime(elapsedSeconds)}</Text>
 
-          <Text style={styles.cardTitle}>Sign In Time</Text>
+          <Text style={styles.cardTitle}>Sign-in Time</Text>
           <Text style={styles.cardSubValues}>
-            {currentShift?.signin_time || 'N/A'}
+            {formatAustralianDateTime(currentShift?.signin_time) || "N/A"}
           </Text>
         </View>
 
         <View style={styles.infoCard}>
           <Text style={styles.infoLabel}>Site</Text>
           <Text style={styles.infoValue}>
-            {currentShift?.site?.site_name || 'Unknown Site'}
+            {currentShift?.site?.site_name || "Unknown Site"}
           </Text>
           <Text style={styles.infoAddress}>
-            {currentShift?.site?.address || 'No address'}
+            {currentShift?.site?.address || "No address"}
           </Text>
         </View>
 
@@ -997,24 +1041,44 @@ export default function OngoingShift({
                 <Clock size={14} color={COLORS.success} />
               </View>
               <View>
-                <Text style={styles.cardTitle}>Sign In Time</Text>
+                <Text style={styles.cardTitle}>Sign-in Time</Text>
                 <Text style={styles.cardSubValue}>
-                  {currentShift?.signin_time || 'N/A'}
+                  {/* {currentShift?.signin_time || "N/A"} */}
+                  {formatAustralianDateTime(currentShift?.signin_time) || "N/A"}
                 </Text>
               </View>
             </View>
-            <View style={[styles.halfCard, { marginTop: 12 }]}>
+            {/* <View style={[styles.halfCard, { marginTop: 12 }]}>
               <View style={styles.iconCircleBlue}>
                 <AlertCircle size={14} color={COLORS.primary} />
               </View>
               <View>
-                <Text style={styles.cardTitle}>SignOut Notes</Text>
+                <Text style={styles.cardTitle}>Sign-out Notes</Text>
                 <TextInput
-                  style={{ fontSize: 11, color: COLORS.text, padding: 0 }}
-                  placeholder="Tap to add..."
+                  style={{ fontSize: 10, color: COLORS.text, padding: 0 }}
+                  placeholder="Add any notes (optional)"
                   placeholderTextColor={COLORS.textSecondary}
                   value={signoutNotes}
                   onChangeText={setSignoutNotes}
+                />
+              </View>
+            </View> */}
+
+            <View style={[styles.halfCard, { marginTop: 12 }]}>
+              <View style={styles.iconCircleBlue}>
+                <AlertCircle size={14} color={COLORS.primary} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.cardTitle}>Sign-out Notes</Text>
+                <TextInput
+                  style={{ fontSize: 10, color: COLORS.text, padding: 0 }}
+                  placeholder="Add any notes (optional)"
+                  placeholderTextColor={COLORS.textSecondary}
+                  value={signoutNotes}
+                  onChangeText={setSignoutNotes}
+                  multiline
+                  numberOfLines={5} // ← Increased to 5 lines
+                  textAlignVertical="top"
                 />
               </View>
             </View>
@@ -1024,7 +1088,7 @@ export default function OngoingShift({
             <TouchableOpacity
               onPress={openCamera}
               activeOpacity={0.8}
-              style={{ width: '100%', alignItems: 'center' }}
+              style={{ width: "100%", alignItems: "center" }}
             >
               {selfieUri ? (
                 <Image
@@ -1037,7 +1101,7 @@ export default function OngoingShift({
                   <View style={styles.iconCircleBlue}>
                     <CameraIcon size={22} color={COLORS.primary} />
                   </View>
-                  <Text style={styles.cardTitle}>SignOut Selfie</Text>
+                  <Text style={styles.cardTitle}>Sign-out Selfie</Text>
                 </>
               )}
             </TouchableOpacity>
@@ -1060,12 +1124,12 @@ export default function OngoingShift({
             </View>
             <View style={styles.breakTextContainer}>
               <Text style={styles.breakTitle}>
-                {isOnBreak ? 'End Break' : 'Take a Break'}
+                {isOnBreak ? "End Break" : "Take a Break"}
               </Text>
               <Text style={styles.breakStatus}>
                 {isOnBreak
                   ? `On break since ${breakStartTime}`
-                  : 'Tap to start break'}
+                  : "Tap to start your break"}
               </Text>
             </View>
             {breakLoading ? (
@@ -1074,7 +1138,7 @@ export default function OngoingShift({
               <ChevronLeft
                 size={20}
                 color={COLORS.textSecondary}
-                style={{ transform: [{ rotate: '180deg' }] }}
+                style={{ transform: [{ rotate: "180deg" }] }}
               />
             )}
           </View>
@@ -1089,7 +1153,7 @@ export default function OngoingShift({
             <TouchableOpacity
               style={styles.plusButton}
               onPress={() =>
-                navigation.navigate('CreateIncidentReport', {
+                navigation.navigate("CreateIncidentReport", {
                   shiftId: currentShift?.id,
                   rosterId: rosterId,
                   guardId: loginId,
@@ -1112,7 +1176,7 @@ export default function OngoingShift({
             <TouchableOpacity
               style={styles.plusButton}
               onPress={() =>
-                navigation.navigate('CreateFootReport', {
+                navigation.navigate("CreateFootReport", {
                   jobRoster: currentShift,
                 })
               }
@@ -1131,14 +1195,14 @@ export default function OngoingShift({
                   {currentShift.job_roster_task.length} tasks
                 </Text>
               </View>
-              {currentShift.job_roster_task.map(task => (
+              {currentShift.job_roster_task.map((task) => (
                 <View key={task.id} style={styles.taskItem}>
                   <View style={styles.taskBullet}>
                     <View
                       style={[
                         styles.bulletDot,
                         startedTasks.has(task.id) && styles.bulletStarted,
-                        task.status === 'completed' && styles.bulletCompleted,
+                        task.status === "completed" && styles.bulletCompleted,
                       ]}
                     />
                   </View>
@@ -1146,7 +1210,7 @@ export default function OngoingShift({
                     <Text
                       style={[
                         styles.taskText,
-                        task.status === 'completed' && styles.taskCompletedText,
+                        task.status === "completed" && styles.taskCompletedText,
                       ]}
                     >
                       "{task.task}"
@@ -1156,24 +1220,27 @@ export default function OngoingShift({
                     </Text>
                     <View style={styles.taskActions}>
                       {!startedTasks.has(task.id) &&
-                        task.status !== 'completed' && (
+                        task.status !== "completed" && (
                           <TouchableOpacity
                             style={styles.startButton}
                             onPress={() => handleStartTask(task.id)}
                             disabled={taskLoading === task.id}
                           >
                             {taskLoading === task.id ? (
-                              <ActivityIndicator color={COLORS.text} size="small" />
+                              <ActivityIndicator
+                                color={COLORS.text}
+                                size="small"
+                              />
                             ) : (
                               <Text style={styles.startButtonText}>Start</Text>
                             )}
                           </TouchableOpacity>
                         )}
                       {startedTasks.has(task.id) &&
-                        task.status !== 'completed' && (
+                        task.status !== "completed" && (
                           <Text style={styles.completedLabel}>In Progress</Text>
                         )}
-                      {task.status === 'completed' && (
+                      {task.status === "completed" && (
                         <Text style={styles.completedLabel}>Completed</Text>
                       )}
                     </View>
@@ -1217,7 +1284,9 @@ export default function OngoingShift({
             {showQR && qrSvgXml && (
               <View style={styles.qrContainer}>
                 <SvgXml xml={qrSvgXml} width="200" height="200" />
-                <Text style={styles.qrNote}>Show to next staff</Text>
+                <Text style={styles.qrNote}>
+                  Show this QR code to the next staff.
+                </Text>
               </View>
             )}
           </View>
@@ -1236,7 +1305,9 @@ export default function OngoingShift({
           {isSigningOut ? (
             <ActivityIndicator color={COLORS.text} size="small" />
           ) : (
-            <Text style={styles.endButtonText}>END SHIFT</Text>
+            <Text style={styles.endButtonText}>
+              Take selfie first to end shift
+            </Text>
           )}
         </TouchableOpacity>
       </View>
@@ -1294,12 +1365,12 @@ export default function OngoingShift({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.background
+    backgroundColor: COLORS.background,
   },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     paddingHorizontal: 20,
     paddingVertical: 14,
     backgroundColor: COLORS.surface,
@@ -1308,21 +1379,21 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 20,
-    fontWeight: '700',
-    color: COLORS.text
+    fontWeight: "700",
+    color: COLORS.text,
   },
   scrollContent: {
     padding: 16,
-    paddingBottom: 100
+    paddingBottom: 100,
   },
   timerCard: {
     backgroundColor: COLORS.card,
     borderRadius: 16,
     paddingVertical: 20,
     paddingHorizontal: 15,
-    alignItems: 'center',
+    alignItems: "center",
     marginBottom: 15,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 5 },
     shadowOpacity: 0.08,
     shadowRadius: 12,
@@ -1330,7 +1401,7 @@ const styles = StyleSheet.create({
   },
   timerText: {
     fontSize: 38,
-    fontWeight: '800',
+    fontWeight: "800",
     color: COLORS.text,
     letterSpacing: 1,
   },
@@ -1341,7 +1412,7 @@ const styles = StyleSheet.create({
     borderColor: COLORS.cardBorder,
     backgroundColor: COLORS.card,
     borderRadius: 16,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.05,
     shadowRadius: 8,
@@ -1350,35 +1421,35 @@ const styles = StyleSheet.create({
   infoLabel: {
     fontSize: 12,
     color: COLORS.textSecondary,
-    marginBottom: 4
+    marginBottom: 4,
   },
   infoValue: {
     fontSize: 16,
-    fontWeight: '600',
-    color: COLORS.text
+    fontWeight: "600",
+    color: COLORS.text,
   },
   infoAddress: {
     fontSize: 14,
     color: COLORS.textMuted,
-    marginTop: 4
+    marginTop: 4,
   },
   combinedRow: {
-    flexDirection: 'row',
+    flexDirection: "row",
     marginBottom: 15,
-    gap: 12
+    gap: 12,
   },
   leftColumn: {
-    flex: 1.2
+    flex: 1.2,
   },
   halfCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     padding: 12,
     borderWidth: 1,
     borderColor: COLORS.cardBorder,
     backgroundColor: COLORS.card,
     borderRadius: 16,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.05,
     shadowRadius: 8,
@@ -1389,30 +1460,30 @@ const styles = StyleSheet.create({
     padding: 12,
     borderWidth: 1,
     borderColor: COLORS.cardBorder,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     backgroundColor: COLORS.card,
     borderRadius: 16,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.05,
     shadowRadius: 8,
     elevation: 4,
   },
   selfieImage: {
-    width: '100%',
+    width: "100%",
     height: 120,
-    borderRadius: 12
+    borderRadius: 12,
   },
   iconCircleBlue: {
     width: 32,
     height: 32,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     marginRight: 10,
     backgroundColor: COLORS.primaryGlow,
     borderRadius: 16,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.05,
     shadowRadius: 8,
@@ -1422,11 +1493,11 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: 'rgba(52, 200, 138, 0.15)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "rgba(52, 200, 138, 0.15)",
+    justifyContent: "center",
+    alignItems: "center",
     marginRight: 10,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.05,
     shadowRadius: 8,
@@ -1434,13 +1505,13 @@ const styles = StyleSheet.create({
   },
   cardTitle: {
     fontSize: 12,
-    fontWeight: '600',
-    color: COLORS.text
+    fontWeight: "600",
+    color: COLORS.text,
   },
   cardSubValue: {
     fontSize: 11,
     color: COLORS.textSecondary,
-    marginTop: 2
+    marginTop: 2,
   },
   cardSubValues: {
     fontSize: 11,
@@ -1448,11 +1519,12 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
     marginTop: 5,
     height: 25,
-    width: 110,
+    // width: 110,
     backgroundColor: COLORS.surface,
     borderRadius: 6,
-    alignItems: 'center',
-    justifyContent: 'center',
+
+    alignItems: "center",
+    justifyContent: "center",
   },
   actionCard: {
     backgroundColor: COLORS.card,
@@ -1460,39 +1532,39 @@ const styles = StyleSheet.create({
     marginBottom: 15,
     borderWidth: 1,
     borderColor: COLORS.cardBorder,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.05,
     shadowRadius: 8,
     elevation: 4,
   },
   actionRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 12
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 12,
   },
   actionIcon: {
     width: 40,
     height: 40,
     borderRadius: 10,
     backgroundColor: COLORS.primaryGlow,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     marginRight: 12,
   },
   actionText: {
     flex: 1,
     fontSize: 15,
-    fontWeight: '600',
-    color: COLORS.text
+    fontWeight: "600",
+    color: COLORS.text,
   },
   plusButton: {
     width: 36,
     height: 36,
     borderRadius: 18,
     backgroundColor: COLORS.surface,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   taskSectionCard: {
     backgroundColor: COLORS.card,
@@ -1501,28 +1573,28 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: COLORS.cardBorder,
     marginBottom: 15,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.05,
     shadowRadius: 8,
     elevation: 4,
   },
   taskHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    justifyContent: "space-between",
     marginBottom: 16,
   },
   taskSectionTitle: {
     fontSize: 17,
-    fontWeight: '700',
-    color: COLORS.text
+    fontWeight: "700",
+    color: COLORS.text,
   },
   taskCount: {
     fontSize: 13,
-    color: COLORS.textSecondary
+    color: COLORS.textSecondary,
   },
   taskItem: {
-    flexDirection: 'row',
+    flexDirection: "row",
     marginBottom: 16,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.cardBorder,
@@ -1530,7 +1602,7 @@ const styles = StyleSheet.create({
   },
   taskBullet: {
     marginRight: 12,
-    marginTop: 4
+    marginTop: 4,
   },
   bulletDot: {
     width: 10,
@@ -1539,53 +1611,53 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.textMuted,
   },
   bulletStarted: {
-    backgroundColor: COLORS.primary
+    backgroundColor: COLORS.primary,
   },
   bulletCompleted: {
-    backgroundColor: COLORS.success
+    backgroundColor: COLORS.success,
   },
   taskContent: {
-    flex: 1
+    flex: 1,
   },
   taskText: {
     fontSize: 14,
-    fontWeight: '600',
-    color: COLORS.text
+    fontWeight: "600",
+    color: COLORS.text,
   },
   taskCompletedText: {
-    textDecorationLine: 'line-through',
-    color: COLORS.textSecondary
+    textDecorationLine: "line-through",
+    color: COLORS.textSecondary,
   },
   taskTime: {
     fontSize: 12,
     color: COLORS.textSecondary,
-    marginTop: 2
+    marginTop: 2,
   },
   taskActions: {
-    marginTop: 8
+    marginTop: 8,
   },
   startButton: {
     backgroundColor: COLORS.primary,
     paddingVertical: 8,
     paddingHorizontal: 18,
     borderRadius: 999,
-    alignSelf: 'flex-start',
+    alignSelf: "flex-start",
   },
   startButtonText: {
     color: COLORS.text,
     fontSize: 12,
-    fontWeight: '600'
+    fontWeight: "600",
   },
   completedLabel: {
     fontSize: 12,
     color: COLORS.success,
-    fontWeight: '600'
+    fontWeight: "600",
   },
   shakehandButton: {
     backgroundColor: COLORS.primary,
     paddingVertical: 16,
     borderRadius: 18,
-    alignItems: 'center',
+    alignItems: "center",
     marginBottom: 14,
     shadowColor: COLORS.primary,
     shadowOffset: { width: 0, height: 5 },
@@ -1595,7 +1667,7 @@ const styles = StyleSheet.create({
   },
   shakehandButtonText: {
     color: COLORS.text,
-    fontWeight: '700'
+    fontWeight: "700",
   },
   handoverSection: {
     backgroundColor: COLORS.warningBg,
@@ -1608,14 +1680,14 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.primary,
     paddingVertical: 15,
     borderRadius: 18,
-    alignItems: 'center',
+    alignItems: "center",
   },
   handoverButtonText: {
     color: COLORS.text,
-    fontWeight: '600'
+    fontWeight: "600",
   },
   qrContainer: {
-    alignItems: 'center',
+    alignItems: "center",
     marginTop: 20,
     backgroundColor: COLORS.surface,
     borderRadius: 24,
@@ -1625,10 +1697,10 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: COLORS.textSecondary,
     marginTop: 12,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   bottomButtonContainer: {
-    position: 'absolute',
+    position: "absolute",
     bottom: 0,
     left: 0,
     right: 0,
@@ -1640,15 +1712,15 @@ const styles = StyleSheet.create({
   endButton: {
     paddingVertical: 16,
     borderRadius: 12,
-    alignItems: 'center'
+    alignItems: "center",
   },
   endButtonText: {
     color: COLORS.text,
     fontSize: 16,
-    fontWeight: '700'
+    fontWeight: "700",
   },
   breakFullCard: {
-    flexDirection: 'row',
+    flexDirection: "row",
     backgroundColor: COLORS.card,
     borderRadius: 16,
     padding: 16,
@@ -1658,52 +1730,52 @@ const styles = StyleSheet.create({
   },
   onBreakFullCard: {
     backgroundColor: COLORS.dangerBg,
-    borderColor: COLORS.danger
+    borderColor: COLORS.danger,
   },
   breakContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1
+    flexDirection: "row",
+    alignItems: "center",
+    flex: 1,
   },
   iconCircleRedLarge: {
     width: 40,
     height: 40,
     borderRadius: 20,
     backgroundColor: COLORS.dangerBg,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     marginRight: 12,
   },
   breakTextContainer: {
-    flex: 1
+    flex: 1,
   },
   breakTitle: {
     fontSize: 15,
-    fontWeight: '700',
-    color: COLORS.text
+    fontWeight: "700",
+    color: COLORS.text,
   },
   breakStatus: {
     fontSize: 12,
     color: COLORS.textSecondary,
-    marginTop: 2
+    marginTop: 2,
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "center",
+    alignItems: "center",
   },
   modalBox: {
-    width: '85%',
+    width: "85%",
     backgroundColor: COLORS.surface,
     borderRadius: 20,
     padding: 20,
   },
   modalTitle: {
     fontSize: 18,
-    fontWeight: '700',
+    fontWeight: "700",
     marginBottom: 16,
-    textAlign: 'center',
+    textAlign: "center",
     color: COLORS.text,
   },
   modalInput: {
@@ -1714,44 +1786,44 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   modalButtonRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    justifyContent: "space-between",
     marginTop: 10,
   },
   modalButton: {
     flex: 1,
     padding: 12,
-    alignItems: 'center'
+    alignItems: "center",
   },
   cancelText: {
     color: COLORS.textSecondary,
-    fontWeight: '600'
+    fontWeight: "600",
   },
   okText: {
     color: COLORS.primary,
-    fontWeight: '700'
+    fontWeight: "700",
   },
   scannerOverlay: {
     ...StyleSheet.absoluteFillObject,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   closeScanner: {
-    position: 'absolute',
+    position: "absolute",
     top: 40,
     left: 20,
-    padding: 8
+    padding: 8,
   },
   scannerFrame: {
     width: 250,
     height: 250,
     borderWidth: 2,
-    borderColor: '#fff',
+    borderColor: "#fff",
     borderRadius: 20,
   },
   scannerText: {
-    color: '#fff',
+    color: "#fff",
     marginTop: 20,
-    fontWeight: '600'
+    fontWeight: "600",
   },
 });

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import {
   View,
   Text,
@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   Alert,
   ActivityIndicator,
+  Switch,
 } from "react-native";
 import MapView, { Marker } from "react-native-maps";
 import {
@@ -29,7 +30,7 @@ const COLORS = {
   primary: "#89E7D0",
   primaryDark: "#4FCBB3",
 
-  background: "#001F3F",
+  background: "#030508",
   surface: "#0A2A4D",
   surface2: "#12243A",
 
@@ -73,6 +74,15 @@ export default function AsapJobDetails({ route, navigation }: any) {
     job?.additionalData?.roster?.distance ||
     null;
 
+  const requiredDocuments = useMemo(() => {
+    const docList = roster?.document_list || "[]";
+    try {
+      return JSON.parse(docList);
+    } catch {
+      return [];
+    }
+  }, [roster?.document_list]);
+
   const [mapType, setMapType] = useState<"standard" | "satellite">("standard");
   const [accepting, setAccepting] = useState(false);
   const latitude = roster?.site?.coordinates
@@ -88,7 +98,10 @@ export default function AsapJobDetails({ route, navigation }: any) {
     const [year, month, day] = date.split("-");
     return `${day}-${month}-${year}`;
   };
-
+  const hasWorkingWithChildren = requiredDocuments.includes(
+    "working_with_children",
+  );
+  const hasWhiteCard = requiredDocuments.includes("white_card");
   const formatTime = (start: string, end: string) => {
     if (!start || !end) return "—";
     const startTime = start.split(" ")[1]?.slice(0, 5) || "";
@@ -277,6 +290,30 @@ export default function AsapJobDetails({ route, navigation }: any) {
             {roster?.site?.address || roster?.address || "No address available"}
           </Text>
         </View>
+
+        {/* === Required Documents Section (Shows only if needed) === */}
+        {(hasWorkingWithChildren || hasWhiteCard) && (
+          <View style={styles.documentsSection}>
+            <Text style={styles.sectionTitle}>Required Documents</Text>
+
+            {hasWorkingWithChildren && (
+              <View style={styles.documentRow}>
+                <Text style={styles.documentLabel}>
+                  Working with Children Check Required
+                </Text>
+                <Text style={styles.yesText}>YES</Text>
+              </View>
+            )}
+
+            {hasWhiteCard && (
+              <View style={styles.documentRow}>
+                <Text style={styles.documentLabel}>White Card Required</Text>
+                <Text style={styles.yesText}>YES</Text>
+              </View>
+            )}
+          </View>
+        )}
+
         {distance && (
           <Text style={styles.distance}>Within {distance} km radius</Text>
         )}
@@ -367,32 +404,14 @@ const styles = StyleSheet.create({
   },
   distance: {
     fontWeight: "700",
-    marginBottom: 20,
+    // marginBottom: 10,
     color: COLORS.primaryDark,
     fontSize: 15,
+    marginTop: 10,
   },
-  acceptBtn: {
-    backgroundColor: COLORS.success,
-    paddingVertical: 16,
-    borderRadius: 14,
-    alignItems: "center",
-    marginTop: 16,
-    shadowColor: COLORS.success,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 6,
-    elevation: 4,
-  },
-  acceptBtnDisabled: {
-    opacity: 0.6,
-  },
-  acceptText: {
-    color: "white",
-    fontWeight: "700",
-    fontSize: 16,
-  },
+
   mapCard: {
-    height: 220,
+    height: 180,
     marginHorizontal: 18,
     borderRadius: 18,
     overflow: "hidden",
@@ -404,12 +423,13 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.15,
     shadowRadius: 10,
     elevation: 6,
-    marginBottom: 18,
+    marginBottom: 10,
   },
   map: {
     ...StyleSheet.absoluteFillObject,
     borderRadius: 16,
   },
+
   mapToggle: {
     position: "absolute",
     top: 15,
@@ -425,5 +445,58 @@ const styles = StyleSheet.create({
   },
   activeToggle: {
     backgroundColor: COLORS.primaryDark,
+  },
+
+  toggleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingVertical: 5,
+    borderBottomWidth: 1,
+    borderBottomColor: "#F1F5F9",
+  },
+
+  noDocsText: { color: COLORS.textMuted, fontStyle: "italic" },
+
+  acceptBtn: {
+    backgroundColor: COLORS.success,
+    paddingVertical: 16,
+    borderRadius: 14,
+    alignItems: "center",
+    marginTop: 20,
+  },
+  acceptBtnDisabled: { opacity: 0.6 },
+  acceptText: { color: "white", fontWeight: "700", fontSize: 16 },
+  documentsSection: {
+    // marginVertical: 16,
+    padding: 10,
+    backgroundColor: "#F8FAFC",
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+  },
+  sectionTitle: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: COLORS.text,
+    marginBottom: 12,
+  },
+  documentRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: 5,
+    borderBottomWidth: 1,
+    borderBottomColor: "#F1F5F9",
+  },
+  documentLabel: {
+    fontSize: 12,
+    color: COLORS.text,
+    fontWeight: "500",
+  },
+  yesText: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: COLORS.success,
   },
 });

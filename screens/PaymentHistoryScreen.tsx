@@ -230,16 +230,16 @@ export default function PaymentHistoryScreen({ navigation, route }: Props) {
             {/* Bottom row: Holder & Expiry */}
             <View style={styles.bottomRow}>
               <View style={styles.holderSection}>
-                <Text style={styles.labelSmall}>CARD HOLDER</Text>
+                <Text style={styles.labelSmall}>Card Holder</Text>
                 <Text style={styles.valueText}>
                   {(name || "YOUR NAME").toUpperCase()}
                 </Text>
               </View>
 
               <View style={styles.expirySection}>
-                <Text style={styles.labelSmall}>EXPIRES</Text>
+                <Text style={styles.labelSmall}>Expires</Text>
                 <Text style={styles.valueText}>
-                  {expMonth.padStart(2, "0") || "MM"}/
+                  {expMonth ? expMonth.padStart(2, "0") : "MM"}/
                   {expYear ? expYear.slice(-2) : "YY"}
                 </Text>
               </View>
@@ -251,13 +251,13 @@ export default function PaymentHistoryScreen({ navigation, route }: Props) {
           <View style={styles.field}>
             <Text style={styles.label}>
               {" "}
-              Name On Card <Text style={styles.required}>*</Text>
+              Name on Card <Text style={styles.required}>*</Text>
             </Text>
             <TextInput
               style={styles.input}
               value={name}
               onChangeText={(text) => setName(text.toUpperCase())}
-              placeholder="e.g. JOHN DOE"
+              placeholder="e.g. John Doe"
               autoCapitalize="characters"
               placeholderTextColor="#9ca3af"
             />
@@ -353,7 +353,7 @@ export default function PaymentHistoryScreen({ navigation, route }: Props) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#111111",
+    backgroundColor: "#030508",
     // backgroundColor: COLORS.background,
     paddingTop: 20,
   },
@@ -416,7 +416,7 @@ const styles = StyleSheet.create({
   cardPreview: {
     width: "100%",
     maxWidth: 350,
-    height: 220,
+    height: 180,
 
     borderRadius: 18,
     // marginTop: 20,
@@ -532,7 +532,6 @@ const styles = StyleSheet.create({
     color: "rgba(255,255,255,0.72)",
     marginBottom: 5,
     letterSpacing: 1.2,
-    textTransform: "uppercase",
   },
 
   valueText: {

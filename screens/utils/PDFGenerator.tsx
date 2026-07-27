@@ -1,6 +1,6 @@
 // react-native-html-to-pdf v1.3.0 — correct import: named `generatePDF` function
-import { generatePDF } from 'react-native-html-to-pdf';
-import { Platform } from 'react-native';
+import { generatePDF } from "react-native-html-to-pdf";
+import { Platform } from "react-native";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -97,23 +97,70 @@ const baseStyles = `
   .page-footer { text-align: center; margin-top: 50px; font-size: 11px; color: #64748b; border-top: 1px solid #e2e8f0; padding-top: 14px; }
 `;
 
+const formatTimeOnly = (dateTime: string | null | undefined) => {
+  if (!dateTime) return "-";
+
+  try {
+    // Handle full datetime strings
+    const date = new Date(dateTime);
+
+    if (!isNaN(date.getTime())) {
+      return date.toLocaleTimeString("en-AU", {
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false, // <-- removes AM/PM
+      });
+    }
+
+    // Handle format: "07/17/2026 11:18 AM"
+    const match = dateTime.match(/(\d{1,2}):(\d{2})\s?(AM|PM)/i);
+
+    if (match) {
+      let hour = Number(match[1]);
+      const minute = match[2];
+      const period = match[3].toUpperCase();
+
+      if (period === "PM" && hour !== 12) {
+        hour += 12;
+      }
+
+      if (period === "AM" && hour === 12) {
+        hour = 0;
+      }
+
+      return `${String(hour).padStart(2, "0")}:${minute}`;
+    }
+
+    return "-";
+  } catch {
+    return "-";
+  }
+};
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-const fmt = (value: number | string | undefined, currency = 'AUD') =>
+const fmt = (value: number | string | undefined, currency = "AUD") =>
   `${currency} ${Number(value || 0).toFixed(2)}`;
 
-const todayStr = () => new Date().toLocaleDateString('en-AU');
+const todayStr = () => new Date().toLocaleDateString("en-AU");
 
-const outputDir = () => (Platform.OS === 'android' ? 'Downloads' : 'Documents');
+const outputDir = () => (Platform.OS === "android" ? "Downloads" : "Documents");
 
 // ─── Invoice PDF ─────────────────────────────────────────────────────────────
+const australianFileDate = () => {
+  const date = new Date();
 
+  const day = String(date.getDate()).padStart(2, "0");
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const year = date.getFullYear();
+
+  return `${day}-${month}-${year}`;
+};
 const generateInvoicePDF = async (
   invoiceData: InvoiceData,
 ): Promise<string | undefined> => {
   const {
     invoiceNo,
-    currency = 'AUD',
+    currency = "AUD",
     startDate,
     dueDate,
     from,
@@ -131,36 +178,36 @@ const generateInvoicePDF = async (
   } = invoiceData;
 
   const tableRows = items
-    .map(item => {
+    .map((item) => {
       const lineTotal = Number(item.qty || 0) * Number(item.rate || 0);
       return `<tr>
-      <td>${item.description || '-'}</td>
+      <td>${item.description || "-"}</td>
       <td class="text-center">${Number(item.qty || 0).toFixed(2)}</td>
       <td class="text-right">${fmt(item.rate, currency)}</td>
       <td class="text-right">${fmt(lineTotal, currency)}</td>
     </tr>`;
     })
-    .join('');
+    .join("");
 
   const notesHTML =
     includeNotes && notes
       ? `<div class="notes-block"><h4>Notes</h4><p>${notes}</p></div>`
-      : '';
+      : "";
 
   const paymentHTML = paymentMethods
     ? `<div class="payment-block"><h4>Payment Methods</h4><p>
-        ${paymentMethods.bankTransfer ? '&#8226; Bank Transfer<br>' : ''}
-        ${paymentMethods.bpay ? '&#8226; BPAY<br>' : ''}
-        ${paymentMethods.card ? '&#8226; Credit / Debit Card' : ''}
+        ${paymentMethods.bankTransfer ? "&#8226; Bank Transfer<br>" : ""}
+        ${paymentMethods.bpay ? "&#8226; BPAY<br>" : ""}
+        ${paymentMethods.card ? "&#8226; Credit / Debit Card" : ""}
        </p></div>`
-    : '';
+    : "";
 
   const gstRow = includeGst
     ? `<div class="totals-row"><span>GST (${gstPercent}%)</span><span>${fmt(
         gstAmount,
         currency,
       )}</span></div>`
-    : '';
+    : "";
 
   const lateFeeRow =
     lateFeeAmount > 0
@@ -168,11 +215,11 @@ const generateInvoicePDF = async (
           lateFeeAmount,
           currency,
         )}</span></div>`
-      : '';
+      : "";
 
   const html = `<html><head><meta charset="utf-8"><style>${baseStyles}</style></head><body>
     <div class="header">
-      <div><div class="tagline">Professional Facility &amp; Workforce Services</div></div>
+      <div><div class="tagline">STAFFOO</div></div>
       <div class="header-title">
         <h1>INVOICE</h1>
         <table class="meta-table">
@@ -181,7 +228,7 @@ const generateInvoicePDF = async (
           ${
             dueDate
               ? `<tr><td class="meta-label">Due Date</td><td class="meta-value">${dueDate}</td></tr>`
-              : ''
+              : ""
           }
         </table>
       </div>
@@ -190,20 +237,20 @@ const generateInvoicePDF = async (
     <div class="two-col">
       <div class="col">
         <div class="section-label">From</div>
-        <div class="col-name">${from.name || 'Staffoo Facility Services'}</div>
+        <div class="col-name">${from.name || "Staffoo Facility Services"}</div>
         <div class="col-detail">
-          ${from.email ? from.email + '<br>' : ''}
-          ${from.phone ? from.phone + '<br>' : ''}
-          ${from.abn ? 'ABN: ' + from.abn : ''}
+          ${from.email ? from.email + "<br>" : ""}
+          ${from.phone ? from.phone + "<br>" : ""}
+          ${from.abn ? "ABN: " + from.abn : ""}
         </div>
       </div>
       <div class="col">
         <div class="section-label">Billed To</div>
-        <div class="col-name">${to.name || '-'}</div>
+        <div class="col-name">${to.name || "-"}</div>
         <div class="col-detail">
-          ${to.email ? to.email + '<br>' : ''}
-          ${to.phone ? to.phone + '<br>' : ''}
-          ${to.abn ? 'ABN: ' + to.abn : ''}
+          ${to.email ? to.email + "<br>" : ""}
+          ${to.phone ? to.phone + "<br>" : ""}
+          ${to.abn ? "ABN: " + to.abn : ""}
         </div>
       </div>
     </div>
@@ -226,12 +273,12 @@ const generateInvoicePDF = async (
         )}</span></div>
       </div>
     </div>
-    <div class="page-footer">Thank you for choosing Staffoo Facility Services.<br/>https://app.staffoo.com.au</div>
+    <div class="page-footer">Thank you for choosing Staffoo.<br/>https://staffoo.com.au</div>
   </body></html>`;
 
   const result = await generatePDF({
     html,
-    fileName: `Invoice_${invoiceNo}_${startDate.replace(/\//g, '-')}`,
+    fileName: `Invoice_${invoiceNo}_${startDate.replace(/\//g, "-")}`,
     directory: outputDir(),
     width: 612,
     height: 792,
@@ -255,31 +302,48 @@ const generateShiftReportPDF = async (
     jobStatus,
     signinDetails,
   } = reportData;
-
+  console.log("====================================");
+  console.log(signinDetails, "this is my logs");
+  console.log("====================================");
   const logRows = signinDetails
     ? `
-    <tr>
-      <td style="color:#0d6efd;font-weight:bold;">Sign In</td>
-      <td>${signinDetails.signin_time || '-'}</td>
-      <td>${signinDetails.location || '-'}</td>
-      <td>${signinDetails.signin_notes || 'No notes'}</td>
-    </tr>
-    <tr>
-      <td style="color:#0d6efd;font-weight:bold;">Sign Out</td>
-      <td>${signinDetails.signout_time || '-'}</td>
-      <td>${signinDetails.location || '-'}</td>
-      <td>${signinDetails.signout_notes || 'No notes'}</td>
-    </tr>`
-    : `<tr><td colspan="4" style="color:#64748b;padding:10px 8px;">No sign in data available</td></tr>`;
+<tr>
+  <td style="color:#0d6efd;font-weight:bold;">Sign In</td>
+  <td>${formatTimeOnly(signinDetails.signin_time)}</td>
+  <td style="max-width:200px;white-space:normal;word-break:break-word;overflow-wrap:break-word;">
+    ${signinDetails.location || "N/A"}
+  </td>
+  <td style="max-width:300px;white-space:normal;word-break:break-word;overflow-wrap:break-word;">
+    ${signinDetails.signin_notes || "No notes"}
+  </td>
+</tr>
+
+<tr>
+  <td style="color:#0d6efd;font-weight:bold;">Sign Out</td>
+  <td>${formatTimeOnly(signinDetails.signout_time)}</td>
+  <td style="max-width:200px;white-space:normal;word-break:break-word;overflow-wrap:break-word;">
+    ${signinDetails.location || "N/A"}
+  </td>
+  <td style="max-width:300px;white-space:normal;word-break:break-word;overflow-wrap:break-word;">
+    ${signinDetails.signout_notes || "No notes"}
+  </td>
+</tr>
+`
+    : `
+<tr>
+<td colspan="4">
+No sign in data available
+</td>
+</tr>`;
 
   const html = `<html><head><meta charset="utf-8"><style>${baseStyles}</style></head><body>
     <div class="header">
-      <div><div class="tagline">Professional Facility &amp; Workforce Services</div></div>
+      <div><div class="tagline">STAFFOO</div></div>
       <div class="header-title">
         <h1>SHIFT REPORT</h1>
         <table class="meta-table">
           <tr><td class="meta-label">Status</td><td class="meta-value">${(
-            jobStatus || 'PENDING'
+            jobStatus || "PENDING"
           ).toUpperCase()}</td></tr>
           <tr><td class="meta-label">Total Hours</td><td class="meta-value">${totalHours} Hrs</td></tr>
           <tr><td class="meta-label">Date</td><td class="meta-value">${todayStr()}</td></tr>
@@ -290,15 +354,15 @@ const generateShiftReportPDF = async (
     <div class="two-col">
       <div class="col">
         <div class="section-label">Site Details</div>
-        <div class="col-name">${siteName || 'N/A'}</div>
-        <div class="col-detail">${siteAddress || ''}</div>
+        <div class="col-name">${siteName || "N/A"}</div>
+        <div class="col-detail">${siteAddress || ""}</div>
       </div>
       <div class="col">
         <div class="section-label">Assignment Details</div>
-        <div class="col-name">Guard: ${guardName || 'Unassigned'}</div>
+        <div class="col-name">Guard: ${guardName || "Unassigned"}</div>
         <div class="col-detail">
-          ${shiftStart ? 'Start: ' + shiftStart + '<br>' : ''}
-          ${shiftEnd ? 'End: ' + shiftEnd : ''}
+          ${shiftStart ? "Start: " + shiftStart + "<br>" : ""}
+          ${shiftEnd ? "End: " + shiftEnd : ""}
         </div>
       </div>
     </div>
@@ -309,14 +373,12 @@ const generateShiftReportPDF = async (
     <div style="text-align:right;font-size:15px;font-weight:bold;color:#0d6efd;margin-top:10px;">
       Total Hours: ${totalHours} hrs
     </div>
-    <div class="page-footer">Thank you for choosing Staffoo Facility Services.<br/>https://app.staffoo.com.au</div>
+    <div class="page-footer">Thank you for choosing STAFFOO.<br/>https://app.staffoo.com.au</div>
   </body></html>`;
 
   const result = await generatePDF({
     html,
-    fileName: `ShiftReport_${siteName || 'Staffoo'}_${new Date()
-      .toISOString()
-      .slice(0, 10)}`,
+    fileName: `ShiftReport_${siteName || "Staffoo"}_${australianFileDate()}`,
     directory: outputDir(),
     width: 612,
     height: 792,

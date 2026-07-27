@@ -507,7 +507,7 @@ export default function InductionQuestionsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#111111",
+    backgroundColor: "#030508",
     paddingTop: 30,
   },
   header: {
