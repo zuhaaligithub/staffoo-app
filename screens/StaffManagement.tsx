@@ -51,8 +51,8 @@ import { launchImageLibrary } from "react-native-image-picker";
 import axios from "./axiosInterceptor";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { BASE_URL, uploadFile } from "../services/authApi";
-const Base_Url = "https://apis-staging.staffoo.com.au";
-// const Base_Url = "https://apis.staffoo.com.au";
+// const Base_Url = "https://apis-staging.staffoo.com.au";
+const Base_Url = "https://apis.staffoo.com.au";
 const { width } = Dimensions.get("window");
 
 const COLORS = {
@@ -74,8 +74,8 @@ const COLORS = {
 };
 
 const GOOGLE_API_KEY = "AIzaSyCS-DB39Kk-Z25C5GWymVGshXIALbjXPGY";
-const FILE_BASE_URL = "https://apis-staging.staffoo.com.au/staff_documents/";
-// const FILE_BASE_URL = "https://apis.staffoo.com.au/staff_documents/";
+// const FILE_BASE_URL = "https://apis-staging.staffoo.com.au/staff_documents/";
+const FILE_BASE_URL = "https://apis.staffoo.com.au/staff_documents/";
 const Api_Url = "https://apis.thescouts.com.au/api";
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024;

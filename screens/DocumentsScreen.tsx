@@ -38,8 +38,8 @@ import DateTimePicker from "@react-native-community/datetimepicker";
 
 const { width } = Dimensions.get("window");
 
-// const FILE_BASE_URL = "https://apis.staffoo.com.au/staff_documents/";
-const FILE_BASE_URL = "https://apis-staging.staffoo.com.au/staff_documents/";
+const FILE_BASE_URL = "https://apis.staffoo.com.au/staff_documents/";
+// const FILE_BASE_URL = "https://apis-staging.staffoo.com.au/staff_documents/";
 const Api_Url = "https://apis.thescouts.com.au/api";
 
 type Props = { navigation: any };

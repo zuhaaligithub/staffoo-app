@@ -2886,8 +2886,8 @@ export default function ProfileSetupScreen({ navigation }: Props) {
         const profileResponse = await getUserProfile(uid);
         const profile = profileResponse?.data || {};
         setIsStaffooStaff(profile?.user_id === 1);
-        // const BASE_IMAGE_URL = "https://apis.staffoo.com.au/storage/";
-        const BASE_IMAGE_URL = "https://apis-staging.staffoo.com.au/storage/";
+        const BASE_IMAGE_URL = "https://apis.staffoo.com.au/storage/";
+        // const BASE_IMAGE_URL = "https://apis-staging.staffoo.com.au/storage/";
 
         if (profile?.staff?.profile_image) {
           setProfileImage(`${BASE_IMAGE_URL}${profile.staff.profile_image}`);

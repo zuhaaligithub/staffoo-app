@@ -384,8 +384,8 @@ useEffect(() => {
         if (cachedImage) {
           setProfileImage(cachedImage);
         } else if (parsedUser?.staff?.profile_image) {
-          const BASE_IMAGE_URL = "https://apis-staging.staffoo.com.au/storage/";
-          // const BASE_IMAGE_URL = "https://apis.staffoo.com.au/storage/";
+          // const BASE_IMAGE_URL = "https://apis-staging.staffoo.com.au/storage/";
+          const BASE_IMAGE_URL = "https://apis.staffoo.com.au/storage/";
           setProfileImage(`${BASE_IMAGE_URL}${parsedUser.staff.profile_image}`);
         }
       }

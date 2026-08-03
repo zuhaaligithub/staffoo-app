@@ -168,8 +168,8 @@ export function useStaffShiftsController(
             setProfileImage(cachedImage);
           } else if (parsedUser?.staff?.profile_image) {
             setProfileImage(
-              // `https://apis.staffoo.com.au/storage/${parsedUser.staff.profile_image}`,
-              `https://apis-staging.staffoo.com.au/storage/${parsedUser.staff.profile_image}`,
+              `https://apis.staffoo.com.au/storage/${parsedUser.staff.profile_image}`,
+              // `https://apis-staging.staffoo.com.au/storage/${parsedUser.staff.profile_image}`,
             );
           }
         }
