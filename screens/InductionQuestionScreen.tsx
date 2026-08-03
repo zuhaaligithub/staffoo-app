@@ -324,7 +324,18 @@ export default function InductionQuestionsScreen() {
       setSubmitting(false);
     }
   };
-
+  const capitalizeText = (text: string = "") => {
+    return text
+      .toLowerCase()
+      .split(" ")
+      .filter(Boolean)
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(" ");
+  };
+  const capitalizeSentence = (text: string = "") => {
+    if (!text) return "";
+    return text.charAt(0).toUpperCase() + text.slice(1).toLowerCase();
+  };
   const handleNext = () => {
     if (currentQuestion.type === "Short Question") {
       if (!shortAnswer.trim()) {
@@ -419,10 +430,14 @@ export default function InductionQuestionsScreen() {
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        <Text style={styles.inductionTitle}>{induction?.title || ""}</Text>
+        <Text style={styles.inductionTitle}>
+          {capitalizeText(induction?.title || "")}
+        </Text>
 
         <View style={styles.questionCard}>
-          <Text style={styles.questionText}>{currentQuestion.question}</Text>
+          <Text style={styles.questionText}>
+            {capitalizeSentence(currentQuestion.question)}
+          </Text>
           <View style={styles.questionTypeBadge}>
             <Text style={styles.questionTypeText}>{currentQuestion.type}</Text>
           </View>

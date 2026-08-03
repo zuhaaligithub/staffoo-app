@@ -1,15 +1,4 @@
-// ─────────────────────────────────────────────────────────────────────────────
-// All state, effects, and handlers shared by the Available Jobs and Accepted
-// Jobs screens. Extracted unchanged from the original StaffShifts.tsx — the
-// only change from the original component body is that `screenMode` is now
-// passed in as a parameter instead of being derived from `route.name`, so
-// each screen can be its own file while keeping identical behaviour.
-//
-// The module-level dedupe locks (globalLastHandledNotifKey /
-// globalIsCheckingPending) are declared here, in this single shared module,
-// so they still coordinate across BOTH screens exactly like before (this
-// module is a singleton — every import gets the same instance).
-// ─────────────────────────────────────────────────────────────────────────────
+
 import { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import {
   View,
@@ -179,7 +168,8 @@ export function useStaffShiftsController(
             setProfileImage(cachedImage);
           } else if (parsedUser?.staff?.profile_image) {
             setProfileImage(
-              `https://apis.staffoo.com.au/storage/${parsedUser.staff.profile_image}`,
+              // `https://apis.staffoo.com.au/storage/${parsedUser.staff.profile_image}`,
+              `https://apis-staging.staffoo.com.au/storage/${parsedUser.staff.profile_image}`,
             );
           }
         }

@@ -282,6 +282,7 @@ import CoverJobsScreen from "../screens/CoverJobsScreen";
 
 // ── MainTabs: the persistent bottom-tab layout ──────────────────────────────
 import MainTabs from "../screens/MainTabs";
+import TimesheetScreen from "../screens/Timesheetscreen";
 
 // ─── Route param types ───────────────────────────────────────────────────────
 export type RootStackParamList = {
@@ -290,9 +291,7 @@ export type RootStackParamList = {
   Login: undefined;
   SignUp: undefined;
   ForgotPassword: undefined;
-
-  // ✅ Single entry point for all tabbed screens
-  MainTabs: undefined;
+  MainTabs: { screen?: string } | undefined;
 
   // Stack screens pushed on top of tabs
   Policies: undefined;
@@ -342,6 +341,7 @@ export type RootStackParamList = {
   InductionQuestions: undefined;
   CoverJobs: undefined;
   CreateJob: undefined;
+  Timesheet: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -405,6 +405,7 @@ export default function AppNavigator() {
       <Stack.Screen name="Filter" component={FilterScreen} />
       <Stack.Screen name="ProfileSetup" component={ProfileSetupScreen} />
       <Stack.Screen name="LeaveManagement" component={LeaveManagementScreen} />
+      <Stack.Screen name="Timesheet" component={TimesheetScreen} />
       <Stack.Screen name="Notifications" component={NotificationScreen} />
       <Stack.Screen name="JobDetails" component={JobDetailScreen} />
       <Stack.Screen name="AllJobs" component={AllJobsScreen} />

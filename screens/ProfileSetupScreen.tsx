@@ -2886,8 +2886,8 @@ export default function ProfileSetupScreen({ navigation }: Props) {
         const profileResponse = await getUserProfile(uid);
         const profile = profileResponse?.data || {};
         setIsStaffooStaff(profile?.user_id === 1);
-        const BASE_IMAGE_URL = "https://apis.staffoo.com.au/storage/";
-        // const BASE_IMAGE_URL = "https://apis-staging.staffoo.com.au/storage/";
+        // const BASE_IMAGE_URL = "https://apis.staffoo.com.au/storage/";
+        const BASE_IMAGE_URL = "https://apis-staging.staffoo.com.au/storage/";
 
         if (profile?.staff?.profile_image) {
           setProfileImage(`${BASE_IMAGE_URL}${profile.staff.profile_image}`);
@@ -3018,46 +3018,46 @@ export default function ProfileSetupScreen({ navigation }: Props) {
   }, [navigation]);
 
   // ─── Google Places ──────────────────────────────────────────────────────────
-  // const fetchPlaces = async (text: string) => {
-  //   if (text.length < 3) {
-  //     setPredictions([]);
-  //     setShowSuggestions(false);
-  //     return;
-  //   }
-  //   try {
-  //     const res = await fetch(
-  //       `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${text}&key=${GOOGLE_API_KEY}`,
-  //     );
-  //     const json = await res.json();
-  //     setPredictions(json.predictions || []);
-  //     setShowSuggestions(true);
-  //   } catch (err) {
-  //     console.log("Places API error:", err);
-  //   }
-  // };
-
   const fetchPlaces = async (text: string) => {
     if (text.length < 3) {
       setPredictions([]);
       setShowSuggestions(false);
       return;
     }
-
     try {
       const res = await fetch(
-        `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${encodeURIComponent(
-          text,
-        )}&components=country:au&types=address&key=${GOOGLE_API_KEY}`,
+        `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${text}&key=${GOOGLE_API_KEY}`,
       );
-
       const json = await res.json();
-
       setPredictions(json.predictions || []);
       setShowSuggestions(true);
     } catch (err) {
       console.log("Places API error:", err);
     }
   };
+
+  // const fetchPlaces = async (text: string) => {
+  //   if (text.length < 3) {
+  //     setPredictions([]);
+  //     setShowSuggestions(false);
+  //     return;
+  //   }
+
+  //   try {
+  //     const res = await fetch(
+  //       `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${encodeURIComponent(
+  //         text,
+  //       )}&components=country:au&types=address&key=${GOOGLE_API_KEY}`,
+  //     );
+
+  //     const json = await res.json();
+
+  //     setPredictions(json.predictions || []);
+  //     setShowSuggestions(true);
+  //   } catch (err) {
+  //     console.log("Places API error:", err);
+  //   }
+  // };
 
   const fetchPlaceDetails = async (placeId: string, description: string) => {
     try {

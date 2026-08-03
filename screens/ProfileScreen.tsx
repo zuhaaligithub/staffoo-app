@@ -32,6 +32,7 @@ import {
   Briefcase,
   MapPin,
   Users,
+  ClipboardList,
 } from "lucide-react-native";
 import DeviceInfo from "react-native-device-info";
 import Geolocation from "@react-native-community/geolocation";
@@ -45,6 +46,7 @@ import { LogLevel, OneSignal } from "react-native-onesignal";
 import { sendNotificationTokenToServer } from "../screens/LoginScreen";
 import { useFocusEffect } from "@react-navigation/native";
 import LinearGradient from "react-native-linear-gradient";
+import BrandLoader from "./BrandLoader";
 
 const ONESIGNAL_APP_ID = "79041c59-5506-4e56-9de4-8a6619f85e1d";
 
@@ -124,8 +126,8 @@ export default function ProfileScreen({ navigation }: Props) {
     setIsActive(freshData.is_active === true);
 
     let imageUri = null;
-    // const BASE_IMAGE_URL = "https://apis-staging.staffoo.com.au/storage/";
-    const BASE_IMAGE_URL = "https://apis.staffoo.com.au/storage/";
+    const BASE_IMAGE_URL = "https://apis-staging.staffoo.com.au/storage/";
+    // const BASE_IMAGE_URL = "https://apis.staffoo.com.au/storage/";
 
     if (freshData.user_type === "customer") {
       imageUri = freshData.customer?.profile_image || freshData.profile_image;
@@ -469,7 +471,6 @@ export default function ProfileScreen({ navigation }: Props) {
   updateCoordinatesWithGoogle.isRunning = false;
   updateCoordinatesWithGoogle.hasShownError = false;
 
-  // Single source of truth for location updates
   useEffect(() => {
     if (!userId) return;
 
@@ -477,9 +478,7 @@ export default function ProfileScreen({ navigation }: Props) {
 
     const updateLocation = async () => {
       if ((updateCoordinatesWithGoogle as any).isRunning) {
-        console.log(
-          "⏭️ Location update already in progress, skipping duplicate call",
-        );
+        console.log("⏭️ Location update already in progress");
         return;
       }
 
@@ -487,18 +486,15 @@ export default function ProfileScreen({ navigation }: Props) {
       await updateCoordinatesWithGoogle(userId);
     };
 
-    // Initial call (delayed)
-    const initialTimer = setTimeout(() => {
-      updateLocation();
-    }, 2500);
+    // Call immediately after login
+    updateLocation();
 
-    // Update every 10 minutes (better for battery & less spam)
+    // Then every 10 minutes
     interval = setInterval(() => {
       updateLocation();
-    }, 10 * 60 * 1000); // 10 minutes
+    }, 10 * 60 * 1000);
 
     return () => {
-      clearTimeout(initialTimer);
       if (interval) clearInterval(interval);
     };
   }, [userId]);
@@ -570,6 +566,12 @@ export default function ProfileScreen({ navigation }: Props) {
         iconBg: "rgba(167,139,250,0.15)",
         route: "PaymentMethod",
       },
+      {
+  title: "Timesheet",
+  icon: <ClipboardList size={20} color="#3B82F6" />,
+  iconBg: "rgba(59,130,246,0.15)",
+  route: "Timesheet",
+},
 
       {
         title: "Log Out",
@@ -584,7 +586,7 @@ export default function ProfileScreen({ navigation }: Props) {
       const staffTabs = [
         "Personal Information",
         "Documents",
-
+  "Timesheet",
         "Privacy Policy",
         "Job History",
 
@@ -606,7 +608,7 @@ export default function ProfileScreen({ navigation }: Props) {
           "Documents",
           "Staff Management",
           "Job History",
-
+    "Timesheet",
           "Log Out",
         ].includes(s.title),
       );
@@ -720,7 +722,8 @@ export default function ProfileScreen({ navigation }: Props) {
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={COLORS.primary} />
+        <BrandLoader size={60} />
+
         <Text style={styles.loadingText}>Loading profile...</Text>
       </View>
     );

@@ -28,13 +28,14 @@ import ProfileScreen from "./ProfileScreen";
 import AvailableJobsScreen from "./AvailableJobsScreen";
 import AcceptedJobsScreen from "./AcceptedJobsScreen";
 import { BASE_URL, getUserProfile } from "../services/authApi";
-import { useFocusEffect } from "@react-navigation/native";
+import { useFocusEffect, useRoute } from "@react-navigation/native";
 import CreateJobScreen from "./CreateJobScreen";
 import ReviewConfirmScreen from "./ReviewConfirmScreen";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { Platform, Easing } from "react-native";
 import axios from "axios";
+import BrandLoader from "./BrandLoader";
 
 const Tab = createBottomTabNavigator();
 const COLORS = {
@@ -268,8 +269,9 @@ function CustomTabBar({
   );
 }
 export default function MainTabs() {
+  const route = useRoute<any>();
   const [availableJobsCount, setAvailableJobsCount] = useState(0);
-
+const initialTab = route.params?.screen || "Home";
   const fetchAvailableJobsCount = useCallback(async () => {
     try {
       const token = await AsyncStorage.getItem("@auth_token");
@@ -345,7 +347,8 @@ export default function MainTabs() {
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={COLORS.primary} />
+        <BrandLoader size={60} />
+
         <Text style={styles.loadingText}>Loading profile...</Text>
       </View>
     );
@@ -353,6 +356,7 @@ export default function MainTabs() {
 
   return (
     <Tab.Navigator
+    initialRouteName={initialTab}
       tabBar={(props) => (
         <CustomTabBar
           {...props}

@@ -22,7 +22,7 @@ import { PERMISSIONS, request, RESULTS } from "react-native-permissions";
 import CheckBox from "@react-native-community/checkbox";
 import Toast from "react-native-toast-message";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { BASE_URL, loginUser } from "../services/authApi";
+import { BASE_URL, getUserProfile, loginUser } from "../services/authApi";
 import { OneSignal } from "react-native-onesignal";
 import NetInfo from "@react-native-community/netinfo";
 import { GoogleSignin } from "@react-native-google-signin/google-signin";
@@ -394,11 +394,13 @@ export default function LoginScreen({ navigation }: Props) {
 
       // ←←← UPDATED NAVIGATION LOGIC
       setTimeout(() => {
-        const isClient =
-          selectedAccountType === "customer" ||
-          user.user_type?.toLowerCase() === "customer";
+        const type = (
+          selectedAccountType ||
+          user.user_type ||
+          ""
+        ).toLowerCase();
 
-        if (isClient) {
+        if (type === "customer") {
           navigation.reset({
             index: 0,
             routes: [
@@ -409,12 +411,15 @@ export default function LoginScreen({ navigation }: Props) {
             ],
           });
         } else {
+          // For staff / contractor – check is_active
+          const targetScreen = user.is_active ? "Home" : "Profile";
+
           navigation.reset({
             index: 0,
             routes: [
               {
                 name: "MainTabs",
-                params: { screen: "Profile" },
+                params: { screen: targetScreen },
               },
             ],
           });
@@ -818,15 +823,15 @@ export default function LoginScreen({ navigation }: Props) {
         throw new Error("No internet connection. Please try again.");
       }
 
-      const response = await loginUser({
+      const response: any = await loginUser({
         email: email.trim(),
         password: password.trim(),
       });
 
-      const user = response;
       const token = response.token;
+      let user = response.user || response;
 
-      // ── Check for Admin BEFORE saving data ──
+      // Block admin
       if (user.user_type?.toLowerCase() === "admin") {
         Toast.show({
           type: "error",
@@ -835,12 +840,10 @@ export default function LoginScreen({ navigation }: Props) {
           position: "top",
           visibilityTime: 5000,
         });
-
-        // Do NOT save admin credentials
         return;
       }
 
-      // ── Normal User Flow ──
+      // Save basic auth data first
       await AsyncStorage.multiSet([
         ["@auth_token", token],
         ["@user_id", String(user.id)],
@@ -848,7 +851,18 @@ export default function LoginScreen({ navigation }: Props) {
         ["user", JSON.stringify(user)],
       ]);
 
-      // OneSignal setup
+      // ── Fetch full profile so we get is_active ──
+      try {
+        const profileRes = await getUserProfile(String(user.id));
+        if (profileRes?.success && profileRes?.data) {
+          user = profileRes.data; // full object with is_active
+          await AsyncStorage.setItem("user", JSON.stringify(user));
+        }
+      } catch (e) {
+        console.log("Could not fetch full profile after login:", e);
+      }
+
+      // OneSignal
       try {
         const playerId = await OneSignal.User.pushSubscription.getIdAsync();
         if (playerId) {
@@ -881,19 +895,41 @@ export default function LoginScreen({ navigation }: Props) {
   const redirectAfterLogin = (user: any) => {
     const type = (user.user_type || "").toLowerCase();
 
+    // Customer → always CreateJob
     if (type === "customer") {
       navigation.reset({
         index: 0,
-        routes: [{ name: "MainTabs", params: { screen: "CreateJob" } }],
+        routes: [
+          {
+            name: "MainTabs",
+            params: { screen: "CreateJob" },
+          },
+        ],
       });
-    } else {
-      navigation.reset({
-        index: 0,
-        routes: [{ name: "MainTabs", params: { screen: "Profile" } }],
-      });
+      return;
     }
-  };
 
+    // Staff / Contractor
+    // is_active true  → Home
+    // is_active false → Profile
+    const targetScreen = user.is_active === true ? "Home" : "Profile";
+
+    console.log("Redirect →", {
+      type,
+      is_active: user.is_active,
+      targetScreen,
+    });
+
+    navigation.reset({
+      index: 0,
+      routes: [
+        {
+          name: "MainTabs",
+          params: { screen: targetScreen },
+        },
+      ],
+    });
+  };
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor={COLORS.background} />

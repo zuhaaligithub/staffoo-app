@@ -1,5 +1,12 @@
 import React, { useEffect, useRef, useState, useCallback } from "react";
-import { StyleSheet, StatusBar, AppState, AppStateStatus } from "react-native";
+import {
+  StyleSheet,
+  StatusBar,
+  AppState,
+  AppStateStatus,
+  Platform,
+  PermissionsAndroid,
+} from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import {
   NavigationContainer,
@@ -9,12 +16,13 @@ import Toast from "react-native-toast-message";
 import { LogLevel, OneSignal } from "react-native-onesignal";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { StripeProvider } from "@stripe/stripe-react-native";
-
+import Geolocation from "@react-native-community/geolocation";
 import AppNavigator from "./navigation/AppNavigator";
 import CallOverlay from "./screens/CallOverlay";
 import { useEchoCallListener } from "./useCallManagerRN";
 import SplashScreen from "./screens/SplashScreen";
 import { notifyPendingNotificationAvailable } from "./utils/notificationBus";
+import { BASE_URL } from "./services/authApi";
 
 export const PENDING_ASAP_NOTIFICATION_KEY = "@pending_asap_notification";
 
@@ -39,6 +47,114 @@ export default function App() {
     const timer = setTimeout(() => setIsSplashVisible(false), 2200);
     return () => clearTimeout(timer);
   }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    let retryTimer: ReturnType<typeof setTimeout> | null = null;
+
+    const tryUpdateLocation = async () => {
+      if (cancelled) return;
+
+      const uid = await AsyncStorage.getItem("@user_id");
+      const token = await AsyncStorage.getItem("@auth_token");
+
+      // Not logged in yet → retry in 2 seconds
+      if (!uid || !token) {
+        retryTimer = setTimeout(tryUpdateLocation, 2000);
+        return;
+      }
+
+      // Logged in → update once, then stop
+      console.log("📍 Updating coordinates once after login...");
+      await updateCoordinatesWithGoogle(uid);
+    };
+
+    tryUpdateLocation();
+
+    return () => {
+      cancelled = true;
+      if (retryTimer) clearTimeout(retryTimer);
+    };
+  }, []);
+
+  const updateCoordinatesWithGoogle = async (uid: string) => {
+    try {
+      const token = await AsyncStorage.getItem("@auth_token");
+
+      if (!token || !uid) {
+        console.log("❌ Missing token or user id");
+        return;
+      }
+
+      // Request location permission
+      let hasPermission = true;
+
+      if (Platform.OS === "android") {
+        const result = await PermissionsAndroid.request(
+          PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+        );
+
+        hasPermission = result === PermissionsAndroid.RESULTS.GRANTED;
+      }
+
+      if (!hasPermission) {
+        console.log("❌ Location permission denied");
+        return;
+      }
+
+      // Get current location
+      Geolocation.getCurrentPosition(
+        async (position) => {
+          try {
+            const { latitude, longitude } = position.coords;
+
+            const payload = {
+              current_coordinates: `${latitude},${longitude}`,
+            };
+
+            console.log(
+              "📍 Sending Coordinates from app.tsx page:",
+              payload.current_coordinates,
+            );
+
+            const response = await fetch(
+              `${BASE_URL}/update-coordinates/${uid}`,
+              {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify(payload),
+              },
+            );
+
+            const data = await response.json();
+
+            console.log("📍 Update Coordinate Response:", data);
+
+            if (response.ok && data.success) {
+              console.log("✅ Coordinates updated successfully");
+            } else {
+              console.log("❌ Update failed:", data);
+            }
+          } catch (apiError) {
+            console.error("❌ API Error:", apiError);
+          }
+        },
+        (error) => {
+          console.error("❌ Geolocation Error:", error);
+        },
+        {
+          enableHighAccuracy: false,
+          timeout: 20000,
+          maximumAge: 10000,
+        },
+      );
+    } catch (error) {
+      console.error("❌ Failed to update coordinates:", error);
+    }
+  };
 
   // Load user type
   useEffect(() => {
