@@ -3,8 +3,8 @@ import axios from "axios";
 import { Platform } from "react-native";
 import { ChargeRate, ChargeRateFormData } from "../navigation/types";
 
-export const BASE_URL = "https://apis.staffoo.com.au/api";
-// export const BASE_URL = "https://apis-staging.staffoo.com.au/api";
+// export const BASE_URL = "https://apis.staffoo.com.au/api";
+export const BASE_URL = "https://apis-staging.staffoo.com.au/api";
 
 export interface UserData {
   id: number | string;
@@ -215,27 +215,32 @@ export const getUserTransactions = async (userId: number) => {
   }
 };
 // ==================== UPDATED INTERFACE ====================
-export interface ProfileUpdatePayload {
+type ProfileUpdatePayload = {
   name?: string;
   phone?: string;
   email?: string;
   email_otp?: string;
   gender?: string | null;
-  staff_document_type?: string | null;
   security_license_no?: string;
+  staff_document_type?: string | null;
   date_of_birth?: string;
+  origin_country?: string;
   address?: string;
   city?: string;
   state?: string;
   country?: string;
-  origin_country?: string;
   coordinates?: string;
   company_name?: string;
   registration_number?: string;
-  acn?: string;
-  abn?: string;
-}
-
+  acn?: string | null;
+  abn?: string | null;
+  states_allowed?: string[];
+  profile_image?: {
+    uri: string;
+    name?: string;
+    type?: string;
+  };
+};
 // ==================== UPDATE USER PROFILE ====================
 // NOTE: every optional field below is appended whenever it's *present*
 // in the payload (`!== undefined`), not when it's *truthy*. The old
@@ -247,7 +252,7 @@ export interface ProfileUpdatePayload {
 //   - a value you typed is always sent
 //   - an intentionally-cleared field is sent as "" (so the backend can
 //     actually clear it, instead of silently keeping the old value)
-export const updateUserProfile = async (
+const updateUserProfile = async (
   userId: string | number,
   payload: ProfileUpdatePayload & { profile_image?: any },
 ) => {
@@ -256,8 +261,6 @@ export const updateUserProfile = async (
 
   const endpoint = `${BASE_URL}/user-update/${userId}`;
   const formData = new FormData();
-
-  // ==================== APPEND FIELDS ====================
 
   // Basic fields
   if (payload.name !== undefined) formData.append("name", payload.name);
@@ -296,16 +299,21 @@ export const updateUserProfile = async (
   if (payload.coordinates !== undefined)
     formData.append("coordinates", payload.coordinates);
 
-  // Contractor — these three were the ones silently dropping when blank
+  // Contractor
   if (payload.company_name !== undefined)
     formData.append("company_name", payload.company_name);
   if (payload.registration_number !== undefined) {
     formData.append("registration_number", payload.registration_number);
   }
-  if (payload.acn !== undefined) formData.append("acn", payload.acn);
-  if (payload.abn !== undefined) formData.append("abn", payload.abn);
+  if (payload.acn !== undefined) formData.append("acn", payload.acn ?? "");
+  if (payload.abn !== undefined) formData.append("abn", payload.abn ?? "");
 
-  // Profile Image
+  if (payload.states_allowed !== undefined) {
+    // backend may expect JSON string or repeated fields — adjust if needed
+    formData.append("states_allowed", JSON.stringify(payload.states_allowed));
+  }
+
+  // Profile image
   if (payload.profile_image) {
     formData.append("profile_image", {
       uri: payload.profile_image.uri,
@@ -314,32 +322,35 @@ export const updateUserProfile = async (
     } as any);
   }
 
-  // ==================== SAFE LOGGING ====================
   console.log("[UPDATE PROFILE] Sending to:", endpoint);
-  console.log("[UPDATE PROFILE] Payload fields:");
-
-  const loggable: Record<string, any> = {
-    name: payload.name,
-    phone: payload.phone,
-    email: payload.email,
-    gender: payload.gender,
-    security_license_no: payload.security_license_no,
-    staff_document_type: payload.staff_document_type,
-    date_of_birth: payload.date_of_birth,
-    origin_country: payload.origin_country,
-    address: payload.address,
-    city: payload.city,
-    state: payload.state,
-    country: payload.country,
-    coordinates: payload.coordinates,
-    company_name: payload.company_name,
-    registration_number: payload.registration_number,
-    acn: payload.acn,
-    abn: payload.abn,
-    has_profile_image: !!payload.profile_image,
-  };
-
-  console.log(JSON.stringify(loggable, null, 2), "im here");
+  console.log(
+    "[UPDATE PROFILE] Payload fields:",
+    JSON.stringify(
+      {
+        name: payload.name,
+        phone: payload.phone,
+        email: payload.email,
+        gender: payload.gender,
+        security_license_no: payload.security_license_no,
+        staff_document_type: payload.staff_document_type,
+        date_of_birth: payload.date_of_birth,
+        origin_country: payload.origin_country,
+        address: payload.address,
+        city: payload.city,
+        state: payload.state,
+        country: payload.country,
+        coordinates: payload.coordinates,
+        company_name: payload.company_name,
+        registration_number: payload.registration_number,
+        acn: payload.acn,
+        abn: payload.abn,
+        states_allowed: payload.states_allowed,
+        has_profile_image: !!payload.profile_image,
+      },
+      null,
+      2,
+    ),
+  );
 
   try {
     const response = await axios.post(endpoint, formData, {
@@ -364,113 +375,6 @@ export const updateUserProfile = async (
     throw new Error(errorMsg);
   }
 };
-
-// export const updateUserProfile = async (
-//   userId: string | number,
-//   payload: ProfileUpdatePayload & { profile_image?: any },
-// ) => {
-//   const token = await getAuthToken();
-//   if (!token) {
-//     throw new Error("No authentication token found");
-//   }
-
-//   const endpoint = `${BASE_URL}/user-update/${userId}`;
-//   const formData = new FormData();
-
-//   // ==================== BASIC FIELDS ====================
-//   if (payload.name) formData.append("name", payload.name);
-//   if (payload.phone) formData.append("phone", payload.phone);
-//   if (payload.email) formData.append("email", payload.email);
-//   if (payload.email_otp) formData.append("email_otp", payload.email_otp);
-//   if (payload.gender) formData.append("gender", payload.gender);
-//   if (payload.staff_document_type)
-//     formData.append("staff_document_type", payload.staff_document_type);
-
-//   // ==================== SECURITY LICENSE (Staff) ====================
-//   if (payload.security_license_no !== undefined) {
-//     formData.append("security_license_no", payload.security_license_no);
-//   }
-
-//   // ==================== DATE OF BIRTH ====================
-//   if (payload.date_of_birth) {
-//     formData.append("date_of_birth", payload.date_of_birth);
-//   }
-
-//   // ==================== ADDRESS ====================
-//   if (payload.address) formData.append("address", payload.address);
-//   if (payload.city) formData.append("city", payload.city);
-//   if (payload.state) formData.append("state", payload.state);
-//   if (payload.country) formData.append("country", payload.country);
-//   if (payload.origin_country)
-//     formData.append("origin_country", payload.origin_country);
-//   if (payload.coordinates) formData.append("coordinates", payload.coordinates);
-
-//   // ==================== CONTRACTOR ====================
-//   if (payload.company_name)
-//     formData.append("company_name", payload.company_name);
-//   if (payload.registration_number)
-//     formData.append("registration_number", payload.registration_number);
-//   if (payload.acn) formData.append("acn", payload.acn);
-//   if (payload.abn) formData.append("abn", payload.abn);
-
-//   // ==================== PROFILE IMAGE ====================
-//   if (payload.profile_image) {
-//     formData.append("profile_image", {
-//       uri: payload.profile_image.uri,
-//       name: payload.profile_image.name || "profile.jpg",
-//       type: payload.profile_image.type || "image/jpeg",
-//     } as any);
-//   }
-
-//   // ==================== LOGGING ====================
-//   console.log("[UPDATE PROFILE] Sending to:", endpoint);
-//   const logData: Record<string, any> = {
-//     name: payload.name,
-//     phone: payload.phone,
-//     email: payload.email,
-//     gender: payload.gender,
-//     staff_document_type: payload.staff_document_type,
-//     security_license_no: payload.security_license_no, // ← Added
-//     date_of_birth: payload.date_of_birth,
-//     company_name: payload.company_name,
-//     registration_number: payload.registration_number,
-//     acn: payload.acn,
-//     abn: payload.abn,
-//     address: payload.address,
-//     city: payload.city,
-//     state: payload.state,
-//     country: payload.country,
-//     origin_country: payload.origin_country,
-//     coordinates: payload.coordinates,
-//   };
-//   console.log("[UPDATE PROFILE] FormData contents:", logData);
-
-//   try {
-//     const response = await axios.post(endpoint, formData, {
-//       headers: {
-//         Authorization: `Bearer ${token}`,
-//         "Content-Type": "multipart/form-data",
-//         Accept: "application/json",
-//       },
-//       timeout: 15000,
-//     });
-
-//     console.log("[UPDATE PROFILE] ← Success:", response.data);
-//     return response.data;
-//   } catch (error: any) {
-//     console.error(
-//       "[UPDATE PROFILE] Full Error:",
-//       error?.response?.data || error,
-//     );
-//     const errorMessage =
-//       error?.response?.data?.message ||
-//       error?.response?.data?.error ||
-//       error?.response?.data?.errors?.[0] ||
-//       error.message ||
-//       "Failed to update profile";
-//     throw new Error(errorMessage);
-//   }
-// };
 
 export const uploadFile = async (file: any) => {
   try {

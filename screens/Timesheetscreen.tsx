@@ -7,7 +7,9 @@ import {
   StyleSheet,
   SafeAreaView,
   Platform,
+  ActivityIndicator,
 } from "react-native";
+
 import LinearGradient from "react-native-linear-gradient";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import {
@@ -15,11 +17,21 @@ import {
   CalendarDays,
   Search,
   Users,
-  Clock,
   MapPin,
   Info,
   ChevronRight,
+  ArrowLeft,
 } from "lucide-react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { getAuthToken } from "../services/authApi";
+
+type Props = { navigation: any };
+// ─────────────────────────────────────────────────────────
+// CONFIG
+// ─────────────────────────────────────────────────────────
+const API_BASE = "https://apis-staging.staffoo.com.au/api";
+const GET_TIMESHEET_URL = `${API_BASE}/getTimesheet`;
+const GET_TIMESHEET_DETAILS_URL = `${API_BASE}/get-timesheet-details`;
 
 // ─────────────────────────────────────────────────────────
 // THEME
@@ -40,6 +52,8 @@ const COLORS = {
   dangerBg: "rgba(248,88,88,0.12)",
   warning: "#F5A623",
   warningBg: "rgba(245,166,35,0.08)",
+  info: "#5AA9E6",
+  infoBg: "rgba(90,169,230,0.12)",
   heroBg1: "#0D1F2D",
   heroBg2: "#061014",
 };
@@ -47,16 +61,28 @@ const COLORS = {
 // ─────────────────────────────────────────────────────────
 // TYPES
 // ─────────────────────────────────────────────────────────
-type Job = "Regular" | "Public Holiday" | "Saturday" | "Sunday" | "Overtime";
+type Job = "Regular" | "Public Holiday" | "Saturday" | "Sunday";
+type JobStatus = "confirmed" | "completed" | "pending" | string;
 
-type StaffMember = {
-  staffId: string;
-  name: string;
+// Row coming back from the getTimesheet summary API (one per staff/guard)
+type TimesheetRow = {
+  id: number | null;
+  name: string | null;
+  hours: number;
+  morning_hours: number;
+  night_hours: number;
+  saturday_morning_hours: number;
+  saturday_night_hours: number;
+  sunday_morning_hours: number;
+  sunday_night_hours: number;
+  ph_morning_hours: number;
+  ph_night_hours: number;
+  shift_collection: number[];
 };
 
-type ShiftRow = {
-  shiftId: string;
-  staffId: string;
+// A single shift, expanded from get-timesheet-details
+type ShiftDetail = {
+  shiftId: number;
   site: string;
   customer: string;
   guard: string;
@@ -64,139 +90,17 @@ type ShiftRow = {
   end: Date;
   total: number;
   job: Job;
+  jobStatus: JobStatus;
+  jobType: string;
   signIn: string;
   signOut: string;
 };
 
-// ─────────────────────────────────────────────────────────
-// STATIC DATA
-// ─────────────────────────────────────────────────────────
-const STAFF_DATA: StaffMember[] = [
-  { staffId: "SEF001", name: "Chandok Vandana" },
-  { staffId: "SEF002", name: "Priya Sharma" },
-  { staffId: "SEF003", name: "Amir Khan" },
-  { staffId: "SEF004", name: "Ravi Patel" },
-];
-
-const SHIFT_DATA: ShiftRow[] = [
-  {
-    shiftId: "SHFT-001",
-    staffId: "SEF001",
-    site: "Hive Mend",
-    customer: "Spdidry",
-    guard: "Chandok Vandana",
-    start: new Date(2026, 4, 4),
-    end: new Date(2026, 4, 5),
-    total: 12.0,
-    job: "Regular",
-    signIn: "08:00 AM",
-    signOut: "08:00 PM",
-  },
-  {
-    shiftId: "SHFT-002",
-    staffId: "SEF001",
-    site: "Main Gate",
-    customer: "Spdidry",
-    guard: "Chandok Vandana",
-    start: new Date(2026, 4, 6),
-    end: new Date(2026, 4, 7),
-    total: 11.5,
-    job: "Regular",
-    signIn: "07:30 AM",
-    signOut: "07:00 PM",
-  },
-  {
-    shiftId: "SHFT-003",
-    staffId: "SEF001",
-    site: "Hive Mend",
-    customer: "Spdidry",
-    guard: "Chandok Vandana",
-    start: new Date(2026, 4, 11),
-    end: new Date(2026, 4, 12),
-    total: 12.0,
-    job: "Public Holiday",
-    signIn: "08:00 AM",
-    signOut: "08:00 PM",
-  },
-  {
-    shiftId: "SHFT-004",
-    staffId: "SEF001",
-    site: "West Wing",
-    customer: "Spdidry",
-    guard: "Chandok Vandana",
-    start: new Date(2026, 4, 13),
-    end: new Date(2026, 4, 14),
-    total: 8.0,
-    job: "Regular",
-    signIn: "09:00 AM",
-    signOut: "05:00 PM",
-  },
-  {
-    shiftId: "SHFT-005",
-    staffId: "SEF001",
-    site: "Hive Mend",
-    customer: "Spdidry",
-    guard: "Chandok Vandana",
-    start: new Date(2026, 4, 18),
-    end: new Date(2026, 4, 19),
-    total: 12.0,
-    job: "Saturday",
-    signIn: "08:00 AM",
-    signOut: "08:00 PM",
-  },
-  {
-    shiftId: "SHFT-006",
-    staffId: "SEF002",
-    site: "North Dock",
-    customer: "Spdidry",
-    guard: "Priya Sharma",
-    start: new Date(2026, 4, 5),
-    end: new Date(2026, 4, 6),
-    total: 10.0,
-    job: "Regular",
-    signIn: "08:00 AM",
-    signOut: "06:00 PM",
-  },
-  {
-    shiftId: "SHFT-007",
-    staffId: "SEF002",
-    site: "North Dock",
-    customer: "Spdidry",
-    guard: "Priya Sharma",
-    start: new Date(2026, 4, 20),
-    end: new Date(2026, 4, 21),
-    total: 9.5,
-    job: "Sunday",
-    signIn: "08:00 AM",
-    signOut: "05:30 PM",
-  },
-  {
-    shiftId: "SHFT-008",
-    staffId: "SEF003",
-    site: "Main Gate",
-    customer: "Spdidry",
-    guard: "Amir Khan",
-    start: new Date(2026, 4, 7),
-    end: new Date(2026, 4, 8),
-    total: 11.0,
-    job: "Overtime",
-    signIn: "07:00 AM",
-    signOut: "06:00 PM",
-  },
-  {
-    shiftId: "SHFT-009",
-    staffId: "SEF004",
-    site: "West Wing",
-    customer: "Spdidry",
-    guard: "Ravi Patel",
-    start: new Date(2026, 4, 9),
-    end: new Date(2026, 4, 10),
-    total: 9.0,
-    job: "Regular",
-    signIn: "08:00 AM",
-    signOut: "05:00 PM",
-  },
-];
+type LoggedInUser = {
+  id: number;
+  name?: string;
+  user_type?: string | null;
+};
 
 // ─────────────────────────────────────────────────────────
 // HELPERS
@@ -208,18 +112,52 @@ const formatAU = (date: Date) =>
     .toString()
     .padStart(2, "0")}/${date.getFullYear()}`;
 
-// Full readable Australian format, e.g. "04 May 2026"
-const formatAULong = (date: Date) =>
-  `${date.getDate().toString().padStart(2, "0")} ${date.toLocaleString(
-    "en-AU",
-    { month: "long" },
-  )} ${date.getFullYear()}`;
+// API expects MM-DD-YYYY (matches the sample payload: "05-05-2026" / "01-28-2027")
+const formatAPIDate = (date: Date) =>
+  `${(date.getMonth() + 1).toString().padStart(2, "0")}-${date
+    .getDate()
+    .toString()
+    .padStart(2, "0")}-${date.getFullYear()}`;
 
 const startOfDay = (d: Date) =>
   new Date(d.getFullYear(), d.getMonth(), d.getDate(), 0, 0, 0, 0);
 
-const endOfDay = (d: Date) =>
-  new Date(d.getFullYear(), d.getMonth(), d.getDate(), 23, 59, 59, 999);
+// Parses "YYYY-MM-DD HH:mm" (or ISO) strings returned by the API into a Date
+const parseAPIDateTime = (value: string | null | undefined): Date => {
+  if (!value) return new Date(NaN);
+  const normalized = value.includes("T") ? value : value.replace(" ", "T");
+  const d = new Date(normalized);
+  return isNaN(d.getTime()) ? new Date(NaN) : d;
+};
+
+const formatTime24h = (date: Date) => {
+  if (isNaN(date.getTime())) return "--:--";
+
+  const hours = date.getHours().toString().padStart(2, "0");
+  const minutes = date.getMinutes().toString().padStart(2, "0");
+
+  return `${hours}:${minutes}`;
+};
+
+// Start of current week (Monday) → end of current week (Sunday)
+const getCurrentWeekRange = () => {
+  const now = new Date();
+  const day = now.getDay(); // 0 = Sun, 1 = Mon, … 6 = Sat
+  const diffToMonday = day === 0 ? -6 : 1 - day;
+
+  const monday = new Date(now);
+  monday.setDate(now.getDate() + diffToMonday);
+
+  const sunday = new Date(monday);
+  sunday.setDate(monday.getDate() + 6);
+
+  return {
+    from: startOfDay(monday),
+    to: startOfDay(sunday),
+  };
+};
+
+const { from: DEFAULT_FROM, to: DEFAULT_TO } = getCurrentWeekRange();
 
 const jobBadgeStyle = (job: Job) => {
   switch (job) {
@@ -228,40 +166,125 @@ const jobBadgeStyle = (job: Job) => {
     case "Saturday":
     case "Sunday":
       return { bg: COLORS.warningBg, color: COLORS.warning };
-    case "Overtime":
-      return { bg: COLORS.primaryGlow, color: COLORS.primary };
     default:
       return { bg: "rgba(148,163,184,0.12)", color: COLORS.textSecondary };
   }
 };
 
-// Default picker values shown before the user has searched anything
-const DEFAULT_FROM = new Date(2026, 4, 1);
-const DEFAULT_TO = new Date(2026, 4, 20);
+const statusBadgeStyle = (status: JobStatus) => {
+  switch ((status || "").toLowerCase()) {
+    case "completed":
+      return { bg: "rgba(52,200,138,0.12)", color: COLORS.success };
+    case "confirmed":
+      return { bg: COLORS.infoBg, color: COLORS.info };
+    case "pending":
+      return { bg: COLORS.warningBg, color: COLORS.warning };
+    default:
+      return { bg: "rgba(148,163,184,0.12)", color: COLORS.textSecondary };
+  }
+};
+
+// Derive a display "job type" (Regular / Public Holiday / Saturday / Sunday)
+// from the hour buckets returned for a shift's owning timesheet row, or —
+// when unavailable per-shift — fall back to Regular.
+const deriveJobFromRow = (row: TimesheetRow): Job => {
+  if ((row.ph_morning_hours || 0) > 0 || (row.ph_night_hours || 0) > 0)
+    return "Public Holiday";
+  if (
+    (row.saturday_morning_hours || 0) > 0 ||
+    (row.saturday_night_hours || 0) > 0
+  )
+    return "Saturday";
+  if ((row.sunday_morning_hours || 0) > 0 || (row.sunday_night_hours || 0) > 0)
+    return "Sunday";
+  return "Regular";
+};
+
+/**
+ * Resolve the currently logged-in user (id + user_type).
+ * Tries common AsyncStorage keys used across the app.
+ * Adjust the keys if your auth layer stores them differently.
+ */
+const getLoggedInUser = async (): Promise<LoggedInUser | null> => {
+  try {
+    // Try a few common storage shapes
+    const rawCandidates = await Promise.all([
+      AsyncStorage.getItem("user"),
+      AsyncStorage.getItem("userData"),
+      AsyncStorage.getItem("currentUser"),
+      AsyncStorage.getItem("@user"),
+    ]);
+
+    for (const raw of rawCandidates) {
+      if (!raw) continue;
+      const parsed = JSON.parse(raw);
+      const id =
+        parsed?.id ??
+        parsed?.user_id ??
+        parsed?.userId ??
+        parsed?.data?.id ??
+        null;
+      if (id == null) continue;
+      return {
+        id: Number(id),
+        name: parsed?.name ?? parsed?.data?.name,
+        user_type:
+          parsed?.user_type ??
+          parsed?.userType ??
+          parsed?.type ??
+          parsed?.data?.user_type ??
+          null,
+      };
+    }
+
+    // Fallback: separate keys
+    const idOnly =
+      (await AsyncStorage.getItem("user_id")) ||
+      (await AsyncStorage.getItem("userId")) ||
+      (await AsyncStorage.getItem("id"));
+    const typeOnly =
+      (await AsyncStorage.getItem("user_type")) ||
+      (await AsyncStorage.getItem("userType"));
+
+    if (idOnly) {
+      return {
+        id: Number(idOnly),
+        user_type: typeOnly,
+      };
+    }
+  } catch (e) {
+    console.warn("Failed to read logged-in user from storage", e);
+  }
+  return null;
+};
 
 // ─────────────────────────────────────────────────────────
 // SCREEN
 // ─────────────────────────────────────────────────────────
-export default function TimesheetScreen() {
-  // Values currently sitting in the date pickers (not applied yet)
+export default function TimesheetScreen({ navigation }: Props) {
+  // ── Date range state ──
   const [tempFrom, setTempFrom] = useState<Date>(DEFAULT_FROM);
   const [tempTo, setTempTo] = useState<Date>(DEFAULT_TO);
-
-  // Values actually applied to the results — only set once "Search" is pressed
   const [appliedFrom, setAppliedFrom] = useState<Date | null>(null);
   const [appliedTo, setAppliedTo] = useState<Date | null>(null);
-
-  // Nothing below the filter renders until this is true
-  const [hasSearched, setHasSearched] = useState(false);
-
-  // Nothing in the "Detailed Shift Breakdown" renders until a staff row is tapped
-  const [selectedStaffId, setSelectedStaffId] = useState<string | null>(null);
-
   const [showFromPicker, setShowFromPicker] = useState(false);
   const [showToPicker, setShowToPicker] = useState(false);
 
+  // ── Timesheet summary state ──
+  const [hasSearched, setHasSearched] = useState(false);
+  const [timesheetLoading, setTimesheetLoading] = useState(false);
+  const [timesheetError, setTimesheetError] = useState<string | null>(null);
+  const [timesheetRows, setTimesheetRows] = useState<TimesheetRow[]>([]);
+
+  // ── Detailed shift breakdown state ──
+  const [selectedStaffId, setSelectedStaffId] = useState<number | null>(null);
+  const [staffDetailLoading, setStaffDetailLoading] = useState(false);
+  const [staffDetailError, setStaffDetailError] = useState<string | null>(null);
+  const [staffDetailShifts, setStaffDetailShifts] = useState<ShiftDetail[]>([]);
+
   const isRangeInvalid = tempTo.getTime() < tempFrom.getTime();
 
+  // ── Date pickers ──
   const onChangeFrom = (event: any, date?: Date) => {
     if (Platform.OS === "android") setShowFromPicker(false);
     if (event?.type === "dismissed") return;
@@ -277,93 +300,230 @@ export default function TimesheetScreen() {
     if (date) setTempTo(date);
   };
 
-  const handleSearch = () => {
+  const handleSearch = async () => {
     if (isRangeInvalid) return;
+
     setAppliedFrom(tempFrom);
     setAppliedTo(tempTo);
     setHasSearched(true);
-    // Collapse any previously opened staff breakdown on a fresh search
     setSelectedStaffId(null);
+    setStaffDetailShifts([]);
+    setTimesheetError(null);
+    setTimesheetLoading(true);
+    setTimesheetRows([]);
+
+    try {
+      const token = await getAuthToken();
+      if (!token) {
+        throw new Error("No authentication token");
+      }
+
+      const user = await getLoggedInUser();
+      if (!user?.id) {
+        throw new Error("Could not resolve logged-in user id");
+      }
+
+      const isContractor =
+        (user.user_type || "").toLowerCase() === "contractor";
+
+      // contractor → contractor_ids: [loginId]
+      // staff / guard → guard_ids: [loginId]
+      const payload: Record<string, any> = {
+        length: 0,
+        pageIndex: 0,
+        pageSize: 20,
+        previousPageIndex: 0,
+        start: formatAPIDate(tempFrom),
+        end: formatAPIDate(tempTo),
+      };
+
+      if (isContractor) {
+        payload.contractor_ids = [user.id];
+      } else {
+        payload.guard_ids = [user.id];
+      }
+
+      console.log("📤 Timesheet Search Payload:");
+      console.log(JSON.stringify(payload, null, 2));
+      console.log("🪪 Auth Token:", token);
+      console.log("👤 Logged-in user:", user);
+
+      const res = await fetch(GET_TIMESHEET_URL, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const json = await res.json();
+
+      if (json?.success && Array.isArray(json?.data)) {
+        setTimesheetRows(json.data);
+      } else {
+        setTimesheetError(json?.message || "Failed to load timesheet.");
+      }
+    } catch (err: any) {
+      setTimesheetError(err?.message || "Failed to load timesheet.");
+    } finally {
+      setTimesheetLoading(false);
+    }
   };
 
-  // Shifts that fall inside the applied date range
-  const shiftsInRange = useMemo(() => {
-    if (!hasSearched || !appliedFrom || !appliedTo) return [];
-    const from = startOfDay(appliedFrom);
-    const to = endOfDay(appliedTo);
-    return SHIFT_DATA.filter(
-      (s) =>
-        s.start.getTime() >= from.getTime() &&
-        s.start.getTime() <= to.getTime(),
-    );
-  }, [hasSearched, appliedFrom, appliedTo]);
-
-  // Staff rows built only from shifts that fall in range, hours/shift counts recomputed live
+  // Staff rows built directly from the API response (no static data)
   const staffRows = useMemo(() => {
-    return STAFF_DATA.map((staff) => {
-      const staffShifts = shiftsInRange.filter(
-        (s) => s.staffId === staff.staffId,
-      );
-      const totalHours = staffShifts.reduce((sum, s) => sum + s.total, 0);
-      return { ...staff, totalHours, shiftsCount: staffShifts.length };
-    }).filter((s) => s.shiftsCount > 0);
-  }, [shiftsInRange]);
+    return timesheetRows.map((row, idx) => ({
+      key: row.id !== null ? String(row.id) : `unassigned-${idx}`,
+      staffId: row.id,
+      name: row.name || "Unassigned",
+      totalHours: row.hours || 0,
+      shiftsCount: row.shift_collection?.length || 0,
+      raw: row,
+    }));
+  }, [timesheetRows]);
 
-  const selectedStaff = staffRows.find((s) => s.staffId === selectedStaffId);
+  const handleSelectStaff = async (row: (typeof staffRows)[number]) => {
+    if (row.staffId === null) {
+      setSelectedStaffId(null);
+      setStaffDetailShifts([]);
+      return;
+    }
 
-  const selectedStaffShifts = useMemo(() => {
-    if (!selectedStaffId) return [];
-    return shiftsInRange
-      .filter((s) => s.staffId === selectedStaffId)
-      .sort((a, b) => a.start.getTime() - b.start.getTime());
-  }, [shiftsInRange, selectedStaffId]);
+    if (selectedStaffId === row.staffId) {
+      setSelectedStaffId(null);
+      setStaffDetailShifts([]);
+      return;
+    }
 
-  const heroRangeLabel =
-    appliedFrom && appliedTo
-      ? `${formatAU(appliedFrom)} - ${formatAU(appliedTo)}`
-      : "Not selected yet";
+    setSelectedStaffId(row.staffId);
+    setStaffDetailShifts([]);
+    setStaffDetailError(null);
+    setStaffDetailLoading(true);
+
+    const payload = {
+      id: row.staffId,
+      timesheet_id: row.staffId,
+      guard_id: row.staffId,
+      staff_id: row.staffId,
+      shift_collection: row.raw.shift_collection || [],
+    };
+
+    try {
+      const token = await getAuthToken();
+
+      if (!token) {
+        throw new Error("No authentication token");
+      }
+      console.log("📤 Timesheet Details Payload:");
+      console.log(JSON.stringify(payload, null, 2));
+
+      console.log("🪪 Auth Token:", token);
+      const res = await fetch(GET_TIMESHEET_DETAILS_URL, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const json = await res.json();
+
+      if (json?.success && Array.isArray(json?.data)) {
+        const mapped: ShiftDetail[] = json.data.map((s: any) => {
+          const start = parseAPIDateTime(s.start);
+          const end = parseAPIDateTime(s.end);
+
+          return {
+            shiftId: s.id,
+            site: s.site?.site_name || "—",
+            customer: s.customer?.name || "—",
+            guard: s.guards?.name || row.name,
+            start,
+            end,
+            total: s.hours || 0,
+            job: deriveJobFromRow(row.raw),
+            jobStatus: s.job_status || "pending",
+            jobType: s.job_type || "",
+            signIn: formatTime24h(start),
+            signOut: formatTime24h(end),
+          };
+        });
+
+        setStaffDetailShifts(mapped);
+      } else {
+        setStaffDetailError(json?.message || "Failed to load shift details.");
+      }
+    } catch (err: any) {
+      setStaffDetailError(err?.message || "Failed to load shift details.");
+    } finally {
+      setStaffDetailLoading(false);
+    }
+  };
+
+  const selectedStaffRow = staffRows.find((s) => s.staffId === selectedStaffId);
+
+  const headerRangeLabel = `${formatAU(tempFrom)} - ${formatAU(tempTo)}`;
 
   return (
     <SafeAreaView style={styles.root}>
+      {/* ───────── FIXED HEADER ───────── */}
+      <LinearGradient
+        colors={[COLORS.heroBg1, COLORS.heroBg2]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.hero}
+      >
+        <View style={styles.headerRow}>
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => navigation.goBack()}
+          >
+            <ArrowLeft size={18} color={COLORS.text} />
+          </TouchableOpacity>
+
+          <Text style={styles.heroTitle}>Timesheet</Text>
+
+          {/* Keeps the title centered */}
+          <View style={{ width: 40 }} />
+        </View>
+
+        <Text style={styles.heroSubtitle}>
+          Filter, review, and drill into shift breakdowns
+        </Text>
+
+        <View style={styles.statsRow}>
+          <View style={styles.statBox}>
+            <View style={styles.statLabelRow}>
+              <CalendarDays size={12} color={COLORS.textSecondary} />
+              <Text style={styles.statLabel}>DATE RANGE</Text>
+            </View>
+            <Text style={styles.statValue} numberOfLines={1}>
+              {headerRangeLabel}
+            </Text>
+          </View>
+          <View style={styles.statDivider} />
+          <View style={styles.statBox}>
+            <View style={styles.statLabelRow}>
+              <Users size={12} color={COLORS.textSecondary} />
+              <Text style={styles.statLabel}>RESULTS</Text>
+            </View>
+            <Text style={styles.statValue} numberOfLines={1}>
+              {hasSearched ? `${staffRows.length} staff` : "—"}
+            </Text>
+          </View>
+        </View>
+      </LinearGradient>
+
+      {/* ───────── SCROLLABLE BODY ───────── */}
       <ScrollView
         style={styles.scroll}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* HERO */}
-        <LinearGradient
-          colors={[COLORS.heroBg1, COLORS.heroBg2]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.hero}
-        >
-          
-          <Text style={styles.heroTitle}>Time Sheet</Text>
-          <Text style={styles.heroSubtitle}>
-            Filter, review, and drill into shift breakdowns
-          </Text>
-
-          <View style={styles.statsRow}>
-            <View style={styles.statBox}>
-              <View style={styles.statLabelRow}>
-                <CalendarDays size={12} color={COLORS.textSecondary} />
-                <Text style={styles.statLabel}>DATE RANGE</Text>
-              </View>
-              <Text style={styles.statValue} numberOfLines={1}>
-                {heroRangeLabel}
-              </Text>
-            </View>
-            <View style={styles.statDivider} />
-            <View style={styles.statBox}>
-              <View style={styles.statLabelRow}>
-                <Users size={12} color={COLORS.textSecondary} />
-                <Text style={styles.statLabel}>STAFF COUNT</Text>
-              </View>
-              <Text style={styles.statValue}>{STAFF_DATA.length}</Text>
-            </View>
-          </View>
-        </LinearGradient>
-
         {/* FILTER CARD */}
         <View style={styles.filterCard}>
           <View style={styles.filterRow}>
@@ -443,8 +603,14 @@ export default function TimesheetScreen() {
               onPress={handleSearch}
               disabled={isRangeInvalid}
             >
-              <Search size={15} color={COLORS.background} />
-              <Text style={styles.searchBtnText}>Search</Text>
+              {timesheetLoading ? (
+                <ActivityIndicator size="small" color="#fff" />
+              ) : (
+                <>
+                  <Search size={15} color="#fff" />
+                  <Text style={styles.searchBtnText}>Search</Text>
+                </>
+              )}
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.exportBtn, !hasSearched && styles.btnDisabled]}
@@ -462,27 +628,27 @@ export default function TimesheetScreen() {
             <Info size={22} color={COLORS.textMuted} />
             <Text style={styles.emptyTitle}>No results yet</Text>
             <Text style={styles.emptyText}>
-              Pick a "From" and "To" date above, then tap Search to view staff
-              timesheets.
+              Select a date range above, then tap Search to view your timesheet.
             </Text>
           </View>
         ) : (
           <>
-            {/* STAFF TABLE */}
-            <View style={styles.sectionHeaderRow}>
-              <Text style={styles.sectionHeaderText}>Staff</Text>
-              <Text style={styles.sectionHeaderCount}>
-                {staffRows.length}{" "}
-                {staffRows.length === 1 ? "result" : "results"}
-              </Text>
-            </View>
-
-            {staffRows.length === 0 ? (
+            {timesheetLoading ? (
+              <View style={styles.emptyCard}>
+                <ActivityIndicator size="small" color={COLORS.primary} />
+                <Text style={styles.emptyTitle}>Loading timesheet…</Text>
+              </View>
+            ) : timesheetError ? (
+              <View style={styles.emptyCard}>
+                <Info size={22} color={COLORS.danger} />
+                <Text style={styles.emptyText}>{timesheetError}</Text>
+              </View>
+            ) : staffRows.length === 0 ? (
               <View style={styles.emptyCard}>
                 <Info size={22} color={COLORS.textMuted} />
                 <Text style={styles.emptyTitle}>No shifts found</Text>
                 <Text style={styles.emptyText}>
-                  No staff have shifts within {formatAU(appliedFrom as Date)} -{" "}
+                  No shifts within {formatAU(appliedFrom as Date)} -{" "}
                   {formatAU(appliedTo as Date)}. Try a different date range.
                 </Text>
               </View>
@@ -500,21 +666,19 @@ export default function TimesheetScreen() {
                   const isSelected = row.staffId === selectedStaffId;
                   return (
                     <TouchableOpacity
-                      key={row.staffId}
+                      key={row.key}
                       style={[
                         styles.tableRow,
                         isSelected && styles.tableRowSelected,
                       ]}
                       activeOpacity={0.7}
-                      onPress={() =>
-                        setSelectedStaffId(isSelected ? null : row.staffId)
-                      }
+                      onPress={() => handleSelectStaff(row)}
                     >
                       <Text
                         style={[styles.td, styles.tdMono, { flex: 1.1 }]}
                         numberOfLines={1}
                       >
-                        {row.staffId}
+                        {row.staffId !== null ? row.staffId : "—"}
                       </Text>
                       <View style={{ flex: 1.6 }}>
                         <Text style={styles.td} numberOfLines={1}>
@@ -545,9 +709,9 @@ export default function TimesheetScreen() {
                 <View style={styles.sectionHeaderRow}>
                   <Text style={styles.sectionHeaderText}>
                     Detailed Shift Breakdown
-                    {selectedStaff ? (
+                    {selectedStaffRow ? (
                       <Text style={styles.sectionHeaderName}>
-                        {"  ·  " + selectedStaff.name.toUpperCase()}
+                        {"  ·  " + selectedStaffRow.name.toUpperCase()}
                       </Text>
                     ) : null}
                   </Text>
@@ -562,54 +726,111 @@ export default function TimesheetScreen() {
                       breakdown.
                     </Text>
                   </View>
+                ) : staffDetailLoading ? (
+                  <View style={styles.emptyCard}>
+                    <ActivityIndicator size="small" color={COLORS.primary} />
+                    <Text style={styles.emptyTitle}>Loading shifts…</Text>
+                  </View>
+                ) : staffDetailError ? (
+                  <View style={styles.emptyCard}>
+                    <Info size={22} color={COLORS.danger} />
+                    <Text style={styles.emptyTitle}>Something went wrong</Text>
+                    <Text style={styles.emptyText}>{staffDetailError}</Text>
+                  </View>
+                ) : staffDetailShifts.length === 0 ? (
+                  <View style={styles.emptyCard}>
+                    <Info size={22} color={COLORS.textMuted} />
+                    <Text style={styles.emptyTitle}>No shift details</Text>
+                    <Text style={styles.emptyText}>
+                      No shift records were returned for this staff member.
+                    </Text>
+                  </View>
                 ) : (
-                  selectedStaffShifts.map((row) => {
+                  staffDetailShifts.map((row) => {
                     const badge = jobBadgeStyle(row.job);
+                    const statusBadge = statusBadgeStyle(row.jobStatus);
                     return (
                       <View key={row.shiftId} style={styles.shiftCard}>
                         <View style={styles.shiftCardHeader}>
-                          <View>
+                          <View style={{ flex: 1 }}>
                             <Text style={styles.shiftCardId}>
-                              {row.shiftId}
+                              SHFT-{row.shiftId}
                             </Text>
                             <View style={styles.shiftCardSiteRow}>
                               <MapPin size={11} color={COLORS.textSecondary} />
-                              <Text style={styles.shiftCardSite}>
+                              <Text
+                                style={styles.shiftCardSite}
+                                numberOfLines={1}
+                              >
                                 {row.site} · {row.customer}
                               </Text>
                             </View>
                           </View>
-                          <View
-                            style={[
-                              styles.jobBadge,
-                              { backgroundColor: badge.bg },
-                            ]}
-                          >
-                            <Text
+                          <View style={styles.badgeStack}>
+                            {/* <View
                               style={[
-                                styles.jobBadgeText,
-                                { color: badge.color },
+                                styles.jobBadge,
+                                { backgroundColor: badge.bg },
                               ]}
                             >
-                              {row.job}
-                            </Text>
+                              <Text
+                                style={[
+                                  styles.jobBadgeText,
+                                  { color: badge.color },
+                                ]}
+                              >
+                                {row.job}
+                              </Text>
+                            </View> */}
+                            <View
+                              style={[
+                                styles.jobBadge,
+                                {
+                                  backgroundColor: statusBadge.bg,
+                                  marginTop: 6,
+                                },
+                              ]}
+                            >
+                              <Text
+                                style={[
+                                  styles.jobBadgeText,
+                                  { color: statusBadge.color },
+                                ]}
+                              >
+                                {(row.jobStatus || "pending")
+                                  .charAt(0)
+                                  .toUpperCase() +
+                                  (row.jobStatus || "pending")
+                                    .slice(1)
+                                    .toLowerCase()}
+                              </Text>
+                            </View>
                           </View>
                         </View>
 
                         <Text style={styles.shiftCardGuard}>{row.guard}</Text>
+                        {row.jobType ? (
+                          <Text style={styles.shiftCardJobType}>
+                            {row.jobType}
+                          </Text>
+                        ) : null}
 
                         <View style={styles.shiftDateRow}>
                           <View style={styles.shiftDateBlock}>
                             <Text style={styles.fieldLabel}>START</Text>
                             <Text style={styles.fieldValue}>
-                              {formatAU(row.start)}
+                              {isNaN(row.start.getTime())
+                                ? "—"
+                                : formatAU(row.start)}
                             </Text>
                           </View>
                           <Text style={styles.dateArrow}>→</Text>
                           <View style={styles.shiftDateBlock}>
                             <Text style={styles.fieldLabel}>END</Text>
                             <Text style={styles.fieldValue}>
-                              {formatAU(row.end)}
+                              {isNaN(row.end.getTime())
+                                ? "—"
+                                : formatAU(row.end)}
                             </Text>
                           </View>
                         </View>
@@ -664,54 +885,47 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingBottom: 24,
+    paddingBottom: 15,
   },
 
-  // Hero
+  // Hero (fixed header)
   hero: {
-    paddingTop: Platform.OS === "ios" ? 24 : 32,
-    paddingHorizontal: 20,
-    paddingBottom: 24,
+    paddingTop: Platform.OS === "ios" ? 20 : 12,
+    paddingHorizontal: 10,
+    paddingBottom: 15,
     alignItems: "center",
     borderBottomLeftRadius: 26,
     borderBottomRightRadius: 26,
     borderColor: COLORS.cardBorder,
-  },
-  liveBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    backgroundColor: "rgba(52,200,138,0.12)",
-    borderWidth: 1,
-    borderColor: "rgba(52,200,138,0.35)",
-    paddingHorizontal: 12,
-    paddingVertical: 5,
-    borderRadius: 20,
-    marginBottom: 16,
-  },
-  liveDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: COLORS.success,
-  },
-  liveText: {
-    color: COLORS.success,
-    fontSize: 11,
-    fontWeight: "800",
-    letterSpacing: 1,
+
+    zIndex: 10,
   },
   heroTitle: {
     color: COLORS.text,
-    fontSize: 30,
+    fontSize: 22,
     fontWeight: "800",
-    marginBottom: 6,
+    marginBottom: 4,
   },
   heroSubtitle: {
     color: COLORS.textSecondary,
-    fontSize: 13,
-    marginBottom: 20,
+    fontSize: 12,
+    marginBottom: 16,
     textAlign: "center",
+  },
+  headerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    width: "100%",
+    paddingTop: 25,
+  },
+  backButton: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: "rgba(255,255,255,0.12)",
+    alignItems: "center",
+    justifyContent: "center",
   },
   statsRow: {
     flexDirection: "row",
@@ -720,7 +934,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: COLORS.cardBorder,
     borderRadius: 16,
-    paddingVertical: 14,
+    paddingVertical: 12,
     paddingHorizontal: 14,
     width: "100%",
   },
@@ -741,7 +955,7 @@ const styles = StyleSheet.create({
   },
   statValue: {
     color: COLORS.text,
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: "700",
   },
   statDivider: {
@@ -791,6 +1005,8 @@ const styles = StyleSheet.create({
     color: COLORS.text,
     fontSize: 13,
     fontWeight: "600",
+    flex: 1,
+    marginRight: 8,
   },
   pickerWrap: {
     backgroundColor: COLORS.surface,
@@ -822,7 +1038,7 @@ const styles = StyleSheet.create({
   filterActionsRow: {
     flexDirection: "row",
     gap: 10,
-    marginTop: 14,
+    marginTop: 7,
   },
   searchBtn: {
     flex: 1,
@@ -835,7 +1051,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   searchBtnText: {
-    color: COLORS.background,
+    color: "#fff",
     fontWeight: "800",
     fontSize: 14,
   },
@@ -863,8 +1079,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     marginHorizontal: 16,
-    marginTop: 24,
-    marginBottom: 10,
+    marginTop: 15,
   },
   sectionHeaderText: {
     color: COLORS.text,
@@ -873,11 +1088,6 @@ const styles = StyleSheet.create({
   },
   sectionHeaderName: {
     color: COLORS.primary,
-  },
-  sectionHeaderCount: {
-    color: COLORS.textMuted,
-    fontSize: 12,
-    fontWeight: "600",
   },
 
   // Empty / instructional state
@@ -891,6 +1101,7 @@ const styles = StyleSheet.create({
     paddingVertical: 32,
     paddingHorizontal: 24,
     alignItems: "center",
+    gap: 4,
   },
   emptyTitle: {
     color: COLORS.text,
@@ -914,6 +1125,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     marginHorizontal: 16,
     overflow: "hidden",
+    marginTop: 10,
   },
   tableHeaderRow: {
     flexDirection: "row",
@@ -970,6 +1182,9 @@ const styles = StyleSheet.create({
     alignItems: "flex-start",
     marginBottom: 10,
   },
+  badgeStack: {
+    alignItems: "flex-end",
+  },
   shiftCardId: {
     color: COLORS.text,
     fontSize: 15,
@@ -984,11 +1199,17 @@ const styles = StyleSheet.create({
   shiftCardSite: {
     color: COLORS.textSecondary,
     fontSize: 12,
+    flexShrink: 1,
   },
   shiftCardGuard: {
     color: COLORS.primary,
     fontSize: 13,
     fontWeight: "700",
+    marginBottom: 2,
+  },
+  shiftCardJobType: {
+    color: COLORS.textMuted,
+    fontSize: 11,
     marginBottom: 14,
   },
   shiftDateRow: {
@@ -1001,6 +1222,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 12,
     marginBottom: 14,
+    marginTop: 12,
   },
   shiftDateBlock: {
     flex: 1,

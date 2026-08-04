@@ -894,7 +894,7 @@ export default function ReviewConfirmScreen() {
           </View>
           {[
             {
-              label: "Job Title",
+              label: "Job Type",
               value:
                 jobData.title ||
                 capitalizeAllWords(getCategoryDisplay(jobData.category)),
@@ -1023,16 +1023,7 @@ export default function ReviewConfirmScreen() {
                       <Text style={styles.rowValue}>{item.label}</Text>
                     </View>
                   </View>
-                  <View style={styles.detailRow}>
-                    <Text style={styles.rowLabel}>Description</Text>
-                    <View style={styles.valueWrap}>
-                      <Text style={styles.rowValue}>
-                        {capitalizeAllWords(
-                          getCategoryDisplay(jobData.category),
-                        )}
-                      </Text>
-                    </View>
-                  </View>
+              
                   <View style={styles.detailsRow}>
                     <View style={styles.detailColumn}>
                       <Text style={styles.rowLabel}>Billable Hours</Text>
@@ -1823,7 +1814,7 @@ const styles = StyleSheet.create({
     width: "100%",
     gap: 12,
   },
-  rowLabel: { fontSize: 10, color: "#94A3B8", fontWeight: "600", flex: 1 },
+  rowLabel: { fontSize: 11, color: "#94A3B8", fontWeight: "600", flex: 1 },
   rowValue: {
     fontSize: 12,
     color: "#fff",
