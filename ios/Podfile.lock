@@ -1,16 +1,18 @@
 PODS:
   - AgoraIrisRTC_iOS2 (4.6.2-build.1)
   - AgoraVideo_Special_iOS (4.6.2.70)
-  - AppAuth (2.0.0):
-    - AppAuth/Core (= 2.0.0)
-    - AppAuth/ExternalUserAgent (= 2.0.0)
-  - AppAuth/Core (2.0.0)
-  - AppAuth/ExternalUserAgent (2.0.0):
+  - AppAuth (2.1.0):
+    - AppAuth/Core (= 2.1.0)
+    - AppAuth/ExternalUserAgent (= 2.1.0)
+  - AppAuth/Core (2.1.0)
+  - AppAuth/ExternalUserAgent (2.1.0):
     - AppAuth/Core
-  - AppCheckCore (11.2.0):
+  - AppCheckCore (11.3.1):
     - GoogleUtilities/Environment (~> 8.0)
     - GoogleUtilities/UserDefaults (~> 8.0)
     - PromisesObjC (~> 2.4)
+    - PromisesSwift (~> 2.4)
+    - RecaptchaInterop (~> 101.0)
   - BEMCheckBox (1.4.1)
   - boost (1.84.0)
   - BVLinearGradient (2.8.3):
@@ -20,18 +22,49 @@ PODS:
   - FBLazyVector (0.83.1)
   - fmt (11.0.2)
   - glog (0.3.5)
-  - GoogleSignIn (9.1.0):
-    - AppAuth (~> 2.0)
+  - GoogleSignIn (9.2.0):
+    - AppAuth (~> 2.1)
     - AppCheckCore (~> 11.0)
     - GTMAppAuth (~> 5.0)
     - GTMSessionFetcher/Core (~> 3.3)
-  - GoogleUtilities/Environment (8.1.0):
+  - GoogleUtilities (8.1.2):
+    - GoogleUtilities/AppDelegateSwizzler (= 8.1.2)
+    - GoogleUtilities/Environment (= 8.1.2)
+    - GoogleUtilities/Logger (= 8.1.2)
+    - GoogleUtilities/MethodSwizzler (= 8.1.2)
+    - GoogleUtilities/Network (= 8.1.2)
+    - "GoogleUtilities/NSData+zlib (= 8.1.2)"
+    - GoogleUtilities/Privacy (= 8.1.2)
+    - GoogleUtilities/Reachability (= 8.1.2)
+    - GoogleUtilities/SwizzlerTestHelpers (= 8.1.2)
+    - GoogleUtilities/UserDefaults (= 8.1.2)
+  - GoogleUtilities/AppDelegateSwizzler (8.1.2):
+    - GoogleUtilities/Environment
+    - GoogleUtilities/Logger
+    - GoogleUtilities/Network
     - GoogleUtilities/Privacy
-  - GoogleUtilities/Logger (8.1.0):
+  - GoogleUtilities/Environment (8.1.2):
+    - GoogleUtilities/Privacy
+  - GoogleUtilities/Logger (8.1.2):
     - GoogleUtilities/Environment
     - GoogleUtilities/Privacy
-  - GoogleUtilities/Privacy (8.1.0)
-  - GoogleUtilities/UserDefaults (8.1.0):
+  - GoogleUtilities/MethodSwizzler (8.1.2):
+    - GoogleUtilities/Logger
+    - GoogleUtilities/Privacy
+  - GoogleUtilities/Network (8.1.2):
+    - GoogleUtilities/Logger
+    - "GoogleUtilities/NSData+zlib"
+    - GoogleUtilities/Privacy
+    - GoogleUtilities/Reachability
+  - "GoogleUtilities/NSData+zlib (8.1.2)":
+    - GoogleUtilities/Privacy
+  - GoogleUtilities/Privacy (8.1.2)
+  - GoogleUtilities/Reachability (8.1.2):
+    - GoogleUtilities/Logger
+    - GoogleUtilities/Privacy
+  - GoogleUtilities/SwizzlerTestHelpers (8.1.2):
+    - GoogleUtilities/MethodSwizzler
+  - GoogleUtilities/UserDefaults (8.1.2):
     - GoogleUtilities/Logger
     - GoogleUtilities/Privacy
   - GTMAppAuth (5.0.0):
@@ -69,9 +102,9 @@ PODS:
     - ReactCommon/turbomodule/core
     - SocketRocket
     - Yoga
-  - OneSignalXCFramework (5.5.1):
-    - OneSignalXCFramework/OneSignalComplete (= 5.5.1)
-  - OneSignalXCFramework/OneSignal (5.5.1):
+  - OneSignalXCFramework (5.5.5):
+    - OneSignalXCFramework/OneSignalComplete (= 5.5.5)
+  - OneSignalXCFramework/OneSignal (5.5.5):
     - OneSignalXCFramework/OneSignalCore
     - OneSignalXCFramework/OneSignalExtension
     - OneSignalXCFramework/OneSignalLiveActivities
@@ -79,43 +112,48 @@ PODS:
     - OneSignalXCFramework/OneSignalOSCore
     - OneSignalXCFramework/OneSignalOutcomes
     - OneSignalXCFramework/OneSignalUser
-  - OneSignalXCFramework/OneSignalComplete (5.5.1):
+  - OneSignalXCFramework/OneSignalComplete (5.5.5):
     - OneSignalXCFramework/OneSignal
     - OneSignalXCFramework/OneSignalInAppMessages
     - OneSignalXCFramework/OneSignalLocation
-  - OneSignalXCFramework/OneSignalCore (5.5.1)
-  - OneSignalXCFramework/OneSignalExtension (5.5.1):
+  - OneSignalXCFramework/OneSignalCore (5.5.5)
+  - OneSignalXCFramework/OneSignalExtension (5.5.5):
     - OneSignalXCFramework/OneSignalCore
+    - OneSignalXCFramework/OneSignalOSCore
     - OneSignalXCFramework/OneSignalOutcomes
-  - OneSignalXCFramework/OneSignalInAppMessages (5.5.1):
+  - OneSignalXCFramework/OneSignalInAppMessages (5.5.5):
     - OneSignalXCFramework/OneSignalCore
     - OneSignalXCFramework/OneSignalNotifications
     - OneSignalXCFramework/OneSignalOSCore
     - OneSignalXCFramework/OneSignalOutcomes
     - OneSignalXCFramework/OneSignalUser
-  - OneSignalXCFramework/OneSignalLiveActivities (5.5.1):
+  - OneSignalXCFramework/OneSignalLiveActivities (5.5.5):
     - OneSignalXCFramework/OneSignalCore
     - OneSignalXCFramework/OneSignalOSCore
     - OneSignalXCFramework/OneSignalUser
-  - OneSignalXCFramework/OneSignalLocation (5.5.1):
+  - OneSignalXCFramework/OneSignalLocation (5.5.5):
     - OneSignalXCFramework/OneSignalCore
     - OneSignalXCFramework/OneSignalNotifications
     - OneSignalXCFramework/OneSignalOSCore
     - OneSignalXCFramework/OneSignalUser
-  - OneSignalXCFramework/OneSignalNotifications (5.5.1):
+  - OneSignalXCFramework/OneSignalNotifications (5.5.5):
     - OneSignalXCFramework/OneSignalCore
     - OneSignalXCFramework/OneSignalExtension
+    - OneSignalXCFramework/OneSignalOSCore
     - OneSignalXCFramework/OneSignalOutcomes
-  - OneSignalXCFramework/OneSignalOSCore (5.5.1):
+  - OneSignalXCFramework/OneSignalOSCore (5.5.5):
     - OneSignalXCFramework/OneSignalCore
-  - OneSignalXCFramework/OneSignalOutcomes (5.5.1):
+  - OneSignalXCFramework/OneSignalOutcomes (5.5.5):
     - OneSignalXCFramework/OneSignalCore
-  - OneSignalXCFramework/OneSignalUser (5.5.1):
+    - OneSignalXCFramework/OneSignalOSCore
+  - OneSignalXCFramework/OneSignalUser (5.5.5):
     - OneSignalXCFramework/OneSignalCore
     - OneSignalXCFramework/OneSignalNotifications
     - OneSignalXCFramework/OneSignalOSCore
     - OneSignalXCFramework/OneSignalOutcomes
-  - PromisesObjC (2.4.0)
+  - PromisesObjC (2.4.1)
+  - PromisesSwift (2.4.1):
+    - PromisesObjC (= 2.4.1)
   - RCT-Folly (2024.11.18.00):
     - boost
     - DoubleConversion
@@ -2030,7 +2068,7 @@ PODS:
     - ReactCommon/turbomodule/core
     - SocketRocket
     - Yoga
-  - react-native-blob-util (0.24.9):
+  - react-native-blob-util (0.24.10):
     - boost
     - DoubleConversion
     - fast_float
@@ -2058,7 +2096,35 @@ PODS:
     - ReactCommon/turbomodule/core
     - SocketRocket
     - Yoga
-  - react-native-document-picker (12.0.1):
+  - react-native-document-picker (12.0.2):
+    - boost
+    - DoubleConversion
+    - fast_float
+    - fmt
+    - glog
+    - hermes-engine
+    - RCT-Folly
+    - RCT-Folly/Fabric
+    - RCTRequired
+    - RCTTypeSafety
+    - React-Core
+    - React-debug
+    - React-Fabric
+    - React-featureflags
+    - React-graphics
+    - React-ImageManager
+    - React-jsi
+    - React-NativeModulesApple
+    - React-RCTFabric
+    - React-renderercss
+    - React-rendererdebug
+    - React-utils
+    - ReactCodegen
+    - ReactCommon/turbomodule/bridging
+    - ReactCommon/turbomodule/core
+    - SocketRocket
+    - Yoga
+  - react-native-geolocation (3.4.0):
     - boost
     - DoubleConversion
     - fast_float
@@ -2146,9 +2212,9 @@ PODS:
     - Yoga
   - react-native-image-resizer (1.4.5):
     - React-Core
-  - react-native-maps (1.27.2):
-    - react-native-maps/Maps (= 1.27.2)
-  - react-native-maps/Generated (1.27.2):
+  - react-native-maps (1.29.0):
+    - react-native-maps/Maps (= 1.29.0)
+  - react-native-maps/Generated (1.29.0):
     - boost
     - DoubleConversion
     - fast_float
@@ -2176,7 +2242,7 @@ PODS:
     - ReactCommon/turbomodule/core
     - SocketRocket
     - Yoga
-  - react-native-maps/Maps (1.27.2):
+  - react-native-maps/Maps (1.29.0):
     - boost
     - DoubleConversion
     - fast_float
@@ -2233,14 +2299,14 @@ PODS:
     - ReactCommon/turbomodule/core
     - SocketRocket
     - Yoga
-  - react-native-onesignal (5.4.5):
+  - react-native-onesignal (5.5.6):
     - boost
     - DoubleConversion
     - fast_float
     - fmt
     - glog
     - hermes-engine
-    - OneSignalXCFramework (= 5.5.1)
+    - OneSignalXCFramework (= 5.5.5)
     - RCT-Folly
     - RCT-Folly/Fabric
     - RCTRequired
@@ -2290,7 +2356,7 @@ PODS:
     - ReactCommon/turbomodule/core
     - SocketRocket
     - Yoga
-  - react-native-safe-area-context (5.7.0):
+  - react-native-safe-area-context (5.8.1):
     - boost
     - DoubleConversion
     - fast_float
@@ -2308,8 +2374,8 @@ PODS:
     - React-graphics
     - React-ImageManager
     - React-jsi
-    - react-native-safe-area-context/common (= 5.7.0)
-    - react-native-safe-area-context/fabric (= 5.7.0)
+    - react-native-safe-area-context/common (= 5.8.1)
+    - react-native-safe-area-context/fabric (= 5.8.1)
     - React-NativeModulesApple
     - React-RCTFabric
     - React-renderercss
@@ -2320,7 +2386,7 @@ PODS:
     - ReactCommon/turbomodule/core
     - SocketRocket
     - Yoga
-  - react-native-safe-area-context/common (5.7.0):
+  - react-native-safe-area-context/common (5.8.1):
     - boost
     - DoubleConversion
     - fast_float
@@ -2348,7 +2414,7 @@ PODS:
     - ReactCommon/turbomodule/core
     - SocketRocket
     - Yoga
-  - react-native-safe-area-context/fabric (5.7.0):
+  - react-native-safe-area-context/fabric (5.8.1):
     - boost
     - DoubleConversion
     - fast_float
@@ -2377,8 +2443,6 @@ PODS:
     - ReactCommon/turbomodule/core
     - SocketRocket
     - Yoga
-  - react-native-signature-capture (0.4.12):
-    - React
   - react-native-slider (5.2.0):
     - boost
     - DoubleConversion
@@ -2436,7 +2500,35 @@ PODS:
     - ReactCommon/turbomodule/core
     - SocketRocket
     - Yoga
-  - react-native-webview (13.16.1):
+  - react-native-webview (13.17.0):
+    - boost
+    - DoubleConversion
+    - fast_float
+    - fmt
+    - glog
+    - hermes-engine
+    - RCT-Folly
+    - RCT-Folly/Fabric
+    - RCTRequired
+    - RCTTypeSafety
+    - React-Core
+    - React-debug
+    - React-Fabric
+    - React-featureflags
+    - React-graphics
+    - React-ImageManager
+    - React-jsi
+    - React-NativeModulesApple
+    - React-RCTFabric
+    - React-renderercss
+    - React-rendererdebug
+    - React-utils
+    - ReactCodegen
+    - ReactCommon/turbomodule/bridging
+    - ReactCommon/turbomodule/core
+    - SocketRocket
+    - Yoga
+  - react-native-worklets-core (1.6.3):
     - boost
     - DoubleConversion
     - fast_float
@@ -3021,6 +3113,35 @@ PODS:
     - React-perflogger (= 0.83.1)
     - React-utils (= 0.83.1)
     - SocketRocket
+  - RecaptchaInterop (101.0.0)
+  - RNBootSplash (7.3.2):
+    - boost
+    - DoubleConversion
+    - fast_float
+    - fmt
+    - glog
+    - hermes-engine
+    - RCT-Folly
+    - RCT-Folly/Fabric
+    - RCTRequired
+    - RCTTypeSafety
+    - React-Core
+    - React-debug
+    - React-Fabric
+    - React-featureflags
+    - React-graphics
+    - React-ImageManager
+    - React-jsi
+    - React-NativeModulesApple
+    - React-RCTFabric
+    - React-renderercss
+    - React-rendererdebug
+    - React-utils
+    - ReactCodegen
+    - ReactCommon/turbomodule/bridging
+    - ReactCommon/turbomodule/core
+    - SocketRocket
+    - Yoga
   - RNCAsyncStorage (2.2.0):
     - boost
     - DoubleConversion
@@ -3108,11 +3229,13 @@ PODS:
     - ReactCommon/turbomodule/core
     - SocketRocket
     - Yoga
+  - RNDeviceInfo (15.0.2):
+    - React-Core
   - RNFileViewer (2.1.5):
     - React-Core
   - RNFS (2.20.0):
     - React-Core
-  - RNGestureHandler (2.31.2):
+  - RNGestureHandler (2.32.0):
     - boost
     - DoubleConversion
     - fast_float
@@ -3140,7 +3263,7 @@ PODS:
     - ReactCommon/turbomodule/core
     - SocketRocket
     - Yoga
-  - RNGoogleSignin (16.1.2):
+  - RNGoogleSignin (16.1.4):
     - boost
     - DoubleConversion
     - fast_float
@@ -3169,7 +3292,7 @@ PODS:
     - ReactCommon/turbomodule/core
     - SocketRocket
     - Yoga
-  - RNPermissions (5.5.1):
+  - RNPermissions (5.6.1):
     - boost
     - DoubleConversion
     - fast_float
@@ -3197,39 +3320,7 @@ PODS:
     - ReactCommon/turbomodule/core
     - SocketRocket
     - Yoga
-  - RNReanimated (4.3.1):
-    - boost
-    - DoubleConversion
-    - fast_float
-    - fmt
-    - glog
-    - hermes-engine
-    - RCT-Folly
-    - RCT-Folly/Fabric
-    - RCTRequired
-    - RCTTypeSafety
-    - React-Core
-    - React-debug
-    - React-Fabric
-    - React-featureflags
-    - React-graphics
-    - React-hermes
-    - React-ImageManager
-    - React-jsi
-    - React-NativeModulesApple
-    - React-RCTFabric
-    - React-renderercss
-    - React-rendererdebug
-    - React-utils
-    - ReactCodegen
-    - ReactCommon/turbomodule/bridging
-    - ReactCommon/turbomodule/core
-    - RNReanimated/apple (= 4.3.1)
-    - RNReanimated/common (= 4.3.1)
-    - RNWorklets
-    - SocketRocket
-    - Yoga
-  - RNReanimated/apple (4.3.1):
+  - RNReanimated (4.5.3):
     - boost
     - DoubleConversion
     - fast_float
@@ -3256,10 +3347,13 @@ PODS:
     - ReactCodegen
     - ReactCommon/turbomodule/bridging
     - ReactCommon/turbomodule/core
+    - RNReanimated/apple (= 4.5.3)
+    - RNReanimated/common (= 4.5.3)
+    - RNReanimated/view (= 4.5.3)
     - RNWorklets
     - SocketRocket
     - Yoga
-  - RNReanimated/common (4.3.1):
+  - RNReanimated/apple (4.5.3):
     - boost
     - DoubleConversion
     - fast_float
@@ -3289,7 +3383,67 @@ PODS:
     - RNWorklets
     - SocketRocket
     - Yoga
-  - RNScreens (4.24.0):
+  - RNReanimated/common (4.5.3):
+    - boost
+    - DoubleConversion
+    - fast_float
+    - fmt
+    - glog
+    - hermes-engine
+    - RCT-Folly
+    - RCT-Folly/Fabric
+    - RCTRequired
+    - RCTTypeSafety
+    - React-Core
+    - React-debug
+    - React-Fabric
+    - React-featureflags
+    - React-graphics
+    - React-hermes
+    - React-ImageManager
+    - React-jsi
+    - React-NativeModulesApple
+    - React-RCTFabric
+    - React-renderercss
+    - React-rendererdebug
+    - React-utils
+    - ReactCodegen
+    - ReactCommon/turbomodule/bridging
+    - ReactCommon/turbomodule/core
+    - RNWorklets
+    - SocketRocket
+    - Yoga
+  - RNReanimated/view (4.5.3):
+    - boost
+    - DoubleConversion
+    - fast_float
+    - fmt
+    - glog
+    - hermes-engine
+    - RCT-Folly
+    - RCT-Folly/Fabric
+    - RCTRequired
+    - RCTTypeSafety
+    - React-Core
+    - React-debug
+    - React-Fabric
+    - React-featureflags
+    - React-graphics
+    - React-hermes
+    - React-ImageManager
+    - React-jsi
+    - React-NativeModulesApple
+    - React-RCTFabric
+    - React-renderercss
+    - React-rendererdebug
+    - React-utils
+    - ReactCodegen
+    - ReactCommon/turbomodule/bridging
+    - ReactCommon/turbomodule/core
+    - RNWorklets
+    - SocketRocket
+    - Yoga
+  - RNScreens (4.10.0):
     - boost
     - DoubleConversion
     - fast_float
@@ -3316,10 +3470,10 @@ PODS:
     - ReactCodegen
     - ReactCommon/turbomodule/bridging
     - ReactCommon/turbomodule/core
-    - RNScreens/common (= 4.24.0)
+    - RNScreens/common (= 4.10.0)
     - SocketRocket
     - Yoga
-  - RNScreens/common (4.24.0):
+  - RNScreens/common (4.10.0):
     - boost
     - DoubleConversion
     - fast_float
@@ -3350,7 +3504,7 @@ PODS:
     - Yoga
   - RNSoundPlayer (0.14.5):
     - React-Core
-  - RNSVG (15.15.4):
+  - RNSVG (15.15.5):
     - boost
     - DoubleConversion
     - fast_float
@@ -3376,10 +3530,10 @@ PODS:
     - ReactCodegen
     - ReactCommon/turbomodule/bridging
     - ReactCommon/turbomodule/core
-    - RNSVG/common (= 15.15.4)
+    - RNSVG/common (= 15.15.5)
     - SocketRocket
     - Yoga
-  - RNSVG/common (15.15.4):
+  - RNSVG/common (15.15.5):
     - boost
     - DoubleConversion
     - fast_float
@@ -3435,7 +3589,7 @@ PODS:
     - ReactCommon/turbomodule/core
     - SocketRocket
     - Yoga
-  - RNWorklets (0.8.3):
+  - RNWorklets (0.10.3):
     - boost
     - DoubleConversion
     - fast_float
@@ -3462,11 +3616,11 @@ PODS:
     - ReactCodegen
     - ReactCommon/turbomodule/bridging
     - ReactCommon/turbomodule/core
-    - RNWorklets/apple (= 0.8.3)
-    - RNWorklets/common (= 0.8.3)
+    - RNWorklets/apple (= 0.10.3)
+    - RNWorklets/common (= 0.10.3)
     - SocketRocket
     - Yoga
-  - RNWorklets/apple (0.8.3):
+  - RNWorklets/apple (0.10.3):
     - boost
     - DoubleConversion
     - fast_float
@@ -3495,7 +3649,7 @@ PODS:
     - ReactCommon/turbomodule/core
     - SocketRocket
     - Yoga
-  - RNWorklets/common (0.8.3):
+  - RNWorklets/common (0.10.3):
     - boost
     - DoubleConversion
     - fast_float
@@ -3652,13 +3806,20 @@ PODS:
     - StripeCore (= 25.9.0)
   - VisionCamera (4.7.3):
     - VisionCamera/Core (= 4.7.3)
+    - VisionCamera/FrameProcessors (= 4.7.3)
     - VisionCamera/React (= 4.7.3)
   - VisionCamera/Core (4.7.3)
+  - VisionCamera/FrameProcessors (4.7.3):
+    - React
+    - React-callinvoker
+    - react-native-worklets-core
   - VisionCamera/React (4.7.3):
     - React-Core
+    - VisionCamera/FrameProcessors
   - Yoga (0.0.0)
 
 DEPENDENCIES:
+  - AppCheckCore
   - boost (from `../node_modules/react-native/third-party-podspecs/boost.podspec`)
   - BVLinearGradient (from `../node_modules/react-native-linear-gradient`)
   - DoubleConversion (from `../node_modules/react-native/third-party-podspecs/DoubleConversion.podspec`)
@@ -3666,6 +3827,7 @@ DEPENDENCIES:
   - FBLazyVector (from `../node_modules/react-native/Libraries/FBLazyVector`)
   - fmt (from `../node_modules/react-native/third-party-podspecs/fmt.podspec`)
   - glog (from `../node_modules/react-native/third-party-podspecs/glog.podspec`)
+  - GoogleUtilities
   - hermes-engine (from `../node_modules/react-native/sdks/hermes-engine/hermes-engine.podspec`)
   - HtmlToPdf (from `../node_modules/react-native-html-to-pdf`)
   - OneSignalXCFramework (< 6.0, >= 5.0.0)
@@ -3709,6 +3871,7 @@ DEPENDENCIES:
   - react-native-agora (from `../node_modules/react-native-agora`)
   - react-native-blob-util (from `../node_modules/react-native-blob-util`)
   - "react-native-document-picker (from `../node_modules/@react-native-documents/picker`)"
+  - "react-native-geolocation (from `../node_modules/@react-native-community/geolocation`)"
   - react-native-geolocation-service (from `../node_modules/react-native-geolocation-service`)
   - react-native-get-random-values (from `../node_modules/react-native-get-random-values`)
   - react-native-image-picker (from `../node_modules/react-native-image-picker`)
@@ -3718,9 +3881,9 @@ DEPENDENCIES:
   - react-native-onesignal (from `../node_modules/react-native-onesignal`)
   - react-native-pdf (from `../node_modules/react-native-pdf`)
   - react-native-safe-area-context (from `../node_modules/react-native-safe-area-context`)
-  - react-native-signature-capture (from `../node_modules/react-native-signature-capture`)
   - "react-native-slider (from `../node_modules/@react-native-community/slider`)"
   - react-native-webview (from `../node_modules/react-native-webview`)
+  - react-native-worklets-core (from `../node_modules/react-native-worklets-core`)
   - React-NativeModulesApple (from `../node_modules/react-native/ReactCommon/react/nativemodule/core/platform/ios`)
   - React-networking (from `../node_modules/react-native/ReactCommon/react/networking`)
   - React-oscompat (from `../node_modules/react-native/ReactCommon/oscompat`)
@@ -3754,10 +3917,13 @@ DEPENDENCIES:
   - ReactAppDependencyProvider (from `build/generated/ios/ReactAppDependencyProvider`)
   - ReactCodegen (from `build/generated/ios/ReactCodegen`)
   - ReactCommon/turbomodule/core (from `../node_modules/react-native/ReactCommon`)
+  - RecaptchaInterop
+  - RNBootSplash (from `../node_modules/react-native-bootsplash`)
   - "RNCAsyncStorage (from `../node_modules/@react-native-async-storage/async-storage`)"
   - "RNCCheckbox (from `../node_modules/@react-native-community/checkbox`)"
   - "RNCPicker (from `../node_modules/@react-native-picker/picker`)"
   - "RNDateTimePicker (from `../node_modules/@react-native-community/datetimepicker`)"
+  - RNDeviceInfo (from `../node_modules/react-native-device-info`)
   - RNFileViewer (from `../node_modules/react-native-file-viewer`)
   - RNFS (from `../node_modules/react-native-fs`)
   - RNGestureHandler (from `../node_modules/react-native-gesture-handler`)
@@ -3787,6 +3953,8 @@ SPEC REPOS:
     - GTMSessionFetcher
     - OneSignalXCFramework
     - PromisesObjC
+    - PromisesSwift
+    - RecaptchaInterop
     - SocketRocket
     - Stripe
     - StripeApplePay
@@ -3896,6 +4064,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/react-native-blob-util"
   react-native-document-picker:
     :path: "../node_modules/@react-native-documents/picker"
+  react-native-geolocation:
+    :path: "../node_modules/@react-native-community/geolocation"
   react-native-geolocation-service:
     :path: "../node_modules/react-native-geolocation-service"
   react-native-get-random-values:
@@ -3914,12 +4084,12 @@ EXTERNAL SOURCES:
     :path: "../node_modules/react-native-pdf"
   react-native-safe-area-context:
     :path: "../node_modules/react-native-safe-area-context"
-  react-native-signature-capture:
-    :path: "../node_modules/react-native-signature-capture"
   react-native-slider:
     :path: "../node_modules/@react-native-community/slider"
   react-native-webview:
     :path: "../node_modules/react-native-webview"
+  react-native-worklets-core:
+    :path: "../node_modules/react-native-worklets-core"
   React-NativeModulesApple:
     :path: "../node_modules/react-native/ReactCommon/react/nativemodule/core/platform/ios"
   React-networking:
@@ -3986,6 +4156,8 @@ EXTERNAL SOURCES:
     :path: build/generated/ios/ReactCodegen
   ReactCommon:
     :path: "../node_modules/react-native/ReactCommon"
+  RNBootSplash:
+    :path: "../node_modules/react-native-bootsplash"
   RNCAsyncStorage:
     :path: "../node_modules/@react-native-async-storage/async-storage"
   RNCCheckbox:
@@ -3994,6 +4166,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/@react-native-picker/picker"
   RNDateTimePicker:
     :path: "../node_modules/@react-native-community/datetimepicker"
+  RNDeviceInfo:
+    :path: "../node_modules/react-native-device-info"
   RNFileViewer:
     :path: "../node_modules/react-native-file-viewer"
   RNFS:
@@ -4026,8 +4200,8 @@ EXTERNAL SOURCES:
 SPEC CHECKSUMS:
   AgoraIrisRTC_iOS2: 13996c3c78134da357634f6a1a12741436658886
   AgoraVideo_Special_iOS: 9bd42c487f936f4d335d5630e2632f0b08e214f5
-  AppAuth: 1c1a8afa7e12f2ec3a294d9882dfa5ab7d3cb063
-  AppCheckCore: cc8fd0a3a230ddd401f326489c99990b013f0c4f
+  AppAuth: ef4da5a3fc2e10b90c09a0a94a9baeaedc0341d5
+  AppCheckCore: e215d35177a9cf469927863e69c13e220df32a8b
   BEMCheckBox: 5ba6e37ade3d3657b36caecc35c8b75c6c2b1a4e
   boost: 7e761d76ca2ce687f7cc98e698152abd03a18f90
   BVLinearGradient: cb006ba232a1f3e4f341bb62c42d1098c284da70
@@ -4036,14 +4210,15 @@ SPEC CHECKSUMS:
   FBLazyVector: 309703e71d3f2f1ed7dc7889d58309c9d77a95a4
   fmt: a40bb5bd0294ea969aaaba240a927bd33d878cdd
   glog: 5683914934d5b6e4240e497e0f4a3b42d1854183
-  GoogleSignIn: fcee2257188d5eda57a5e2b6a715550ffff9206d
-  GoogleUtilities: 00c88b9a86066ef77f0da2fab05f65d7768ed8e1
+  GoogleSignIn: e449a40a92e9f2eea56e98b5214d13725dc5a00a
+  GoogleUtilities: 766ace00c6b10d8148408f329d10c4f051931850
   GTMAppAuth: 217a876b249c3c585a54fd6f73e6b58c4f5c4238
   GTMSessionFetcher: 5aea5ba6bd522a239e236100971f10cb71b96ab6
-  hermes-engine: a82cf296fc682c81e55ded8522199378dd0d946f
+  hermes-engine: a598fa9f9447b9ff6d03b5194e2791f41424eae5
   HtmlToPdf: 6a9c28f54ec810d1d120a698a9b3c83e2bdb1672
-  OneSignalXCFramework: 2b46c36b38528b65dce33ed9d83375f8c98bf40c
-  PromisesObjC: f5707f49cb48b9636751c5b2e7d227e43fba9f47
+  OneSignalXCFramework: 48e5b7c5b51d4e67bab3405229f963efde1a3894
+  PromisesObjC: 752c3227f599e3467650e47ea36f433eeb10c273
+  PromisesSwift: 217dea0fd5d2ad65222a109c48698add13cc1c5b
   RCT-Folly: 846fda9475e61ec7bcbf8a3fe81edfcaeb090669
   RCTDeprecation: a41bbdd9af30bf2e5715796b313e44ec43eefff1
   RCTRequired: 7be34aabb0b77c3cefe644528df0fa0afad4e4d0
@@ -4081,20 +4256,21 @@ SPEC CHECKSUMS:
   React-Mapbuffer: 7b72a669e94662359dad4f42b5af005eb24b4e83
   React-microtasksnativemodule: cdc02da075f2857803ed63f24f5f72fc40e094c0
   react-native-agora: 9e0697ab57debeb6bfdde5ffb35784651b4f6112
-  react-native-blob-util: 679671d22b2d8b76ecc2a8c202793eea46aef735
-  react-native-document-picker: dc2d83366e47e89e7c51e8a41eab99c1d54e941c
+  react-native-blob-util: 597cb703d6dee59abec9754daf3d7951512bb132
+  react-native-document-picker: 3fa6cf293370de0bb5cb93917bcd2189e54032d5
+  react-native-geolocation: 95e48fe2687e5a8280103085372fa62c2297c5d6
   react-native-geolocation-service: 32b2c2a3b91e70ce2a8d0c684801aaeb0a07e0ec
   react-native-get-random-values: e2acf4070fe4b7325705a05af047449637a27a21
   react-native-image-picker: 0314366753615115fa55c3cc937ac44cb7e75702
   react-native-image-resizer: 17b2d73c030975b6543395c7e7368bc8774c5efa
-  react-native-maps: b5af575a371e57847c6d8490e726c08036f7c80f
+  react-native-maps: 452eb21d3a1b5ab56772dc1f1dee04c594d4db15
   react-native-netinfo: a0be8c77f8420a60ddf07eb87be1a36f02a1bd65
-  react-native-onesignal: aa45cf81169d64f7c65a5f908713f7aeb7f2487f
+  react-native-onesignal: 760e1314817fcf27aef0341a74cb36549a9b0bc7
   react-native-pdf: 2886351f9ea698a820f53056afdabd6fa0ab726d
-  react-native-safe-area-context: befb5404eb8a16fdc07fa2bebab3568ecabcbb8a
-  react-native-signature-capture: 181e11f5559b4e4a6da893775e78b5d600f66d66
+  react-native-safe-area-context: 61f913dfb64ceb843bec60e54872a563b2d30972
   react-native-slider: 4faf1b2266c73f1afb7b30cc6ebb3df238a37c0b
-  react-native-webview: 8407aaaf6b539b1e38b72fabb55d6885de03beaf
+  react-native-webview: 607c8fca1506107f046e39dee8570c5b5e3222bd
+  react-native-worklets-core: aaaac7d17f7e576592369a54f30e96fe4875c983
   React-NativeModulesApple: a2c3d2cbec893956a5b3e4060322db2984fff75b
   React-networking: 3f98bd96893a294376e7e03730947a08d474c380
   React-oscompat: 80166b66da22e7af7fad94474e9997bd52d4c8c6
@@ -4128,21 +4304,24 @@ SPEC CHECKSUMS:
   ReactAppDependencyProvider: 0eb286cc274abb059ee601b862ebddac2e681d01
   ReactCodegen: 3d48510bcef445f6403c0004047d4d9cbb915435
   ReactCommon: ac934cb340aee91282ecd6f273a26d24d4c55cae
+  RecaptchaInterop: 11e0b637842dfb48308d242afc3f448062325aba
+  RNBootSplash: 83bc1fef5ff2e9fd3ed0f20a472dd87d8a9ef898
   RNCAsyncStorage: 29f0230e1a25f36c20b05f65e2eb8958d6526e82
   RNCCheckbox: 33b44487ca8008394ce658cc32b26eab04f426ef
   RNCPicker: bf95ec4b2483e2ab256047130bc536b437cd916c
   RNDateTimePicker: 97a86d7c8b51f2d51f694a9dddfe5996dfd9a407
+  RNDeviceInfo: 4c852998208b60dc192ae3529e5867817719ad1e
   RNFileViewer: 4b5d83358214347e4ab2d4ca8d5c1c90d869e251
   RNFS: 89de7d7f4c0f6bafa05343c578f61118c8282ed8
-  RNGestureHandler: d7ebd5abfdf03ddebef995d2f828a9f07fca7990
-  RNGoogleSignin: 15341729e1f79f1b82740393924cae5e429ad176
-  RNPermissions: bc70f57382f28fe53a94621a4c0833a5791186e5
-  RNReanimated: ce6c58c02bd76d8d1017bf07d04ed4a7c387801e
-  RNScreens: 7f643ee0fd1407dc5085c7795460bd93da113b8f
+  RNGestureHandler: 396c56dae97876e8579445870281f223b42b34a8
+  RNGoogleSignin: 44bff1aeca8d5fb0a4d3d597a56c0782d6dc4ee9
+  RNPermissions: 53b80a173d272e1e7bbe64fb20e0c374554183b6
+  RNReanimated: 1aecb4119b4fc751ea46fd268e97f51bb280dd7b
+  RNScreens: 59db7a81c802f0e65697c2ca0e782c76cf813074
   RNSoundPlayer: 7961678d02c7339d9e9cfb78b9f3e8fde17f9df2
-  RNSVG: 3405336c4507ee0bafb02b08058d57216daa2c50
+  RNSVG: 6470d6f2636d71bd4bbc44a4f27fb7444e437b2f
   RNVectorIcons: 791f13226ec4a3fd13062eda9e892159f0981fae
-  RNWorklets: 534af667da0c0049e0060ae43f03c7df8cc9a6e0
+  RNWorklets: a22deca4d68e417bf7fb4b0d8f4e3153c6138998
   SocketRocket: d4aabe649be1e368d1318fdf28a022d714d65748
   Stripe: 604acd978f3ec2921098f477ccaa229e12690373
   stripe-react-native: ccee3a3c6b69792e5e63c650c28b7b0056b126b4
@@ -4154,9 +4333,9 @@ SPEC CHECKSUMS:
   StripePaymentSheet: 0fc945d26c9884ad5781d6c636e1b8adedf9a886
   StripePaymentsUI: e2f00f9be6fea280d6188b805fdb5199a96e1151
   StripeUICore: bfe8754c2d78eeb0fc4ce147316a7e5129b58423
-  VisionCamera: 7187b3dac1ff3071234ead959ce311875748e14f
+  VisionCamera: 0044a94f7489f19e19d5938e97dfc36f4784af3c
   Yoga: 5456bb010373068fc92221140921b09d126b116e
 
-PODFILE CHECKSUM: bc65d5a0da1b7313930a25c9b50ed9ff133a6890
+PODFILE CHECKSUM: e1cc49496888fbfe4670dfe8cd06f148e58361a3
 
 COCOAPODS: 1.16.2

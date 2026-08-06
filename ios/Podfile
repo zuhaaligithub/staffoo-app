@@ -25,10 +25,16 @@ end
 target 'STAFFO' do
   config = use_native_modules!
 
+  # Add these three lines
+  pod 'GoogleUtilities', :modular_headers => true
+  pod 'RecaptchaInterop', :modular_headers => true
+  pod 'AppCheckCore', :modular_headers => true
+
   use_react_native!(
     :path => config[:reactNativePath],
-    # An absolute path to your application root.
-    :app_path => "#{Pod::Config.instance.installation_root}/.."
+    :app_path => "#{Pod::Config.instance.installation_root}/..",
+    :new_arch_enabled => false,
+    :hermes_enabled => true
   )
 
   post_install do |installer|
@@ -36,7 +42,6 @@ target 'STAFFO' do
       installer,
       config[:reactNativePath],
       :mac_catalyst_enabled => false,
-      # :ccache_enabled => true
     )
   end
 end

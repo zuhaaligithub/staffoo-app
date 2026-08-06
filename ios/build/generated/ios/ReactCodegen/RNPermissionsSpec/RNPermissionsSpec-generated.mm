@@ -50,6 +50,10 @@ namespace facebook::react {
       return static_cast<ObjCTurboModule&>(turboModule).invokeObjCMethod(rt, PromiseKind, "checkNotifications", @selector(checkNotifications:reject:), args, count);
     }
 
+    static facebook::jsi::Value __hostFunction_NativeRNPermissionsSpecJSI_openContactPicker(facebook::jsi::Runtime& rt, TurboModule &turboModule, const facebook::jsi::Value* args, size_t count) {
+      return static_cast<ObjCTurboModule&>(turboModule).invokeObjCMethod(rt, PromiseKind, "openContactPicker", @selector(openContactPicker:reject:), args, count);
+    }
+
     static facebook::jsi::Value __hostFunction_NativeRNPermissionsSpecJSI_openPhotoPicker(facebook::jsi::Runtime& rt, TurboModule &turboModule, const facebook::jsi::Value* args, size_t count) {
       return static_cast<ObjCTurboModule&>(turboModule).invokeObjCMethod(rt, PromiseKind, "openPhotoPicker", @selector(openPhotoPicker:reject:), args, count);
     }
@@ -97,6 +101,9 @@ namespace facebook::react {
         
         
         methodMap_["checkNotifications"] = MethodMetadata {0, __hostFunction_NativeRNPermissionsSpecJSI_checkNotifications};
+        
+        
+        methodMap_["openContactPicker"] = MethodMetadata {0, __hostFunction_NativeRNPermissionsSpecJSI_openContactPicker};
         
         
         methodMap_["openPhotoPicker"] = MethodMetadata {0, __hostFunction_NativeRNPermissionsSpecJSI_openPhotoPicker};

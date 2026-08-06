@@ -1,6 +1,6 @@
 {
   "name": "RNGoogleSignin",
-  "version": "16.1.2",
+  "version": "16.1.4",
   "summary": "Google sign in for your react native applications",
   "homepage": "https://github.com/react-native-google-signin/google-signin#readme",
   "license": "MIT",
@@ -10,7 +10,7 @@
   },
   "source": {
     "git": "https://github.com/react-native-google-signin/google-signin-next.git",
-    "tag": "16.1.2"
+    "tag": "16.1.4"
   },
   "source_files": "ios/**/*.{h,m,mm}",
   "dependencies": {

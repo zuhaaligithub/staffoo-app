@@ -49,6 +49,8 @@ NS_ASSUME_NONNULL_BEGIN
                reject:(RCTPromiseRejectBlock)reject;
 - (void)checkNotifications:(RCTPromiseResolveBlock)resolve
                     reject:(RCTPromiseRejectBlock)reject;
+- (void)openContactPicker:(RCTPromiseResolveBlock)resolve
+                   reject:(RCTPromiseRejectBlock)reject;
 - (void)openPhotoPicker:(RCTPromiseResolveBlock)resolve
                  reject:(RCTPromiseRejectBlock)reject;
 - (void)openSettings:(NSString *)type

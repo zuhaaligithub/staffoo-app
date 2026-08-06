@@ -65,6 +65,7 @@ RNCWebViewProps::RNCWebViewProps(
     pagingEnabled(convertRawProp(context, rawProps, "pagingEnabled", sourceProps.pagingEnabled, {false})),
     pullToRefreshEnabled(convertRawProp(context, rawProps, "pullToRefreshEnabled", sourceProps.pullToRefreshEnabled, {false})),
     refreshControlLightMode(convertRawProp(context, rawProps, "refreshControlLightMode", sourceProps.refreshControlLightMode, {false})),
+    removeIosKeyboardObserver(convertRawProp(context, rawProps, "removeIosKeyboardObserver", sourceProps.removeIosKeyboardObserver, {false})),
     scrollEnabled(convertRawProp(context, rawProps, "scrollEnabled", sourceProps.scrollEnabled, {true})),
     sharedCookiesEnabled(convertRawProp(context, rawProps, "sharedCookiesEnabled", sourceProps.sharedCookiesEnabled, {false})),
     textInteractionEnabled(convertRawProp(context, rawProps, "textInteractionEnabled", sourceProps.textInteractionEnabled, {true})),
@@ -295,6 +296,10 @@ folly::dynamic RNCWebViewProps::getDiffProps(
     
   if (refreshControlLightMode != oldProps->refreshControlLightMode) {
     result["refreshControlLightMode"] = refreshControlLightMode;
+  }
+    
+  if (removeIosKeyboardObserver != oldProps->removeIosKeyboardObserver) {
+    result["removeIosKeyboardObserver"] = removeIosKeyboardObserver;
   }
     
   if (scrollEnabled != oldProps->scrollEnabled) {

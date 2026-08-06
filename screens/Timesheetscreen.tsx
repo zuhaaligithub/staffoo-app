@@ -436,6 +436,7 @@ export default function TimesheetScreen({ navigation }: Props) {
         const mapped: ShiftDetail[] = json.data.map((s: any) => {
           const start = parseAPIDateTime(s.start);
           const end = parseAPIDateTime(s.end);
+          const activity = s.roster_activity || {};
 
           return {
             shiftId: s.id,
@@ -444,15 +445,22 @@ export default function TimesheetScreen({ navigation }: Props) {
             guard: s.guards?.name || row.name,
             start,
             end,
-            total: s.hours || 0,
+            total: Number(s.hours) || 0,
             job: deriveJobFromRow(row.raw),
             jobStatus: s.job_status || "pending",
             jobType: s.job_type || "",
-            signIn: formatTime24h(start),
-            signOut: formatTime24h(end),
+            signIn: to24h(activity.signin_time), // ← must be to24h
+            signOut: to24h(activity.signout_time),
           };
         });
-
+        console.log(
+          "SIGN TIMES →",
+          mapped.map((m) => ({
+            id: m.shiftId,
+            signIn: m.signIn,
+            signOut: m.signOut,
+          })),
+        );
         setStaffDetailShifts(mapped);
       } else {
         setStaffDetailError(json?.message || "Failed to load shift details.");
@@ -462,6 +470,39 @@ export default function TimesheetScreen({ navigation }: Props) {
     } finally {
       setStaffDetailLoading(false);
     }
+  };
+
+  /** Always returns "HH:mm" — never AM/PM */
+  const to24h = (value?: string | Date | null): string => {
+    if (value == null || value === "") return "—";
+
+    if (value instanceof Date) {
+      if (isNaN(value.getTime())) return "—";
+      return (
+        String(value.getHours()).padStart(2, "0") +
+        ":" +
+        String(value.getMinutes()).padStart(2, "0")
+      );
+    }
+
+    let str = String(value).trim();
+
+    // Force-remove AM/PM text first
+    const hasPM = /PM/i.test(str);
+    const hasAM = /AM/i.test(str);
+    str = str.replace(/\s*(AM|PM)/i, "").trim();
+
+    // Find HH:MM anywhere in the string
+    const match = str.match(/(\d{1,2}):(\d{2})/);
+    if (!match) return "—";
+
+    let hour = parseInt(match[1], 10);
+    const min = match[2];
+
+    if (hasPM && hour < 12) hour += 12;
+    if (hasAM && hour === 12) hour = 0;
+
+    return String(hour).padStart(2, "0") + ":" + min;
   };
 
   const selectedStaffRow = staffRows.find((s) => s.staffId === selectedStaffId);
@@ -612,13 +653,13 @@ export default function TimesheetScreen({ navigation }: Props) {
                 </>
               )}
             </TouchableOpacity>
-            <TouchableOpacity
+            {/* <TouchableOpacity
               style={[styles.exportBtn, !hasSearched && styles.btnDisabled]}
               activeOpacity={0.85}
               disabled={!hasSearched}
             >
               <Text style={styles.exportBtnText}>Export</Text>
-            </TouchableOpacity>
+            </TouchableOpacity> */}
           </View>
         </View>
 
@@ -751,77 +792,77 @@ export default function TimesheetScreen({ navigation }: Props) {
                     const statusBadge = statusBadgeStyle(row.jobStatus);
                     return (
                       <View key={row.shiftId} style={styles.shiftCard}>
+                        {/* Header: Shift ID + Status */}
                         <View style={styles.shiftCardHeader}>
-                          <View style={{ flex: 1 }}>
-                            <Text style={styles.shiftCardId}>
-                              SHFT-{row.shiftId}
-                            </Text>
-                            <View style={styles.shiftCardSiteRow}>
-                              <MapPin size={11} color={COLORS.textSecondary} />
-                              <Text
-                                style={styles.shiftCardSite}
-                                numberOfLines={1}
-                              >
-                                {row.site} · {row.customer}
-                              </Text>
-                            </View>
-                          </View>
-                          <View style={styles.badgeStack}>
-                            {/* <View
+                          <Text style={styles.shiftCardId}>
+                            SHIFT-{row.shiftId}
+                          </Text>
+                          <View
+                            style={[
+                              styles.jobBadge,
+                              {
+                                backgroundColor: statusBadgeStyle(row.jobStatus)
+                                  .bg,
+                              },
+                            ]}
+                          >
+                            <Text
                               style={[
-                                styles.jobBadge,
-                                { backgroundColor: badge.bg },
-                              ]}
-                            >
-                              <Text
-                                style={[
-                                  styles.jobBadgeText,
-                                  { color: badge.color },
-                                ]}
-                              >
-                                {row.job}
-                              </Text>
-                            </View> */}
-                            <View
-                              style={[
-                                styles.jobBadge,
+                                styles.jobBadgeText,
                                 {
-                                  backgroundColor: statusBadge.bg,
-                                  marginTop: 6,
+                                  color: statusBadgeStyle(row.jobStatus).color,
                                 },
                               ]}
                             >
-                              <Text
-                                style={[
-                                  styles.jobBadgeText,
-                                  { color: statusBadge.color },
-                                ]}
-                              >
-                                {(row.jobStatus || "pending")
-                                  .charAt(0)
-                                  .toUpperCase() +
-                                  (row.jobStatus || "pending")
-                                    .slice(1)
-                                    .toLowerCase()}
-                              </Text>
-                            </View>
+                              {(row.jobStatus || "pending")
+                                .charAt(0)
+                                .toUpperCase() +
+                                (row.jobStatus || "pending")
+                                  .slice(1)
+                                  .toLowerCase()}
+                            </Text>
                           </View>
                         </View>
 
-                        <Text style={styles.shiftCardGuard}>{row.guard}</Text>
-                        {row.jobType ? (
+                        {/* Site */}
+                        <View style={styles.shiftCardSiteRow}>
+                          <MapPin size={12} color={COLORS.textSecondary} />
+                          <Text style={styles.shiftCardSite} numberOfLines={1}>
+                            {row.site}
+                          </Text>
+                        </View>
+
+                        {/* Guard + Customer – clearly labeled */}
+                        <View style={styles.peopleRow}>
+                          <View style={styles.personBlock}>
+                            <Text style={styles.personLabel}>STAFF</Text>
+                            <Text style={styles.personValue} numberOfLines={1}>
+                              {row.guard || "—"}
+                            </Text>
+                          </View>
+                          <View style={styles.personDivider} />
+                          <View style={styles.personBlock}>
+                            <Text style={styles.personLabel}>CUSTOMER</Text>
+                            <Text style={styles.personValue} numberOfLines={1}>
+                              {row.customer || "—"}
+                            </Text>
+                          </View>
+                        </View>
+
+                        {/* {row.jobType ? (
                           <Text style={styles.shiftCardJobType}>
                             {row.jobType}
                           </Text>
-                        ) : null}
+                        ) : null} */}
 
+                        {/* Start → End */}
                         <View style={styles.shiftDateRow}>
                           <View style={styles.shiftDateBlock}>
                             <Text style={styles.fieldLabel}>START</Text>
                             <Text style={styles.fieldValue}>
                               {isNaN(row.start.getTime())
                                 ? "—"
-                                : formatAU(row.start)}
+                                : `${formatAU(row.start)}  ${to24h(row.start)}`}
                             </Text>
                           </View>
                           <Text style={styles.dateArrow}>→</Text>
@@ -830,13 +871,14 @@ export default function TimesheetScreen({ navigation }: Props) {
                             <Text style={styles.fieldValue}>
                               {isNaN(row.end.getTime())
                                 ? "—"
-                                : formatAU(row.end)}
+                                : `${formatAU(row.end)}  ${to24h(row.end)}`}
                             </Text>
                           </View>
                         </View>
 
                         <View style={styles.divider} />
 
+                        {/* Sign in / Sign out / Total */}
                         <View style={styles.shiftFieldsGrid}>
                           <View style={styles.shiftFieldItem}>
                             <Text style={styles.fieldLabel}>SIGN IN</Text>
@@ -1173,14 +1215,14 @@ const styles = StyleSheet.create({
     borderColor: COLORS.cardBorder,
     borderRadius: 16,
     marginHorizontal: 16,
-    marginTop: 12,
-    padding: 16,
+    marginTop: 10,
+    padding: 12,
   },
   shiftCardHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "flex-start",
-    marginBottom: 10,
+    // marginBottom: 10,
   },
   badgeStack: {
     alignItems: "flex-end",
@@ -1222,7 +1264,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 12,
     marginBottom: 14,
-    marginTop: 12,
+    marginTop: 5,
   },
   shiftDateBlock: {
     flex: 1,
@@ -1268,5 +1310,36 @@ const styles = StyleSheet.create({
   jobBadgeText: {
     fontSize: 10,
     fontWeight: "800",
+  },
+  peopleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 10,
+    marginBottom: 6,
+    backgroundColor: "rgba(255,255,255,0.04)",
+    borderRadius: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+  },
+  personBlock: {
+    flex: 1,
+  },
+  personLabel: {
+    fontSize: 10,
+    fontWeight: "700",
+    color: COLORS.textMuted,
+    letterSpacing: 0.6,
+    marginBottom: 2,
+  },
+  personValue: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: COLORS.primary,
+  },
+  personDivider: {
+    width: 1,
+    height: 28,
+    // backgroundColor: COLORS.border,
+    marginHorizontal: 12,
   },
 });

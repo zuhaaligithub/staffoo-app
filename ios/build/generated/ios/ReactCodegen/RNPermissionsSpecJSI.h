@@ -74,6 +74,7 @@ protected:
     methodMap_["checkLocationAccuracy"] = MethodMetadata {.argCount = 0, .invoker = __checkLocationAccuracy};
     methodMap_["checkMultiple"] = MethodMetadata {.argCount = 1, .invoker = __checkMultiple};
     methodMap_["checkNotifications"] = MethodMetadata {.argCount = 0, .invoker = __checkNotifications};
+    methodMap_["openContactPicker"] = MethodMetadata {.argCount = 0, .invoker = __openContactPicker};
     methodMap_["openPhotoPicker"] = MethodMetadata {.argCount = 0, .invoker = __openPhotoPicker};
     methodMap_["openSettings"] = MethodMetadata {.argCount = 1, .invoker = __openSettings};
     methodMap_["request"] = MethodMetadata {.argCount = 1, .invoker = __request};
@@ -126,6 +127,13 @@ private:
       bridging::getParameterCount(&T::checkNotifications) == 1,
       "Expected checkNotifications(...) to have 1 parameters");
     return bridging::callFromJs<jsi::Value>(rt, &T::checkNotifications,  static_cast<NativeRNPermissionsCxxSpec*>(&turboModule)->jsInvoker_, static_cast<T*>(&turboModule));
+  }
+
+  static jsi::Value __openContactPicker(jsi::Runtime &rt, TurboModule &turboModule, const jsi::Value* /*args*/, size_t /*count*/) {
+    static_assert(
+      bridging::getParameterCount(&T::openContactPicker) == 1,
+      "Expected openContactPicker(...) to have 1 parameters");
+    return bridging::callFromJs<jsi::Value>(rt, &T::openContactPicker,  static_cast<NativeRNPermissionsCxxSpec*>(&turboModule)->jsInvoker_, static_cast<T*>(&turboModule));
   }
 
   static jsi::Value __openPhotoPicker(jsi::Runtime &rt, TurboModule &turboModule, const jsi::Value* /*args*/, size_t /*count*/) {
