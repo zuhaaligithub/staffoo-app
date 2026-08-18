@@ -27,6 +27,7 @@ import { OneSignal } from "react-native-onesignal";
 import NetInfo from "@react-native-community/netinfo";
 import { GoogleSignin } from "@react-native-google-signin/google-signin";
 import LinearGradient from "react-native-linear-gradient";
+import Geolocation from "@react-native-community/geolocation";
 
 const LOGO = require("../assets/staffoo.png");
 
@@ -873,6 +874,62 @@ export default function LoginScreen({ navigation }: Props) {
         console.log("OneSignal error:", e);
       }
 
+      // Fire-and-forget: update coordinates immediately after login
+      (async () => {
+        try {
+          const userIdStr = String(user.id);
+          const allowed = await requestLocationPermission();
+          if (!allowed) return;
+
+          Geolocation.getCurrentPosition(
+            async (position) => {
+              try {
+                const { latitude, longitude } = position.coords;
+                const token = await AsyncStorage.getItem("@auth_token");
+                if (!token) return;
+
+                const payload = {
+                  current_coordinates: `${latitude},${longitude}`,
+                };
+
+                const resp = await fetch(
+                  `${BASE_URL}/update-coordinates/${userIdStr}`,
+                  {
+                    method: "POST",
+                    headers: {
+                      "Content-Type": "application/json",
+                      Authorization: `Bearer ${token}`,
+                      Accept: "application/json",
+                    },
+                    body: JSON.stringify(payload),
+                  },
+                );
+
+                if (!resp.ok) {
+                  const text = await resp.text().catch(() => "");
+                  console.warn(
+                    "Immediate coordinates update failed:",
+                    resp.status,
+                    text,
+                  );
+                } else {
+                  const d = await resp.json().catch(() => ({}));
+                  console.log("Immediate coordinates update response:", d);
+                }
+              } catch (err) {
+                console.warn("Immediate coordinates API error:", err);
+              }
+            },
+            (err) => {
+              console.warn("Immediate geolocation error:", err);
+            },
+            { enableHighAccuracy: false, timeout: 20000, maximumAge: 10000 },
+          );
+        } catch (e) {
+          console.warn("Failed to trigger immediate coordinates update:", e);
+        }
+      })();
+
       Toast.show({
         type: "success",
         text1: "Login Successful",
@@ -1078,27 +1135,29 @@ export default function LoginScreen({ navigation }: Props) {
               </LinearGradient>
             </TouchableOpacity>
 
-            <View style={styles.orContainer}>
-              <View style={styles.orLine} />
-              <Text style={styles.orText}>OR</Text>
-              <View style={styles.orLine} />
-            </View>
-
             {Platform.OS === "android" && (
-              <TouchableOpacity
-                style={styles.googleButton}
-                onPress={handleGoogleLogin}
-                disabled={loading}
-                activeOpacity={0.85}
-              >
-                <View style={styles.googleIconBadge}>
-                  <Image
-                    source={require("../assets/google-img.png")}
-                    style={{ width: 18, height: 18 }}
-                  />
+              <>
+                <View style={styles.orContainer}>
+                  <View style={styles.orLine} />
+                  <Text style={styles.orText}>OR</Text>
+                  <View style={styles.orLine} />
                 </View>
-                <Text style={styles.googleText}>Continue with Google</Text>
-              </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.googleButton}
+                  onPress={handleGoogleLogin}
+                  disabled={loading}
+                  activeOpacity={0.85}
+                >
+                  <View style={styles.googleIconBadge}>
+                    <Image
+                      source={require("../assets/google-img.png")}
+                      style={{ width: 18, height: 18 }}
+                    />
+                  </View>
+                  <Text style={styles.googleText}>Continue with Google</Text>
+                </TouchableOpacity>
+              </>
             )}
           </View>
 

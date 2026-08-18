@@ -1,6 +1,6 @@
 {
   "name": "react-native-document-picker",
-  "version": "12.0.2",
+  "version": "12.0.1",
   "summary": "A react native interface to access documents from dropbox, google drive, iCloud...",
   "homepage": "https://github.com/react-native-documents/document-picker#readme",
   "license": "MIT",
@@ -9,8 +9,8 @@
     "ios": "14.0"
   },
   "source": {
-    "git": "https://github.com/react-native-documents/document-picker.git",
-    "tag": "v12.0.2"
+    "git": "https://github.com/react-native-documents/sponsors-only.git",
+    "tag": "v12.0.1"
   },
   "source_files": [
     "ios/**/*.{h,m,mm,swift}"

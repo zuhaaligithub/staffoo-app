@@ -14,6 +14,138 @@
 namespace facebook::react {
 
 
+
+void RNSSplitHostEventEmitter::onCollapse(OnCollapse event) const {
+  dispatchEvent("collapse", [](jsi::Runtime &runtime) {
+    auto payload = jsi::Object(runtime);
+    
+    return payload;
+  });
+}
+
+
+void RNSSplitHostEventEmitter::onDisplayModeWillChange(OnDisplayModeWillChange event) const {
+  dispatchEvent("displayModeWillChange", [event=std::move(event)](jsi::Runtime &runtime) {
+    auto payload = jsi::Object(runtime);
+    payload.setProperty(runtime, "currentDisplayMode", event.currentDisplayMode);
+payload.setProperty(runtime, "nextDisplayMode", event.nextDisplayMode);
+    return payload;
+  });
+}
+
+
+void RNSSplitHostEventEmitter::onExpand(OnExpand event) const {
+  dispatchEvent("expand", [](jsi::Runtime &runtime) {
+    auto payload = jsi::Object(runtime);
+    
+    return payload;
+  });
+}
+
+
+void RNSSplitHostEventEmitter::onInspectorHide(OnInspectorHide event) const {
+  dispatchEvent("inspectorHide", [](jsi::Runtime &runtime) {
+    auto payload = jsi::Object(runtime);
+    
+    return payload;
+  });
+}
+
+
+void RNSSplitScreenEventEmitter::onWillAppear(OnWillAppear event) const {
+  dispatchEvent("willAppear", [](jsi::Runtime &runtime) {
+    auto payload = jsi::Object(runtime);
+    
+    return payload;
+  });
+}
+
+
+void RNSSplitScreenEventEmitter::onDidAppear(OnDidAppear event) const {
+  dispatchEvent("didAppear", [](jsi::Runtime &runtime) {
+    auto payload = jsi::Object(runtime);
+    
+    return payload;
+  });
+}
+
+
+void RNSSplitScreenEventEmitter::onWillDisappear(OnWillDisappear event) const {
+  dispatchEvent("willDisappear", [](jsi::Runtime &runtime) {
+    auto payload = jsi::Object(runtime);
+    
+    return payload;
+  });
+}
+
+
+void RNSSplitScreenEventEmitter::onDidDisappear(OnDidDisappear event) const {
+  dispatchEvent("didDisappear", [](jsi::Runtime &runtime) {
+    auto payload = jsi::Object(runtime);
+    
+    return payload;
+  });
+}
+
+
+
+
+
+
+void RNSStackScreenEventEmitter::onWillAppear(OnWillAppear event) const {
+  dispatchEvent("willAppear", [](jsi::Runtime &runtime) {
+    auto payload = jsi::Object(runtime);
+    
+    return payload;
+  });
+}
+
+
+void RNSStackScreenEventEmitter::onDidAppear(OnDidAppear event) const {
+  dispatchEvent("didAppear", [](jsi::Runtime &runtime) {
+    auto payload = jsi::Object(runtime);
+    
+    return payload;
+  });
+}
+
+
+void RNSStackScreenEventEmitter::onWillDisappear(OnWillDisappear event) const {
+  dispatchEvent("willDisappear", [](jsi::Runtime &runtime) {
+    auto payload = jsi::Object(runtime);
+    
+    return payload;
+  });
+}
+
+
+void RNSStackScreenEventEmitter::onDidDisappear(OnDidDisappear event) const {
+  dispatchEvent("didDisappear", [](jsi::Runtime &runtime) {
+    auto payload = jsi::Object(runtime);
+    
+    return payload;
+  });
+}
+
+
+void RNSStackScreenEventEmitter::onDismiss(OnDismiss event) const {
+  dispatchEvent("dismiss", [event=std::move(event)](jsi::Runtime &runtime) {
+    auto payload = jsi::Object(runtime);
+    payload.setProperty(runtime, "isNativeDismiss", event.isNativeDismiss);
+    return payload;
+  });
+}
+
+
+void RNSStackScreenEventEmitter::onNativeDismissPrevented(OnNativeDismissPrevented event) const {
+  dispatchEvent("nativeDismissPrevented", [](jsi::Runtime &runtime) {
+    auto payload = jsi::Object(runtime);
+    
+    return payload;
+  });
+}
+
+
 void RNSModalScreenEventEmitter::onAppear(OnAppear event) const {
   dispatchEvent("appear", [](jsi::Runtime &runtime) {
     auto payload = jsi::Object(runtime);
@@ -114,6 +246,7 @@ payload.setProperty(runtime, "isStable", event.isStable);
     return payload;
   });
 }
+
 
 
 
@@ -240,6 +373,24 @@ void RNSScreenStackHeaderConfigEventEmitter::onDetached(OnDetached event) const 
 }
 
 
+void RNSScreenStackHeaderConfigEventEmitter::onPressHeaderBarButtonItem(OnPressHeaderBarButtonItem event) const {
+  dispatchEvent("pressHeaderBarButtonItem", [event=std::move(event)](jsi::Runtime &runtime) {
+    auto payload = jsi::Object(runtime);
+    payload.setProperty(runtime, "buttonId", event.buttonId);
+    return payload;
+  });
+}
+
+
+void RNSScreenStackHeaderConfigEventEmitter::onPressHeaderBarButtonMenuItem(OnPressHeaderBarButtonMenuItem event) const {
+  dispatchEvent("pressHeaderBarButtonMenuItem", [event=std::move(event)](jsi::Runtime &runtime) {
+    auto payload = jsi::Object(runtime);
+    payload.setProperty(runtime, "menuId", event.menuId);
+    return payload;
+  });
+}
+
+
 
 void RNSScreenStackEventEmitter::onFinishTransitioning(OnFinishTransitioning event) const {
   dispatchEvent("finishTransitioning", [](jsi::Runtime &runtime) {
@@ -306,6 +457,172 @@ void RNSSearchBarEventEmitter::onClose(OnClose event) const {
 
 void RNSSearchBarEventEmitter::onOpen(OnOpen event) const {
   dispatchEvent("open", [](jsi::Runtime &runtime) {
+    auto payload = jsi::Object(runtime);
+    
+    return payload;
+  });
+}
+
+
+
+void RNSTabsBottomAccessoryEventEmitter::onEnvironmentChange(OnEnvironmentChange event) const {
+  dispatchEvent("environmentChange", [event=std::move(event)](jsi::Runtime &runtime) {
+    auto payload = jsi::Object(runtime);
+    payload.setProperty(runtime, "environment", toString(event.environment));
+    return payload;
+  });
+}
+
+
+void RNSTabsHostAndroidEventEmitter::onTabSelected(OnTabSelected event) const {
+  dispatchEvent("tabSelected", [event=std::move(event)](jsi::Runtime &runtime) {
+    auto payload = jsi::Object(runtime);
+    payload.setProperty(runtime, "selectedScreenKey", event.selectedScreenKey);
+payload.setProperty(runtime, "provenance", event.provenance);
+payload.setProperty(runtime, "isRepeated", event.isRepeated);
+payload.setProperty(runtime, "hasTriggeredSpecialEffect", event.hasTriggeredSpecialEffect);
+payload.setProperty(runtime, "actionOrigin", toString(event.actionOrigin));
+    return payload;
+  });
+}
+
+
+void RNSTabsHostAndroidEventEmitter::onTabSelectionRejected(OnTabSelectionRejected event) const {
+  dispatchEvent("tabSelectionRejected", [event=std::move(event)](jsi::Runtime &runtime) {
+    auto payload = jsi::Object(runtime);
+    payload.setProperty(runtime, "selectedScreenKey", event.selectedScreenKey);
+payload.setProperty(runtime, "provenance", event.provenance);
+payload.setProperty(runtime, "rejectedScreenKey", event.rejectedScreenKey);
+payload.setProperty(runtime, "rejectedBaseProvenance", event.rejectedBaseProvenance);
+payload.setProperty(runtime, "rejectionReason", toString(event.rejectionReason));
+    return payload;
+  });
+}
+
+
+void RNSTabsHostAndroidEventEmitter::onTabSelectionPrevented(OnTabSelectionPrevented event) const {
+  dispatchEvent("tabSelectionPrevented", [event=std::move(event)](jsi::Runtime &runtime) {
+    auto payload = jsi::Object(runtime);
+    payload.setProperty(runtime, "selectedScreenKey", event.selectedScreenKey);
+payload.setProperty(runtime, "provenance", event.provenance);
+payload.setProperty(runtime, "preventedScreenKey", event.preventedScreenKey);
+    return payload;
+  });
+}
+
+
+void RNSTabsHostIOSEventEmitter::onTabSelected(OnTabSelected event) const {
+  dispatchEvent("tabSelected", [event=std::move(event)](jsi::Runtime &runtime) {
+    auto payload = jsi::Object(runtime);
+    payload.setProperty(runtime, "selectedScreenKey", event.selectedScreenKey);
+payload.setProperty(runtime, "provenance", event.provenance);
+payload.setProperty(runtime, "isRepeated", event.isRepeated);
+payload.setProperty(runtime, "hasTriggeredSpecialEffect", event.hasTriggeredSpecialEffect);
+payload.setProperty(runtime, "actionOrigin", toString(event.actionOrigin));
+    return payload;
+  });
+}
+
+
+void RNSTabsHostIOSEventEmitter::onTabSelectionRejected(OnTabSelectionRejected event) const {
+  dispatchEvent("tabSelectionRejected", [event=std::move(event)](jsi::Runtime &runtime) {
+    auto payload = jsi::Object(runtime);
+    payload.setProperty(runtime, "selectedScreenKey", event.selectedScreenKey);
+payload.setProperty(runtime, "provenance", event.provenance);
+payload.setProperty(runtime, "rejectedScreenKey", event.rejectedScreenKey);
+payload.setProperty(runtime, "rejectedBaseProvenance", event.rejectedBaseProvenance);
+payload.setProperty(runtime, "rejectionReason", toString(event.rejectionReason));
+    return payload;
+  });
+}
+
+
+void RNSTabsHostIOSEventEmitter::onTabSelectionPrevented(OnTabSelectionPrevented event) const {
+  dispatchEvent("tabSelectionPrevented", [event=std::move(event)](jsi::Runtime &runtime) {
+    auto payload = jsi::Object(runtime);
+    payload.setProperty(runtime, "selectedScreenKey", event.selectedScreenKey);
+payload.setProperty(runtime, "provenance", event.provenance);
+payload.setProperty(runtime, "preventedScreenKey", event.preventedScreenKey);
+    return payload;
+  });
+}
+
+
+void RNSTabsHostIOSEventEmitter::onMoreTabSelected(OnMoreTabSelected event) const {
+  dispatchEvent("moreTabSelected", [event=std::move(event)](jsi::Runtime &runtime) {
+    auto payload = jsi::Object(runtime);
+    payload.setProperty(runtime, "selectedScreenKey", event.selectedScreenKey);
+payload.setProperty(runtime, "provenance", event.provenance);
+    return payload;
+  });
+}
+
+
+void RNSTabsScreenAndroidEventEmitter::onWillAppear(OnWillAppear event) const {
+  dispatchEvent("willAppear", [](jsi::Runtime &runtime) {
+    auto payload = jsi::Object(runtime);
+    
+    return payload;
+  });
+}
+
+
+void RNSTabsScreenAndroidEventEmitter::onDidAppear(OnDidAppear event) const {
+  dispatchEvent("didAppear", [](jsi::Runtime &runtime) {
+    auto payload = jsi::Object(runtime);
+    
+    return payload;
+  });
+}
+
+
+void RNSTabsScreenAndroidEventEmitter::onWillDisappear(OnWillDisappear event) const {
+  dispatchEvent("willDisappear", [](jsi::Runtime &runtime) {
+    auto payload = jsi::Object(runtime);
+    
+    return payload;
+  });
+}
+
+
+void RNSTabsScreenAndroidEventEmitter::onDidDisappear(OnDidDisappear event) const {
+  dispatchEvent("didDisappear", [](jsi::Runtime &runtime) {
+    auto payload = jsi::Object(runtime);
+    
+    return payload;
+  });
+}
+
+
+void RNSTabsScreenIOSEventEmitter::onWillAppear(OnWillAppear event) const {
+  dispatchEvent("willAppear", [](jsi::Runtime &runtime) {
+    auto payload = jsi::Object(runtime);
+    
+    return payload;
+  });
+}
+
+
+void RNSTabsScreenIOSEventEmitter::onDidAppear(OnDidAppear event) const {
+  dispatchEvent("didAppear", [](jsi::Runtime &runtime) {
+    auto payload = jsi::Object(runtime);
+    
+    return payload;
+  });
+}
+
+
+void RNSTabsScreenIOSEventEmitter::onWillDisappear(OnWillDisappear event) const {
+  dispatchEvent("willDisappear", [](jsi::Runtime &runtime) {
+    auto payload = jsi::Object(runtime);
+    
+    return payload;
+  });
+}
+
+
+void RNSTabsScreenIOSEventEmitter::onDidDisappear(OnDidDisappear event) const {
+  dispatchEvent("didDisappear", [](jsi::Runtime &runtime) {
     auto payload = jsi::Object(runtime);
     
     return payload;

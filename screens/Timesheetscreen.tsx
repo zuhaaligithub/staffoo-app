@@ -8,6 +8,7 @@ import {
   SafeAreaView,
   Platform,
   ActivityIndicator,
+  Share,
 } from "react-native";
 
 import LinearGradient from "react-native-linear-gradient";
@@ -29,7 +30,8 @@ type Props = { navigation: any };
 // ─────────────────────────────────────────────────────────
 // CONFIG
 // ─────────────────────────────────────────────────────────
-const API_BASE = "https://apis-staging.staffoo.com.au/api";
+// const API_BASE = "https://apis-staging.staffoo.com.au/api";
+const API_BASE = "https://apis.staffoo.com.au/api";
 const GET_TIMESHEET_URL = `${API_BASE}/getTimesheet`;
 const GET_TIMESHEET_DETAILS_URL = `${API_BASE}/get-timesheet-details`;
 
@@ -504,9 +506,55 @@ export default function TimesheetScreen({ navigation }: Props) {
 
     return String(hour).padStart(2, "0") + ":" + min;
   };
+  const handleExport = async () => {
+    if (!hasSearched || staffRows.length === 0) {
+      return;
+    }
 
+    try {
+      const fromStr = appliedFrom ? formatAU(appliedFrom) : formatAU(tempFrom);
+      const toStr = appliedTo ? formatAU(appliedTo) : formatAU(tempTo);
+
+      // CSV header
+      let csv =
+        "Staff ID,Name,Total Hours,Morning Hours,Night Hours,Sat Morning,Sat Night,Sun Morning,Sun Night,PH Morning,PH Night,Shifts Count\n";
+
+      timesheetRows.forEach((row) => {
+        const line = [
+          row.id ?? "",
+          `"${(row.name || "Unassigned").replace(/"/g, '""')}"`,
+          row.hours ?? 0,
+          row.morning_hours ?? 0,
+          row.night_hours ?? 0,
+          row.saturday_morning_hours ?? 0,
+          row.saturday_night_hours ?? 0,
+          row.sunday_morning_hours ?? 0,
+          row.sunday_night_hours ?? 0,
+          row.ph_morning_hours ?? 0,
+          row.ph_night_hours ?? 0,
+          row.shift_collection?.length ?? 0,
+        ].join(",");
+        csv += line + "\n";
+      });
+
+      const fileName = `timesheet-${Date.now()}`;
+      const message = `Timesheet ${fromStr} - ${toStr}\n\n${csv}`;
+
+      // Share sheet → user can Save to Files / Downloads (same idea as the web dialog)
+      await Share.share({
+        title: fileName,
+        message,
+        // iOS can also take a url if you write a real file with RNFS
+      });
+    } catch (err: any) {
+      console.error("Export error:", err);
+    }
+  };
   const selectedStaffRow = staffRows.find((s) => s.staffId === selectedStaffId);
-
+  const totalHours = useMemo(
+    () => staffRows.reduce((sum, r) => sum + (r.totalHours || 0), 0),
+    [staffRows],
+  );
   const headerRangeLabel = `${formatAU(tempFrom)} - ${formatAU(tempTo)}`;
 
   return (
@@ -518,43 +566,45 @@ export default function TimesheetScreen({ navigation }: Props) {
         end={{ x: 1, y: 1 }}
         style={styles.hero}
       >
-        <View style={styles.headerRow}>
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => navigation.goBack()}
-          >
-            <ArrowLeft size={18} color={COLORS.text} />
-          </TouchableOpacity>
+        <View style={styles.heroInner}>
+          <View style={styles.headerRow}>
+            <TouchableOpacity
+              style={styles.backButton}
+              onPress={() => navigation.goBack()}
+            >
+              <ArrowLeft size={18} color={COLORS.text} />
+            </TouchableOpacity>
 
-          <Text style={styles.heroTitle}>Timesheet</Text>
+            <Text style={styles.heroTitle}>Timesheet</Text>
 
-          {/* Keeps the title centered */}
-          <View style={{ width: 40 }} />
-        </View>
-
-        <Text style={styles.heroSubtitle}>
-          Filter, review, and drill into shift breakdowns
-        </Text>
-
-        <View style={styles.statsRow}>
-          <View style={styles.statBox}>
-            <View style={styles.statLabelRow}>
-              <CalendarDays size={12} color={COLORS.textSecondary} />
-              <Text style={styles.statLabel}>DATE RANGE</Text>
-            </View>
-            <Text style={styles.statValue} numberOfLines={1}>
-              {headerRangeLabel}
-            </Text>
+            {/* Keeps the title centered */}
+            <View style={{ width: 40 }} />
           </View>
-          <View style={styles.statDivider} />
-          <View style={styles.statBox}>
-            <View style={styles.statLabelRow}>
-              <Users size={12} color={COLORS.textSecondary} />
-              <Text style={styles.statLabel}>RESULTS</Text>
+
+          <Text style={styles.heroSubtitle}>
+            Filter, review, and drill into shift breakdowns
+          </Text>
+
+          <View style={styles.statsRow}>
+            <View style={styles.statBox}>
+              <View style={styles.statLabelRow}>
+                <CalendarDays size={12} color={COLORS.textSecondary} />
+                <Text style={styles.statLabel}>DATE RANGE</Text>
+              </View>
+              <Text style={styles.statValue} numberOfLines={1}>
+                {headerRangeLabel}
+              </Text>
             </View>
-            <Text style={styles.statValue} numberOfLines={1}>
-              {hasSearched ? `${staffRows.length} staff` : "—"}
-            </Text>
+            <View style={styles.statDivider} />
+            <View style={styles.statBox}>
+              <View style={styles.statLabelRow}>
+                <Users size={12} color={COLORS.textSecondary} />
+                <Text style={styles.statLabel}>TOTAL HOURS</Text>
+              </View>
+              <Text style={styles.statValue} numberOfLines={1}>
+                {hasSearched ? `${totalHours.toFixed(1)} hrs` : "—"}
+              </Text>
+            </View>
           </View>
         </View>
       </LinearGradient>
@@ -596,6 +646,7 @@ export default function TimesheetScreen({ navigation }: Props) {
             <View style={styles.pickerWrap}>
               <DateTimePicker
                 value={tempFrom}
+                textColor="#FFFFFF"
                 mode="date"
                 display={Platform.OS === "ios" ? "spinner" : "default"}
                 onChange={onChangeFrom}
@@ -616,6 +667,7 @@ export default function TimesheetScreen({ navigation }: Props) {
               <DateTimePicker
                 value={tempTo}
                 mode="date"
+                textColor="#FFFFFF"
                 minimumDate={tempFrom}
                 display={Platform.OS === "ios" ? "spinner" : "default"}
                 onChange={onChangeTo}
@@ -653,13 +705,17 @@ export default function TimesheetScreen({ navigation }: Props) {
                 </>
               )}
             </TouchableOpacity>
-            {/* <TouchableOpacity
-              style={[styles.exportBtn, !hasSearched && styles.btnDisabled]}
+            <TouchableOpacity
+              style={[
+                styles.exportBtn,
+                (!hasSearched || staffRows.length === 0) && styles.btnDisabled,
+              ]}
               activeOpacity={0.85}
-              disabled={!hasSearched}
+              disabled={!hasSearched || staffRows.length === 0}
+              onPress={handleExport}
             >
               <Text style={styles.exportBtnText}>Export</Text>
-            </TouchableOpacity> */}
+            </TouchableOpacity>
           </View>
         </View>
 
@@ -932,8 +988,6 @@ const styles = StyleSheet.create({
 
   // Hero (fixed header)
   hero: {
-    paddingTop: Platform.OS === "ios" ? 20 : 12,
-    paddingHorizontal: 10,
     paddingBottom: 15,
     alignItems: "center",
     borderBottomLeftRadius: 26,
@@ -941,6 +995,17 @@ const styles = StyleSheet.create({
     borderColor: COLORS.cardBorder,
 
     zIndex: 10,
+
+    paddingTop: Platform.OS === "ios" ? 5 : 26,
+
+    paddingHorizontal: Platform.OS === "ios" ? 5 : 10,
+
+    height: Platform.OS === "ios" ? 180 : undefined,
+  },
+  heroInner: {
+    width: "100%",
+    paddingHorizontal: 10,
+    // paddingBottom: 8,
   },
   heroTitle: {
     color: COLORS.text,

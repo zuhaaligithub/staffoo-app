@@ -14,6 +14,7 @@ import {
   Animated,
   Pressable,
   Modal,
+  RefreshControl,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
@@ -104,13 +105,27 @@ export default function HomeScreen({ navigation }: any) {
   const [activeGuardsCount, setActiveGuardsCount] = useState(0);
   const [pendingAssigningCount, setPendingAssigningCount] = useState(0);
   const [statsLoading, setStatsLoading] = useState(true);
-const isStaffooStaff = Number(user?.user_id) === 1;
 
-// Job notifications only for:
-// - contractors
-// - staff whose parent user_id is 1
-const canSeeJobNotifications =
-  userType === "contractor" || (userType === "staff" && isStaffooStaff);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await fetchCustomerSites();
+      if (user) {
+        await fetchDashboardStats(userType, user);
+      }
+    } finally {
+      setRefreshing(false);
+    }
+  };
+  const isStaffooStaff = Number(user?.user_id) === 1;
+
+  // Job notifications only for:
+  // - contractors
+  // - staff whose parent user_id is 1
+  const canSeeJobNotifications =
+    userType === "contractor" || (userType === "staff" && isStaffooStaff);
   const currentDate = new Date();
   const [weekStart] = useState(() => {
     const d = new Date(currentDate);
@@ -157,14 +172,8 @@ const canSeeJobNotifications =
             { headers: { Authorization: `Bearer ${token}` } },
           );
 
-          console.log(
-            "AVAILABLE JOBS RAW →",
-            JSON.stringify(res.data, null, 2),
-          );
-
           const jobs = res.data?.data?.jobs;
 
-          // Prefer full list length when available, fall back to paginator total
           let count = 0;
 
           if (Array.isArray(jobs?.data)) {
@@ -177,7 +186,6 @@ const canSeeJobNotifications =
             count = res.data.data.total;
           }
 
-          console.log("Final availableJobsCount →", count);
           setAvailableJobsCount(count);
         } catch (e) {
           console.log("Dashboard: available jobs count error", e);
@@ -238,14 +246,30 @@ const canSeeJobNotifications =
   >(null);
   const hasShownJobAlertRef = useRef(false);
 
-useEffect(() => {
-  if (!canSeeJobNotifications) return; // hide alert for other staff
-  if (statsLoading) return;
+  useEffect(() => {
+    if (!canSeeJobNotifications) return;
+    if (statsLoading) return;
 
-  if (prevAvailableJobsCount === null) {
-    setPrevAvailableJobsCount(availableJobsCount);
+    if (prevAvailableJobsCount === null) {
+      setPrevAvailableJobsCount(availableJobsCount);
 
-    if (availableJobsCount > 0 && !hasShownJobAlertRef.current) {
+      if (availableJobsCount > 0 && !hasShownJobAlertRef.current) {
+        hasShownJobAlertRef.current = true;
+        setShowJobAlert(true);
+        Animated.spring(slideAnim, {
+          toValue: 0,
+          useNativeDriver: true,
+          tension: 65,
+          friction: 9,
+        }).start();
+      }
+      return;
+    }
+
+    if (
+      availableJobsCount > prevAvailableJobsCount &&
+      !hasShownJobAlertRef.current
+    ) {
       hasShownJobAlertRef.current = true;
       setShowJobAlert(true);
       Animated.spring(slideAnim, {
@@ -255,25 +279,10 @@ useEffect(() => {
         friction: 9,
       }).start();
     }
-    return;
-  }
 
-  if (
-    availableJobsCount > prevAvailableJobsCount &&
-    !hasShownJobAlertRef.current
-  ) {
-    hasShownJobAlertRef.current = true;
-    setShowJobAlert(true);
-    Animated.spring(slideAnim, {
-      toValue: 0,
-      useNativeDriver: true,
-      tension: 65,
-      friction: 9,
-    }).start();
-  }
+    setPrevAvailableJobsCount(availableJobsCount);
+  }, [availableJobsCount, statsLoading, canSeeJobNotifications]);
 
-  setPrevAvailableJobsCount(availableJobsCount);
-}, [availableJobsCount, statsLoading, canSeeJobNotifications]);
   const closeJobAlert = () => {
     Animated.timing(slideAnim, {
       toValue: -120,
@@ -284,7 +293,6 @@ useEffect(() => {
 
   const goToAvailableJobs = () => {
     closeJobAlert();
-    // Change "AvailableJobs" to your real screen name
     navigation.navigate("StaffShifts");
   };
 
@@ -384,8 +392,8 @@ useEffect(() => {
         if (cachedImage) {
           setProfileImage(cachedImage);
         } else if (parsedUser?.staff?.profile_image) {
-          const BASE_IMAGE_URL = "https://apis-staging.staffoo.com.au/storage/";
-          // const BASE_IMAGE_URL = "https://apis.staffoo.com.au/storage/";
+          // const BASE_IMAGE_URL = "https://apis-staging.staffoo.com.au/storage/";
+           const BASE_IMAGE_URL = "https://apis.staffoo.com.au/storage/";
           setProfileImage(`${BASE_IMAGE_URL}${parsedUser.staff.profile_image}`);
         }
       }
@@ -402,22 +410,19 @@ useEffect(() => {
     switch (status?.toLowerCase()) {
       case "pending":
         return {
-          backgroundColor: "#FEF3C7", // light yellow
+          backgroundColor: "#FEF3C7",
           color: "#D97706",
         };
-
       case "confirmed":
         return {
-          backgroundColor: "#DCFCE7", // light green
+          backgroundColor: "#DCFCE7",
           color: "#16A34A",
         };
-
       case "completed":
         return {
-          backgroundColor: "#DBEAFE", // light blue
+          backgroundColor: "#DBEAFE",
           color: "#2563EB",
         };
-
       default:
         return {
           backgroundColor: "#E5E7EB",
@@ -441,28 +446,10 @@ useEffect(() => {
         : "Discover Your Next Opportunity",
   };
 
-  // if (loading) {
-  //   return (
-  //     <SafeAreaView
-  //       style={{
-  //         flex: 1,
-  //         justifyContent: "center",
-  //         alignItems: "center",
-  //         backgroundColor: "#030508",
-  //       }}
-  //     >
-  //       <ActivityIndicator size="large" color={COLORS.primary} />
-  //       <Text style={{ marginTop: 15, fontSize: 16, color: "#fff" }}>
-  //         Loading profile...
-  //       </Text>
-  //     </SafeAreaView>
-  //   );
-  // }
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
         <BrandLoader size={60} />
-
         <Text style={styles.loadingText}>Loading profile...</Text>
       </View>
     );
@@ -472,7 +459,6 @@ useEffect(() => {
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#fff" />
 
-      {/* Fixed Header */}
       {/* Fixed Header */}
       <View style={styles.header}>
         <TouchableOpacity
@@ -498,33 +484,33 @@ useEffect(() => {
           </View>
         </TouchableOpacity>
 
-      {canSeeJobNotifications && (
-  <TouchableOpacity
-    style={styles.bellButton}
-    activeOpacity={0.7}
-    onPress={() => {
-      if (availableJobsCount > 0) {
-        navigation.navigate("StaffShifts");
-      }
-    }}
-  >
-    <View style={styles.bellIconWrapper}>
-      {availableJobsCount > 0 ? (
-        <BellRing size={22} color={COLORS.primary} />
-      ) : (
-        <Bell size={22} color={COLORS.textSecondary} />
-      )}
+        {canSeeJobNotifications && (
+          <TouchableOpacity
+            style={styles.bellButton}
+            activeOpacity={0.7}
+            onPress={() => {
+              if (availableJobsCount > 0) {
+                navigation.navigate("StaffShifts");
+              }
+            }}
+          >
+            <View style={styles.bellIconWrapper}>
+              {availableJobsCount > 0 ? (
+                <BellRing size={22} color={COLORS.primary} />
+              ) : (
+                <Bell size={22} color={COLORS.textSecondary} />
+              )}
 
-      {availableJobsCount > 0 && (
-        <View style={styles.badge}>
-          <Text style={styles.badgeText}>
-            {availableJobsCount > 9 ? "9+" : availableJobsCount}
-          </Text>
-        </View>
-      )}
-    </View>
-  </TouchableOpacity>
-)}
+              {availableJobsCount > 0 && (
+                <View style={styles.badge}>
+                  <Text style={styles.badgeText}>
+                    {availableJobsCount > 9 ? "9+" : availableJobsCount}
+                  </Text>
+                </View>
+              )}
+            </View>
+          </TouchableOpacity>
+        )}
       </View>
 
       {/* Hero Banner */}
@@ -550,20 +536,33 @@ useEffect(() => {
         </Text>
       </LinearGradient>
 
-      {/* Main Scroll - Starts from Overview */}
+      {/* Main Scroll */}
       <ScrollView
         style={styles.mainScroll}
         contentContainerStyle={styles.mainScrollContent}
         showsVerticalScrollIndicator={false}
         nestedScrollEnabled={true}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={["#0A7C6E"]}
+            tintColor="#0A7C6E"
+            progressBackgroundColor="#fff"
+          />
+        }
       >
         {/* Overview Section */}
+        {/* Overview Section */}
         <View style={styles.section}>
-          {userType !== "customer" && userType !== "contractor" && (
+          {userType !== "customer" && (
             <Text style={styles.overviewText}>Overview</Text>
           )}
           <View style={styles.statsGrid}>
-            {userType === "staff" && (
+            {/* Show all 4 cards for Staffoo staff (user_id === 1) AND contractors */}
+            {(user?.user_id === 1 ||
+              user?.id === 1 ||
+              userType === "contractor") && (
               <>
                 <View style={styles.statCard}>
                   <View
@@ -616,20 +615,17 @@ useEffect(() => {
                   >
                     <FileWarning size={16} color={ACCENTS.amber.icon} />
                   </View>
-
                   <Text style={styles.statLabel}>Documents Expiring</Text>
-
                   <Text style={styles.statValue}>
                     {statsLoading ? "—" : docsExpiringCount}
                   </Text>
                 </View>
               </>
             )}
-
-            {/* Add Contractor and Customer cards here if needed */}
           </View>
 
-          {userType === "staff" && (
+          {/* Show Documents Row for both staff and contractor */}
+          {(userType === "staff" || userType === "contractor") && (
             <TouchableOpacity
               activeOpacity={0.85}
               onPress={() => navigation.navigate("Documents")}
@@ -675,7 +671,6 @@ useEffect(() => {
           )}
         </View>
 
-        {/* Shifts Section with its own ScrollView */}
         {/* Shifts Section */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
@@ -693,9 +688,7 @@ useEffect(() => {
           <View
             style={[
               styles.shiftsWrapper,
-              userType === "staff"
-                ? styles.shiftsWrapperStaff
-                : styles.shiftsWrapperFull,
+              userType === "customer" && styles.shiftsWrapperCustomer,
             ]}
           >
             <ScrollView
@@ -786,7 +779,7 @@ useEffect(() => {
         </View>
       </ScrollView>
 
-      {/* ========== NEW JOB NOTIFICATION POPUP ========== */}
+      {/* NEW JOB NOTIFICATION POPUP */}
       <Modal
         transparent
         visible={showJobAlert}
@@ -800,22 +793,12 @@ useEffect(() => {
               { transform: [{ translateY: slideAnim }] },
             ]}
           >
-            {/* Accent bar */}
             <View style={styles.accentBar} />
 
             <View style={styles.notificationContent}>
-              {/* Icon */}
               <View style={styles.notificationIconBox}>
                 <BellRing size={24} color={COLORS.primary} />
               </View>
-
-              {/* Text */}
-              {/* <View style={{ flex: 1 }}>
-                <Text style={styles.notificationTitle}>New Job Available!</Text>
-                <Text style={styles.notificationMessage}>
-                  A new shift is ready to cover. Tap to view details.
-                </Text>
-              </View> */}
 
               <View style={{ flex: 1 }}>
                 <Text style={styles.notificationTitle}>
@@ -830,13 +813,11 @@ useEffect(() => {
                 </Text>
               </View>
 
-              {/* Close button */}
               <TouchableOpacity onPress={closeJobAlert} hitSlop={12}>
                 <X size={18} color={COLORS.textMuted} />
               </TouchableOpacity>
             </View>
 
-            {/* Action buttons */}
             <View style={styles.notificationActions}>
               <TouchableOpacity
                 style={styles.btnSecondary}
@@ -894,6 +875,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: COLORS.primary,
   },
+  initialsText: { color: COLORS.text, fontWeight: "700" },
   welcomeContent: { marginLeft: 12 },
   welcomeText: { fontSize: 13, color: COLORS.textSecondary },
   nameRow: { flexDirection: "row", alignItems: "center" },
@@ -903,11 +885,23 @@ const styles = StyleSheet.create({
     color: COLORS.text,
     maxWidth: width - 130,
   },
-  helloIcon: { width: 20, height: 20, marginLeft: 6 },
-
+  bellButton: { padding: 8 },
+  bellIconWrapper: { position: "relative" },
+  badge: {
+    position: "absolute",
+    top: -4,
+    right: -4,
+    backgroundColor: COLORS.danger,
+    borderRadius: 8,
+    minWidth: 16,
+    height: 16,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 3,
+  },
+  badgeText: { color: "#fff", fontSize: 10, fontWeight: "700" },
   heroCard: {
     marginHorizontal: 15,
-    // marginVertical: 10,
     borderRadius: 18,
     padding: 12,
     borderWidth: 1,
@@ -915,16 +909,13 @@ const styles = StyleSheet.create({
   },
   heroTitle: { fontSize: 21, fontWeight: "800", color: COLORS.text },
   heroSubtitle: { fontSize: 13, color: COLORS.textSecondary, marginTop: 6 },
-
   mainScroll: { flex: 1 },
   mainScrollContent: { paddingBottom: 100 },
-
-  section: { paddingHorizontal: 15, marginBottom: 10 },
-  eyebrow: {
-    fontSize: 11,
+  section: { paddingHorizontal: 15, marginTop: 15 },
+  overviewText: {
+    fontSize: 15,
     fontWeight: "700",
-    color: COLORS.textMuted,
-    textTransform: "uppercase",
+    color: COLORS.text,
     marginBottom: 10,
   },
   statsGrid: {
@@ -951,235 +942,131 @@ const styles = StyleSheet.create({
   },
   statLabel: { fontSize: 12, color: COLORS.textSecondary },
   statValue: { fontSize: 18, fontWeight: "700", color: COLORS.text },
-
   docsRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
-    backgroundColor: COLORS.surface,
+    backgroundColor: COLORS.card,
     borderRadius: 14,
     borderWidth: 1,
     borderColor: COLORS.cardBorder,
     padding: 12,
-    // marginTop: 10,
+    marginTop: 5,
   },
-  docsRowAlert: {
-    borderColor: "rgba(245,166,35,0.4)",
-    backgroundColor: "rgba(245,166,35,0.06)",
-  },
-  docsRowLabel: {
-    fontSize: 11,
-    fontWeight: "700",
-    color: COLORS.textMuted,
-    textTransform: "uppercase",
-  },
-  docsRowText: { fontSize: 13, color: COLORS.text, fontWeight: "600" },
-
+  docsRowAlert: { borderColor: COLORS.warning },
+  docsRowLabel: { fontSize: 13, fontWeight: "600", color: COLORS.text },
+  docsRowText: { fontSize: 12, color: COLORS.textSecondary, marginTop: 2 },
   sectionHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 12,
-  },
-  sectionTitle: { fontSize: 16, fontWeight: "800", color: COLORS.text },
-  seeAll: { color: COLORS.primary, fontWeight: "600" },
-
-  siteCardInner: { padding: 12 },
-  siteName: { fontSize: 16, fontWeight: "700", color: COLORS.text },
-  siteAddress: { fontSize: 12, color: COLORS.textSecondary, marginVertical: 6 },
-  totalHours: {
-    fontSize: 14,
-    fontWeight: "700",
-    color: COLORS.primary,
     marginBottom: 10,
+  },
+  sectionTitle: { fontSize: 16, fontWeight: "700", color: COLORS.text },
+  seeAll: { fontSize: 13, color: COLORS.primary, fontWeight: "600" },
+  shiftsWrapper: {
+    backgroundColor: COLORS.card,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: COLORS.cardBorder,
+    maxHeight: 320, // Default for staff/contractor
+  },
+  shiftsWrapperCustomer: {
+    maxHeight: 520, // Increased height specifically for customers
+  },
+  shiftsScrollContent: { padding: 10 },
+  noShiftText: {
+    color: COLORS.textSecondary,
+    textAlign: "center",
+    padding: 20,
+  },
+  siteCard: {
+    borderRadius: 10,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: COLORS.cardBorder,
+  },
+  siteCardInner: { padding: 12 },
+  siteName: { fontSize: 15, fontWeight: "700", color: COLORS.text },
+  siteAddress: { fontSize: 12, color: COLORS.textSecondary, marginTop: 2 },
+  totalHours: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: COLORS.primary,
+    marginTop: 4,
   },
   shiftRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingTop: 10,
-    borderTopWidth: 1,
-    borderTopColor: COLORS.cardBorder,
+    marginTop: 8,
   },
-  shiftDate: { fontSize: 12, color: COLORS.textSecondary },
-  shiftTime: { fontSize: 13, color: COLORS.text, fontWeight: "500" },
-  guardName: {
-    flex: 1,
-    marginHorizontal: 30,
-    color: COLORS.text,
-    fontSize: 12,
-    fontWeight: "400",
-    // flexShrink: 1,
-  },
-  statusBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6 },
-  statusText: { fontSize: 11, fontWeight: "600", textTransform: "capitalize" },
-
-  initialsText: { color: COLORS.text, fontSize: 20, fontWeight: "700" },
-  noShiftText: {
-    padding: 40,
-    color: "#666",
-    textAlign: "center",
-    fontSize: 15,
-  },
-  overviewText: {
-    fontSize: 10,
-    fontWeight: "600",
-    // marginBottom: 10,
-  },
+  shiftDate: { fontSize: 12, color: COLORS.text },
+  shiftTime: { fontSize: 11, color: COLORS.textSecondary },
+  guardName: { fontSize: 12, color: COLORS.text, maxWidth: 100 },
+  statusBadge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 },
+  statusText: { fontSize: 11, fontWeight: "700", textTransform: "capitalize" },
   loadingContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
     backgroundColor: COLORS.background,
-    gap: 12,
   },
-  loadingText: {
-    fontSize: 15,
-    color: COLORS.textSecondary,
-    fontWeight: "500",
+  loadingText: { marginTop: 15, fontSize: 16, color: "#fff" },
+  overlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.6)",
+    justifyContent: "flex-start",
+    paddingTop: 50,
   },
-  shiftsWrapper: {
+  notificationCard: {
+    marginHorizontal: 15,
+    backgroundColor: COLORS.card,
     borderRadius: 16,
     borderWidth: 1,
     borderColor: COLORS.cardBorder,
     overflow: "hidden",
-    // backgroundColor: COLORS.card,
   },
-
-  shiftsWrapperStaff: {
-    maxHeight: 420, // Compact for Staff
-  },
-
-  shiftsWrapperFull: {
-    maxHeight: Dimensions.get("window").height * 0.6, // ~55% of screen for Customer/Contractor
-  },
-
-  shiftsScrollContent: {
-    padding: 12,
-    paddingBottom: 20,
-  },
-
-  siteCard: {
-    marginBottom: 12,
-    borderRadius: 12,
-    overflow: "hidden",
-  },
-
-  // Notification Bell
-  bellButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: COLORS.surface,
-    justifyContent: "center",
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: COLORS.cardBorder,
-  },
-  bellIconWrapper: {
-    position: "relative",
-  },
-  badge: {
-    position: "absolute",
-    top: -6,
-    right: -8,
-    backgroundColor: COLORS.danger,
-    minWidth: 18,
-    height: 18,
-    borderRadius: 9,
-    justifyContent: "center",
-    alignItems: "center",
-    paddingHorizontal: 4,
-    borderWidth: 1.5,
-    borderColor: COLORS.background,
-  },
-  badgeText: {
-    color: "#fff",
-    fontSize: 10,
-    fontWeight: "700",
-  },
-
-  // Custom Notification Popup
-  overlay: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.55)",
-    justifyContent: "flex-start",
-    paddingTop: 60,
-    paddingHorizontal: 16,
-  },
-  notificationCard: {
-    backgroundColor: COLORS.card,
-    borderRadius: 18,
-    borderWidth: 1,
-    borderColor: COLORS.cardBorder,
-    overflow: "hidden",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.35,
-    shadowRadius: 16,
-    elevation: 12,
-  },
-  accentBar: {
-    height: 4,
-    backgroundColor: COLORS.primary,
-  },
+  accentBar: { height: 4, backgroundColor: COLORS.primary },
   notificationContent: {
     flexDirection: "row",
-    alignItems: "flex-start",
-    padding: 16,
-    gap: 12,
+    alignItems: "center",
+    padding: 15,
   },
   notificationIconBox: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
-    backgroundColor: "rgba(0,169,157,0.15)",
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: ACCENTS.teal.tint,
     justifyContent: "center",
     alignItems: "center",
+    marginRight: 12,
   },
-  notificationTitle: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: COLORS.text,
-    marginBottom: 4,
-  },
+  notificationTitle: { fontSize: 15, fontWeight: "700", color: COLORS.text },
   notificationMessage: {
     fontSize: 13,
     color: COLORS.textSecondary,
-    lineHeight: 18,
+    marginTop: 2,
   },
   notificationActions: {
     flexDirection: "row",
-    gap: 10,
-    paddingHorizontal: 16,
-    paddingBottom: 16,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.cardBorder,
   },
   btnSecondary: {
     flex: 1,
-    height: 44,
-    borderRadius: 12,
-    backgroundColor: COLORS.surface,
-    borderWidth: 1,
-    borderColor: COLORS.cardBorder,
-    justifyContent: "center",
+    paddingVertical: 12,
     alignItems: "center",
+    justifyContent: "center",
+    borderRightWidth: 1,
+    borderRightColor: COLORS.cardBorder,
   },
-  btnSecondaryText: {
-    color: COLORS.textSecondary,
-    fontWeight: "600",
-    fontSize: 14,
-  },
+  btnSecondaryText: { color: COLORS.textSecondary, fontWeight: "600" },
   btnPrimary: {
     flex: 1,
-    height: 44,
-    borderRadius: 12,
-    backgroundColor: COLORS.primary,
-    justifyContent: "center",
+    paddingVertical: 12,
     alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: COLORS.primary,
   },
-  btnPrimaryText: {
-    color: "#fff",
-    fontWeight: "700",
-    fontSize: 14,
-  },
+  btnPrimaryText: { color: "#fff", fontWeight: "700" },
 });

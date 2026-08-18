@@ -18,6 +18,39 @@
 
 namespace facebook::react {
 
+JSI_EXPORT extern const char RNSScrollViewMarkerComponentName[];
+
+/*
+ * `ShadowNode` for <RNSScrollViewMarker> component.
+ */
+using RNSScrollViewMarkerShadowNode = ConcreteViewShadowNode<
+    RNSScrollViewMarkerComponentName,
+    RNSScrollViewMarkerProps,
+    RNSScrollViewMarkerEventEmitter,
+    RNSScrollViewMarkerState>;
+
+JSI_EXPORT extern const char RNSSplitHostComponentName[];
+
+/*
+ * `ShadowNode` for <RNSSplitHost> component.
+ */
+using RNSSplitHostShadowNode = ConcreteViewShadowNode<
+    RNSSplitHostComponentName,
+    RNSSplitHostProps,
+    RNSSplitHostEventEmitter,
+    RNSSplitHostState>;
+
+JSI_EXPORT extern const char RNSStackHostComponentName[];
+
+/*
+ * `ShadowNode` for <RNSStackHost> component.
+ */
+using RNSStackHostShadowNode = ConcreteViewShadowNode<
+    RNSStackHostComponentName,
+    RNSStackHostProps,
+    RNSStackHostEventEmitter,
+    RNSStackHostState>;
+
 JSI_EXPORT extern const char RNSScreenContainerComponentName[];
 
 /*
@@ -83,5 +116,38 @@ using RNSSearchBarShadowNode = ConcreteViewShadowNode<
     RNSSearchBarProps,
     RNSSearchBarEventEmitter,
     RNSSearchBarState>;
+
+JSI_EXPORT extern const char RNSTabsBottomAccessoryContentComponentName[];
+
+/*
+ * `ShadowNode` for <RNSTabsBottomAccessoryContent> component.
+ */
+using RNSTabsBottomAccessoryContentShadowNode = ConcreteViewShadowNode<
+    RNSTabsBottomAccessoryContentComponentName,
+    RNSTabsBottomAccessoryContentProps,
+    RNSTabsBottomAccessoryContentEventEmitter,
+    RNSTabsBottomAccessoryContentState>;
+
+JSI_EXPORT extern const char RNSTabsScreenAndroidComponentName[];
+
+/*
+ * `ShadowNode` for <RNSTabsScreenAndroid> component.
+ */
+using RNSTabsScreenAndroidShadowNode = ConcreteViewShadowNode<
+    RNSTabsScreenAndroidComponentName,
+    RNSTabsScreenAndroidProps,
+    RNSTabsScreenAndroidEventEmitter,
+    RNSTabsScreenAndroidState>;
+
+JSI_EXPORT extern const char RNSTabsScreenIOSComponentName[];
+
+/*
+ * `ShadowNode` for <RNSTabsScreenIOS> component.
+ */
+using RNSTabsScreenIOSShadowNode = ConcreteViewShadowNode<
+    RNSTabsScreenIOSComponentName,
+    RNSTabsScreenIOSProps,
+    RNSTabsScreenIOSEventEmitter,
+    RNSTabsScreenIOSState>;
 
 } // namespace facebook::react

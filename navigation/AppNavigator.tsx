@@ -1,5 +1,3 @@
-
-
 // AppNavigator.tsx
 import React, { useState, useEffect } from "react";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
@@ -48,6 +46,7 @@ import CoverJobsScreen from "../screens/CoverJobsScreen";
 // ── MainTabs: the persistent bottom-tab layout ──────────────────────────────
 import MainTabs from "../screens/MainTabs";
 import TimesheetScreen from "../screens/Timesheetscreen";
+import ContractorRatesScreen from "../screens/ContractorRatesScreen";
 
 // ─── Route param types ───────────────────────────────────────────────────────
 export type RootStackParamList = {
@@ -107,6 +106,7 @@ export type RootStackParamList = {
   CoverJobs: undefined;
   CreateJob: undefined;
   Timesheet: undefined;
+  ContractorRates: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -199,6 +199,7 @@ export default function AppNavigator() {
       <Stack.Screen name="Test" component={TestScreen} />
       <Stack.Screen name="StaffManagement" component={StaffManagement} />
       <Stack.Screen name="CoverJobs" component={CoverJobsScreen} />
+      <Stack.Screen name="ContractorRates" component={ContractorRatesScreen} />
       <Stack.Screen
         name="DeleteProfileVerification"
         component={DeleteProfileVerification}

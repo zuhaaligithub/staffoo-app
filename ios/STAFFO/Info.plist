@@ -24,18 +24,14 @@
 	<string>????</string>
 	<key>CFBundleVersion</key>
 	<string>$(CURRENT_PROJECT_VERSION)</string>
+	<key>LSApplicationQueriesSchemes</key>
+	<array>
+		<string>googlegmail</string>
+	</array>
 	<key>LSRequiresIPhoneOS</key>
-	<true/>
-	<key>NSPhotoLibraryAddUsageDescription</key>
-	<string>STAFFO needs permission to save shift reports to your device.</string>
-	<key>UIFileSharingEnabled</key>
 	<true/>
 	<key>LSSupportsOpeningDocumentsInPlace</key>
 	<true/>
-	<key>NSDocumentsFolderUsageDescription</key>
-	<string>STAFFO needs access to your Documents folder to save generated shift reports and PDFs.</string>
-	<key>NSDownloadsFolderUsageDescription</key>
-	<string>STAFFO needs access to your Downloads folder to save generated PDFs and reports.</string>
 	<key>NSAppTransportSecurity</key>
 	<dict>
 		<key>NSAllowsArbitraryLoads</key>
@@ -43,24 +39,30 @@
 		<key>NSAllowsLocalNetworking</key>
 		<true/>
 	</dict>
-	<key>LSApplicationQueriesSchemes</key>
-	<array>
-		<string>googlegmail</string>
-	</array>
 	<key>NSCameraUsageDescription</key>
-	<string>STAFFO uses the camera so you can capture photos for shift sign-in and incident reports.</string>
-	<key>NSMicrophoneUsageDescription</key>
-	<string>STAFFO uses the microphone for voice and video calls with other staff and clients.</string>
+	<string>STAFFOO uses the camera so you can capture photos for shift sign-in and incident reports.</string>
+	<key>NSDocumentsFolderUsageDescription</key>
+	<string>STAFFOO needs access to your Documents folder to save generated shift reports and PDFs.</string>
+	<key>NSDownloadsFolderUsageDescription</key>
+	<string>STAFFOO needs access to your Downloads folder to save generated PDFs and reports.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>STAFFO uses your location while the app is in use to verify shift sign-in location and show nearby jobs.</string>
+	<string>STAFFOO uses your location while the app is in use to verify that you are at the correct job site when signing in to a shift and to show nearby available jobs.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>STAFFOO uses your location to verify that you are at the correct job site when signing in to a shift and to show nearby available jobs. Location access is primarily needed while the app is in use.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>STAFFOO uses the microphone for voice and video calls with other staff and clients.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>STAFFOO needs permission to save shift reports to your device.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>STAFFO uses your photo library so you can attach images to reports and job records.</string>
+	<string>STAFFOO uses your photo library so you can attach images to reports and job records.</string>
 	<key>RCTNewArchEnabled</key>
 	<true/>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>remote-notification</string>
 	</array>
+	<key>UIFileSharingEnabled</key>
+	<true/>
 	<key>UILaunchStoryboardName</key>
 	<string>BootSplash</string>
 	<key>UIRequiredDeviceCapabilities</key>

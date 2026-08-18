@@ -1,9 +1,3 @@
-// ─────────────────────────────────────────────────────────────────────────────
-// Shared types, helpers, styles, and the StaffAssignSheet component used by
-// BOTH AvailableJobsScreen and AcceptedJobsScreen. Extracted unchanged from
-// the original StaffShifts.tsx so behaviour/visuals stay identical — this
-// file only centralises what used to be duplicated module-level code.
-// ─────────────────────────────────────────────────────────────────────────────
 import React, { useState } from "react";
 import {
   View,
@@ -14,6 +8,7 @@ import {
   Modal,
   FlatList,
   ScrollView,
+  Platform,
 } from "react-native";
 import {
   ChevronDown,
@@ -21,6 +16,7 @@ import {
   CheckCircle,
   XCircle,
   Briefcase,
+  ThumbsUp,
 } from "lucide-react-native";
 import {
   Calendar,
@@ -29,6 +25,7 @@ import {
   FileText,
   CalendarDays,
 } from "lucide-react-native";
+import LinearGradient from "react-native-linear-gradient";
 
 // ─── Design System ─────────────────────────────────────────────────────────────
 export const COLORS = {
@@ -584,6 +581,157 @@ export const StaffAssignSheet = ({
   );
 };
 
+// ─── Pending Client Confirmation Modal ─────────────────────────────────────────
+// Shown after a CONTRACTOR successfully accepts a job from the "Available
+// Jobs" accept sheet where contractor_invoice === 1 — that job still needs
+// the CLIENT to give further confirmation before it's locked in, so instead
+// of the usual celebration overlay we tell the contractor to wait. Dismissed
+// with the "Awesome, Thanks!" button (see useStaffShiftsController's
+// closePendingClientConfirmation, which also handles the deferred
+// navigation to Accepted Jobs).
+export interface PendingConfirmationModalProps {
+  visible: boolean;
+  onDismiss: () => void;
+}
+
+export const PendingConfirmationModal = ({
+  visible,
+  onDismiss,
+}: PendingConfirmationModalProps) => {
+  if (!visible) return null;
+
+  return (
+    <Modal
+      visible={visible}
+      transparent
+      animationType="fade"
+      onRequestClose={onDismiss}
+    >
+      <View style={pendingConfirmStyles.overlay}>
+        <View style={pendingConfirmStyles.card}>
+          <LinearGradient
+            colors={[COLORS.primary, "#0C7C72"]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={pendingConfirmStyles.headerBand}
+          />
+
+          <View style={pendingConfirmStyles.iconRing}>
+            <View style={pendingConfirmStyles.iconCircle}>
+              <CheckCircle size={30} color={COLORS.success} />
+            </View>
+          </View>
+
+          <View style={pendingConfirmStyles.body}>
+            <Text style={pendingConfirmStyles.title}>Success!</Text>
+            <Text style={pendingConfirmStyles.message}>
+              Please wait for the client to give further confirmation. We will
+              notify you shortly and the shift will appear on your Accepted Jobs
+              page.
+            </Text>
+
+            <TouchableOpacity
+              style={pendingConfirmStyles.button}
+              onPress={onDismiss}
+              activeOpacity={0.85}
+            >
+              <ThumbsUp size={16} color="#fff" />
+              <Text style={pendingConfirmStyles.buttonText}>
+                Awesome, Thanks!
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    </Modal>
+  );
+};
+
+const pendingConfirmStyles = StyleSheet.create({
+  overlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.65)",
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 24,
+  },
+  card: {
+    width: "100%",
+    maxWidth: 360,
+    backgroundColor: "#fff",
+    borderRadius: 24,
+    overflow: "hidden",
+    alignItems: "center",
+    paddingBottom: 24,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.25,
+    shadowRadius: 20,
+    elevation: 8,
+  },
+  headerBand: {
+    width: "100%",
+    height: 96,
+  },
+  iconRing: {
+    marginTop: -40,
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: "#fff",
+    justifyContent: "center",
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.12,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+  iconCircle: {
+    width: 68,
+    height: 68,
+    borderRadius: 34,
+    backgroundColor: "rgba(52,200,138,0.12)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  body: {
+    paddingHorizontal: 24,
+    paddingTop: 16,
+    alignItems: "center",
+  },
+  title: {
+    fontSize: 22,
+    fontWeight: "800",
+    color: "#0B1220",
+    marginBottom: 12,
+    textAlign: "center",
+  },
+  message: {
+    fontSize: 14,
+    lineHeight: 21,
+    color: "#5B6472",
+    textAlign: "center",
+    marginBottom: 22,
+  },
+  button: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    backgroundColor: COLORS.primary,
+    borderRadius: 999,
+    paddingVertical: 14,
+    paddingHorizontal: 28,
+    width: "100%",
+  },
+  buttonText: {
+    color: "#fff",
+    fontSize: 15,
+    fontWeight: "700",
+  },
+});
+
 // ─── Accept Sheet Styles ───────────────────────────────────────────────────────
 export const assignStyles = StyleSheet.create({
   overlay: {
@@ -1026,12 +1174,12 @@ export const cardStyles = StyleSheet.create({
 
 // ─── Main styles ──────────────────────────────────────────────────────────────
 export const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-    paddingTop: 40,
-    paddingHorizontal: 16,
-  },
+  // container: {
+  //   flex: 1,
+  //   backgroundColor: COLORS.background,
+  //   paddingTop: 40,
+  //   paddingHorizontal: 16,
+  // },
   scrollContainer: { flex: 1 },
   scrollContent: { paddingBottom: 100 },
   headerGradient: {
@@ -1070,6 +1218,7 @@ export const styles = StyleSheet.create({
   sectionHeader: {
     fontSize: 16,
     fontWeight: "700",
+    marginHorizontal: 16,
     marginTop: 12,
     marginBottom: 10,
     paddingHorizontal: 2,
@@ -1080,6 +1229,7 @@ export const styles = StyleSheet.create({
     backgroundColor: COLORS.card,
     borderColor: COLORS.cardBorder,
     borderRadius: 16,
+  marginHorizontal: 16,
     padding: 16,
     marginBottom: 14,
     borderWidth: 1,
@@ -1367,4 +1517,186 @@ export const styles = StyleSheet.create({
     fontWeight: "700",
     letterSpacing: 0.4,
   },
+  // ── Cover Jobs Banner ──
+  coverJobsBanner: {
+    marginTop: 25, // remove top margin
+    marginBottom: 12,
+
+    borderRadius: 0, // optional – remove rounded corners if you want edge-to-edge
+    paddingVertical: 20,
+    paddingHorizontal: 20,
+    backgroundColor: "#0B1C2C",
+    width: "auto",
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
+  },
+  coverJobsLeft: {
+    flex: 1,
+  },
+  availableRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 6,
+    paddingHorizontal: 2,
+  },
+  availableDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: "#2DD4BF",
+    marginRight: 8,
+  },
+  availableLabel: {
+    fontSize: 15,
+    fontWeight: "700",
+    letterSpacing: 1.2,
+    color: "#fff",
+    textTransform: "uppercase",
+  },
+  coverJobsTitle: {
+    fontSize: 26,
+    fontWeight: "800",
+    color: "#FFFFFF",
+    marginBottom: 4,
+  },
+  coverJobsSubtitle: {
+    fontSize: 14,
+    color: "rgba(255,255,255,0.55)",
+    fontWeight: "500",
+  },
+  container: {
+    flex: 1,
+    backgroundColor: COLORS.background,
+  },
+
+  fixedHeader: {
+    backgroundColor: COLORS.background,
+    paddingBottom: 5,
+  },
+
+  hero: {
+    paddingTop: Platform.OS === "ios" ? 5 : 26,
+    paddingBottom: 10,
+    paddingHorizontal: Platform.OS === "ios" ? 0 : 10,
+    borderBottomLeftRadius: 26,
+    borderBottomRightRadius: 26,
+    borderColor: COLORS.cardBorder,
+
+    height: Platform.OS === "ios" ? 200 : undefined,
+  },
+
+  heroInner: {
+    width: "100%",
+    paddingHorizontal: 10,
+  },
+
+  heroTopRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 8,
+  },
+
+  heroBackBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "rgba(255,255,255,0.08)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  liveBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    backgroundColor: "rgba(52,200,138,0.12)",
+    borderWidth: 1,
+    borderColor: "rgba(52,200,138,0.35)",
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 999,
+  },
+
+  liveDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: COLORS.success,
+  },
+
+  liveText: {
+    color: COLORS.success,
+    fontSize: 10,
+    fontWeight: "800",
+    letterSpacing: 0.6,
+  },
+
+
+
+  statsRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "rgba(255,255,255,0.04)",
+    borderWidth: 1,
+    borderColor: COLORS.cardBorder,
+    borderRadius: 16,
+    paddingVertical: 14,
+    paddingHorizontal: 12,
+  },
+
+  statBox: {
+    flex: 1,
+    minWidth: 0,
+    gap: 5,
+  },
+
+  statLabelRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+
+  statLabel: {
+    fontSize: 9,
+    fontWeight: "700",
+    color: COLORS.textSecondary,
+    letterSpacing: 0.6,
+  },
+
+  statValue: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: COLORS.text,
+  },
+
+  statDivider: {
+    width: 1,
+    height: 30,
+    backgroundColor: COLORS.cardBorder,
+    marginHorizontal: 8,
+  },
+  userHeaderRow: {
+  flexDirection: "row",
+  alignItems: "center",
+  marginBottom: 14,
+},
+
+userInfo: {
+  flex: 1,
+  marginLeft: 12,
+},
+
+heroTitle: {
+  fontSize: 20,
+  fontWeight: "800",
+  color: COLORS.text,
+  marginBottom: 2,
+},
+
+heroSubtitle: {
+  fontSize: 12,
+  color: COLORS.textSecondary,
+},
+
 });

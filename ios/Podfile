@@ -25,10 +25,14 @@ end
 target 'STAFFO' do
   config = use_native_modules!
 
-  # Add these three lines
-  pod 'GoogleUtilities', :modular_headers => true
+pod 'GoogleUtilities', :modular_headers => true
   pod 'RecaptchaInterop', :modular_headers => true
   pod 'AppCheckCore', :modular_headers => true
+  pod 'AppAuth', :modular_headers => true
+  pod 'GTMAppAuth', :modular_headers => true
+  pod 'GTMSessionFetcher', :modular_headers => true
+
+  pod 'OneSignalXCFramework', '>= 5.0.0', '< 6.0'
 
   use_react_native!(
     :path => config[:reactNativePath],
@@ -37,15 +41,22 @@ target 'STAFFO' do
     :hermes_enabled => true
   )
 
-  post_install do |installer|
+  target 'OneSignalNotificationServiceExtension' do
+    inherit! :search_paths
+    pod 'OneSignalXCFramework', '>= 5.0.0', '< 6.0'
+  end
+
+post_install do |installer|
     react_native_post_install(
       installer,
       config[:reactNativePath],
       :mac_catalyst_enabled => false,
     )
-  end
-end
 
-target 'OneSignalNotificationServiceExtension' do
-  pod 'OneSignalXCFramework', '>= 5.0.0', '< 6.0'
+    installer.pods_project.targets.each do |target|
+      target.build_configurations.each do |config|
+        config.build_settings['CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES'] = 'YES'
+      end
+    end
+  end
 end

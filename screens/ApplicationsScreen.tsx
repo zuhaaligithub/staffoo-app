@@ -5,14 +5,15 @@ import {
   ScrollView,
   TouchableOpacity,
   StyleSheet,
-  SafeAreaView,
   Dimensions,
   Modal,
   Platform,
   ActivityIndicator,
   Alert,
   TextInput,
+  RefreshControl,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { Picker } from "@react-native-picker/picker";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import FileViewer from "react-native-file-viewer";
@@ -175,6 +176,7 @@ const getInitials = (name?: string): string => {
 };
 
 export default function WeeklyRosterScreen({ navigation }: any) {
+  const [refreshing, setRefreshing] = useState(false);
   const [shifts, setShifts] = useState<Shift[]>([]);
   const [generatingPDF, setGeneratingPDF] = useState(false);
   const [totalHours, setTotalHours] = useState(0);
@@ -214,6 +216,15 @@ export default function WeeklyRosterScreen({ navigation }: any) {
     nd.setHours(0, 0, 0, 0);
     nd.setDate(nd.getDate() - nd.getDay() + (nd.getDay() === 0 ? -6 : 1));
     return nd;
+  };
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await fetchShifts(1); // always restart from page 1
+    } finally {
+      setRefreshing(false);
+    }
   };
 
   const [rangeStart, setRangeStart] = useState<Date>(() =>
@@ -899,7 +910,7 @@ export default function WeeklyRosterScreen({ navigation }: any) {
     );
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={["top"]}>
       {/* ── FIXED TOP SECTION: hero, search, date navigator, section header ── */}
       <View style={styles.fixedHeader}>
         {/* ── Hero header ── */}
@@ -909,65 +920,57 @@ export default function WeeklyRosterScreen({ navigation }: any) {
           end={{ x: 1, y: 1 }}
           style={styles.hero}
         >
-          <View style={styles.heroTopRow}>
-            <TouchableOpacity
-              style={styles.heroBackBtn}
-              onPress={() => navigation.navigate("Profile")}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-            >
-              <ChevronLeft size={20} color="#fff" />
-            </TouchableOpacity>
-            <View style={styles.liveBadge}>
-              <View style={styles.liveDot} />
-              <Text style={styles.liveText}>LIVE</Text>
-            </View>
-          </View>
+          <View style={styles.heroInner}>
+            <View style={styles.heroTopRow}>
+              <TouchableOpacity
+                style={styles.heroBackBtn}
+                onPress={() => navigation.navigate("Profile")}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                <ChevronLeft size={20} color="#fff" />
+              </TouchableOpacity>
 
-          <Text style={styles.heroTitle}>Job Applications and Shifts</Text>
-          <Text style={styles.heroSubtitle}>
-            Viewing shifts for the selected date range
-          </Text>
-
-          <View style={styles.statsRow}>
-            <View style={styles.statBox}>
-              <View style={styles.statLabelRow}>
-                <CalendarDays size={12} color={COLORS.textSecondary} />
-                <Text style={styles.statLabel}>DATE RANGE</Text>
+              <View style={styles.liveBadge}>
+                <View style={styles.liveDot} />
+                <Text style={styles.liveText}>LIVE</Text>
               </View>
-              <Text style={styles.statValue} numberOfLines={1}>
-                {rangeLabel}
-              </Text>
             </View>
 
-            <View style={styles.statDivider} />
+            <Text style={styles.heroTitle}>Job Applications and Shifts</Text>
 
-            <View style={styles.statBox}>
-              <View style={styles.statLabelRow}>
-                <Layers size={12} color={COLORS.textSecondary} />
-                <Text style={styles.statLabel}>TOTAL SHIFTS</Text>
+            <Text style={styles.heroSubtitle}>
+              Viewing shifts for the selected date range
+            </Text>
+
+            <View style={styles.statsRow}>
+              <View style={styles.statBox}>
+                <View style={styles.statLabelRow}>
+                  <CalendarDays size={12} color={COLORS.textSecondary} />
+
+                  <Text style={styles.statLabel}>DATE RANGE</Text>
+                </View>
+
+                <Text style={styles.statValue} numberOfLines={2}>
+                  {rangeLabel}
+                </Text>
               </View>
-              {/* Fixed: was shifts.length (only what's loaded so far).
-                  totalJobs comes straight from pagination.total, so this
-                  now always reflects the real count across every page. */}
-              <Text style={styles.statValue}>
-                {totalJobs || filteredShifts.length}
-              </Text>
+
+              <View style={styles.statDivider} />
+
+              <View style={styles.statBox}>
+                <View style={styles.statLabelRow}>
+                  <Layers size={12} color={COLORS.textSecondary} />
+
+                  <Text style={styles.statLabel}>TOTAL SHIFTS</Text>
+                </View>
+
+                <Text style={styles.statValue}>
+                  {totalJobs || filteredShifts.length}
+                </Text>
+              </View>
             </View>
-
-            {/* <View style={styles.statDivider} />
-
-            <View style={styles.statBox}>
-              <View style={styles.statLabelRow}>
-                <FileText size={12} color={COLORS.textSecondary} />
-                <Text style={styles.statLabel}>PAGE</Text>
-              </View>
-              <Text style={styles.statValue}>
-                {page} of {lastPage}
-              </Text>
-            </View> */}
           </View>
         </LinearGradient>
-
         {/* ── Search ── */}
         <View style={styles.searchContainer}>
           <View style={styles.searchInputWrap}>
@@ -1037,7 +1040,19 @@ export default function WeeklyRosterScreen({ navigation }: any) {
       </View>
 
       {/* ── SCROLLABLE SHIFTS LIST ── */}
-      <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        style={styles.scroll}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={COLORS.primary} // iOS spinner color
+            colors={[COLORS.primary]} // Android spinner color
+            progressBackgroundColor="#fff"
+          />
+        }
+      >
         {loading ? (
           <View style={styles.center}>
             <BrandLoader size={64} />
@@ -1250,6 +1265,7 @@ export default function WeeklyRosterScreen({ navigation }: any) {
             {showStartPicker && (
               <DateTimePicker
                 value={tempStart}
+                 textColor="#FFFFFF"
                 mode="date"
                 display={Platform.OS === "ios" ? "spinner" : "default"}
                 onChange={(e, date) => {
@@ -1281,6 +1297,7 @@ export default function WeeklyRosterScreen({ navigation }: any) {
             {showEndPicker && (
               <DateTimePicker
                 value={tempEnd}
+                 textColor="#FFFFFF"
                 mode="date"
                 minimumDate={tempStart}
                 display={Platform.OS === "ios" ? "spinner" : "default"}
@@ -1710,19 +1727,25 @@ const styles = StyleSheet.create({
   // section header. Only the shifts list below it scrolls.
   fixedHeader: {
     backgroundColor: COLORS.background,
+    paddingBottom: 5,
   },
   scroll: { flex: 1 },
 
-  // ── Hero header ──
   hero: {
-    paddingTop: Platform.OS === "ios" ? 14 : 26,
+    paddingTop: Platform.OS === "ios" ? 5 : 26,
     paddingBottom: 10,
-    paddingHorizontal: 20,
+    paddingHorizontal: Platform.OS === "ios" ? 0 : 10,
     borderBottomLeftRadius: 26,
     borderBottomRightRadius: 26,
-    // borderBottomWidth: 1,
     borderColor: COLORS.cardBorder,
+     height: Platform.OS === "ios" ? 200 : undefined,
   },
+  heroInner: {
+    width: "100%",
+    paddingHorizontal: 10,
+    // paddingBottom: 8,
+  },
+
   heroTopRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -1780,8 +1803,13 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     paddingVertical: 14,
     paddingHorizontal: 12,
+    paddingBottom: 12,
   },
-  statBox: { flex: 1, gap: 4 },
+  statBox: {
+    flex: 1,
+    minWidth: 0,
+    gap: 5,
+  },
   statLabelRow: { flexDirection: "row", alignItems: "center", gap: 4 },
   statLabel: {
     fontSize: 9,
@@ -1793,6 +1821,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: "700",
     color: COLORS.text,
+    flexShrink: 1,
   },
   statDivider: {
     width: 1,

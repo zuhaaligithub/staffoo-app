@@ -1,3 +1,5 @@
+
+
 import React, {
   useEffect,
   useState,
@@ -51,8 +53,8 @@ import { launchImageLibrary } from "react-native-image-picker";
 import axios from "./axiosInterceptor";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { BASE_URL, uploadFile } from "../services/authApi";
-const Base_Url = "https://apis-staging.staffoo.com.au";
-// const Base_Url = "https://apis.staffoo.com.au";
+// const Base_Url = "https://apis-staging.staffoo.com.au";
+const Base_Url = "https://apis.staffoo.com.au";
 const { width } = Dimensions.get("window");
 
 const COLORS = {
@@ -74,8 +76,8 @@ const COLORS = {
 };
 
 const GOOGLE_API_KEY = "AIzaSyCS-DB39Kk-Z25C5GWymVGshXIALbjXPGY";
-const FILE_BASE_URL = "https://apis-staging.staffoo.com.au/staff_documents/";
-// const FILE_BASE_URL = "https://apis.staffoo.com.au/staff_documents/";
+// const FILE_BASE_URL = "https://apis-staging.staffoo.com.au/staff_documents/";
+const FILE_BASE_URL = "https://apis.staffoo.com.au/staff_documents/";
 const Api_Url = "https://apis.thescouts.com.au/api";
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
@@ -166,6 +168,25 @@ const isAllowedDocument = (docName?: string): boolean => {
     const a = allowed.replace(/[\s_]+/g, " ").trim();
     return key === a || key.includes(a) || a.includes(key);
   });
+};
+
+const THEME = {
+  background: "#030508",
+
+  accent: "#366bf0",
+  teal: "#89E7D0",
+  textLight: "#FFFFFF",
+  textMuted: "#6C7A89",
+  border: "rgba(255, 255, 255, 0.1)",
+
+  tealDark: "#0077b6",
+  bgDark: "#141929",
+  cardBg: "#1e2538",
+
+  textMain: "#ffffff",
+
+  error: "#ff6b6b",
+  success: "#2ec4b6",
 };
 
 interface StaffMember {
@@ -456,6 +477,13 @@ export default function StaffManagement({ navigation }: Props) {
     null,
   );
 
+  // NOTE: docModalVisible no longer drives a second native <Modal>. It now
+  // toggles an in-place overlay rendered INSIDE the Edit Staff modal (see
+  // JSX below). Presenting two native Modals at once is what caused the
+  // iOS-only freeze and "Add Document" silently failing to open — iOS
+  // native modal presentation doesn't reliably support a second modal
+  // stacking on top of one that's already up. Only one native <Modal> is
+  // ever visible at a time now.
   const [docModalVisible, setDocModalVisible] = useState(false);
   const [selectedDocType, setSelectedDocType] = useState<{
     label: string;
@@ -945,12 +973,22 @@ export default function StaffManagement({ navigation }: Props) {
     setIsVerified(false);
   };
 
+  // Single place that closes the document editor and clears its form.
+  // Using this everywhere (instead of separately calling
+  // setDocModalVisible(false) + resetDocForm()) guarantees the overlay
+  // and its state can never get out of sync with each other.
+  const closeDocModal = () => {
+    setDocModalVisible(false);
+    resetDocForm();
+  };
+
   const openDocModal = (
     docType: { label: string; value: string; category: string },
     existingDoc?: StaffDocument,
   ) => {
     resetDocForm();
     setSelectedDocType(docType);
+
     const isVerifiable = isVerifiableDocType(docType);
     if (existingDoc && existingDoc.id !== -1) {
       setDocumentNumber(existingDoc.document_no || "");
@@ -1255,8 +1293,7 @@ export default function StaffManagement({ navigation }: Props) {
         position: "top",
       });
 
-      setDocModalVisible(false);
-      resetDocForm();
+      closeDocModal();
 
       await refreshStaffListAndStatus();
     } catch (err) {
@@ -1405,62 +1442,70 @@ export default function StaffManagement({ navigation }: Props) {
     const ext = item.file?.split(".").pop()?.toUpperCase() || "";
     return (
       <LinearGradient
-        key={item.id}
-        colors={["#1e2538", "#141929"]}
-        style={docStyles.cardGradient}
+        colors={["#171d30", "#0f1322"]}
+        style={[
+          styles.cardGradientWrapper,
+          {
+            borderStyle: "dashed",
+            borderWidth: 1,
+            borderColor: "rgba(255,255,255,0.08)",
+          },
+        ]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
       >
-        <View style={docStyles.cardTopRow}>
-          <View style={docStyles.docIconBox}>
-            <FileText size={22} color={COLORS.primary} />
-          </View>
-          <View style={{ flex: 1, marginHorizontal: 12 }}>
-            <Text style={docStyles.cardDocName} numberOfLines={1}>
-              {getDisplayName(item.document_name)}
-            </Text>
-            <View style={docStyles.cardSubRow}>
-              {!!ext && (
-                <View style={docStyles.extBadge}>
-                  <Text style={docStyles.extBadgeText}>{ext}</Text>
-                </View>
-              )}
-              <ExpiryBadge status={status} />
+        <View style={styles.cardInnerContainer}>
+          <View style={docStyles.cardTopRow}>
+            <View style={docStyles.docIconBox}>
+              <FileText size={22} color={COLORS.primary} />
             </View>
+            <View style={{ flex: 1, marginHorizontal: 12 }}>
+              <Text style={docStyles.cardDocName} numberOfLines={1}>
+                {getDisplayName(item.document_name)}
+              </Text>
+              <View style={docStyles.cardSubRow}>
+                {!!ext && (
+                  <View style={docStyles.extBadge}>
+                    <Text style={docStyles.extBadgeText}>{ext}</Text>
+                  </View>
+                )}
+                <ExpiryBadge status={status} />
+              </View>
+            </View>
+            <TouchableOpacity
+              style={docStyles.editDocBtn}
+              onPress={() => openDocModal(docTypeDef, item)}
+            >
+              <Pencil size={15} color={COLORS.primary} />
+            </TouchableOpacity>
+          </View>
+          <View style={docStyles.divider} />
+          <View style={docStyles.infoRow}>
+            <Text style={docStyles.infoLabel}>Document Number</Text>
+            <Text style={docStyles.infoValue}>{item.document_no || "—"}</Text>
+          </View>
+          <View style={docStyles.infoRow}>
+            <Text style={docStyles.infoLabel}>Expiration Date</Text>
+            <Text
+              style={[
+                docStyles.infoValue,
+                status === "expired" && { color: "#ff6b6b" },
+                status === "expiring_soon" && { color: "#f0a500" },
+              ]}
+            >
+              {formatAUDate(item.document_expiry)}
+            </Text>
           </View>
           <TouchableOpacity
-            style={docStyles.editDocBtn}
-            onPress={() => openDocModal(docTypeDef, item)}
+            style={docStyles.viewBtn}
+            onPress={() => openFile(item.file)}
           >
-            <Pencil size={15} color={COLORS.primary} />
+            <Eye size={17} color="#fff" style={{ marginRight: 8 }} />
+            <Text style={docStyles.viewBtnText}>
+              {isImg ? "VIEW IMAGE" : "VIEW / DOWNLOAD"}
+            </Text>
           </TouchableOpacity>
         </View>
-        <View style={docStyles.divider} />
-        <View style={docStyles.infoRow}>
-          <Text style={docStyles.infoLabel}>Document Number</Text>
-          <Text style={docStyles.infoValue}>{item.document_no || "—"}</Text>
-        </View>
-        <View style={docStyles.infoRow}>
-          <Text style={docStyles.infoLabel}>Expiration Date</Text>
-          <Text
-            style={[
-              docStyles.infoValue,
-              status === "expired" && { color: "#ff6b6b" },
-              status === "expiring_soon" && { color: "#f0a500" },
-            ]}
-          >
-            {formatAUDate(item.document_expiry)}
-          </Text>
-        </View>
-        <TouchableOpacity
-          style={docStyles.viewBtn}
-          onPress={() => openFile(item.file)}
-        >
-          <Eye size={17} color="#fff" style={{ marginRight: 8 }} />
-          <Text style={docStyles.viewBtnText}>
-            {isImg ? "VIEW IMAGE" : "VIEW / DOWNLOAD"}
-          </Text>
-        </TouchableOpacity>
       </LinearGradient>
     );
   };
@@ -1470,10 +1515,9 @@ export default function StaffManagement({ navigation }: Props) {
     docTypeDef: { label: string; value: string; category: string },
   ) => (
     <LinearGradient
-      key={`empty-${item.document_name}`}
       colors={["#171d30", "#0f1322"]}
       style={[
-        docStyles.cardGradient,
+        styles.cardGradientWrapper,
         {
           borderStyle: "dashed",
           borderWidth: 1,
@@ -1483,35 +1527,37 @@ export default function StaffManagement({ navigation }: Props) {
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}
     >
-      <View style={docStyles.cardTopRow}>
-        <View
-          style={[
-            docStyles.docIconBox,
-            { backgroundColor: "rgba(255,255,255,0.03)" },
-          ]}
+      <View style={styles.cardInnerContainer}>
+        <View style={docStyles.cardTopRow}>
+          <View
+            style={[
+              docStyles.docIconBox,
+              { backgroundColor: "rgba(255,255,255,0.03)" },
+            ]}
+          >
+            <FileText size={22} color={COLORS.textMuted} />
+          </View>
+          <View style={{ flex: 1, marginHorizontal: 12 }}>
+            <Text style={[docStyles.cardDocName, { color: COLORS.textMuted }]}>
+              {getDisplayName(item.document_name)}
+            </Text>
+            <Text style={{ color: "#aaa", fontSize: 11, marginTop: 2 }}>
+              Add Required Document
+            </Text>
+          </View>
+        </View>
+        <TouchableOpacity
+          style={docStyles.addCardButton}
+          onPress={() => openDocModal(docTypeDef)}
         >
-          <FileText size={22} color={COLORS.textMuted} />
-        </View>
-        <View style={{ flex: 1, marginHorizontal: 12 }}>
-          <Text style={[docStyles.cardDocName, { color: COLORS.textMuted }]}>
-            {getDisplayName(item.document_name)}
-          </Text>
-          <Text style={{ color: "#aaa", fontSize: 11, marginTop: 2 }}>
-            Add Required Document
-          </Text>
-        </View>
+          <PlusCircle
+            size={16}
+            color={COLORS.primary}
+            style={{ marginRight: 6 }}
+          />
+          <Text style={docStyles.addCardButtonText}>ADD DOCUMENT</Text>
+        </TouchableOpacity>
       </View>
-      <TouchableOpacity
-        style={docStyles.addCardButton}
-        onPress={() => openDocModal(docTypeDef)}
-      >
-        <PlusCircle
-          size={16}
-          color={COLORS.primary}
-          style={{ marginRight: 6 }}
-        />
-        <Text style={docStyles.addCardButtonText}>ADD DOCUMENT</Text>
-      </TouchableOpacity>
     </LinearGradient>
   );
 
@@ -1531,16 +1577,26 @@ export default function StaffManagement({ navigation }: Props) {
           No documents found for this staff member.
         </Text>
       ) : (
-        mergedDocList.map((doc) => {
+        mergedDocList.map((doc, index) => {
           const docTypeDef = doc._reqDef || {
             label: doc.document_name,
             value: doc.document_name,
             category: doc.document_category,
           };
           const isFilled = !!(doc.file && doc.file.trim().length > 0);
-          return isFilled
-            ? renderFilledCard(doc, docTypeDef)
-            : renderEmptyCard(doc, docTypeDef);
+
+          const uniqueKey =
+            doc.id && doc.id !== -1
+              ? doc.id.toString()
+              : `doc-${index}-${doc.document_name}`;
+
+          return (
+            <React.Fragment key={uniqueKey}>
+              {isFilled
+                ? renderFilledCard(doc, docTypeDef)
+                : renderEmptyCard(doc, docTypeDef)}
+            </React.Fragment>
+          );
         })
       )}
     </ScrollView>
@@ -1920,12 +1976,20 @@ export default function StaffManagement({ navigation }: Props) {
         </View>
       </Modal>
 
-      {/* EDIT MODAL */}
+      {/* EDIT MODAL — the document editor now renders INSIDE this same
+          Modal as an absolute-fill overlay (see docModalVisible block
+          below) instead of a second native <Modal>. This is the fix for
+          the iOS-only freeze / "Add Document" not opening: iOS does not
+          reliably support presenting a second native modal on top of one
+          that's already up, so we never do that anymore. */}
       <Modal
         visible={showEditModal}
         transparent
         animationType="slide"
-        onRequestClose={() => setShowEditModal(false)}
+        onRequestClose={() => {
+          setShowEditModal(false);
+          closeDocModal();
+        }}
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalCard}>
@@ -1965,7 +2029,10 @@ export default function StaffManagement({ navigation }: Props) {
                 </TouchableOpacity>
               </View>
               <TouchableOpacity
-                onPress={() => setShowEditModal(false)}
+                onPress={() => {
+                  setShowEditModal(false);
+                  closeDocModal();
+                }}
                 style={styles.closeBtn}
               >
                 <X size={20} color={COLORS.textSecondary} />
@@ -1975,7 +2042,10 @@ export default function StaffManagement({ navigation }: Props) {
             <View style={styles.footer}>
               <TouchableOpacity
                 style={styles.cancelButton}
-                onPress={() => setShowEditModal(false)}
+                onPress={() => {
+                  setShowEditModal(false);
+                  closeDocModal();
+                }}
               >
                 <Text style={styles.cancelText}>
                   {activeModalTab !== "personal" ? "Close" : "Cancel"}
@@ -1998,279 +2068,274 @@ export default function StaffManagement({ navigation }: Props) {
                 </TouchableOpacity>
               )}
             </View>
-          </View>
-        </View>
-      </Modal>
 
-      {/* DOCUMENT UPLOAD MODAL */}
-      <Modal
-        visible={docModalVisible}
-        transparent
-        animationType="slide"
-        onRequestClose={() => {
-          setDocModalVisible(false);
-          resetDocForm();
-        }}
-      >
-        <View style={docStyles.modalOverlay}>
-          <View style={docStyles.modalContent}>
-            <View style={docStyles.modalHeader}>
-              <Text style={docStyles.modalTitle}>
-                {getDisplayName(
-                  selectedDocType?.label || selectedDocType?.value,
-                )}
-              </Text>
-              <TouchableOpacity
-                onPress={() => {
-                  setDocModalVisible(false);
-                  resetDocForm();
-                }}
-              >
-                <X size={24} color="#fff" />
-              </TouchableOpacity>
-            </View>
-            <ScrollView
-              style={docStyles.modalBody}
-              keyboardShouldPersistTaps="handled"
-            >
-              <View style={docStyles.imageUploadArea}>
-                {renderModalPreview()}
-                <TouchableOpacity
-                  style={docStyles.uploadTriggerButton}
-                  onPress={handleUpload}
-                  disabled={uploading}
-                >
-                  {uploading ? (
-                    <ActivityIndicator color="#fff" />
-                  ) : (
-                    <>
-                      <CloudUpload
-                        size={22}
-                        color="#fff"
-                        style={{ marginRight: 8 }}
-                      />
-                      <Text style={docStyles.uploadTriggerText}>
-                        {selectedFile || uploadedFilePath
-                          ? "REPLACE FILE"
-                          : "UPLOAD FILE (IMAGE / PDF / DOC) *"}
-                      </Text>
-                    </>
-                  )}
-                </TouchableOpacity>
-                {fileError ? (
-                  <Text style={docStyles.errorText}>{fileError}</Text>
-                ) : null}
-              </View>
-
-              <Text style={docStyles.fieldLabel}>DOCUMENT TYPE</Text>
-              <View style={docStyles.dropdownSelector}>
-                <Text style={docStyles.dropdownText}>
-                  {selectedDocType
-                    ? getDisplayName(
-                        selectedDocType.label || selectedDocType.value,
-                      )
-                    : ""}
-                </Text>
-              </View>
-
-              <Text style={[docStyles.fieldLabel, { marginTop: 18 }]}>
-                DOCUMENT NUMBER *
-              </Text>
-              {needsVerification ? (
-                <View style={{ flexDirection: "row" }}>
-                  <TextInput
-                    style={[
-                      docStyles.inputBox,
-                      {
-                        flex: 1,
-                        borderTopRightRadius: 0,
-                        borderBottomRightRadius: 0,
-                      },
-                    ]}
-                    placeholder="Enter document number"
-                    placeholderTextColor={COLORS.textMuted}
-                    value={documentNumber}
-                    maxLength={DOC_NO_MAX}
-                    autoCapitalize="characters"
-                    onChangeText={(t) => {
-                      const f = t.toUpperCase();
-                      setDocumentNumber(f);
-                      if (f.trim()) setDocNumberError("");
-                      setIsVerified(false);
-                      setExpirationDate(null);
-                      setExpiryError("");
-                    }}
-                  />
-                  <TouchableOpacity
-                    style={docStyles.verifyButton}
-                    disabled={verifying}
-                    onPress={handleVerifyDocument}
-                  >
-                    {verifying ? (
-                      <ActivityIndicator color={COLORS.primary} />
-                    ) : (
-                      <Text style={docStyles.verifyButtonText}>Verify</Text>
+            {/* ── Document editor overlay — replaces the old standalone
+                <Modal visible={docModalVisible}>. Rendered in-place inside
+                the Edit Staff modal so only ONE native Modal is ever
+                presented at a time. This fixes the iOS-only freeze and
+                "Add Document" silently failing to open. ── */}
+            {docModalVisible && (
+              <View style={docStyles.docOverlay}>
+                <View style={docStyles.modalHeader}>
+                  <Text style={docStyles.modalTitle}>
+                    {getDisplayName(
+                      selectedDocType?.label || selectedDocType?.value,
                     )}
+                  </Text>
+                  <TouchableOpacity onPress={closeDocModal}>
+                    <X size={24} color="#fff" />
                   </TouchableOpacity>
                 </View>
-              ) : (
-                <TextInput
-                  style={docStyles.inputBox}
-                  placeholder="Enter document number"
-                  placeholderTextColor={COLORS.textMuted}
-                  value={documentNumber}
-                  maxLength={DOC_NO_MAX}
-                  autoCapitalize="characters"
-                  onChangeText={(t) => {
-                    setDocumentNumber(t.toUpperCase());
-                    if (t.trim()) setDocNumberError("");
-                  }}
-                />
-              )}
-              {docNumberError ? (
-                <Text style={docStyles.errorText}>{docNumberError}</Text>
-              ) : null}
-              {needsVerification && !isVerified && (
-                <Text style={docStyles.inputHelpText}>
-                  Tap "Verify" to validate this document and auto-fill its
-                  expiry date.
-                </Text>
-              )}
 
-              <Text style={[docStyles.fieldLabel, { marginTop: 18 }]}>
-                EXPIRATION DATE *
-              </Text>
-              <TouchableOpacity
-                style={[
-                  docStyles.dateButton,
-                  isExpiryLocked && docStyles.dateButtonDisabled,
-                ]}
-                activeOpacity={isExpiryLocked ? 1 : 0.8}
-                disabled={isExpiryLocked}
-                onPress={() => {
-                  if (!isExpiryLocked)
-                    setShowInlineCalendar(!showInlineCalendar);
-                }}
-              >
-                <Text
-                  style={[
-                    docStyles.dateText,
-                    { color: expirationDate ? "#fff" : COLORS.textMuted },
-                  ]}
+                <ScrollView
+                  style={docStyles.modalBody}
+                  keyboardShouldPersistTaps="handled"
                 >
-                  {expirationDate
-                    ? formatAUDate(expirationDate)
-                    : needsVerification
-                    ? "Verify document to auto-fill expiry date"
-                    : "Tap to select expiry date"}
-                </Text>
-                {isExpiryLocked ? (
-                  <Lock size={16} color={COLORS.textMuted} />
-                ) : (
-                  <CalendarIcon size={20} color={COLORS.primary} />
-                )}
-              </TouchableOpacity>
-              {isExpiryLocked && (
-                <Text style={docStyles.inputHelpText}>
-                  Auto-filled from verification — cannot be edited manually.
-                </Text>
-              )}
-              {expiryError ? (
-                <Text style={docStyles.errorText}>{expiryError}</Text>
-              ) : null}
+                  <View style={docStyles.imageUploadArea}>
+                    {renderModalPreview()}
+                    <TouchableOpacity
+                      style={docStyles.uploadTriggerButton}
+                      onPress={handleUpload}
+                      disabled={uploading}
+                    >
+                      {uploading ? (
+                        <ActivityIndicator color="#fff" />
+                      ) : (
+                        <>
+                          <CloudUpload
+                            size={22}
+                            color="#fff"
+                            style={{ marginRight: 8 }}
+                          />
+                          <Text style={docStyles.uploadTriggerText}>
+                            {selectedFile || uploadedFilePath
+                              ? "REPLACE FILE"
+                              : "UPLOAD FILE (IMAGE / PDF / DOC) *"}
+                          </Text>
+                        </>
+                      )}
+                    </TouchableOpacity>
+                    {fileError ? (
+                      <Text style={docStyles.errorText}>{fileError}</Text>
+                    ) : null}
+                  </View>
 
-              {showInlineCalendar && !isExpiryLocked && (
-                <View style={docStyles.inlineCalendar}>
-                  <View style={docStyles.calendarHeaderRow}>
-                    <Text style={docStyles.calendarMonthHeading}>
-                      {currentCalendarMonth
-                        .toLocaleString("default", {
-                          month: "long",
-                          year: "numeric",
-                        })
-                        .toUpperCase()}
+                  <Text style={docStyles.fieldLabel}>DOCUMENT TYPE</Text>
+                  <View style={docStyles.dropdownSelector}>
+                    <Text style={docStyles.dropdownText}>
+                      {selectedDocType
+                        ? getDisplayName(
+                            selectedDocType.label || selectedDocType.value,
+                          )
+                        : ""}
                     </Text>
-                    <View style={{ flexDirection: "row", gap: 12 }}>
+                  </View>
+
+                  <Text style={[docStyles.fieldLabel, { marginTop: 18 }]}>
+                    DOCUMENT NUMBER *
+                  </Text>
+                  {needsVerification ? (
+                    <View style={{ flexDirection: "row" }}>
+                      <TextInput
+                        style={[
+                          docStyles.inputBox,
+                          {
+                            flex: 1,
+                            borderTopRightRadius: 0,
+                            borderBottomRightRadius: 0,
+                          },
+                        ]}
+                        placeholder="Enter document number"
+                        placeholderTextColor={COLORS.textMuted}
+                        value={documentNumber}
+                        maxLength={DOC_NO_MAX}
+                        autoCapitalize="characters"
+                        onChangeText={(t) => {
+                          const f = t.toUpperCase();
+                          setDocumentNumber(f);
+                          if (f.trim()) setDocNumberError("");
+                          setIsVerified(false);
+                          setExpirationDate(null);
+                          setExpiryError("");
+                        }}
+                      />
                       <TouchableOpacity
-                        onPress={() => changeMonth("prev")}
-                        style={docStyles.monthArrow}
+                        style={docStyles.verifyButton}
+                        disabled={verifying}
+                        onPress={handleVerifyDocument}
                       >
-                        <ChevronLeft size={20} color="#111" />
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        onPress={() => changeMonth("next")}
-                        style={docStyles.monthArrow}
-                      >
-                        <ChevronRight size={20} color="#111" />
+                        {verifying ? (
+                          <ActivityIndicator color={COLORS.primary} />
+                        ) : (
+                          <Text style={docStyles.verifyButtonText}>Verify</Text>
+                        )}
                       </TouchableOpacity>
                     </View>
-                  </View>
-                  <View style={docStyles.weekDaysRow}>
-                    {["SU", "MO", "TU", "WE", "TH", "FR", "SA"].map((d, i) => (
-                      <Text key={i} style={docStyles.weekDayLabel}>
-                        {d}
-                      </Text>
-                    ))}
-                  </View>
-                  <View style={docStyles.daysGrid}>
-                    {calendarGrid.map((date, idx) => {
-                      if (!date)
-                        return <View key={idx} style={docStyles.dayCell} />;
-                      const today = new Date();
-                      today.setHours(0, 0, 0, 0);
-                      const target = new Date(date);
-                      target.setHours(0, 0, 0, 0);
-                      const isPast = target < today;
-                      const isSelected =
-                        expirationDate &&
-                        date.toDateString() === expirationDate.toDateString();
-                      return (
-                        <TouchableOpacity
-                          key={idx}
-                          disabled={isPast}
-                          style={[
-                            docStyles.dayCell,
-                            isSelected && docStyles.dayCellSelected,
-                            isPast && docStyles.dayCellDisabled,
-                          ]}
-                          onPress={() => {
-                            if (isPast) return;
-                            setExpirationDate(date);
-                            setExpiryError("");
-                            setShowInlineCalendar(false);
-                          }}
-                        >
-                          <Text
-                            style={[
-                              docStyles.dayText,
-                              isSelected && docStyles.dayTextSelected,
-                              isPast && docStyles.dayTextDisabled,
-                            ]}
+                  ) : (
+                    <TextInput
+                      style={docStyles.inputBox}
+                      placeholder="Enter document number"
+                      placeholderTextColor={COLORS.textMuted}
+                      value={documentNumber}
+                      maxLength={DOC_NO_MAX}
+                      autoCapitalize="characters"
+                      onChangeText={(t) => {
+                        setDocumentNumber(t.toUpperCase());
+                        if (t.trim()) setDocNumberError("");
+                      }}
+                    />
+                  )}
+                  {docNumberError ? (
+                    <Text style={docStyles.errorText}>{docNumberError}</Text>
+                  ) : null}
+                  {needsVerification && !isVerified && (
+                    <Text style={docStyles.inputHelpText}>
+                      Tap "Verify" to validate this document and auto-fill its
+                      expiry date.
+                    </Text>
+                  )}
+
+                  <Text style={[docStyles.fieldLabel, { marginTop: 18 }]}>
+                    EXPIRATION DATE *
+                  </Text>
+                  <TouchableOpacity
+                    style={[
+                      docStyles.dateButton,
+                      isExpiryLocked && docStyles.dateButtonDisabled,
+                    ]}
+                    activeOpacity={isExpiryLocked ? 1 : 0.8}
+                    disabled={isExpiryLocked}
+                    onPress={() => {
+                      if (!isExpiryLocked)
+                        setShowInlineCalendar(!showInlineCalendar);
+                    }}
+                  >
+                    <Text
+                      style={[
+                        docStyles.dateText,
+                        { color: expirationDate ? "#fff" : COLORS.textMuted },
+                      ]}
+                    >
+                      {expirationDate
+                        ? formatAUDate(expirationDate)
+                        : needsVerification
+                        ? "Verify document to auto-fill expiry date"
+                        : "Tap to select expiry date"}
+                    </Text>
+                    {isExpiryLocked ? (
+                      <Lock size={16} color={COLORS.textMuted} />
+                    ) : (
+                      <CalendarIcon size={20} color={COLORS.primary} />
+                    )}
+                  </TouchableOpacity>
+                  {isExpiryLocked && (
+                    <Text style={docStyles.inputHelpText}>
+                      Auto-filled from verification — cannot be edited manually.
+                    </Text>
+                  )}
+                  {expiryError ? (
+                    <Text style={docStyles.errorText}>{expiryError}</Text>
+                  ) : null}
+
+                  {showInlineCalendar && !isExpiryLocked && (
+                    <View style={docStyles.inlineCalendar}>
+                      <View style={docStyles.calendarHeaderRow}>
+                        <Text style={docStyles.calendarMonthHeading}>
+                          {currentCalendarMonth
+                            .toLocaleString("default", {
+                              month: "long",
+                              year: "numeric",
+                            })
+                            .toUpperCase()}
+                        </Text>
+                        <View style={{ flexDirection: "row", gap: 12 }}>
+                          <TouchableOpacity
+                            onPress={() => changeMonth("prev")}
+                            style={docStyles.monthArrow}
                           >
-                            {date.getDate()}
-                          </Text>
-                        </TouchableOpacity>
-                      );
-                    })}
-                  </View>
-                </View>
-              )}
-              <View style={{ height: 30 }} />
-            </ScrollView>
-            <TouchableOpacity
-              style={docStyles.saveButton}
-              onPress={handleSaveDoc}
-              disabled={saving}
-            >
-              {saving ? (
-                <ActivityIndicator color="#fff" />
-              ) : (
-                <Text style={docStyles.saveButtonText}>SAVE DOCUMENT</Text>
-              )}
-            </TouchableOpacity>
+                            <ChevronLeft size={20} color="#111" />
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            onPress={() => changeMonth("next")}
+                            style={docStyles.monthArrow}
+                          >
+                            <ChevronRight size={20} color="#111" />
+                          </TouchableOpacity>
+                        </View>
+                      </View>
+                      <View style={docStyles.weekDaysRow}>
+                        {["SU", "MO", "TU", "WE", "TH", "FR", "SA"].map(
+                          (d, i) => (
+                            <Text key={i} style={docStyles.weekDayLabel}>
+                              {d}
+                            </Text>
+                          ),
+                        )}
+                      </View>
+                      <View style={docStyles.daysGrid}>
+                        {calendarGrid.map((date, idx) => {
+                          if (!date)
+                            return <View key={idx} style={docStyles.dayCell} />;
+                          const today = new Date();
+                          today.setHours(0, 0, 0, 0);
+                          const target = new Date(date);
+                          target.setHours(0, 0, 0, 0);
+                          const isPast = target < today;
+                          const isSelected =
+                            expirationDate &&
+                            date.toDateString() ===
+                              expirationDate.toDateString();
+                          return (
+                            <TouchableOpacity
+                              key={idx}
+                              disabled={isPast}
+                              style={[
+                                docStyles.dayCell,
+                                isSelected && docStyles.dayCellSelected,
+                                isPast && docStyles.dayCellDisabled,
+                              ]}
+                              onPress={() => {
+                                if (isPast) return;
+                                setExpirationDate(date);
+                                setExpiryError("");
+                                setShowInlineCalendar(false);
+                              }}
+                            >
+                              <Text
+                                style={[
+                                  docStyles.dayText,
+                                  isSelected && docStyles.dayTextSelected,
+                                  isPast && docStyles.dayTextDisabled,
+                                ]}
+                              >
+                                {date.getDate()}
+                              </Text>
+                            </TouchableOpacity>
+                          );
+                        })}
+                      </View>
+                    </View>
+                  )}
+                  <View style={{ height: 30 }} />
+                </ScrollView>
+
+                <TouchableOpacity
+                  style={docStyles.saveButton}
+                  onPress={handleSaveDoc}
+                  disabled={saving}
+                >
+                  {saving ? (
+                    <ActivityIndicator color="#fff" />
+                  ) : (
+                    <Text style={docStyles.saveButtonText}>SAVE DOCUMENT</Text>
+                  )}
+                </TouchableOpacity>
+
+                <Toast />
+              </View>
+            )}
           </View>
         </View>
-        <Toast />
       </Modal>
 
       <Toast
@@ -2466,6 +2531,18 @@ const styles = StyleSheet.create({
   ribbonFoldInactive: {
     borderRightColor: "#B33E3E",
     borderLeftColor: "#B33E3E",
+  },
+  cardGradientWrapper: {
+    borderRadius: 12,
+    marginBottom: 16,
+    marginHorizontal: 4,
+    overflow: "hidden",
+  },
+
+  // Inner container handling correct iOS padding
+  cardInnerContainer: {
+    padding: 16,
+    width: "100%",
   },
 
   statusText: { fontWeight: "700", fontSize: 12 },
@@ -2691,22 +2768,7 @@ const docStyles = StyleSheet.create({
     backgroundColor: "rgba(255,255,255,0.08)",
     marginVertical: 12,
   },
-  infoRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 6,
-  },
-  infoLabel: { color: "#6C7A89", fontSize: 13 },
-  infoValue: { color: "#fff", fontSize: 13, fontWeight: "500" },
-  viewBtn: {
-    backgroundColor: "#366bf0",
-    height: 40,
-    borderRadius: 8,
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
-    marginTop: 12,
-  },
+
   viewBtnText: { color: "#fff", fontSize: 13, fontWeight: "bold" },
   addCardButton: {
     height: 38,
@@ -2740,6 +2802,18 @@ const docStyles = StyleSheet.create({
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     maxHeight: "94%",
+  },
+  // ── Document editor overlay — fills the Edit Staff modal's card so it
+  // behaves visually like the old standalone Modal did, but is just a
+  // normal View. No second native Modal is ever presented, which is what
+  // fixes the iOS-only freeze / Add Document not opening. ──
+  docOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "#0D1421",
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    zIndex: 999,
+    elevation: 20,
   },
   modalHeader: {
     flexDirection: "row",
@@ -2928,4 +3002,63 @@ const docStyles = StyleSheet.create({
   dayText: { color: "#111", fontSize: 13, fontWeight: "500" },
   dayTextSelected: { color: "#fff", fontWeight: "bold" },
   dayTextDisabled: { color: "#aaa" },
+
+  cardGradientWrapper: {
+    borderRadius: 12,
+    marginBottom: 16,
+    marginHorizontal: 4,
+    overflow: "hidden",
+  },
+
+  // Inner container handling correct iOS padding
+  cardInnerContainer: {
+    padding: 16,
+    width: "100%",
+  },
+
+  infoRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 6,
+  },
+  infoLabel: {
+    color: THEME.textMuted,
+    fontSize: 13,
+    flex: 1,
+  },
+  infoValue: {
+    color: "#fff",
+    fontSize: 13,
+    fontWeight: "500",
+    textAlign: "right",
+    flex: 1,
+  },
+
+  cardActionsRow: {
+    flexDirection: "row",
+    gap: 10,
+    marginTop: 12,
+    width: "100%",
+  },
+  viewBtn: {
+    backgroundColor: THEME.accent,
+    height: 40,
+    borderRadius: 8,
+    flex: 1,
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  editBtn: {
+    height: 40,
+    borderRadius: 8,
+    flex: 1,
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(137,231,208,0.08)",
+    borderWidth: 1,
+    borderColor: "rgba(137,231,208,0.25)",
+  },
 });

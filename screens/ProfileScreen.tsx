@@ -33,6 +33,9 @@ import {
   MapPin,
   Users,
   ClipboardList,
+  DollarSign,
+  X,
+  Lock,
 } from "lucide-react-native";
 import DeviceInfo from "react-native-device-info";
 import Geolocation from "@react-native-community/geolocation";
@@ -98,6 +101,10 @@ export default function ProfileScreen({ navigation }: Props) {
   const [isActive, setIsActive] = useState<boolean>(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [jobData, setJobData] = useState<AsapJobData | null>(null);
+
+  // ── Charge Rates Missing popup ────────────────────────────────────────────
+  const [chargeRatePopupVisible, setChargeRatePopupVisible] = useState(false);
+
   const foregroundHandlerRef = useRef<((event: any) => void) | null>(null);
   const clickHandlerRef = useRef<((event: any) => void) | null>(null);
   const subscriptionChangeHandlerRef = useRef<
@@ -126,8 +133,8 @@ export default function ProfileScreen({ navigation }: Props) {
     setIsActive(freshData.is_active === true);
 
     let imageUri = null;
-    const BASE_IMAGE_URL = "https://apis-staging.staffoo.com.au/storage/";
-    // const BASE_IMAGE_URL = "https://apis.staffoo.com.au/storage/";
+    // const BASE_IMAGE_URL = "https://apis-staging.staffoo.com.au/storage/";
+    const BASE_IMAGE_URL = "https://apis.staffoo.com.au/storage/";
 
     if (freshData.user_type === "customer") {
       imageUri = freshData.customer?.profile_image || freshData.profile_image;
@@ -181,6 +188,20 @@ export default function ProfileScreen({ navigation }: Props) {
             const freshData = profileResponse.data;
             applyProfileData(freshData);
             await AsyncStorage.setItem("user", JSON.stringify(freshData));
+
+            // ── Charge Rates Missing popup logic ──
+            // Shown only for contractors whose charge rates haven't been
+            // added yet (charge_rate === false) AND whose profile is
+            // currently inactive (is_active === false).
+            const chargeRateAdded = profileResponse?.charge_rate;
+            const shouldShowChargeRatePopup =
+              freshData?.user_type === "contractor" &&
+              chargeRateAdded === false &&
+              freshData?.is_active === false;
+
+            if (mounted) {
+              setChargeRatePopupVisible(shouldShowChargeRatePopup);
+            }
 
             // Only update location on first real load
             if (isFirstLoad) {
@@ -371,102 +392,6 @@ export default function ProfileScreen({ navigation }: Props) {
     }
   };
 
-  // const updateCoordinatesWithGoogle = async (uid: string) => {
-  //   // Prevent multiple simultaneous calls
-  //   if (updateCoordinatesWithGoogle.isRunning) {
-  //     console.log("⏭️ Location update already in progress");
-  //     return;
-  //   }
-
-  //   updateCoordinatesWithGoogle.isRunning = true;
-
-  //   try {
-  //     const token = await AsyncStorage.getItem("@auth_token");
-  //     if (!token || !uid) {
-  //       console.log("❌ Missing token or user id");
-  //       return;
-  //     }
-
-  //     // Permission
-  //     if (Platform.OS === "android") {
-  //       const granted = await PermissionsAndroid.request(
-  //         PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
-  //       );
-
-  //       if (granted !== PermissionsAndroid.RESULTS.GRANTED) {
-  //         console.log("❌ Location permission denied");
-  //         return;
-  //       }
-  //     }
-
-  //     console.log("📍 Requesting location...");
-
-  //     Geolocation.getCurrentPosition(
-  //       async (position) => {
-  //         const { latitude, longitude } = position.coords;
-  //         console.log(`✅ Location Success: ${latitude}, ${longitude}`);
-
-  //         try {
-  //           const response = await fetch(
-  //             `${BASE_URL}/update-coordinates/${uid}`,
-  //             {
-  //               method: "POST",
-  //               headers: {
-  //                 "Content-Type": "application/json",
-  //                 Authorization: `Bearer ${token}`,
-  //               },
-  //               body: JSON.stringify({
-  //                 current_coordinates: `${latitude},${longitude}`,
-  //               }),
-  //             },
-  //           );
-
-  //           const data = await response.json();
-
-  //           if (response.ok) {
-  //             console.log("✅ Coordinates updated on server");
-  //           }
-  //         } catch (apiErr) {
-  //           console.log("API Error while updating coordinates:", apiErr);
-  //         } finally {
-  //           updateCoordinatesWithGoogle.isRunning = false;
-  //         }
-  //       },
-
-  //       (error) => {
-  //         console.log("❌ Geolocation Error:", error);
-
-  //         let message = "Failed to get location.";
-  //         if (error.code === 3) {
-  //           message =
-  //             "Location request timed out. Please try again outdoors with strong GPS signal.";
-  //         } else if (error.code === 2) {
-  //           message = "Location service unavailable. Check GPS is enabled.";
-  //         } else if (error.code === 1) {
-  //           message = "Location permission denied.";
-  //         }
-
-  //         // Only show alert once
-  //         if (!updateCoordinatesWithGoogle.hasShownError) {
-  //           Alert.alert("Location Error", message);
-  //           updateCoordinatesWithGoogle.hasShownError = true;
-  //         }
-
-  //         updateCoordinatesWithGoogle.isRunning = false;
-  //       },
-
-  //       {
-  //         enableHighAccuracy: true,
-  //         timeout: 60000, // 60 seconds
-  //         maximumAge: 30000, // Accept up to 30s old location
-  //       },
-  //     );
-  //   } catch (err) {
-  //     console.log("Unexpected error in location update:", err);
-  //     updateCoordinatesWithGoogle.isRunning = false;
-  //   }
-  // };
-
   // Add this outside the component
   updateCoordinatesWithGoogle.isRunning = false;
   updateCoordinatesWithGoogle.hasShownError = false;
@@ -499,9 +424,69 @@ export default function ProfileScreen({ navigation }: Props) {
     };
   }, [userId]);
 
+  // Helpers for document completeness (moved to component scope so other
+  // parts of this screen can call them)
+  const parseStatesAllowed = (raw: unknown): string[] => {
+    if (!raw) return [];
+    if (Array.isArray(raw))
+      return raw.map((s) => String(s).toLowerCase().trim());
+    if (typeof raw === "string") {
+      try {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed))
+          return parsed.map((s) => String(s).toLowerCase().trim());
+      } catch {
+        return raw
+          .split(",")
+          .map((s) => String(s).toLowerCase().trim())
+          .filter(Boolean);
+      }
+    }
+    return [];
+  };
+
+  const STATE_TO_CATEGORY: Record<string, string> = {
+    vic: "contractor_document",
+    nsw: "nsw_document",
+    qld: "qld_document",
+    tas: "tas_document",
+    wa: "wa_document",
+    sa: "sa_document",
+    act: "act_document",
+    nt: "nt_document",
+  };
+
+  const hasCompletedStateDocuments = () => {
+    if (!user) return false;
+
+    const allowed = parseStatesAllowed(user?.states_allowed);
+    if (!allowed || allowed.length === 0) return false;
+
+    const docs: any[] = Array.isArray(user.documents) ? user.documents : [];
+
+    for (const code of allowed) {
+      const category = STATE_TO_CATEGORY[code];
+      if (!category) return false;
+
+      const docsForCategory = docs.filter(
+        (d) =>
+          String(d.document_category || "").toLowerCase() ===
+          String(category).toLowerCase(),
+      );
+
+      if (docsForCategory.length === 0) return false;
+
+      const everyHasFile = docsForCategory.every(
+        (d) => !!(d.file && String(d.file).trim().length > 0),
+      );
+      if (!everyHasFile) return false;
+    }
+
+    return true;
+  };
+
   const getProfileSections = (userType: string | undefined) => {
     const type = userType?.toLowerCase().trim();
-    console.log("Current User ID:", user?.id);
     const targetUserId = Number(user?.user_id);
     const isSuperStaff = targetUserId === 1;
 
@@ -567,12 +552,17 @@ export default function ProfileScreen({ navigation }: Props) {
         route: "PaymentMethod",
       },
       {
-  title: "Timesheet",
-  icon: <ClipboardList size={20} color="#3B82F6" />,
-  iconBg: "rgba(59,130,246,0.15)",
-  route: "Timesheet",
-},
-
+        title: "Timesheet",
+        icon: <ClipboardList size={20} color="#3B82F6" />,
+        iconBg: "rgba(59,130,246,0.15)",
+        route: "Timesheet",
+      },
+      {
+        title: "My Rates",
+        icon: <DollarSign size={20} color="#10B981" />,
+        iconBg: "rgba(16,185,129,0.15)",
+        route: "ContractorRates",
+      },
       {
         title: "Log Out",
         icon: <LogOut size={20} color={COLORS.danger} />,
@@ -582,14 +572,102 @@ export default function ProfileScreen({ navigation }: Props) {
       },
     ];
 
+    // Helper: check if contractor has completed required documents for
+    // all allowed states. Returns true only when every document record
+    // the server expects for those state categories has a `file` set.
+    const parseStatesAllowed = (raw: unknown): string[] => {
+      if (!raw) return [];
+      if (Array.isArray(raw))
+        return raw.map((s) => String(s).toLowerCase().trim());
+      if (typeof raw === "string") {
+        try {
+          const parsed = JSON.parse(raw);
+          if (Array.isArray(parsed))
+            return parsed.map((s) => String(s).toLowerCase().trim());
+        } catch {
+          return raw
+            .split(",")
+            .map((s) => String(s).toLowerCase().trim())
+            .filter(Boolean);
+        }
+      }
+      return [];
+    };
+
+    const STATE_TO_CATEGORY: Record<string, string> = {
+      vic: "contractor_document",
+      nsw: "nsw_document",
+      qld: "qld_document",
+      tas: "tas_document",
+      wa: "wa_document",
+      sa: "sa_document",
+      act: "act_document",
+      nt: "nt_document",
+    };
+
+    const hasCompletedStateDocuments = () => {
+      if (!user) return false;
+
+      const allowed = parseStatesAllowed(user?.states_allowed);
+      if (!allowed || allowed.length === 0) return false;
+
+      const docs: any[] = Array.isArray(user.documents) ? user.documents : [];
+
+      // For each allowed state, ensure there exists at least one document
+      // record for the corresponding category and that ALL such records
+      // have a non-empty `file` value.
+      for (const code of allowed) {
+        const category = STATE_TO_CATEGORY[code];
+        if (!category) return false; // unknown state → treat as incomplete
+
+        const docsForCategory = docs.filter(
+          (d) =>
+            String(d.document_category || "").toLowerCase() ===
+            String(category).toLowerCase(),
+        );
+
+        if (docsForCategory.length === 0) return false;
+
+        const everyHasFile = docsForCategory.every(
+          (d) => !!(d.file && String(d.file).trim().length > 0),
+        );
+        if (!everyHasFile) return false;
+      }
+
+      return true;
+    };
+
+    const isLocked = (title: string) => {
+      if (isActive) return false; // fully active → nothing locked
+
+      if (type === "contractor") {
+        if (["Job History", "Staff Management", "Timesheet"].includes(title)) {
+          return true;
+        }
+        if (title === "My Rates") {
+          // Locked until documents for selected state are filled
+          return !hasCompletedStateDocuments();
+        }
+      }
+
+      if (type === "staff") {
+        if (["Induction", "Job History", "Timesheet"].includes(title)) {
+          return true;
+        }
+      }
+
+      return false;
+    };
+
+    let filtered: typeof allSections = [];
+
     if (type === "staff") {
       const staffTabs = [
         "Personal Information",
         "Documents",
-  "Timesheet",
+        "Timesheet",
         "Privacy Policy",
         "Job History",
-
         "Log Out",
       ];
 
@@ -598,38 +676,54 @@ export default function ProfileScreen({ navigation }: Props) {
         staffTabs.splice(2, 0, "Induction");
       }
 
-      return allSections.filter((s) => staffTabs.includes(s.title));
-    }
+      filtered = allSections.filter((s) => staffTabs.includes(s.title));
+    } else if (type === "contractor") {
+      // Desired order: Personal Information → Documents → My Rates → rest
+      // (My Rates = 3rd item = 1st row, 3rd column on a 3-col grid)
+      const contractorOrder = [
+        "Personal Information",
+        "Documents",
+        "My Rates",
+        "Staff Management",
+        "Job History",
+        "Timesheet",
+        "Log Out",
+      ];
 
-    if (type === "contractor") {
-      return allSections.filter((s) =>
-        [
-          "Personal Information",
-          "Documents",
-          "Staff Management",
-          "Job History",
-    "Timesheet",
-          "Log Out",
-        ].includes(s.title),
-      );
-    }
-    if (type === "customer") {
-      return allSections.filter((s) =>
+      filtered = contractorOrder
+        .map((title) => allSections.find((s) => s.title === title))
+        .filter(Boolean) as typeof allSections;
+    } else if (type === "customer") {
+      filtered = allSections.filter((s) =>
         [
           "Personal Information",
           "Payment History",
           "Bank Details",
-
           "Log Out",
         ].includes(s.title),
       );
+    } else {
+      filtered = allSections;
     }
-    return allSections;
+
+    // Attach locked flag
+    return filtered.map((s) => ({
+      ...s,
+      locked: isLocked(s.title),
+    }));
   };
 
-  const isProfileComplete = completionPercentage === 100;
+  const isProfileComplete = hasCompletedStateDocuments();
 
-  const handleSectionPress = (route: string) => {
+  const handleSectionPress = (route: string, locked?: boolean) => {
+    if (locked) {
+      Alert.alert(
+        "Account Not Active",
+        "This section is locked until your account is activated or required documents are completed.",
+        [{ text: "OK" }],
+      );
+      return;
+    }
     if (route === "Logout") {
       Alert.alert("log out", "Are you sure you want to log out?", [
         { text: "cancel", style: "cancel" },
@@ -875,16 +969,18 @@ export default function ProfileScreen({ navigation }: Props) {
           {sections.map((section, index) => (
             <TouchableOpacity
               key={index}
-              onPress={() => handleSectionPress(section.route)}
+              onPress={() => handleSectionPress(section.route, section.locked)}
               activeOpacity={0.75}
               style={styles.cardWrapper}
             >
               <View
-                style={[styles.card, section.isDanger && styles.cardDanger]}
+                style={[
+                  styles.card,
+                  section.isDanger && styles.cardDanger,
+                  section.locked && styles.cardLocked, // optional style
+                ]}
               >
-                {/* Highlight Bar */}
                 <View style={styles.cardHighlight} />
-
                 <View style={styles.cardShimmer} />
 
                 <View
@@ -894,12 +990,18 @@ export default function ProfileScreen({ navigation }: Props) {
                   ]}
                 >
                   {section.icon}
+                  {section.locked && (
+                    <View style={styles.lockBadge}>
+                      <Lock size={12} color="#fff" />
+                    </View>
+                  )}
                 </View>
 
                 <Text
                   style={[
                     styles.cardLabel,
                     section.isDanger && styles.cardLabelDanger,
+                    section.locked && styles.cardLabelLocked,
                   ]}
                 >
                   {section.title}
@@ -909,6 +1011,129 @@ export default function ProfileScreen({ navigation }: Props) {
           ))}
         </View>
       </ScrollView>
+
+      {/* ── Complete Profile Requirements popup ── */}
+      <Modal
+        visible={chargeRatePopupVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setChargeRatePopupVisible(false)}
+      >
+        <View style={styles.chargeModalOverlay}>
+          <View style={styles.reqModalCard}>
+            {/* Header */}
+            <View style={styles.reqModalHeader}>
+              <Text style={styles.reqModalHeaderTitle}>
+                Complete Your Profile Requirements
+              </Text>
+              <TouchableOpacity
+                onPress={() => setChargeRatePopupVisible(false)}
+                style={styles.chargeModalCloseBtn}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                <X size={18} color="#fff" />
+              </TouchableOpacity>
+            </View>
+
+            {/* Body */}
+            <View style={styles.reqModalBody}>
+              {/* Step 1 */}
+              <View style={styles.reqStepRow}>
+                <View style={styles.reqStepLeft}>
+                  <View style={[styles.reqStepCircle, styles.reqStepCircle1]}>
+                    <Text style={styles.reqStepNumber}>1</Text>
+                  </View>
+                  <View style={styles.reqStepLine} />
+                </View>
+                <View style={styles.reqStepContent}>
+                  <Text style={styles.reqStepTitle}>
+                    Select Your Licensed States
+                  </Text>
+                  <Text style={styles.reqStepDesc}>
+                    Select the states where you currently hold a valid Security
+                    Master License.
+                  </Text>
+                </View>
+              </View>
+
+              {/* Step 2 */}
+              <View style={styles.reqStepRow}>
+                <View style={styles.reqStepLeft}>
+                  <View style={[styles.reqStepCircle, styles.reqStepCircle2]}>
+                    <Text style={styles.reqStepNumber}>2</Text>
+                  </View>
+                  <View style={styles.reqStepLine} />
+                </View>
+                <View style={styles.reqStepContent}>
+                  <Text style={styles.reqStepTitle}>
+                    Upload Required Documents
+                  </Text>
+                  <Text style={styles.reqStepDesc}>
+                    Add the required license and supporting documents for each
+                    state you selected.
+                  </Text>
+                </View>
+              </View>
+
+              {/* Step 3 */}
+              <View style={[styles.reqStepRow, { marginBottom: 0 }]}>
+                <View style={styles.reqStepLeft}>
+                  <View style={[styles.reqStepCircle, styles.reqStepCircle3]}>
+                    <Text style={styles.reqStepNumber}>3</Text>
+                  </View>
+                </View>
+                <View style={styles.reqStepContent}>
+                  <Text style={styles.reqStepTitle}>Request Charge Rates</Text>
+                  <Text style={styles.reqStepDesc}>
+                    Once your states and documents are complete, request the
+                    charge rates applicable to your selected states.
+                  </Text>
+                </View>
+              </View>
+
+              {/* Info box */}
+              <View style={styles.reqInfoBox}>
+                <View style={styles.reqInfoIcon}>
+                  <Text style={styles.reqInfoIconText}>i</Text>
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.reqInfoTitle}>Why is this required?</Text>
+                  <Text style={styles.reqInfoDesc}>
+                    Your charge rates are based on the states where you are
+                    licensed and verified. Completing all three steps ensures
+                    your profile is ready to operate in those states.
+                  </Text>
+                </View>
+              </View>
+
+              {/* Actions */}
+              {/* <View style={styles.chargeModalBtnRow}>
+                <TouchableOpacity
+                  style={styles.chargeModalCloseTextBtn}
+                  onPress={() => setChargeRatePopupVisible(false)}
+                  activeOpacity={0.8}
+                >
+                  <Text style={styles.chargeModalCloseTextBtnText}>Close</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.chargeModalPrimaryBtn}
+                  activeOpacity={0.85}
+                  onPress={() => {
+                    setChargeRatePopupVisible(false);
+                    // Go to Documents first (steps 1–2), or ContractorRates for step 3
+                    navigation.navigate("Documents");
+                  }}
+                >
+                  <Text style={styles.chargeModalPrimaryBtnText}>
+                    Continue Setup
+                  </Text>
+                </TouchableOpacity>
+              </View> */}
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -1076,7 +1301,25 @@ const styles = StyleSheet.create({
     marginTop: 2,
     marginBottom: 6,
   },
-
+  cardLocked: {
+    opacity: 0.55,
+  },
+  cardLabelLocked: {
+    color: "#94A3B8",
+  },
+  lockBadge: {
+    position: "absolute",
+    top: -4,
+    right: -4,
+    backgroundColor: "#EF4444",
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1.5,
+    borderColor: "#fff",
+  },
   statusDot: {
     width: 6,
     height: 6,
@@ -1276,5 +1519,220 @@ const styles = StyleSheet.create({
     height: 22,
     backgroundColor: "rgba(255,255,255,0.08)",
     borderRadius: 12,
+  },
+
+  // ── Charge Rates Missing popup styles ──
+  chargeModalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.65)",
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 20,
+  },
+  chargeModalCard: {
+    width: "100%",
+    maxWidth: 420,
+    backgroundColor: COLORS.card,
+    borderRadius: 20,
+    overflow: "hidden",
+    borderWidth: 1,
+    borderColor: COLORS.cardBorder,
+  },
+  chargeModalHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 18,
+    paddingVertical: 16,
+  },
+  chargeModalHeaderTitle: {
+    color: COLORS.text,
+    fontSize: 17,
+    fontWeight: "700",
+  },
+  chargeModalCloseBtn: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: "rgba(255,255,255,0.08)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  chargeModalBody: {
+    paddingHorizontal: 22,
+    paddingTop: 24,
+    paddingBottom: 22,
+    alignItems: "center",
+  },
+  chargeModalIconWrap: {
+    width: 60,
+    height: 60,
+    borderRadius: 16,
+    backgroundColor: COLORS.warningBg,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 16,
+  },
+  chargeModalTitle: {
+    color: COLORS.text,
+    fontSize: 16,
+    fontWeight: "700",
+    textAlign: "center",
+    marginBottom: 8,
+  },
+  chargeModalDesc: {
+    color: COLORS.textSecondary,
+    fontSize: 13,
+    textAlign: "center",
+    lineHeight: 19,
+    marginBottom: 22,
+  },
+  chargeModalBtnRow: {
+    flexDirection: "row",
+    gap: 10,
+    width: "100%",
+  },
+  chargeModalCloseTextBtn: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: COLORS.cardBorder,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  chargeModalCloseTextBtnText: {
+    color: COLORS.textSecondary,
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  chargeModalPrimaryBtn: {
+    flex: 1.4,
+    paddingVertical: 12,
+    borderRadius: 12,
+    backgroundColor: COLORS.primary,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  chargeModalPrimaryBtnText: {
+    color: "#03211E",
+    fontSize: 13.5,
+    fontWeight: "700",
+  },
+
+  reqModalCard: {
+    width: "100%",
+    maxWidth: 420,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 20,
+    overflow: "hidden",
+  },
+  reqModalHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: "#0B1C2D",
+    paddingHorizontal: 18,
+    paddingVertical: 16,
+  },
+  reqModalHeaderTitle: {
+    color: "#FFFFFF",
+    fontSize: 16,
+    fontWeight: "700",
+    flex: 1,
+    paddingRight: 8,
+  },
+  reqModalBody: {
+    paddingHorizontal: 20,
+    paddingTop: 22,
+    paddingBottom: 20,
+  },
+  reqStepRow: {
+    flexDirection: "row",
+    marginBottom: 4,
+  },
+  reqStepLeft: {
+    width: 36,
+    alignItems: "center",
+  },
+  reqStepCircle: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  reqStepCircle1: {
+    backgroundColor: "#D1FAE5",
+  },
+  reqStepCircle2: {
+    backgroundColor: "#FEF3C7",
+  },
+  reqStepCircle3: {
+    backgroundColor: "#EDE9FE",
+  },
+  reqStepNumber: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: "#1E293B",
+  },
+  reqStepLine: {
+    width: 2,
+    flex: 1,
+    backgroundColor: "#E2E8F0",
+    marginVertical: 4,
+    minHeight: 28,
+  },
+  reqStepContent: {
+    flex: 1,
+    paddingLeft: 12,
+    paddingBottom: 18,
+  },
+  reqStepTitle: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: "#0F172A",
+    marginBottom: 4,
+  },
+  reqStepDesc: {
+    fontSize: 13,
+    color: "#64748B",
+    lineHeight: 19,
+  },
+  reqInfoBox: {
+    flexDirection: "row",
+    backgroundColor: "#F0FDFA",
+    borderRadius: 12,
+    padding: 14,
+    marginTop: 8,
+    marginBottom: 20,
+    gap: 10,
+    borderWidth: 1,
+    borderColor: "#CCFBF1",
+  },
+  reqInfoIcon: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: COLORS.primary,
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 1,
+  },
+  reqInfoIconText: {
+    color: "#fff",
+    fontSize: 12,
+    fontWeight: "700",
+  },
+  reqInfoTitle: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: "#0F172A",
+    marginBottom: 4,
+  },
+  reqInfoDesc: {
+    fontSize: 12,
+    color: "#475569",
+    lineHeight: 18,
   },
 });

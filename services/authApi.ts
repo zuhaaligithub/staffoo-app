@@ -3,8 +3,8 @@ import axios from "axios";
 import { Platform } from "react-native";
 import { ChargeRate, ChargeRateFormData } from "../navigation/types";
 
-// export const BASE_URL = "https://apis.staffoo.com.au/api";
-export const BASE_URL = "https://apis-staging.staffoo.com.au/api";
+export const BASE_URL = "https://apis.staffoo.com.au/api";
+// export const BASE_URL = "https://apis-staging.staffoo.com.au/api";
 
 export interface UserData {
   id: number | string;
@@ -721,38 +721,43 @@ export interface JobFinancials {
   balance_deferred: number;
 }
 
+// ─── Post Job Payload Interface ────────────────────────────────────────────────
 export interface JobPostPayload {
-  user_id: number;
-
+  user_id?: number;
   job_type: string;
-
   description: string;
-
   address: string;
-
   coordinates: string;
-
   state: string;
-
-  shifts: JobShift[];
-
-  payment_option: "full" | "split";
-
+  posting_type: string;
+  shifts: Array<{
+    start: string;
+    end: string;
+    numberOfGuards: number;
+  }>;
+  payment_option: string;
+  job_level: number;
   job_location_state: string;
-
-  financials: JobFinancials;
-
   is_document: boolean;
-
   document_list: string[];
-
   document_types: string[];
-
   job_instruction: string;
-
-  tasks: any[];
-
+  tasks: Array<{
+    task: string;
+    task_start: string;
+    task_end: string;
+  }>;
   payment_intent_id: string | null;
+  contractor_invoice?: number;
+  financials?: {
+    estimated_min?: number;
+    estimated_max?: number;
+    is_segmented?: boolean;
+    base_total_inc_gst?: number;
+    discount_applied?: number;
+    amount_to_charge_today?: number;
+    balance_deferred?: number;
+  };
 }
 
 export interface JobPostResponse {
@@ -773,6 +778,8 @@ export const postJob = async (
 
   console.log("[JOB POST REQUEST] →", endpoint);
   console.log("[PAYLOAD SENT]", JSON.stringify(payload, null, 2));
+  console.log("[JOB POST] Auth token present?:", !!token);
+  console.log("[JOB POST] Endpoint:", endpoint);
 
   try {
     const response = await axios.post<JobPostResponse>(endpoint, payload, {
@@ -781,7 +788,8 @@ export const postJob = async (
         "Content-Type": "application/json",
         Accept: "application/json",
       },
-      timeout: 30000,
+      // Increased timeout to give Android ample time for the initial TLS handshake
+      timeout: 45000,
     });
 
     console.log("[JOB POST RESPONSE]", response.status, response.data);
@@ -791,9 +799,64 @@ export const postJob = async (
       status: error.response?.status,
       data: error.response?.data,
       message: error.message,
+      errorJson: error.toJSON ? error.toJSON() : null,
     });
+
     const errMessage =
       error?.response?.data?.message || error.message || "Failed to create job";
+
+    // Only fallback if it's a true socket network failure, and ensure clean execution
+    try {
+      if (
+        error?.code === "ERR_NETWORK" ||
+        error?.message?.includes("Network Error") ||
+        error?.code === "ECONNABORTED"
+      ) {
+        console.log(
+          "[JOB POST] Initial connection failed — trying direct fetch...",
+        );
+
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 45000);
+
+        const fetchResp = await fetch(endpoint, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+            Accept: "application/json",
+          },
+          body: JSON.stringify(payload),
+          signal: controller.signal,
+        });
+
+        clearTimeout(timeoutId);
+
+        const fetchData = await fetchResp.json().catch(() => null);
+        console.log(
+          "[JOB POST - FETCH FALLBACK] status:",
+          fetchResp.status,
+          "data:",
+          fetchData,
+        );
+
+        if (!fetchResp.ok) {
+          const msg =
+            fetchData?.message ||
+            `Fetch fallback failed — HTTP ${fetchResp.status}`;
+          throw new Error(msg);
+        }
+
+        return fetchData;
+      }
+    } catch (fetchErr: any) {
+      console.error(
+        "[JOB POST - FETCH FALLBACK ERROR]",
+        fetchErr?.message || fetchErr,
+      );
+      throw new Error(fetchErr?.message || errMessage);
+    }
+
     throw new Error(errMessage);
   }
 };

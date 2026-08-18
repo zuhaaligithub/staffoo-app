@@ -1,9 +1,3 @@
-// ─────────────────────────────────────────────────────────────────────────────
-// Available Jobs screen (route name "StaffShifts" in the tab navigator).
-// All state/logic lives in useStaffShiftsController (screens/shifts) — this
-// file is just the screen's JSX, split out of the old combined StaffShifts.tsx
-// so "Available Jobs" and "Accepted Jobs" are separate pages/components.
-// ─────────────────────────────────────────────────────────────────────────────
 import React from "react";
 import {
   View,
@@ -44,7 +38,6 @@ import {
   StaffAssignSheet,
   styles,
   cardStyles,
-  tabStyles,
   assignStyles,
 } from "./shifts/StaffShiftsShared";
 import { useStaffShiftsController } from "./shifts/useStaffShiftsController";
@@ -77,8 +70,6 @@ export default function AvailableJobsScreen({ navigation, route }: Props) {
     profileImage,
     loadingProfile,
     userDocuments,
-    contractorAvailableSubTab,
-    setContractorAvailableSubTab,
     notificationJob,
     sheetOpen,
     acceptingNotification,
@@ -110,22 +101,24 @@ export default function AvailableJobsScreen({ navigation, route }: Props) {
     shiftHasAssignedGuard,
     showCelebration,
     setShowCelebration,
+    showAcceptSuccessModal,
+    hideAcceptSuccessModal,
     renderAvailableCard,
     renderShiftCard,
     renderJobsListFooter,
     renderNewTab,
     renderAcceptedTab,
-    renderPendingAssigningTab,
-    pendingAssigningCount,
     capitalizeWords,
     jobData,
     notifRequiredDocuments,
     notifHasWorkingWithChildren,
     notifHasWhiteCard,
     notifDescription,
+    notifHideAssignForContractor,
     acceptRawJob,
     acceptDescription,
     acceptRequiredDocuments,
+    acceptHideAssignForContractor,
     showingAvailableList,
     isRefreshing,
     onRefresh,
@@ -135,94 +128,25 @@ export default function AvailableJobsScreen({ navigation, route }: Props) {
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor={COLORS.background} />
 
-      {/* Header */}
-      <LinearGradient
-        colors={[COLORS.heroBg1, COLORS.heroBg2]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={styles.headerGradient}
-      >
-        <TouchableOpacity
-          style={styles.headerLeft}
-          onPress={() => navigation.navigate("Profile")}
-          activeOpacity={0.85}
-        >
-          {profileImage ? (
-            <Image source={{ uri: profileImage }} style={styles.avatar} />
-          ) : (
-            <View style={styles.initialsAvatar}>
-              <Text style={styles.initialsText}>
-                {getInitials(user?.name || "User")}
-              </Text>
-            </View>
-          )}
-          <View>
-          
-                     <Text
-              style={styles.greeting}
-              numberOfLines={2}
-              ellipsizeMode="tail"
-            >
-              {capitalizeName(user?.name || "User Name")}
-            </Text>
-            <Text style={styles.staffName}>Welcome to Staffoo</Text>
-          </View>
-        </TouchableOpacity>
-      </LinearGradient>
+      {/* Cover Jobs Banner */}
+      <View style={styles.coverJobsBanner}>
+        <View style={styles.availableRow}>
+          <View style={styles.availableDot} />
+          <Text style={styles.availableLabel}>AVAILABLE JOBS</Text>
+        </View>
 
-      {screenMode === "available" &&
-        (userType === "contractor" || userType === "staff") && (
-          <View style={tabStyles.tabBar}>
-            {(
-              [
-                "Available Jobs",
-                userType === "contractor" ? "Pending Assigning" : null,
-              ].filter(Boolean) as string[]
-            ).map((tab) => {
-              const isActive =
-                userType === "staff" ? true : contractorAvailableSubTab === tab;
+      
 
-              return (
-                <TouchableOpacity
-                  key={tab}
-                  style={[tabStyles.tab, isActive && tabStyles.tabActive]}
-                  onPress={() => {
-                    if (userType === "contractor") {
-                      setContractorAvailableSubTab(tab as any);
-                    }
-                  }}
-                  activeOpacity={0.85}
-                >
-                  <View style={tabStyles.tabInner}>
-                    <Text
-                      style={[
-                        tabStyles.tabText,
-                        isActive && tabStyles.tabTextActive,
-                      ]}
-                    >
-                      {tab}
-                    </Text>
-                    {tab === "Available Jobs" && availableJobs.length > 0 && (
-                      <View style={tabStyles.badge}>
-                        <Text style={tabStyles.badgeText}>
-                          {availableJobs.length}
-                        </Text>
-                      </View>
-                    )}
-                    {tab === "Pending Assigning" &&
-                      pendingAssigningCount > 0 && (
-                        <View style={tabStyles.badge}>
-                          <Text style={tabStyles.badgeText}>
-                            {pendingAssigningCount}
-                          </Text>
-                        </View>
-                      )}
-                  </View>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-        )}
+        {/* {!loadingAvailable && (
+          <Text style={styles.coverJobsSubtitle}>
+            {totalJobsCount === 0
+              ? "No open shifts right now"
+              : `${totalJobsCount} open shift${
+                  totalJobsCount === 1 ? "" : "s"
+                } waiting for you`}
+          </Text>
+        )} */}
+      </View>
       <ScrollView
         style={styles.scrollContainer}
         contentContainerStyle={styles.scrollContent}
@@ -236,26 +160,21 @@ export default function AvailableJobsScreen({ navigation, route }: Props) {
           />
         }
       >
-        {screenMode === "accepted"
-          ? renderAcceptedTab()
-          : userType === "contractor"
-          ? contractorAvailableSubTab === "Pending Assigning"
-            ? renderPendingAssigningTab()
-            : renderNewTab()
-          : renderNewTab()}
+        {screenMode === "accepted" ? renderAcceptedTab() : renderNewTab()}
         {!notificationJob && <View style={styles.placeholder} />}
       </ScrollView>
 
       {/* ── Accept Sheet — "Available Jobs" tab (contractor + guard) ──
           Shows full job info (description, required documents) for both
           user types. Staff dropdown (showStaffSection) is contractor-only
-          and optional — picking a guard sends their id with the accept
-          request, leaving it unpicked sends an empty guard_id. Non-
-          contractor ("staff") flow is unaffected: showStaffSection is
-          false for them, so nothing new renders and nothing new is sent.
-          The sheet's own content is now scrollable (see StaffAssignSheet
-          above), so long descriptions / document lists / staff lists no
-          longer overflow past the visible sheet. */}
+          AND only shown when the job actually needs a guard assigned
+          (contractor_invoice !== 0) — picking a guard sends their id
+          with the accept request, leaving it unpicked sends an empty
+          guard_id. Non-contractor ("staff") flow is unaffected:
+          showStaffSection is false for them, so nothing new renders and
+          nothing new is sent. The sheet's own content is scrollable
+          (see StaffAssignSheet above), so long descriptions / document
+          lists / staff lists no longer overflow past the visible sheet. */}
       <StaffAssignSheet
         visible={acceptSheetVisible}
         job={acceptSheetJob}
@@ -266,7 +185,9 @@ export default function AvailableJobsScreen({ navigation, route }: Props) {
         onAccept={handleAcceptSheetSubmit}
         onDecline={handleAcceptSheetDecline}
         submitting={acceptSubmitting}
-        showStaffSection={userType === "contractor"}
+        showStaffSection={
+          userType === "contractor" && !acceptHideAssignForContractor
+        }
         staffSelectionRequired={false}
         description={acceptDescription}
         requiredDocuments={acceptRequiredDocuments}
@@ -393,7 +314,7 @@ export default function AvailableJobsScreen({ navigation, route }: Props) {
               the accept request; leaving it unpicked sends none. Staff
               flow (non-contractor) is unaffected: nothing renders here
               for them and nothing extra is sent. */}
-          {userType === "contractor" && (
+          {userType === "contractor" && !notifHideAssignForContractor && (
             <View style={{ marginVertical: 5 }}>
               <Text style={styles.assignLabel}>
                 Assign to Staff Member (optional)
@@ -577,6 +498,75 @@ export default function AvailableJobsScreen({ navigation, route }: Props) {
         visible={showCelebration}
         onDone={() => setShowCelebration(false)}
       />
+
+      {/* Transient success modal for contractor accepts with contractor_invoice === 0 */}
+      <Modal visible={showAcceptSuccessModal} transparent animationType="fade">
+        <View
+          style={{
+            flex: 1,
+            backgroundColor: "rgba(0,0,0,0.4)",
+            justifyContent: "center",
+            alignItems: "center",
+          }}
+        >
+          <View
+            style={{
+              width: 320,
+              backgroundColor: "#fff",
+              borderRadius: 16,
+              overflow: "hidden",
+              alignItems: "center",
+            }}
+          >
+            <View
+              style={{ height: 80, backgroundColor: "#0fa786", width: "100%" }}
+            />
+            <View style={{ marginTop: -40, alignItems: "center" }}>
+              <View
+                style={{
+                  width: 72,
+                  height: 72,
+                  borderRadius: 36,
+                  backgroundColor: "#fff",
+                  justifyContent: "center",
+                  alignItems: "center",
+                  elevation: 4,
+                }}
+              >
+                <CheckCircle size={36} color="#0fa786" />
+              </View>
+            </View>
+            <View style={{ padding: 20, alignItems: "center" }}>
+              <Text
+                style={{ fontSize: 20, fontWeight: "700", marginBottom: 8 }}
+              >
+                Success!
+              </Text>
+              <Text
+                style={{ textAlign: "center", color: "#666", marginBottom: 16 }}
+              >
+                Please wait for the client to give further confirmation. We will
+                notify you shortly and the shift will appear on your Accepted
+                Jobs page.
+              </Text>
+              <TouchableOpacity
+                style={{
+                  backgroundColor: "#0b856f",
+                  paddingVertical: 12,
+                  paddingHorizontal: 24,
+                  borderRadius: 30,
+                }}
+                onPress={hideAcceptSuccessModal}
+              >
+                <Text style={{ color: "#fff", fontWeight: "700" }}>
+                  Awesome, Thanks!
+                </Text>
+              </TouchableOpacity>
+              <View style={{ height: 16 }} />
+            </View>
+          </View>
+        </View>
+      </Modal>
 
       {/* <BottomTab navigation={navigation} activeTab="StaffShifts" /> */}
     </SafeAreaView>

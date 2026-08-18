@@ -22,6 +22,8 @@
 //   StatusBar,
 //   Dimensions,
 //   Pressable,
+//   UIManager,
+//   findNodeHandle,
 // } from "react-native";
 // import {
 //   useFocusEffect,
@@ -82,6 +84,10 @@
 // const ERROR_RED = "#FF4D67";
 // const BORDER_COLOR = "#475569";
 // const MAX_DESCRIPTION_LENGTH = 500;
+
+// // Number of columns to render in the calendar day-grid.
+// const CAL_COLUMNS = 7;
+// const CAL_CELL_WIDTH_PERCENT = 100 / CAL_COLUMNS;
 
 // type ScheduleMode = "single" | "range";
 // type MultiDayMode = "individual" | "range";
@@ -406,6 +412,11 @@
 //   const mapRef = useRef<MapView>(null);
 //   const [mapReady, setMapReady] = useState(false);
 //   const GOOGLE_PLACES_KEY = "AIzaSyCS-DB39Kk-Z25C5GWymVGshXIALbjXPGY";
+
+//   // ── Refs used to fix the "Description field jumps to top on Android" bug ──
+//   const scrollViewRef = useRef<ScrollView>(null);
+//   const descriptionInputRef = useRef<TextInput>(null);
+//   const scrollOffsetY = useRef(0);
 
 //   const [form, setForm] = useState<JobFormData>({
 //     category: "",
@@ -754,28 +765,6 @@
 //       // If isEdit is true → keep the data passed from ReviewConfirm
 //     }, [isEdit, resetForm]),
 //   );
-//   // useEffect(() => {
-//   //   if (autocompleteQuery.length < 3) {
-//   //     setSuggestions([]);
-//   //     return;
-//   //   }
-//   //   const timeout = setTimeout(async () => {
-//   //     setLoadingSuggestions(true);
-//   //     try {
-//   //       const url = `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${encodeURIComponent(
-//   //         autocompleteQuery,
-//   //       )}&key=${GOOGLE_PLACES_KEY}`;
-//   //       const res = await fetch(url);
-//   //       const json = await res.json();
-//   //       setSuggestions(json.status === "OK" ? json.predictions || [] : []);
-//   //     } catch {
-//   //       setSuggestions([]);
-//   //     } finally {
-//   //       setLoadingSuggestions(false);
-//   //     }
-//   //   }, 400);
-//   //   return () => clearTimeout(timeout);
-//   // }, [autocompleteQuery]);
 
 //   useEffect(() => {
 //     if (autocompleteQuery.length < 3) {
@@ -805,22 +794,77 @@
 //     return () => clearTimeout(timeout);
 //   }, [autocompleteQuery]);
 
+//   // const selectSuggestion = async (prediction: PlacePrediction) => {
+//   //   setAutocompleteQuery("");
+//   //   setSuggestions([]);
+//   //   setErrors((prev) => ({ ...prev, location: undefined }));
+//   //   try {
+//   //     const url = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${prediction.place_id}&fields=geometry&key=${GOOGLE_PLACES_KEY}`;
+//   //     const res = await fetch(url);
+//   //     const json = await res.json();
+//   //     if (json.status === "OK" && json.result?.geometry?.location) {
+//   //       const { lat, lng } = json.result.geometry.location;
+//   //       setForm((prev) => ({
+//   //         ...prev,
+//   //         location: prediction.description,
+//   //         lat,
+//   //         lng,
+//   //       }));
+//   //       if (mapReady && mapRef.current) {
+//   //         mapRef.current.animateToRegion(
+//   //           {
+//   //             latitude: lat,
+//   //             longitude: lng,
+//   //             latitudeDelta: 0.022,
+//   //             longitudeDelta: 0.012,
+//   //           },
+//   //           800,
+//   //         );
+//   //       }
+//   //     }
+//   //   } catch (err) {
+//   //     console.error("Place details error:", err);
+//   //   }
+//   // };
 //   const selectSuggestion = async (prediction: PlacePrediction) => {
 //     setAutocompleteQuery("");
 //     setSuggestions([]);
 //     setErrors((prev) => ({ ...prev, location: undefined }));
+
 //     try {
-//       const url = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${prediction.place_id}&fields=geometry&key=${GOOGLE_PLACES_KEY}`;
+//       // Request address_components so we can extract the state
+//       const url = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${prediction.place_id}&fields=geometry,address_components,formatted_address&key=${GOOGLE_PLACES_KEY}`;
+
 //       const res = await fetch(url);
 //       const json = await res.json();
-//       if (json.status === "OK" && json.result?.geometry?.location) {
+
+//       if (json.status === "OK" && json.result) {
 //         const { lat, lng } = json.result.geometry.location;
+//         const address = json.result.formatted_address || prediction.description;
+
+//         // Extract Australian state code (administrative_area_level_1)
+//         let stateCode = "";
+//         const components = json.result.address_components || [];
+
+//         const stateComponent = components.find((c: any) =>
+//           c.types.includes("administrative_area_level_1"),
+//         );
+
+//         if (stateComponent) {
+//           // Google usually returns "VIC", "QLD", "NSW", etc.
+//           stateCode = stateComponent.short_name.toLowerCase(); // → "vic", "qld", ...
+//         }
+
 //         setForm((prev) => ({
 //           ...prev,
-//           location: prediction.description,
+//           location: address,
 //           lat,
 //           lng,
+//           // Optional: store state if you need it later
+//           // state: stateCode,
 //         }));
+
+//         // Animate map
 //         if (mapReady && mapRef.current) {
 //           mapRef.current.animateToRegion(
 //             {
@@ -832,9 +876,37 @@
 //             800,
 //           );
 //         }
+
+//         // ── Call your check-state API ──────────────────────────────
+//         if (stateCode) {
+//           await callCheckState(stateCode);
+//         } else {
+//           console.warn("Could not extract state from address");
+//         }
 //       }
 //     } catch (err) {
 //       console.error("Place details error:", err);
+//     }
+//   };
+//   const callCheckState = async (state: string) => {
+//     try {
+//       const token = await getAuthToken();
+
+//       const payload = { state }; // ← this is what will be sent
+
+//       // 👇 Add this line
+//       console.log("Sending payload to check-state:", payload);
+
+//       const res = await axios.post(`${BASE_URL}/check-state`, payload, {
+//         headers: {
+//           Authorization: `Bearer ${token}`,
+//           "Content-Type": "application/json",
+//         },
+//       });
+
+//       console.log("check-state response:", res.data);
+//     } catch (error) {
+//       console.error("check-state API error:", error);
 //     }
 //   };
 
@@ -1632,99 +1704,6 @@
 //     });
 //   };
 
-//   // const validateAndNext = () => {
-//   //   const newErrors: FormErrors = {};
-
-//   //   if (!form.category) {
-//   //     newErrors.category = "Please select a job category";
-//   //   } else if (form.category === "others" && !otherCategory.trim()) {
-//   //     newErrors.category = "Please enter job category";
-//   //   }
-
-//   //   setErrors(newErrors);
-
-//   //   if (Object.keys(newErrors).length > 0) {
-//   //     Alert.alert("Incomplete Form", "Please fill all required fields");
-//   //     return;
-//   //   }
-//   //   if (!form.description?.trim())
-//   //     newErrors.description = "Description is required";
-//   //   if (!form.location?.trim()) newErrors.location = "Location is required";
-//   //   setErrors(newErrors);
-//   //   if (Object.keys(newErrors).length > 0) {
-//   //     Alert.alert("Incomplete Form", "Please fill all required fields");
-//   //     return;
-//   //   }
-
-//   //   const activeSchedules =
-//   //     scheduleMode === "single"
-//   //       ? [singleDaySchedule]
-//   //       : multiDayMode === "individual"
-//   //       ? individualSchedules
-//   //       : rangeSchedules;
-
-//   //   if (
-//   //     !activeSchedules ||
-//   //     activeSchedules.length === 0 ||
-//   //     !activeSchedules[0]?.shifts?.[0]
-//   //   ) {
-//   //     Alert.alert("Schedule Empty", "Please provide a schedule configuration");
-//   //     return;
-//   //   }
-
-//   //   const first = activeSchedules[0];
-//   //   const last = activeSchedules[activeSchedules.length - 1];
-
-//   //   const hourlyRate = 45;
-//   //   const gstPercentage = 10;
-//   //   const discountPercentage = 5;
-//   //   const subtotal = totalManHours * hourlyRate;
-//   //   const gstAmount = subtotal * (gstPercentage / 100);
-//   //   const totalQuotation = subtotal + gstAmount;
-//   //   const discountAmount = totalQuotation * (discountPercentage / 100);
-//   //   const payableNow = totalQuotation - discountAmount;
-//   //   const splitAmount = totalQuotation / 2;
-
-//   //   navigation.navigate("ReviewConfirm", {
-//   //     jobData: {
-//   //       category:
-//   //         form.category === "others" ? otherCategory.trim() : form.category,
-//   //       location: form.location || "Not specified",
-//   //       lat: form.lat ?? DEFAULT_LOCATION.lat,
-//   //       lng: form.lng ?? DEFAULT_LOCATION.lng,
-//   //       description: form.description || "",
-//   //       startDate: first.date,
-//   //       startTime: first.shifts[0]?.startTime ?? new Date(),
-//   //       endDate: last.date,
-//   //       endTime: last.shifts[last.shifts.length - 1]?.endTime ?? new Date(),
-//   //       shifts: activeSchedules.flatMap((day) =>
-//   //         (day?.shifts || []).map((s) => ({
-//   //           date: day.date,
-//   //           startTime: s.startTime,
-//   //           endTime: s.endTime,
-//   //           guardsCount: Number(s.guardsCount || 1),
-//   //         })),
-//   //       ),
-//   //       totalManHours,
-//   //       subtotal: parseFloat(subtotal.toFixed(2)),
-//   //       gstAmount: parseFloat(gstAmount.toFixed(2)),
-//   //       totalQuotation: parseFloat(totalQuotation.toFixed(2)),
-//   //       discountAmount: parseFloat(discountAmount.toFixed(2)),
-//   //       payableNow: parseFloat(payableNow.toFixed(2)),
-//   //       splitAmount: parseFloat(splitAmount.toFixed(2)),
-//   //       totalAmount: parseFloat(payableNow.toFixed(2)),
-//   //       jobLevel: selectedJobLevel || String(currentJobLevel || 1),
-//   //       tasks: tasks.map((t) => ({
-//   //         title: t.title || "Untitled Task",
-//   //         startTime: t.startTime,
-//   //         endTime: t.endTime,
-//   //       })),
-//   //     },
-//   //     uploadedFileUrls: uploadedFilePaths,
-//   //     selectedDocuments: documentTypes,
-//   //   });
-//   // };
-
 //   useEffect(() => {
 //     if (!form.category) return;
 //     const newLevel = calculateJobLevel(form.category);
@@ -1802,6 +1781,42 @@
 //     });
 //   };
 
+//   // ── FIX: Description field jump-to-top bug (Android) ──────────────────────
+//   // On some Android devices, RN's built-in "scroll focused input into view"
+//   // logic inside <ScrollView> mis-measures the input's position while the
+//   // MapView / gradients above are still settling their layout, so it snaps
+//   // the ScrollView to y=0 instead of scrolling down to the field.
+//   // We fix this by disabling the guesswork and manually scrolling the
+//   // Description field into view ourselves once it's focused.
+//   const scrollDescriptionIntoView = useCallback(() => {
+//     const scroller = scrollViewRef.current;
+//     const input = descriptionInputRef.current;
+//     if (!scroller || !input) return;
+
+//     const scrollerHandle = findNodeHandle(scroller);
+//     const inputHandle = findNodeHandle(input);
+//     if (!scrollerHandle || !inputHandle) return;
+
+//     UIManager.measureLayout(
+//       inputHandle,
+//       scrollerHandle,
+//       () => {
+//         // Measurement failed silently — nothing to do, just avoid a crash.
+//       },
+//       (_x: number, y: number) => {
+//         // Scroll so the field sits a comfortable distance below the top,
+//         // leaving room for the keyboard.
+//         scroller.scrollTo({ y: Math.max(y - 24, 0), animated: true });
+//       },
+//     );
+//   }, []);
+
+//   const handleDescriptionFocus = useCallback(() => {
+//     // Wait a beat for the keyboard/layout to settle before measuring —
+//     // measuring too early is what causes the incorrect jump-to-top.
+//     setTimeout(scrollDescriptionIntoView, Platform.OS === "android" ? 250 : 50);
+//   }, [scrollDescriptionIntoView]);
+
 //   const renderShiftRow = (
 //     shift: Shift,
 //     sIdx: number,
@@ -1872,574 +1887,594 @@
 //         <View style={{ width: 40 }} />
 //       </View>
 
-//       <ScrollView
-//         style={styles.container}
-//         keyboardShouldPersistTaps="handled"
-//         contentContainerStyle={{ paddingBottom: 120 }}
+//       <KeyboardAvoidingView
+//         style={{ flex: 1 }}
+//         behavior={Platform.OS === "ios" ? "padding" : undefined}
+//         keyboardVerticalOffset={Platform.OS === "ios" ? 60 : 0}
 //       >
-//         {/* Location & Map */}
-//         {/* Job Location */}
-//         <View style={styles.sectionCard}>
-//           <Text style={styles.inputLabel}>Job Location *</Text>
-
-//           <View
-//             style={[
-//               styles.searchBarContainer,
-//               errors.location && styles.inputErrorBorder,
-//             ]}
-//           >
-//             <Search size={18} color={TEXT_MUTED} style={{ marginRight: 8 }} />
-
-//             <TextInput
-//               style={styles.searchBarInput}
-//               placeholder="Search job site address..."
-//               placeholderTextColor={TEXT_MUTED}
-//               value={autocompleteQuery || form.location}
-//               onChangeText={setAutocompleteQuery}
-//             />
-
-//             {/* Clear Button (Cross) */}
-//             {(form.location || autocompleteQuery) && (
-//               <TouchableOpacity
-//                 onPress={() => {
-//                   setAutocompleteQuery("");
-//                   setForm((prev) => ({
-//                     ...prev,
-//                     location: "",
-//                     lat: DEFAULT_LOCATION.lat,
-//                     lng: DEFAULT_LOCATION.lng,
-//                   }));
-//                   setSuggestions([]);
-//                 }}
-//                 style={{ padding: 4 }}
-//               >
-//                 <X size={18} color={TEXT_MUTED} />
-//               </TouchableOpacity>
-//             )}
-//           </View>
-
-//           {errors.location && (
-//             <Text style={styles.errorText}>{errors.location}</Text>
-//           )}
-
-//           {loadingSuggestions && (
-//             <ActivityIndicator color={ACCENT_TEAL} style={{ marginTop: 8 }} />
-//           )}
-
-//           {suggestions.map((item) => (
-//             <TouchableOpacity
-//               key={item.place_id}
-//               style={styles.suggestionRow}
-//               onPress={() => selectSuggestion(item)}
-//             >
-//               <MapPin size={16} color={TEXT_MUTED} style={{ marginRight: 8 }} />
-//               <Text style={{ color: "#FFF", flex: 1 }}>{item.description}</Text>
-//             </TouchableOpacity>
-//           ))}
-
-//           <View style={styles.mapFrame}>
-//             <MapView
-//               ref={mapRef}
-//               style={StyleSheet.absoluteFillObject}
-//               initialRegion={{
-//                 latitude: form.lat,
-//                 longitude: form.lng,
-//                 latitudeDelta: 0.0922,
-//                 longitudeDelta: 0.0421,
-//               }}
-//               onMapReady={() => setMapReady(true)}
-//             >
-//               <Marker
-//                 coordinate={{ latitude: form.lat, longitude: form.lng }}
-//               />
-//             </MapView>
-//           </View>
-//         </View>
-
-//         {/* Shift Schedule */}
-//         <ScheduleErrorBoundary onReset={resetSchedule}>
+//         <ScrollView
+//           ref={scrollViewRef}
+//           style={styles.container}
+//           keyboardShouldPersistTaps="handled"
+//           keyboardDismissMode="on-drag"
+//           removeClippedSubviews={false}
+//           scrollEventThrottle={16}
+//           onScroll={(e) => {
+//             scrollOffsetY.current = e.nativeEvent.contentOffset.y;
+//           }}
+//           contentContainerStyle={{ paddingBottom: 120 }}
+//         >
+//           {/* Location & Map */}
+//           {/* Job Location */}
 //           <View style={styles.sectionCard}>
-//             <Text style={styles.sectionTitle}>Shift Timing</Text>
+//             <Text style={styles.inputLabel}>Job Location *</Text>
 
-//             <View style={styles.modeTabsRow}>
-//               <TouchableOpacity
-//                 style={[
-//                   styles.modeTabButton,
-//                   scheduleMode === "single" && styles.modeTabActive,
-//                 ]}
-//                 onPress={() => switchScheduleMode("single")}
-//               >
-//                 <Text
-//                   style={[
-//                     styles.modeTabTxt,
-//                     scheduleMode === "single" && styles.modeTabTxtActive,
-//                   ]}
+//             <View
+//               style={[
+//                 styles.searchBarContainer,
+//                 errors.location && styles.inputErrorBorder,
+//               ]}
+//             >
+//               <Search size={18} color={TEXT_MUTED} style={{ marginRight: 8 }} />
+
+//               <TextInput
+//                 style={styles.searchBarInput}
+//                 placeholder="Search job site address..."
+//                 placeholderTextColor={TEXT_MUTED}
+//                 value={autocompleteQuery || form.location}
+//                 onChangeText={setAutocompleteQuery}
+//               />
+
+//               {/* Clear Button (Cross) */}
+//               {(form.location || autocompleteQuery) && (
+//                 <TouchableOpacity
+//                   onPress={() => {
+//                     setAutocompleteQuery("");
+//                     setForm((prev) => ({
+//                       ...prev,
+//                       location: "",
+//                       lat: DEFAULT_LOCATION.lat,
+//                       lng: DEFAULT_LOCATION.lng,
+//                     }));
+//                     setSuggestions([]);
+//                   }}
+//                   style={{ padding: 4 }}
 //                 >
-//                   Single Day
-//                 </Text>
-//               </TouchableOpacity>
-//               <TouchableOpacity
-//                 style={[
-//                   styles.modeTabButton,
-//                   scheduleMode === "range" && styles.modeTabActive,
-//                 ]}
-//                 onPress={() => switchScheduleMode("range")}
-//               >
-//                 <Text
-//                   style={[
-//                     styles.modeTabTxt,
-//                     scheduleMode === "range" && styles.modeTabTxtActive,
-//                   ]}
-//                 >
-//                   Multiple Days
-//                 </Text>
-//               </TouchableOpacity>
+//                   <X size={18} color={TEXT_MUTED} />
+//                 </TouchableOpacity>
+//               )}
 //             </View>
 
-//             {scheduleMode === "single" ? (
-//               <View>
+//             {errors.location && (
+//               <Text style={styles.errorText}>{errors.location}</Text>
+//             )}
+
+//             {loadingSuggestions && (
+//               <ActivityIndicator color={ACCENT_TEAL} style={{ marginTop: 8 }} />
+//             )}
+
+//             {suggestions.map((item) => (
+//               <TouchableOpacity
+//                 key={item.place_id}
+//                 style={styles.suggestionRow}
+//                 onPress={() => selectSuggestion(item)}
+//               >
+//                 <MapPin
+//                   size={16}
+//                   color={TEXT_MUTED}
+//                   style={{ marginRight: 8 }}
+//                 />
+//                 <Text style={{ color: "#FFF", flex: 1 }}>
+//                   {item.description}
+//                 </Text>
+//               </TouchableOpacity>
+//             ))}
+
+//             <View style={styles.mapFrame}>
+//               <MapView
+//                 ref={mapRef}
+//                 style={StyleSheet.absoluteFillObject}
+//                 initialRegion={{
+//                   latitude: form.lat,
+//                   longitude: form.lng,
+//                   latitudeDelta: 0.0922,
+//                   longitudeDelta: 0.0421,
+//                 }}
+//                 onMapReady={() => setMapReady(true)}
+//               >
+//                 <Marker
+//                   coordinate={{ latitude: form.lat, longitude: form.lng }}
+//                 />
+//               </MapView>
+//             </View>
+//           </View>
+
+//           {/* Shift Schedule */}
+//           <ScheduleErrorBoundary onReset={resetSchedule}>
+//             <View style={styles.sectionCard}>
+//               <Text style={styles.sectionTitle}>Shift Timing</Text>
+
+//               <View style={styles.modeTabsRow}>
 //                 <TouchableOpacity
-//                   style={styles.calendarTriggerBtn}
-//                   onPress={() => {
-//                     setCalendarTarget("single");
-//                     setCalendarVisible(true);
-//                   }}
+//                   style={[
+//                     styles.modeTabButton,
+//                     scheduleMode === "single" && styles.modeTabActive,
+//                   ]}
+//                   onPress={() => switchScheduleMode("single")}
 //                 >
-//                   <Calendar
-//                     size={18}
-//                     color={ACCENT_TEAL}
-//                     style={{ marginRight: 8 }}
-//                   />
-//                   <Text style={{ color: "#FFF" }}>
-//                     Date: {formatDate(singleDaySchedule.date)}
+//                   <Text
+//                     style={[
+//                       styles.modeTabTxt,
+//                       scheduleMode === "single" && styles.modeTabTxtActive,
+//                     ]}
+//                   >
+//                     Single Day
 //                   </Text>
 //                 </TouchableOpacity>
-
-//                 <View style={styles.shiftHeaderRow}>
-//                   <Text style={[styles.shiftHeaderTxt, { flex: 2 }]}>
-//                     Start → End
-//                   </Text>
-//                   <Text style={[styles.shiftHeaderTxt, { width: 56 }]}>
-//                     Guards
-//                   </Text>
-//                   <View style={{ width: 90 }} />
-//                 </View>
-
-//                 {singleDaySchedule.shifts?.map((shift, sIdx) =>
-//                   renderShiftRow(shift, sIdx, 0, "single"),
-//                 )}
-
 //                 <TouchableOpacity
-//                   style={styles.addShiftRowBtn}
-//                   onPress={addSingleShift}
+//                   style={[
+//                     styles.modeTabButton,
+//                     scheduleMode === "range" && styles.modeTabActive,
+//                   ]}
+//                   onPress={() => switchScheduleMode("range")}
 //                 >
-//                   <Plus size={16} color={ACCENT_TEAL} />
 //                   <Text
-//                     style={{
-//                       color: ACCENT_TEAL,
-//                       marginLeft: 6,
-//                       fontWeight: "600",
-//                     }}
+//                     style={[
+//                       styles.modeTabTxt,
+//                       scheduleMode === "range" && styles.modeTabTxtActive,
+//                     ]}
 //                   >
-//                     Add Shift
+//                     Multiple Days
 //                   </Text>
 //                 </TouchableOpacity>
 //               </View>
-//             ) : (
-//               <View>
-//                 <View style={styles.modeTabsRow}>
-//                   <TouchableOpacity
-//                     style={[
-//                       styles.modeTabButton,
-//                       multiDayMode === "individual" && styles.modeTabActive,
-//                     ]}
-//                     onPress={() => switchMultiDayMode("individual")}
-//                   >
-//                     <Text
-//                       style={[
-//                         styles.modeTabTxt,
-//                         multiDayMode === "individual" &&
-//                           styles.modeTabTxtActive,
-//                       ]}
-//                     >
-//                       Individual Dates
-//                     </Text>
-//                   </TouchableOpacity>
-//                   <TouchableOpacity
-//                     style={[
-//                       styles.modeTabButton,
-//                       multiDayMode === "range" && styles.modeTabActive,
-//                     ]}
-//                     onPress={() => switchMultiDayMode("range")}
-//                   >
-//                     <Text
-//                       style={[
-//                         styles.modeTabTxt,
-//                         multiDayMode === "range" && styles.modeTabTxtActive,
-//                       ]}
-//                     >
-//                       Date Range
-//                     </Text>
-//                   </TouchableOpacity>
-//                 </View>
 
-//                 {multiDayMode === "range" ? (
-//                   <View
-//                     style={{
-//                       flexDirection: "row",
-//                       gap: 12,
-//                       marginBottom: 12,
+//               {scheduleMode === "single" ? (
+//                 <View>
+//                   <TouchableOpacity
+//                     style={styles.calendarTriggerBtn}
+//                     onPress={() => {
+//                       setCalendarTarget("single");
+//                       setCalendarVisible(true);
 //                     }}
 //                   >
-//                     <TouchableOpacity
-//                       style={[styles.calendarTriggerBtn, { flex: 1 }]}
-//                       onPress={() => {
-//                         setCalendarTarget("rangeFrom");
-//                         setCalendarVisible(true);
-//                       }}
-//                     >
-//                       <Calendar size={16} color={ACCENT_TEAL} />
-//                       <Text style={{ color: "#FFF", fontSize: 13 }}>
-//                         From: {formatDate(rangeFrom)}
-//                       </Text>
-//                     </TouchableOpacity>
-//                     <TouchableOpacity
-//                       style={[styles.calendarTriggerBtn, { flex: 1 }]}
-//                       onPress={() => {
-//                         setCalendarTarget("rangeTo");
-//                         setCalendarVisible(true);
-//                       }}
-//                     >
-//                       <Calendar size={16} color={ACCENT_TEAL} />
-//                       <Text style={{ color: "#FFF", fontSize: 13 }}>
-//                         To: {formatDate(rangeTo)}
-//                       </Text>
-//                     </TouchableOpacity>
+//                     <Calendar
+//                       size={18}
+//                       color={ACCENT_TEAL}
+//                       style={{ marginRight: 8 }}
+//                     />
+//                     <Text style={{ color: "#FFF" }}>
+//                       Date: {formatDate(singleDaySchedule.date)}
+//                     </Text>
+//                   </TouchableOpacity>
+
+//                   <View style={styles.shiftHeaderRow}>
+//                     <Text style={[styles.shiftHeaderTxt, { flex: 2 }]}>
+//                       Start → End
+//                     </Text>
+//                     <Text style={[styles.shiftHeaderTxt, { width: 56 }]}>
+//                       Guards
+//                     </Text>
+//                     <View style={{ width: 90 }} />
 //                   </View>
-//                 ) : (
+
+//                   {singleDaySchedule.shifts?.map((shift, sIdx) =>
+//                     renderShiftRow(shift, sIdx, 0, "single"),
+//                   )}
+
 //                   <TouchableOpacity
-//                     style={[styles.calendarTriggerBtn, { marginBottom: 14 }]}
-//                     onPress={openIndividualDatePicker}
+//                     style={styles.addShiftRowBtn}
+//                     onPress={addSingleShift}
 //                   >
 //                     <Plus size={16} color={ACCENT_TEAL} />
-//                     <Text style={{ color: "#FFF" }}>
-//                       Click Dates To Select/Deselect
+//                     <Text
+//                       style={{
+//                         color: ACCENT_TEAL,
+//                         marginLeft: 6,
+//                         fontWeight: "600",
+//                       }}
+//                     >
+//                       Add Shift
 //                     </Text>
 //                   </TouchableOpacity>
-//                 )}
-
-//                 <View style={styles.masterConfigContainer}>
-//                   <Text style={styles.masterConfigTitle}>
-//                     FAST FILL: APPLIES AUTOMATICALLY TO ALL DATES
-//                   </Text>
-
-//                   <View style={styles.masterRow}>
-//                     {/* Checkbox */}
+//                 </View>
+//               ) : (
+//                 <View>
+//                   <View style={styles.modeTabsRow}>
 //                     <TouchableOpacity
-//                       style={styles.checkboxRow}
-//                       onPress={handleApplyToAllToggle}
+//                       style={[
+//                         styles.modeTabButton,
+//                         multiDayMode === "individual" && styles.modeTabActive,
+//                       ]}
+//                       onPress={() => switchMultiDayMode("individual")}
 //                     >
-//                       <View
+//                       <Text
 //                         style={[
-//                           styles.checkboxBox,
-//                           applyToAll && styles.checkboxChecked,
+//                           styles.modeTabTxt,
+//                           multiDayMode === "individual" &&
+//                             styles.modeTabTxtActive,
 //                         ]}
 //                       >
-//                         {applyToAll && <Check size={12} color="#000" />}
-//                       </View>
-//                     </TouchableOpacity>
-
-//                     {/* Start Time */}
-//                     <TouchableOpacity
-//                       style={styles.timePickerButtonFlex}
-//                       onPress={() => openMasterTimePicker("startTime")}
-//                     >
-//                       <Text style={{ color: "#FFF" }}>
-//                         {masterStartTime
-//                           ? formatTime(masterStartTime)
-//                           : "Start"}
+//                         Individual Dates
 //                       </Text>
 //                     </TouchableOpacity>
-
-//                     {/* End Time */}
 //                     <TouchableOpacity
-//                       style={styles.timePickerButtonFlex}
-//                       onPress={() => openMasterTimePicker("endTime")}
+//                       style={[
+//                         styles.modeTabButton,
+//                         multiDayMode === "range" && styles.modeTabActive,
+//                       ]}
+//                       onPress={() => switchMultiDayMode("range")}
 //                     >
-//                       <Text style={{ color: "#FFF" }}>
-//                         {masterEndTime ? formatTime(masterEndTime) : "End"}
-//                       </Text>
-//                     </TouchableOpacity>
-
-//                     {/* Guards Input */}
-//                     <TextInput
-//                       style={styles.masterGuardsInputFlex}
-//                       placeholder="Guards"
-//                       placeholderTextColor={TEXT_MUTED}
-//                       keyboardType="number-pad"
-//                       value={masterGuards}
-//                       onChangeText={onMasterGuardsChange}
-//                     />
-//                   </View>
-//                 </View>
-
-//                 {(multiDayMode === "individual"
-//                   ? individualSchedules
-//                   : rangeSchedules
-//                 ).map((day, dIdx) => (
-//                   <View
-//                     key={`day-${dIdx}-${day.date.getTime()}`}
-//                     style={styles.dayGroupContainer}
-//                   >
-//                     <Text style={styles.dayGroupHeading}>
-//                       {formatDate(day.date)}
-//                     </Text>
-//                     {day.shifts?.map((shift, sIdx) =>
-//                       renderShiftRow(shift, sIdx, dIdx, multiDayMode),
-//                     )}
-//                     <TouchableOpacity
-//                       style={styles.addShiftRowBtn}
-//                       onPress={() =>
-//                         multiDayMode === "individual"
-//                           ? addIndividualShift(dIdx)
-//                           : addRangeShift(dIdx)
-//                       }
-//                     >
-//                       <Plus size={14} color={ACCENT_TEAL} />
 //                       <Text
-//                         style={{
-//                           color: ACCENT_TEAL,
-//                           fontSize: 13,
-//                           marginLeft: 4,
+//                         style={[
+//                           styles.modeTabTxt,
+//                           multiDayMode === "range" && styles.modeTabTxtActive,
+//                         ]}
+//                       >
+//                         Date Range
+//                       </Text>
+//                     </TouchableOpacity>
+//                   </View>
+
+//                   {multiDayMode === "range" ? (
+//                     <View
+//                       style={{
+//                         flexDirection: "row",
+//                         gap: 12,
+//                         marginBottom: 12,
+//                       }}
+//                     >
+//                       <TouchableOpacity
+//                         style={[styles.calendarTriggerBtn, { flex: 1 }]}
+//                         onPress={() => {
+//                           setCalendarTarget("rangeFrom");
+//                           setCalendarVisible(true);
 //                         }}
 //                       >
-//                         Add Shift
+//                         <Calendar size={16} color={ACCENT_TEAL} />
+//                         <Text style={{ color: "#FFF", fontSize: 13 }}>
+//                           From: {formatDate(rangeFrom)}
+//                         </Text>
+//                       </TouchableOpacity>
+//                       <TouchableOpacity
+//                         style={[styles.calendarTriggerBtn, { flex: 1 }]}
+//                         onPress={() => {
+//                           setCalendarTarget("rangeTo");
+//                           setCalendarVisible(true);
+//                         }}
+//                       >
+//                         <Calendar size={16} color={ACCENT_TEAL} />
+//                         <Text style={{ color: "#FFF", fontSize: 13 }}>
+//                           To: {formatDate(rangeTo)}
+//                         </Text>
+//                       </TouchableOpacity>
+//                     </View>
+//                   ) : (
+//                     <TouchableOpacity
+//                       style={[styles.calendarTriggerBtn, { marginBottom: 14 }]}
+//                       onPress={openIndividualDatePicker}
+//                     >
+//                       <Plus size={16} color={ACCENT_TEAL} />
+//                       <Text style={{ color: "#FFF" }}>
+//                         Click Dates To Select/Deselect
 //                       </Text>
 //                     </TouchableOpacity>
+//                   )}
+
+//                   <View style={styles.masterConfigContainer}>
+//                     <Text style={styles.masterConfigTitle}>
+//                       FAST FILL: APPLIES AUTOMATICALLY TO ALL DATES
+//                     </Text>
+
+//                     <View style={styles.masterRow}>
+//                       {/* Checkbox */}
+//                       <TouchableOpacity
+//                         style={styles.checkboxRow}
+//                         onPress={handleApplyToAllToggle}
+//                       >
+//                         <View
+//                           style={[
+//                             styles.checkboxBox,
+//                             applyToAll && styles.checkboxChecked,
+//                           ]}
+//                         >
+//                           {applyToAll && <Check size={12} color="#000" />}
+//                         </View>
+//                       </TouchableOpacity>
+
+//                       {/* Start Time */}
+//                       <TouchableOpacity
+//                         style={styles.timePickerButtonFlex}
+//                         onPress={() => openMasterTimePicker("startTime")}
+//                       >
+//                         <Text style={{ color: "#FFF" }}>
+//                           {masterStartTime
+//                             ? formatTime(masterStartTime)
+//                             : "Start"}
+//                         </Text>
+//                       </TouchableOpacity>
+
+//                       {/* End Time */}
+//                       <TouchableOpacity
+//                         style={styles.timePickerButtonFlex}
+//                         onPress={() => openMasterTimePicker("endTime")}
+//                       >
+//                         <Text style={{ color: "#FFF" }}>
+//                           {masterEndTime ? formatTime(masterEndTime) : "End"}
+//                         </Text>
+//                       </TouchableOpacity>
+
+//                       {/* Guards Input */}
+//                       <TextInput
+//                         style={styles.masterGuardsInputFlex}
+//                         placeholder="Guards"
+//                         placeholderTextColor={TEXT_MUTED}
+//                         keyboardType="number-pad"
+//                         value={masterGuards}
+//                         onChangeText={onMasterGuardsChange}
+//                       />
+//                     </View>
 //                   </View>
-//                 ))}
-//               </View>
-//             )}
-//           </View>
-//         </ScheduleErrorBoundary>
 
-//         {/* Hours Summary */}
-//         <View style={styles.quotationSummaryCard}>
-//           <View
-//             style={{ flexDirection: "row", justifyContent: "space-between" }}
-//           >
-//             <Text style={{ color: TEXT_MUTED }}>Calculated Hours</Text>
-//             <Text style={{ color: "#FFF", fontWeight: "700" }}>
-//               {totalManHours} Hours
-//             </Text>
-//           </View>
-//         </View>
-
-//         {/* Category */}
-//         <View style={styles.sectionCard}>
-//           <Text style={styles.inputLabel}>Job Category *</Text>
-
-//           <LinearGradient
-//             colors={[
-//               "rgba(255,255,255,0.41)",
-//               "rgba(255,255,255,0.35)",
-//               "rgba(255,255,255,0.2)",
-//               "rgba(255,255,255,0.10)",
-//               "rgba(255,255,255,0.22)",
-//             ]}
-//             start={{ x: 0, y: 0 }}
-//             end={{ x: 1, y: 1 }}
-//             style={styles.dropdownGradient}
-//           >
-//             <TouchableOpacity
-//               style={[
-//                 styles.selectBox,
-//                 // Only show error border when there's actually an error
-//                 errors.category && styles.inputErrorBorder,
-//               ]}
-//               onPress={() => setShowCategoryModal(true)}
-//             >
-//               <Text
-//                 style={{
-//                   color: form.category ? "#FFF" : TEXT_MUTED,
-//                   flex: 1,
-//                 }}
-//               >
-//                 {form.category
-//                   ? categoryOptions.find((o) => o.value === form.category)
-//                       ?.label || "Others"
-//                   : "Select Category"}
-//               </Text>
-//               <ChevronDown size={18} color={ACCENT_TEAL} />
-//             </TouchableOpacity>
-//           </LinearGradient>
-
-//           {/* Error Message */}
-//           {errors.category && (
-//             <Text style={styles.errorText}>{errors.category}</Text>
-//           )}
-
-//           {/* Others field */}
-//           {form.category === "others" && (
-//             <TextInput
-//               style={[styles.inputBox, { marginTop: 10 }]}
-//               placeholder="Specify Job Category"
-//               placeholderTextColor={TEXT_MUTED}
-//               value={otherCategory}
-//               onChangeText={setOtherCategory}
-//             />
-//           )}
-//         </View>
-
-//         {/* Documents */}
-//         <View style={styles.sectionCard}>
-//           <Text style={styles.inputLabel}>Required Documents</Text>
-//           <View style={styles.toggleContainer}>
-//             {documentOptions.slice(0, 3).map((doc) => {
-//               const isActive = form.documents.includes(doc.value);
-//               return (
-//                 <LinearGradient
-//                   key={doc.value}
-//                   colors={[
-//                     "rgba(255,255,255,0.41)",
-//                     "rgba(255,255,255,0.35)",
-//                     "rgba(255,255,255,0.2)",
-//                     "rgba(255,255,255,0.10)",
-//                     "rgba(255,255,255,0.22)",
-//                   ]}
-//                   start={{ x: 0, y: 0 }}
-//                   end={{ x: 1, y: 1 }}
-//                   style={styles.toggleCard}
-//                 >
-//                   <View style={styles.toggleRow}>
-//                     <Text style={styles.toggleLabel}>{doc.label}</Text>
-//                     <TouchableOpacity
-//                       activeOpacity={1}
-//                       style={styles.toggleSwitch}
-//                       onPress={() => toggleDocument(doc.value)}
+//                   {(multiDayMode === "individual"
+//                     ? individualSchedules
+//                     : rangeSchedules
+//                   ).map((day, dIdx) => (
+//                     <View
+//                       key={`day-${dIdx}-${day.date.getTime()}`}
+//                       style={styles.dayGroupContainer}
 //                     >
-//                       <View
-//                         style={[
-//                           styles.toggleOption,
-//                           isActive && styles.toggleOptionActiveYes,
-//                         ]}
+//                       <Text style={styles.dayGroupHeading}>
+//                         {formatDate(day.date)}
+//                       </Text>
+//                       {day.shifts?.map((shift, sIdx) =>
+//                         renderShiftRow(shift, sIdx, dIdx, multiDayMode),
+//                       )}
+//                       <TouchableOpacity
+//                         style={styles.addShiftRowBtn}
+//                         onPress={() =>
+//                           multiDayMode === "individual"
+//                             ? addIndividualShift(dIdx)
+//                             : addRangeShift(dIdx)
+//                         }
 //                       >
+//                         <Plus size={14} color={ACCENT_TEAL} />
 //                         <Text
-//                           style={[
-//                             styles.toggleText,
-//                             isActive && styles.toggleTextActive,
-//                           ]}
+//                           style={{
+//                             color: ACCENT_TEAL,
+//                             fontSize: 13,
+//                             marginLeft: 4,
+//                           }}
 //                         >
-//                           Yes
+//                           Add Shift
 //                         </Text>
-//                       </View>
-//                       <View
-//                         style={[
-//                           styles.toggleOption,
-//                           !isActive && styles.toggleOptionActiveNo,
-//                         ]}
-//                       >
-//                         <Text
-//                           style={[
-//                             styles.toggleText,
-//                             !isActive && styles.toggleTextActive,
-//                           ]}
-//                         >
-//                           No
-//                         </Text>
-//                       </View>
-//                     </TouchableOpacity>
-//                   </View>
-//                 </LinearGradient>
-//               );
-//             })}
-//           </View>
-//         </View>
-//         {/* Description */}
-//         {/* Description */}
-//         <View style={styles.sectionCard}>
-//           <View
-//             style={{ flexDirection: "row", justifyContent: "space-between" }}
-//           >
-//             <Text style={styles.inputLabel}>Detailed Description *</Text>
-//             <Text style={{ color: TEXT_MUTED, fontSize: 12 }}>
-//               {form.description.length}/{MAX_DESCRIPTION_LENGTH}
-//             </Text>
-//           </View>
+//                       </TouchableOpacity>
+//                     </View>
+//                   ))}
+//                 </View>
+//               )}
+//             </View>
+//           </ScheduleErrorBoundary>
 
-//           <TextInput
-//             style={[
-//               styles.textAreaBox,
-//               errors.description && styles.inputErrorBorder,
-//             ]}
-//             multiline
-//             numberOfLines={4}
-//             scrollEnabled={false} // Prevents nested scroll calculations on Android focus
-//             maxLength={MAX_DESCRIPTION_LENGTH}
-//             placeholder="Provide responsibilities, requirements, dress code, etc."
-//             placeholderTextColor={TEXT_MUTED}
-//             value={form.description}
-//             onChangeText={(text) => {
-//               setForm((prev) => ({ ...prev, description: text }));
-//               setErrors((prev) => ({
-//                 ...prev,
-//                 description: text.trim().length > 0 ? "" : prev.description,
-//               }));
-//             }}
-//           />
-
-//           {errors.description && (
-//             <Text style={styles.errorText}>{errors.description}</Text>
-//           )}
-//         </View>
-
-//         {/* File Upload */}
-//         <View style={styles.sectionCard}>
-//           <Text style={styles.inputLabel}>Upload Documents</Text>
-//           <TouchableOpacity
-//             style={styles.uploadBoxFrame}
-//             onPress={handleUpload}
-//             disabled={uploading}
-//           >
-//             {uploading ? (
-//               <ActivityIndicator color={ACCENT_TEAL} />
-//             ) : (
-//               <>
-//                 <CloudUpload size={28} color={ACCENT_TEAL} />
-//                 <Text style={{ color: "#FFF", marginTop: 6, fontSize: 13 }}>
-//                   Upload files here
-//                 </Text>
-//               </>
-//             )}
-//           </TouchableOpacity>
-//           {selectedFiles.map((file: any, i) => (
-//             <View key={i} style={styles.fileRowItem}>
-//               <FileCheck size={16} color={ACCENT_TEAL} />
-//               <Text style={styles.fileRowTxt} numberOfLines={1}>
-//                 {file.name || "document_file.pdf"}
+//           {/* Hours Summary */}
+//           <View style={styles.quotationSummaryCard}>
+//             <View
+//               style={{ flexDirection: "row", justifyContent: "space-between" }}
+//             >
+//               <Text style={{ color: TEXT_MUTED }}>Calculated Hours</Text>
+//               <Text style={{ color: "#FFF", fontWeight: "700" }}>
+//                 {totalManHours} Hours
 //               </Text>
 //             </View>
-//           ))}
-//         </View>
+//           </View>
 
-//         <TouchableOpacity
-//           style={styles.primaryActionButton}
-//           onPress={validateAndNext}
-//         >
-//           <LinearGradient
-//             colors={["#5CE1D6", "#2bbcb0"]}
-//             style={styles.gradientButtonWrapper}
-//             start={{ x: 0, y: 0 }}
-//             end={{ x: 1, y: 0 }}
+//           {/* Category */}
+//           <View style={styles.sectionCard}>
+//             <Text style={styles.inputLabel}>Job Category *</Text>
+
+//             <LinearGradient
+//               colors={[
+//                 "rgba(255,255,255,0.41)",
+//                 "rgba(255,255,255,0.35)",
+//                 "rgba(255,255,255,0.2)",
+//                 "rgba(255,255,255,0.10)",
+//                 "rgba(255,255,255,0.22)",
+//               ]}
+//               start={{ x: 0, y: 0 }}
+//               end={{ x: 1, y: 1 }}
+//               style={styles.dropdownGradient}
+//             >
+//               <TouchableOpacity
+//                 style={[
+//                   styles.selectBox,
+//                   // Only show error border when there's actually an error
+//                   errors.category && styles.inputErrorBorder,
+//                 ]}
+//                 onPress={() => setShowCategoryModal(true)}
+//               >
+//                 <Text
+//                   style={{
+//                     color: form.category ? "#FFF" : TEXT_MUTED,
+//                     flex: 1,
+//                   }}
+//                 >
+//                   {form.category
+//                     ? categoryOptions.find((o) => o.value === form.category)
+//                         ?.label || "Others"
+//                     : "Select Category"}
+//                 </Text>
+//                 <ChevronDown size={18} color={ACCENT_TEAL} />
+//               </TouchableOpacity>
+//             </LinearGradient>
+
+//             {/* Error Message */}
+//             {errors.category && (
+//               <Text style={styles.errorText}>{errors.category}</Text>
+//             )}
+
+//             {/* Others field */}
+//             {form.category === "others" && (
+//               <TextInput
+//                 style={[styles.inputBox, { marginTop: 10 }]}
+//                 placeholder="Specify Job Category"
+//                 placeholderTextColor={TEXT_MUTED}
+//                 value={otherCategory}
+//                 onChangeText={setOtherCategory}
+//               />
+//             )}
+//           </View>
+
+//           {/* Documents */}
+//           <View style={styles.sectionCard}>
+//             <Text style={styles.inputLabel}>Required Documents</Text>
+//             <View style={styles.toggleContainer}>
+//               {documentOptions.slice(0, 3).map((doc) => {
+//                 const isActive = form.documents.includes(doc.value);
+//                 return (
+//                   <LinearGradient
+//                     key={doc.value}
+//                     colors={[
+//                       "rgba(255,255,255,0.41)",
+//                       "rgba(255,255,255,0.35)",
+//                       "rgba(255,255,255,0.2)",
+//                       "rgba(255,255,255,0.10)",
+//                       "rgba(255,255,255,0.22)",
+//                     ]}
+//                     start={{ x: 0, y: 0 }}
+//                     end={{ x: 1, y: 1 }}
+//                     style={styles.toggleCard}
+//                   >
+//                     <View style={styles.toggleRow}>
+//                       <Text style={styles.toggleLabel}>{doc.label}</Text>
+//                       <TouchableOpacity
+//                         activeOpacity={1}
+//                         style={styles.toggleSwitch}
+//                         onPress={() => toggleDocument(doc.value)}
+//                       >
+//                         <View
+//                           style={[
+//                             styles.toggleOption,
+//                             isActive && styles.toggleOptionActiveYes,
+//                           ]}
+//                         >
+//                           <Text
+//                             style={[
+//                               styles.toggleText,
+//                               isActive && styles.toggleTextActive,
+//                             ]}
+//                           >
+//                             Yes
+//                           </Text>
+//                         </View>
+//                         <View
+//                           style={[
+//                             styles.toggleOption,
+//                             !isActive && styles.toggleOptionActiveNo,
+//                           ]}
+//                         >
+//                           <Text
+//                             style={[
+//                               styles.toggleText,
+//                               !isActive && styles.toggleTextActive,
+//                             ]}
+//                           >
+//                             No
+//                           </Text>
+//                         </View>
+//                       </TouchableOpacity>
+//                     </View>
+//                   </LinearGradient>
+//                 );
+//               })}
+//             </View>
+//           </View>
+
+//           {/* Description */}
+//           <View style={styles.sectionCard}>
+//             <View
+//               style={{ flexDirection: "row", justifyContent: "space-between" }}
+//             >
+//               <Text style={styles.inputLabel}>Detailed Description *</Text>
+//               <Text style={{ color: TEXT_MUTED, fontSize: 12 }}>
+//                 {form.description.length}/{MAX_DESCRIPTION_LENGTH}
+//               </Text>
+//             </View>
+
+//             <TextInput
+//               ref={descriptionInputRef}
+//               style={[
+//                 styles.textAreaBox,
+//                 errors.description && styles.inputErrorBorder,
+//               ]}
+//               multiline
+//               numberOfLines={4}
+//               maxLength={MAX_DESCRIPTION_LENGTH}
+//               placeholder="Provide responsibilities, requirements, dress code, etc."
+//               placeholderTextColor={TEXT_MUTED}
+//               value={form.description}
+//               onFocus={handleDescriptionFocus}
+//               onChangeText={(text) => {
+//                 setForm((prev) => ({ ...prev, description: text }));
+//                 setErrors((prev) => ({
+//                   ...prev,
+//                   description: text.trim().length > 0 ? "" : prev.description,
+//                 }));
+//               }}
+//             />
+
+//             {errors.description && (
+//               <Text style={styles.errorText}>{errors.description}</Text>
+//             )}
+//           </View>
+
+//           {/* File Upload */}
+//           <View style={styles.sectionCard}>
+//             <Text style={styles.inputLabel}>Upload Documents</Text>
+//             <TouchableOpacity
+//               style={styles.uploadBoxFrame}
+//               onPress={handleUpload}
+//               disabled={uploading}
+//             >
+//               {uploading ? (
+//                 <ActivityIndicator color={ACCENT_TEAL} />
+//               ) : (
+//                 <>
+//                   <CloudUpload size={28} color={ACCENT_TEAL} />
+//                   <Text style={{ color: "#FFF", marginTop: 6, fontSize: 13 }}>
+//                     Upload files here
+//                   </Text>
+//                 </>
+//               )}
+//             </TouchableOpacity>
+//             {selectedFiles.map((file: any, i) => (
+//               <View key={i} style={styles.fileRowItem}>
+//                 <FileCheck size={16} color={ACCENT_TEAL} />
+//                 <Text style={styles.fileRowTxt} numberOfLines={1}>
+//                   {file.name || "document_file.pdf"}
+//                 </Text>
+//               </View>
+//             ))}
+//           </View>
+
+//           <TouchableOpacity
+//             style={styles.primaryActionButton}
+//             onPress={validateAndNext}
 //           >
-//             <Text style={styles.primaryActionText}>
-//               Proceed to Quotation Review
-//             </Text>
-//             <ArrowRight size={18} color="#001F3F" />
-//           </LinearGradient>
-//         </TouchableOpacity>
-//         <View style={{ height: 40 }} />
-//       </ScrollView>
+//             <LinearGradient
+//               colors={["#5CE1D6", "#2bbcb0"]}
+//               style={styles.gradientButtonWrapper}
+//               start={{ x: 0, y: 0 }}
+//               end={{ x: 1, y: 0 }}
+//             >
+//               <Text style={styles.primaryActionText}>
+//                 Proceed to Quotation Review
+//               </Text>
+//               <ArrowRight size={18} color="#001F3F" />
+//             </LinearGradient>
+//           </TouchableOpacity>
+//           <View style={{ height: 40 }} />
+//         </ScrollView>
+//       </KeyboardAvoidingView>
 
 //       {/* Time Picker */}
 //       {pickerVisible && (
@@ -2722,7 +2757,6 @@
 //           </Pressable>
 //         </Pressable>
 //       </Modal>
-//       {/* </KeyboardAvoidingView> */}
 //       {/* <BottomTab navigation={navigation} activeTab="CreateJob" /> */}
 //     </SafeAreaView>
 //   );
@@ -3018,46 +3052,28 @@
 //     color: TEXT_MUTED,
 //     fontWeight: "600",
 //   },
-//   // daysMatrixGrid: {
-//   //   flexDirection: "row",
-//   //   flexWrap: "wrap",
-//   //   justifyContent: "space-between", // better than gap for exact 7 columns
-//   // },
-//   // emptyGridCell: {
-//   //   width: "13.5%",          // ~1/7 of the width
-//   //   height: 38,
-//   // },
-//   // calendarDayCell: {
-//   //   width: "13.5%",          // ~1/7 of the width
-//   //   height: 38,
-//   //   backgroundColor: CHIP_DARK,
-//   //   borderRadius: 6,
-//   //   alignItems: "center",
-//   //   justifyContent: "center",
-//   //   marginBottom: 6,
-//   // },
-
+//   // Calendar grid: always renders exactly CAL_COLUMNS (7) cells per row.
+//   // No horizontal margins on the cells — spacing between cells comes purely
+//   // from each cell's own width share, so 7 columns always add up to 100%
+//   // regardless of screen width (fixes the "only 6 fit per row" issue that
+//   // was caused by width: 12.5% i.e. 8 columns' worth, plus a fixed
+//   // marginRight that pushed the 7th/8th cell to wrap early).
 //   daysMatrixGrid: {
 //     flexDirection: "row",
 //     flexWrap: "wrap",
 //   },
 //   emptyGridCell: {
-//     width: "12.5%",
+//     width: `${CAL_CELL_WIDTH_PERCENT}%`,
 //     height: 38,
-//     // no margin
 //   },
 //   calendarDayCell: {
-//     width: "12.5%",
+//     width: `${CAL_CELL_WIDTH_PERCENT}%`,
 //     height: 38,
-//     backgroundColor: CHIP_DARK,
-//     borderRadius: 6,
 //     alignItems: "center",
 //     justifyContent: "center",
 //     marginBottom: 6,
-//     marginRight: 5,
-//     // no marginBottom or margin here
 //   },
-//   dayCellSelected: { backgroundColor: ACCENT_TEAL },
+//   dayCellSelected: { backgroundColor: ACCENT_TEAL, borderRadius: 6 },
 //   dayCellInRange: { backgroundColor: "#1E293B" },
 //   dayCellText: { color: "#FFF", fontSize: 13 },
 //   dayCellTextSelected: { color: "#001F3F", fontWeight: "700" },
@@ -3271,14 +3287,12 @@ import {
   Plus,
   Trash2,
   ArrowLeft,
-  AlertCircle,
   ChevronRight,
   X,
 } from "lucide-react-native";
 import { Keyboard } from "react-native";
 import LinearGradient from "react-native-linear-gradient";
 import { RatesConfig } from "../utils/rateCalculator";
-import BottomTab from "./BottomTab";
 
 const { width } = Dimensions.get("window");
 
@@ -3411,7 +3425,7 @@ const datesBetween = (from: Date, to: Date): Date[] => {
 };
 
 /**
- * FIX: Takes the CALENDAR DATE from `anchorDate` and the TIME from `timePicker`.
+ * Takes the CALENDAR DATE from `anchorDate` and the TIME from `timePicker`.
  * This ensures the resulting Date always has the correct calendar date (16th, 17th, 18th…)
  * regardless of what date is stored inside the timePicker value.
  */
@@ -3495,7 +3509,7 @@ const splitShift = (
 };
 
 /**
- * FIX: makeDefaultShift now accepts the parent day's date so startTime/endTime
+ * makeDefaultShift accepts the parent day's date so startTime/endTime
  * are always anchored to the correct calendar date (not today's date).
  */
 const makeDefaultShift = (anchorDate?: Date): Shift => {
@@ -3538,7 +3552,7 @@ const makeDefaultShift = (anchorDate?: Date): Shift => {
 };
 
 /**
- * FIX: makeDaySchedule passes the date into makeDefaultShift so its
+ * makeDaySchedule passes the date into makeDefaultShift so its
  * inner Date objects carry the correct calendar date from the start.
  */
 const makeDaySchedule = (date: Date): DaySchedule => ({
@@ -3644,6 +3658,31 @@ export default function CreateJobScreen() {
   const [suggestions, setSuggestions] = useState<PlacePrediction[]>([]);
   const [loadingSuggestions, setLoadingSuggestions] = useState(false);
 
+  // ── State-match / shift-splitting control ──────────────────────────────
+  // Set by the /check-state API (called after the user picks a location).
+  //  - true  → job location state is one of the user's allowed states.
+  //            ReviewConfirmScreen renders the ORIGINAL flow: fetch charge
+  //            rates itself, show the full quotation breakdown, collect
+  //            payment via Stripe immediately. No estimate is calculated
+  //            here and /calculate-job-amount is never called.
+  //  - false → job location state does NOT match. ReviewConfirmScreen
+  //            renders the NEW broadcast/estimate flow (no payment
+  //            collected now, admin payment override + contractor
+  //            invoice). We DO call /calculate-job-amount here to get the
+  //            estimated price range to show on that screen.
+  //  - null  → not yet checked (no location selected, or the check-state
+  //            call failed). Treated the same as `true` (default/
+  //            restricted behaviour) everywhere in this screen.
+  const [locationStateCode, setLocationStateCode] = useState<string>("");
+  const [stateMatch, setStateMatch] = useState<boolean | null>(null);
+  const [userAllowedStates, setUserAllowedStates] = useState<string[]>([]);
+  const [calculatingQuote, setCalculatingQuote] = useState(false);
+
+  // Returns true when shifts should be auto-split/validated (default —
+  // state matched or not yet checked). Returns false only when the
+  // check-state API explicitly reported no match.
+  const canSplitShifts = () => stateMatch !== false;
+
   const [scheduleMode, setScheduleMode] = useState<ScheduleMode>("single");
   const [multiDayMode, setMultiDayMode] = useState<MultiDayMode>("individual");
 
@@ -3654,8 +3693,6 @@ export default function CreateJobScreen() {
     },
   );
 
-  const [ratesLoading, setRatesLoading] = useState(true);
-  const [ratesError, setRatesError] = useState<string | null>(null);
   const [selectedJobLevel, setSelectedJobLevel] = useState<string | null>(null);
   const [rangeFrom, setRangeFrom] = useState<Date>(new Date());
   const [rangeTo, setRangeTo] = useState<Date>(new Date());
@@ -3663,7 +3700,6 @@ export default function CreateJobScreen() {
     const today = new Date();
     return [makeDaySchedule(today)];
   });
-  const [rates, setRates] = useState<RatesConfig | null>(null);
   const [individualDates, setIndividualDates] = useState<Date[]>([]);
   const [individualSchedules, setIndividualSchedules] = useState<DaySchedule[]>(
     [],
@@ -3725,7 +3761,6 @@ export default function CreateJobScreen() {
     if (mode === "single") {
       setSingleDaySchedule(makeDaySchedule(new Date()));
     } else {
-      // When going to range mode, make sure we start clean based on current sub-mode
       if (multiDayMode === "range" && rangeSchedules.length === 0) {
         setRangeSchedules([makeDaySchedule(new Date())]);
       } else if (
@@ -3744,11 +3779,9 @@ export default function CreateJobScreen() {
     setMultiDayMode(mode);
 
     if (mode === "range") {
-      // Reset Individual completely
       setIndividualDates([]);
       setIndividualSchedules([]);
 
-      // Ensure Date Range has at least one default day + shift
       if (rangeSchedules.length === 0) {
         const today = new Date();
         setRangeFrom(today);
@@ -3756,10 +3789,8 @@ export default function CreateJobScreen() {
         setRangeSchedules([makeDaySchedule(today)]);
       }
     } else if (mode === "individual") {
-      // Reset Range completely
       setRangeSchedules([]);
 
-      // Ensure Individual has at least one default day + shift
       if (individualSchedules.length === 0) {
         const today = new Date();
         setIndividualDates([today]);
@@ -3967,6 +3998,10 @@ export default function CreateJobScreen() {
 
     setAutocompleteQuery("");
     setSuggestions([]);
+
+    setLocationStateCode("");
+    setStateMatch(null);
+    setUserAllowedStates([]);
   }, []);
 
   // Reset form only on fresh navigation (not when editing from ReviewConfirm)
@@ -3979,6 +4014,8 @@ export default function CreateJobScreen() {
     }, [isEdit, resetForm]),
   );
 
+
+
   useEffect(() => {
     if (autocompleteQuery.length < 3) {
       setSuggestions([]);
@@ -3987,15 +4024,25 @@ export default function CreateJobScreen() {
 
     const timeout = setTimeout(async () => {
       setLoadingSuggestions(true);
+
       try {
-        const url = `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${encodeURIComponent(
-          autocompleteQuery,
-        )}&components=country:au&types=address&language=en&key=${GOOGLE_PLACES_KEY}`;
+        const url =
+          `https://maps.googleapis.com/maps/api/place/autocomplete/json` +
+          `?input=${encodeURIComponent(autocompleteQuery)}` +
+          `&types=address` + 
+          `&components=country:au` + 
+          `&language=en` +
+          `&key=${GOOGLE_PLACES_KEY}`;
 
         const res = await fetch(url);
         const json = await res.json();
 
-        setSuggestions(json.status === "OK" ? json.predictions || [] : []);
+        if (json.status === "OK") {
+          setSuggestions(json.predictions || []);
+        } else {
+          console.warn("Places status:", json.status, json.error_message);
+          setSuggestions([]);
+        }
       } catch (err) {
         console.error("Autocomplete error:", err);
         setSuggestions([]);
@@ -4011,18 +4058,41 @@ export default function CreateJobScreen() {
     setAutocompleteQuery("");
     setSuggestions([]);
     setErrors((prev) => ({ ...prev, location: undefined }));
+
     try {
-      const url = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${prediction.place_id}&fields=geometry&key=${GOOGLE_PLACES_KEY}`;
+      // Request address_components so we can extract the state
+      const url = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${prediction.place_id}&fields=geometry,address_components,formatted_address&key=${GOOGLE_PLACES_KEY}`;
+
       const res = await fetch(url);
       const json = await res.json();
-      if (json.status === "OK" && json.result?.geometry?.location) {
+
+      if (json.status === "OK" && json.result) {
         const { lat, lng } = json.result.geometry.location;
+        const address = json.result.formatted_address || prediction.description;
+
+        // Extract Australian state code (administrative_area_level_1)
+        let stateCode = "";
+        const components = json.result.address_components || [];
+
+        const stateComponent = components.find((c: any) =>
+          c.types.includes("administrative_area_level_1"),
+        );
+
+        if (stateComponent) {
+          // Google usually returns "VIC", "QLD", "NSW", etc.
+          stateCode = stateComponent.short_name.toLowerCase(); // → "vic", "qld", ...
+        }
+
+        setLocationStateCode(stateCode);
+
         setForm((prev) => ({
           ...prev,
-          location: prediction.description,
+          location: address,
           lat,
           lng,
         }));
+
+        // Animate map
         if (mapReady && mapRef.current) {
           mapRef.current.animateToRegion(
             {
@@ -4034,13 +4104,56 @@ export default function CreateJobScreen() {
             800,
           );
         }
+
+        // ── Call your check-state API ──────────────────────────────
+        if (stateCode) {
+          await callCheckState(stateCode);
+        } else {
+          console.warn("Could not extract state from address");
+          setStateMatch(null);
+          setUserAllowedStates([]);
+        }
       }
     } catch (err) {
       console.error("Place details error:", err);
     }
   };
 
-  // FIX: When range dates change, preserve existing shifts for matching days
+  const callCheckState = async (state: string) => {
+    try {
+      const token = await getAuthToken();
+
+      const payload = { state };
+
+      console.log("Sending payload to check-state:", payload);
+
+      const res = await axios.post(`${BASE_URL}/check-state`, payload, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+
+      console.log("check-state response:", res.data);
+
+      // Expected shape:
+      // { state_match: true, message: "...", user_id: 1, user_states: ["vic"] }
+      const match = !!res.data?.state_match;
+      setStateMatch(match);
+      setUserAllowedStates(
+        Array.isArray(res.data?.user_states) ? res.data.user_states : [],
+      );
+    } catch (error) {
+      console.error("check-state API error:", error);
+      // Fail safe: unknown state-match status keeps the default
+      // (restricted / splitting) behaviour rather than silently
+      // removing restrictions on an API error.
+      setStateMatch(null);
+      setUserAllowedStates([]);
+    }
+  };
+
+  // When range dates change, preserve existing shifts for matching days
   // and create properly-dated new DaySchedules for new days.
   useEffect(() => {
     if (scheduleMode !== "range" || multiDayMode !== "range") return;
@@ -4048,11 +4161,10 @@ export default function CreateJobScreen() {
     setRangeSchedules((prev) =>
       days.map((date) => {
         const existing = prev.find((p) => isSameDay(p.date, date));
-        // FIX: if existing found, ensure its shifts have correct anchor dates
         if (existing) {
           return {
             ...existing,
-            date: date, // always use the clean midnight date
+            date: date,
             shifts: existing.shifts.map((s) => ({
               ...s,
               startTime: combineDateAndTime(date, s.startTime),
@@ -4065,7 +4177,7 @@ export default function CreateJobScreen() {
     );
   }, [rangeFrom, rangeTo, scheduleMode, multiDayMode]);
 
-  // FIX: Same anchor-date correction for individual mode
+  // Same anchor-date correction for individual mode
   useEffect(() => {
     if (scheduleMode !== "range" || multiDayMode !== "individual") return;
     setIndividualSchedules((prev) =>
@@ -4097,14 +4209,13 @@ export default function CreateJobScreen() {
     if (!start || !end) return;
 
     const buildShifts = (date: Date): Shift[] => {
-      // FIX: Anchor both start and end to the specific day's date
       const dayStart = combineDateAndTime(date, start);
       let dayEnd = combineDateAndTime(date, end);
       if (dayEnd <= dayStart)
         dayEnd = new Date(dayEnd.getTime() + 24 * 60 * 60 * 1000);
       const hours = shiftDurationHours(dayStart, dayEnd);
 
-      if (hours > 13) {
+      if (canSplitShifts() && hours > 13) {
         const splits = splitShift(dayStart, dayEnd);
         return splits.map((s) => ({
           id: `shift-${Math.random().toString(36).slice(2, 7)}`,
@@ -4169,7 +4280,6 @@ export default function CreateJobScreen() {
   const addSingleShift = () =>
     setSingleDaySchedule((prev) => ({
       ...prev,
-      // FIX: pass the day's date so the new shift gets correct anchor dates
       shifts: [...(prev.shifts || []), makeDefaultShift(prev.date)],
     }));
 
@@ -4258,7 +4368,6 @@ export default function CreateJobScreen() {
     setRangeSchedules((prev) => {
       const days = [...prev];
       if (!days[di]) return prev;
-      // FIX: pass the day's date so the new shift is anchored correctly
       days[di] = {
         ...days[di],
         shifts: [...(days[di].shifts || []), makeDefaultShift(days[di].date)],
@@ -4290,7 +4399,6 @@ export default function CreateJobScreen() {
     setIndividualSchedules((prev) => {
       const days = [...prev];
       if (!days[di]) return prev;
-      // FIX: pass the day's date so the new shift is anchored correctly
       days[di] = {
         ...days[di],
         shifts: [...(days[di].shifts || []), makeDefaultShift(days[di].date)],
@@ -4353,7 +4461,6 @@ export default function CreateJobScreen() {
 
     const isSingle = mode === "single";
 
-    // FIX: Get the canonical calendar date of the day being edited
     let dayAnchorDate: Date;
     let currentShift: Shift | undefined;
 
@@ -4373,8 +4480,6 @@ export default function CreateJobScreen() {
       return;
     }
 
-    // FIX: Always produce newStart/newEnd anchored to dayAnchorDate.
-    // combineDateAndTime(anchorDate, timePicker) takes date from anchor, time from picker.
     let newStart =
       field === "startTime"
         ? combineDateAndTime(dayAnchorDate, selectedDate)
@@ -4385,15 +4490,15 @@ export default function CreateJobScreen() {
         ? combineDateAndTime(dayAnchorDate, selectedDate)
         : combineDateAndTime(dayAnchorDate, currentShift.endTime);
 
-    // If end is not after start, push end to next day
     if (newEnd <= newStart) {
       newEnd = new Date(newEnd.getTime() + 24 * 60 * 60 * 1000);
     }
 
     const hours = shiftDurationHours(newStart, newEnd);
 
-    // ── SPLIT LOGIC ───────────────────────────────────────────────────────────
-    if (field === "endTime" && hours > 13) {
+    // ── SPLIT LOGIC (skipped entirely when the job's state doesn't match
+    // the user's allowed states — any shift length is then accepted as-is) ──
+    if (canSplitShifts() && field === "endTime" && hours > 13) {
       const splits = splitShift(newStart, newEnd);
       const newShifts: Shift[] = splits.map((s) => ({
         id: `shift-${Math.random().toString(36).slice(2, 7)}`,
@@ -4413,7 +4518,6 @@ export default function CreateJobScreen() {
       });
 
       if (isSingle) {
-        // Group split shifts by their actual calendar date
         const grouped: DaySchedule[] = [];
         newShifts.forEach((shift) => {
           const d = new Date(
@@ -4440,28 +4544,23 @@ export default function CreateJobScreen() {
           );
         }
       } else {
-        // FIX: Route each split shift to the day whose calendar date matches
-        // the shift's own startTime date — NOT the dayIndex.
         const setFn =
           mode === "individual" ? setIndividualSchedules : setRangeSchedules;
 
         setFn((prev: DaySchedule[]) => {
           if (!prev || !prev[dayIndex]) return prev;
 
-          // Deep-clone the whole list
           const newList: DaySchedule[] = prev.map((item) => ({
             ...item,
             date: new Date(item.date),
             shifts: item.shifts.map((s) => ({ ...s })),
           }));
 
-          // Remove the original long shift
           newList[dayIndex] = {
             ...newList[dayIndex],
             shifts: newList[dayIndex].shifts.filter((_, i) => i !== shiftIndex),
           };
 
-          // Place each split shift into the correct day bucket by its actual date
           newShifts.forEach((shift) => {
             const shiftDay = new Date(
               shift.startTime.getFullYear(),
@@ -4553,7 +4652,6 @@ export default function CreateJobScreen() {
   };
 
   const isDayInRange = (d: Date) => {
-    // Only apply range highlighting when calendar is open for range selection
     if (calendarTarget !== "rangeFrom" && calendarTarget !== "rangeTo") {
       return false;
     }
@@ -4604,7 +4702,6 @@ export default function CreateJobScreen() {
       });
     }
 
-    // Close calendar only for single and range (not individual)
     if (calendarTarget !== "individual") {
       setCalendarVisible(false);
     }
@@ -4647,10 +4744,7 @@ export default function CreateJobScreen() {
   const handleUpload = async () => {
     try {
       const [file] = await pick({
-        type: [
-          types.images, // JPG, PNG, HEIC, etc.
-          types.pdf, // PDF files
-        ],
+        type: [types.images, types.pdf],
       });
 
       if (!file) return;
@@ -4659,7 +4753,6 @@ export default function CreateJobScreen() {
 
       let fileToUpload = file;
 
-      // Auto-compress images (optional but recommended)
       if (file.type?.startsWith("image/")) {
         try {
           const resized = await ImageResizer.createResizedImage(
@@ -4709,17 +4802,25 @@ export default function CreateJobScreen() {
       setUploading(false);
     }
   };
-  const validateAndNext = () => {
+
+  // ─────────────────────────────────────────────────────────────
+  // Proceed to Quotation: validates the form, then — ONLY when the
+  // job's location state does NOT match one of the user's allowed
+  // states (stateMatch === false) — calls the dynamic
+  // /calculate-job-amount API to get a price estimate. When the state
+  // DOES match (stateMatch === true, or hasn't been checked / is null),
+  // no estimate call is made at all: ReviewConfirmScreen fetches its own
+  // charge rates and runs the original quotation + payment flow.
+  // ─────────────────────────────────────────────────────────────
+  const validateAndNext = async () => {
     const newErrors: FormErrors = {};
 
-    // Category validation
     if (!form.category) {
       newErrors.category = "Please select a job category";
     } else if (form.category === "others" && !otherCategory.trim()) {
       newErrors.category = "Please enter job category";
     }
 
-    // Description & Location
     if (!form.description?.trim()) {
       newErrors.description = "Description is required";
     }
@@ -4734,9 +4835,6 @@ export default function CreateJobScreen() {
       return;
     }
 
-    // ─────────────────────────────────────────────────────────────
-    // SHIFT DURATION VALIDATION - Minimum 4 Hours
-    // ─────────────────────────────────────────────────────────────
     const activeSchedules =
       scheduleMode === "single"
         ? [singleDaySchedule]
@@ -4744,53 +4842,42 @@ export default function CreateJobScreen() {
         ? individualSchedules
         : rangeSchedules;
 
-    let hasInvalidShift = false;
-    const invalidShifts: string[] = [];
+    // ─────────────────────────────────────────────────────────────
+    // SHIFT DURATION VALIDATION - Minimum 4 Hours
+    // Only enforced when the job's state matches the user's allowed
+    // states (or hasn't been checked yet). When it does NOT match, any
+    // shift length is allowed.
+    // ─────────────────────────────────────────────────────────────
+    if (canSplitShifts()) {
+      let hasInvalidShift = false;
 
-    activeSchedules.forEach((day, dayIdx) => {
-      if (!day?.shifts || day.shifts.length === 0) return;
+      activeSchedules.forEach((day) => {
+        if (!day?.shifts || day.shifts.length === 0) return;
 
-      day.shifts.forEach((shift, shiftIdx) => {
-        const hours = shiftDurationHours(
-          safeDate(shift.startTime),
-          safeDate(shift.endTime),
-        );
-
-        if (hours < 4) {
-          hasInvalidShift = true;
-          const dateStr = formatDate(day.date);
-          invalidShifts.push(
-            `• ${dateStr} → Shift ${shiftIdx + 1} (${hours.toFixed(1)} hrs)`,
+        day.shifts.forEach((shift) => {
+          const hours = shiftDurationHours(
+            safeDate(shift.startTime),
+            safeDate(shift.endTime),
           );
-        }
-      });
-    });
 
-    if (hasInvalidShift) {
-      Alert.alert(
-        "Minimum 4 Hours Required",
-        "Each shift must be at least 4 hours long.",
-        [{ text: "OK" }],
-      );
-      return;
+          if (hours < 4) {
+            hasInvalidShift = true;
+          }
+        });
+      });
+
+      if (hasInvalidShift) {
+        Alert.alert(
+          "Minimum 4 Hours Required",
+          "Each shift must be at least 4 hours long.",
+          [{ text: "OK" }],
+        );
+        return;
+      }
     }
 
-    // ─────────────────────────────────────────────────────────────
-    // Proceed to Review Screen
-    // ─────────────────────────────────────────────────────────────
     const first = activeSchedules[0];
     const last = activeSchedules[activeSchedules.length - 1];
-
-    const hourlyRate = 45;
-    const gstPercentage = 10;
-    const discountPercentage = 5;
-
-    const subtotal = totalManHours * hourlyRate;
-    const gstAmount = subtotal * (gstPercentage / 100);
-    const totalQuotation = subtotal + gstAmount;
-    const discountAmount = totalQuotation * (discountPercentage / 100);
-    const payableNow = totalQuotation - discountAmount;
-    const splitAmount = totalQuotation / 2;
 
     const normalizedShifts = activeSchedules.flatMap((day) =>
       (day?.shifts || []).map((s) => ({
@@ -4801,37 +4888,131 @@ export default function CreateJobScreen() {
       })),
     );
 
-    navigation.navigate("ReviewConfirm", {
-      jobData: {
-        category:
-          form.category === "others" ? otherCategory.trim() : form.category,
-        location: form.location || "Not specified",
-        lat: form.lat ?? DEFAULT_LOCATION.lat,
-        lng: form.lng ?? DEFAULT_LOCATION.lng,
-        description: form.description || "",
-        startDate: first.date,
-        startTime: first.shifts[0]?.startTime ?? new Date(),
-        endDate: last.date,
-        endTime: last.shifts[last.shifts.length - 1]?.endTime ?? new Date(),
-        shifts: normalizedShifts,
-        totalManHours,
-        subtotal: parseFloat(subtotal.toFixed(2)),
-        gstAmount: parseFloat(gstAmount.toFixed(2)),
-        totalQuotation: parseFloat(totalQuotation.toFixed(2)),
-        discountAmount: parseFloat(discountAmount.toFixed(2)),
-        payableNow: parseFloat(payableNow.toFixed(2)),
-        splitAmount: parseFloat(splitAmount.toFixed(2)),
-        totalAmount: parseFloat(payableNow.toFixed(2)),
-        jobLevel: selectedJobLevel || String(currentJobLevel || 1),
-        tasks: tasks.map((t) => ({
-          title: t.title || "Untitled Task",
-          startTime: t.startTime,
-          endTime: t.endTime,
-        })),
-      },
-      uploadedFileUrls: uploadedFilePaths,
-      selectedDocuments: documentTypes,
-    });
+    if (normalizedShifts.length === 0) {
+      Alert.alert("Schedule Required", "Please add at least one shift.");
+      return;
+    }
+
+    // ── State matches (or hasn't been checked) → go straight to
+    // ReviewConfirmScreen. That screen fetches its own charge rates and
+    // runs the original quotation + Stripe payment flow. No estimate API
+    // call is made here in that case. ──────────────────────────────────
+    if (stateMatch !== false) {
+      navigation.navigate("ReviewConfirm", {
+        jobData: {
+          category:
+            form.category === "others" ? otherCategory.trim() : form.category,
+          location: form.location || "Not specified",
+          lat: form.lat ?? DEFAULT_LOCATION.lat,
+          lng: form.lng ?? DEFAULT_LOCATION.lng,
+          description: form.description || "",
+          startDate: first.date,
+          startTime: first.shifts[0]?.startTime ?? new Date(),
+          endDate: last.date,
+          endTime: last.shifts[last.shifts.length - 1]?.endTime ?? new Date(),
+          shifts: normalizedShifts,
+          totalManHours,
+          jobLevel: selectedJobLevel || String(currentJobLevel || 1),
+          jobLocationState: locationStateCode || "",
+          stateMatch: stateMatch,
+          tasks: tasks.map((t) => ({
+            title: t.title || "Untitled Task",
+            startTime: t.startTime,
+            endTime: t.endTime,
+          })),
+        } as any,
+        uploadedFileUrls: uploadedFilePaths,
+        selectedDocuments: documentTypes,
+      } as any);
+      return;
+    }
+
+    // ── State does NOT match → get an estimated price range, then go to
+    // ReviewConfirmScreen's broadcast/estimate flow. ────────────────────
+    const pad2 = (n: number) => String(n).padStart(2, "0");
+    const formatApiDateTime = (d: Date) =>
+      `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())} ${pad2(
+        d.getHours(),
+      )}:${pad2(d.getMinutes())}:${pad2(d.getSeconds())}`;
+
+    const shiftsPayload = normalizedShifts.map((s) => ({
+      start_time: formatApiDateTime(safeDate(s.startTime)),
+      end_time: formatApiDateTime(safeDate(s.endTime)),
+      number_of_guards: Number(s.guardsCount || 1),
+    }));
+
+    setCalculatingQuote(true);
+    try {
+      const token = await getAuthToken();
+
+      const res = await axios.post(
+        `${BASE_URL}/calculate-job-amount`,
+        {
+          shifts: shiftsPayload,
+          state: locationStateCode || "",
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        },
+      );
+
+      const resPayload = res.data?.data || res.data || {};
+      const minPrice = Number(
+        resPayload.min_amount ?? resPayload.min_price ?? resPayload.min ?? 0,
+      );
+      const maxPrice = Number(
+        resPayload.max_amount ?? resPayload.max_price ?? resPayload.max ?? 0,
+      );
+      const isSegmented = !!(
+        resPayload.is_segmented ??
+        resPayload.segmented ??
+        false
+      );
+
+      navigation.navigate("ReviewConfirm", {
+        jobData: {
+          category:
+            form.category === "others" ? otherCategory.trim() : form.category,
+          location: form.location || "Not specified",
+          lat: form.lat ?? DEFAULT_LOCATION.lat,
+          lng: form.lng ?? DEFAULT_LOCATION.lng,
+          description: form.description || "",
+          startDate: first.date,
+          startTime: first.shifts[0]?.startTime ?? new Date(),
+          endDate: last.date,
+          endTime: last.shifts[last.shifts.length - 1]?.endTime ?? new Date(),
+          shifts: normalizedShifts,
+          totalManHours,
+          jobLevel: selectedJobLevel || String(currentJobLevel || 1),
+          jobLocationState: locationStateCode || "",
+          stateMatch: stateMatch,
+          tasks: tasks.map((t) => ({
+            title: t.title || "Untitled Task",
+            startTime: t.startTime,
+            endTime: t.endTime,
+          })),
+        } as any,
+        estimate: {
+          minPrice,
+          maxPrice,
+          isSegmented,
+        },
+        uploadedFileUrls: uploadedFilePaths,
+        selectedDocuments: documentTypes,
+      } as any);
+    } catch (err: any) {
+      console.error("calculate-job-amount error:", err);
+      const msg =
+        err?.response?.data?.message ||
+        err.message ||
+        "Failed to calculate job estimate. Please try again.";
+      Alert.alert("Estimate Failed", msg);
+    } finally {
+      setCalculatingQuote(false);
+    }
   };
 
   useEffect(() => {
@@ -4849,7 +5030,6 @@ export default function CreateJobScreen() {
 
     const t = title.toLowerCase();
 
-    // Level 5
     if (
       t.includes("operations manager") ||
       t.includes("regional contract") ||
@@ -4859,7 +5039,6 @@ export default function CreateJobScreen() {
       return 5;
     }
 
-    // Level 4
     if (
       t.includes("senior security") ||
       t.includes("shift supervisor") ||
@@ -4870,7 +5049,6 @@ export default function CreateJobScreen() {
       return 4;
     }
 
-    // Level 3
     if (
       t.includes("control room operator") ||
       t.includes("venue supervisor") ||
@@ -4880,7 +5058,6 @@ export default function CreateJobScreen() {
       return 3;
     }
 
-    // Level 2
     if (
       t.includes("monitoring") ||
       t.includes("control room (basic)") ||
@@ -4892,14 +5069,13 @@ export default function CreateJobScreen() {
       return 2;
     }
 
-    // Default Level 1
     return 1;
   };
   const handleGoBack = () => {
     if (navigation.canGoBack()) {
       navigation.goBack();
     } else {
-      navigation.navigate("MainTabs" as never); // Fallback
+      navigation.navigate("MainTabs" as never);
     }
   };
   const toggleDocument = (docValue: string) => {
@@ -4911,13 +5087,6 @@ export default function CreateJobScreen() {
     });
   };
 
-  // ── FIX: Description field jump-to-top bug (Android) ──────────────────────
-  // On some Android devices, RN's built-in "scroll focused input into view"
-  // logic inside <ScrollView> mis-measures the input's position while the
-  // MapView / gradients above are still settling their layout, so it snaps
-  // the ScrollView to y=0 instead of scrolling down to the field.
-  // We fix this by disabling the guesswork and manually scrolling the
-  // Description field into view ourselves once it's focused.
   const scrollDescriptionIntoView = useCallback(() => {
     const scroller = scrollViewRef.current;
     const input = descriptionInputRef.current;
@@ -4930,20 +5099,14 @@ export default function CreateJobScreen() {
     UIManager.measureLayout(
       inputHandle,
       scrollerHandle,
-      () => {
-        // Measurement failed silently — nothing to do, just avoid a crash.
-      },
+      () => {},
       (_x: number, y: number) => {
-        // Scroll so the field sits a comfortable distance below the top,
-        // leaving room for the keyboard.
         scroller.scrollTo({ y: Math.max(y - 24, 0), animated: true });
       },
     );
   }, []);
 
   const handleDescriptionFocus = useCallback(() => {
-    // Wait a beat for the keyboard/layout to settle before measuring —
-    // measuring too early is what causes the incorrect jump-to-top.
     setTimeout(scrollDescriptionIntoView, Platform.OS === "android" ? 250 : 50);
   }, [scrollDescriptionIntoView]);
 
@@ -5034,7 +5197,6 @@ export default function CreateJobScreen() {
           }}
           contentContainerStyle={{ paddingBottom: 120 }}
         >
-          {/* Location & Map */}
           {/* Job Location */}
           <View style={styles.sectionCard}>
             <Text style={styles.inputLabel}>Job Location *</Text>
@@ -5055,7 +5217,6 @@ export default function CreateJobScreen() {
                 onChangeText={setAutocompleteQuery}
               />
 
-              {/* Clear Button (Cross) */}
               {(form.location || autocompleteQuery) && (
                 <TouchableOpacity
                   onPress={() => {
@@ -5067,6 +5228,9 @@ export default function CreateJobScreen() {
                       lng: DEFAULT_LOCATION.lng,
                     }));
                     setSuggestions([]);
+                    setLocationStateCode("");
+                    setStateMatch(null);
+                    setUserAllowedStates([]);
                   }}
                   style={{ padding: 4 }}
                 >
@@ -5297,7 +5461,6 @@ export default function CreateJobScreen() {
                     </Text>
 
                     <View style={styles.masterRow}>
-                      {/* Checkbox */}
                       <TouchableOpacity
                         style={styles.checkboxRow}
                         onPress={handleApplyToAllToggle}
@@ -5312,7 +5475,6 @@ export default function CreateJobScreen() {
                         </View>
                       </TouchableOpacity>
 
-                      {/* Start Time */}
                       <TouchableOpacity
                         style={styles.timePickerButtonFlex}
                         onPress={() => openMasterTimePicker("startTime")}
@@ -5324,7 +5486,6 @@ export default function CreateJobScreen() {
                         </Text>
                       </TouchableOpacity>
 
-                      {/* End Time */}
                       <TouchableOpacity
                         style={styles.timePickerButtonFlex}
                         onPress={() => openMasterTimePicker("endTime")}
@@ -5334,7 +5495,6 @@ export default function CreateJobScreen() {
                         </Text>
                       </TouchableOpacity>
 
-                      {/* Guards Input */}
                       <TextInput
                         style={styles.masterGuardsInputFlex}
                         placeholder="Guards"
@@ -5417,7 +5577,6 @@ export default function CreateJobScreen() {
               <TouchableOpacity
                 style={[
                   styles.selectBox,
-                  // Only show error border when there's actually an error
                   errors.category && styles.inputErrorBorder,
                 ]}
                 onPress={() => setShowCategoryModal(true)}
@@ -5437,12 +5596,10 @@ export default function CreateJobScreen() {
               </TouchableOpacity>
             </LinearGradient>
 
-            {/* Error Message */}
             {errors.category && (
               <Text style={styles.errorText}>{errors.category}</Text>
             )}
 
-            {/* Others field */}
             {form.category === "others" && (
               <TextInput
                 style={[styles.inputBox, { marginTop: 10 }]}
@@ -5587,8 +5744,12 @@ export default function CreateJobScreen() {
           </View>
 
           <TouchableOpacity
-            style={styles.primaryActionButton}
+            style={[
+              styles.primaryActionButton,
+              calculatingQuote && { opacity: 0.7 },
+            ]}
             onPress={validateAndNext}
+            disabled={calculatingQuote}
           >
             <LinearGradient
               colors={["#5CE1D6", "#2bbcb0"]}
@@ -5596,10 +5757,16 @@ export default function CreateJobScreen() {
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
             >
-              <Text style={styles.primaryActionText}>
-                Proceed to Quotation Review
-              </Text>
-              <ArrowRight size={18} color="#001F3F" />
+              {calculatingQuote ? (
+                <ActivityIndicator color="#001F3F" />
+              ) : (
+                <>
+                  <Text style={styles.primaryActionText}>
+                    Proceed to Quotation Review
+                  </Text>
+                  <ArrowRight size={18} color="#001F3F" />
+                </>
+              )}
             </LinearGradient>
           </TouchableOpacity>
           <View style={{ height: 40 }} />
@@ -5887,7 +6054,6 @@ export default function CreateJobScreen() {
           </Pressable>
         </Pressable>
       </Modal>
-      {/* <BottomTab navigation={navigation} activeTab="CreateJob" /> */}
     </SafeAreaView>
   );
 }
@@ -6039,21 +6205,6 @@ const styles = StyleSheet.create({
     textAlign: "center",
     padding: 0,
   },
-  levelContainer: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-    marginTop: 8,
-  },
-  levelToggle: {
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    backgroundColor: "#334155",
-    borderRadius: 8,
-  },
-  levelToggleActive: { backgroundColor: "#14E6C9" },
-  textActive: { color: "#001F3F", fontWeight: "bold" },
-  textInactive: { color: "#F1F5F9" },
   removeShiftButton: { padding: 6 },
   addShiftRowBtn: {
     flexDirection: "row",
@@ -6073,15 +6224,6 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     marginBottom: 8,
   },
-  masterGuardsInput: {
-    height: 40,
-    backgroundColor: CHIP_DARK,
-    borderRadius: 6,
-    color: "#FFF",
-    paddingHorizontal: 12,
-    marginBottom: 10,
-  },
-
   dayGroupContainer: {
     backgroundColor: BRAND_BG,
     borderRadius: 10,
@@ -6093,28 +6235,6 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: "700",
     marginBottom: 4,
-  },
-  taskContainerCard: {
-    backgroundColor: CHIP_DARK,
-    borderRadius: 8,
-    padding: 10,
-    marginBottom: 10,
-    borderWidth: 1,
-    borderColor: BORDER_COLOR,
-  },
-  taskInputBox: {
-    borderBottomWidth: 1,
-    borderBottomColor: BRAND_BG,
-    color: "#FFF",
-    paddingVertical: 4,
-    fontSize: 14,
-  },
-  removeTaskBtn: { padding: 8 },
-  addTaskRowBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    marginTop: 4,
   },
   uploadBoxFrame: {
     height: 90,
@@ -6182,12 +6302,6 @@ const styles = StyleSheet.create({
     color: TEXT_MUTED,
     fontWeight: "600",
   },
-  // Calendar grid: always renders exactly CAL_COLUMNS (7) cells per row.
-  // No horizontal margins on the cells — spacing between cells comes purely
-  // from each cell's own width share, so 7 columns always add up to 100%
-  // regardless of screen width (fixes the "only 6 fit per row" issue that
-  // was caused by width: 12.5% i.e. 8 columns' worth, plus a fixed
-  // marginRight that pushed the 7th/8th cell to wrap early).
   daysMatrixGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
@@ -6204,7 +6318,6 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   dayCellSelected: { backgroundColor: ACCENT_TEAL, borderRadius: 6 },
-  dayCellInRange: { backgroundColor: "#1E293B" },
   dayCellText: { color: "#FFF", fontSize: 13 },
   dayCellTextSelected: { color: "#001F3F", fontWeight: "700" },
   closeModalTextLink: { color: ACCENT_TEAL, fontSize: 14, fontWeight: "600" },
@@ -6233,14 +6346,6 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: BRAND_BG,
   },
-  modalDoneButton: {
-    height: 46,
-    backgroundColor: ACCENT_TEAL,
-    borderRadius: 8,
-    justifyContent: "center",
-    alignItems: "center",
-    marginTop: 14,
-  },
   shiftHeaderRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -6252,15 +6357,6 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: "700",
   },
-  toggleKnob: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: "#fff",
-    position: "absolute",
-    left: 3,
-  },
-  toggleKnobActive: { left: undefined, right: 3 },
   toggleSwitch: {
     width: 65,
     height: 30,
@@ -6303,7 +6399,6 @@ const styles = StyleSheet.create({
     backgroundColor: CHIP_DARK,
     borderRadius: 12,
   },
-  toggleContent: { gap: 6 },
   toggleLabel: {
     fontSize: 10,
     color: "#fff",
@@ -6315,7 +6410,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 10,
   },
-
   timePickerButtonFlex: {
     flex: 1,
     height: 40,
@@ -6324,7 +6418,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-
   masterGuardsInputFlex: {
     flex: 1,
     height: 40,
@@ -6333,14 +6426,12 @@ const styles = StyleSheet.create({
     color: "#FFF",
     paddingHorizontal: 10,
   },
-
   checkboxRow: {
     width: 40,
     height: 40,
     justifyContent: "center",
     alignItems: "center",
   },
-
   checkboxBox: {
     width: 18,
     height: 18,
@@ -6350,7 +6441,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-
   checkboxChecked: {
     backgroundColor: ACCENT_TEAL,
     borderColor: ACCENT_TEAL,

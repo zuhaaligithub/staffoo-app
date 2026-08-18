@@ -1,6 +1,6 @@
 {
   "name": "react-native-agora",
-  "version": "4.6.2",
+  "version": "4.5.4",
   "summary": "Agora RTC SDK For React Native",
   "homepage": "https://github.com/AgoraIO-Extensions/react-native-agora#readme",
   "license": "MIT",
@@ -10,7 +10,7 @@
   },
   "source": {
     "git": "https://github.com/AgoraIO-Extensions/react-native-agora.git",
-    "tag": "4.6.2"
+    "tag": "4.5.4"
   },
   "source_files": "ios/**/*.{h,m,mm}",
   "compiler_flags": "-DRCT_NEW_ARCH_ENABLED=1",
@@ -42,11 +42,11 @@
     "RCT-Folly": [],
     "SocketRocket": [],
     "RCT-Folly/Fabric": [],
-    "AgoraVideo_Special_iOS": [
-      "4.6.2.70"
+    "AgoraRtcEngine_Special_iOS": [
+      "4.5.3.70"
     ],
-    "AgoraIrisRTC_iOS2": [
-      "4.6.2-build.1"
+    "AgoraIrisRTC_iOS": [
+      "4.5.3-build.1"
     ]
   },
   "pod_target_xcconfig": {

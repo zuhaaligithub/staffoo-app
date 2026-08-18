@@ -17,7 +17,65 @@ NS_ASSUME_NONNULL_BEGIN
 
 @end
 
+@protocol RCTRNSScrollViewMarkerViewProtocol <NSObject>
+
+@end
+
+@protocol RCTRNSSplitHostViewProtocol <NSObject>
+- (void)showColumn:(NSString *)column;
+@end
+
+RCT_EXTERN inline void RCTRNSSplitHostHandleCommand(
+  id<RCTRNSSplitHostViewProtocol> componentView,
+  NSString const *commandName,
+  NSArray const *args)
+{
+  if ([commandName isEqualToString:@"showColumn"]) {
+#if RCT_DEBUG
+  if ([args count] != 1) {
+    RCTLogError(@"%@ command %@ received %d arguments, expected %d.", @"RNSSplitHost", commandName, (int)[args count], 1);
+    return;
+  }
+#endif
+
+  NSObject *arg0 = args[0];
+#if RCT_DEBUG
+  if (!RCTValidateTypeOfViewCommandArgument(arg0, [NSString class], @"string", @"RNSSplitHost", commandName, @"1st")) {
+    return;
+  }
+#endif
+  NSString * column = (NSString *)arg0;
+
+  [componentView showColumn:column];
+  return;
+}
+
+#if RCT_DEBUG
+  RCTLogError(@"%@ received command %@, which is not a supported command.", @"RNSSplitHost", commandName);
+#endif
+}
+
+@protocol RCTRNSSplitScreenViewProtocol <NSObject>
+
+@end
+
+@protocol RCTRNSStackHeaderConfigIOSViewProtocol <NSObject>
+
+@end
+
+@protocol RCTRNSStackHostViewProtocol <NSObject>
+
+@end
+
+@protocol RCTRNSStackScreenViewProtocol <NSObject>
+
+@end
+
 @protocol RCTRNSModalScreenViewProtocol <NSObject>
+
+@end
+
+@protocol RCTRNSSafeAreaViewViewProtocol <NSObject>
 
 @end
 
@@ -167,5 +225,21 @@ if ([commandName isEqualToString:@"cancelSearch"]) {
   RCTLogError(@"%@ received command %@, which is not a supported command.", @"RNSSearchBar", commandName);
 #endif
 }
+
+@protocol RCTRNSTabsBottomAccessoryContentViewProtocol <NSObject>
+
+@end
+
+@protocol RCTRNSTabsBottomAccessoryViewProtocol <NSObject>
+
+@end
+
+@protocol RCTRNSTabsHostIOSViewProtocol <NSObject>
+
+@end
+
+@protocol RCTRNSTabsScreenIOSViewProtocol <NSObject>
+
+@end
 
 NS_ASSUME_NONNULL_END

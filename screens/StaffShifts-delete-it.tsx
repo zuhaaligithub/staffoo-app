@@ -736,8 +736,8 @@ export default function StaffShifts({ navigation, route }: Props) {
             setProfileImage(cachedImage);
           } else if (parsedUser?.staff?.profile_image) {
             setProfileImage(
-              // `https://apis.staffoo.com.au/storage/${parsedUser.staff.profile_image}`,
-              `https://apis-staging.staffoo.com.au/storage/${parsedUser.staff.profile_image}`,
+              `https://apis.staffoo.com.au/storage/${parsedUser.staff.profile_image}`,
+              // `https://apis-staging.staffoo.com.au/storage/${parsedUser.staff.profile_image}`,
             );
           }
         }
@@ -782,43 +782,107 @@ export default function StaffShifts({ navigation, route }: Props) {
     }, 100);
   }, []);
 
-  // ─── Open the bottom sheet for a given job ──────────────────────────────
-  const openBottomSheet = useCallback((job: any) => {
-    if (!job) return;
-
-    // Never open a sheet for a job we can't actually show — this is the
-    // guard that prevents the "sheet reopens but is empty" bug: if the
-    // payload doesn't resolve to a real job id, we just skip it instead
-    // of rendering a blank sheet.
-    const jd = extractJobData(job);
-    if (!jd?.id) {
-      console.warn(
-        "[StaffShifts] Ignoring notification with no resolvable job id",
-      );
-      return;
+  const fetchAcceptedShifts = useCallback(async () => {
+    setLoadingToday(true);
+    try {
+      const todayRes = await postGuardJobs("confirmed", "today");
+      setTodayShifts(todayRes?.data?.today || todayRes?.data || []);
+    } catch {
+      Toast.show({ type: "error", text1: "Failed to load today's shifts" });
+    } finally {
+      setLoadingToday(false);
     }
 
-    const key = getNotifKey(job);
-
-    // Cross-instance dedupe: only one mounted instance of this component
-    // (StaffShifts tab vs AcceptedJobs tab) may claim a given notification.
-    if (globalLastHandledNotifKey === key) {
-      console.log("[StaffShifts] Duplicate notification - skipping");
-      return;
+    setLoadingWeek(true);
+    try {
+      const weekRes = await postGuardJobs("confirmed", "week");
+      setWeekShifts(weekRes?.data?.week || weekRes?.data || []);
+    } catch {
+      Toast.show({ type: "error", text1: "Failed to load week shifts" });
+    } finally {
+      setLoadingWeek(false);
     }
-
-    console.log("[StaffShifts] Opening BottomSheet for job:", key);
-    globalLastHandledNotifKey = key;
-    lastHandledNotifKeyRef.current = key;
-    notifGenerationRef.current += 1; // this job is now the "current" one
-    closingGenerationRef.current = null; // any pending close is now stale
-    isSheetReadyRef.current = false;
-
-    setAcceptingNotification(false);
-    setNotifSelectedGuard(null);
-    setNotificationJob(job);
-    setSheetOpen(true);
   }, []);
+
+  const acceptContractorNotification = useCallback(
+    async (job: any) => {
+      try {
+        setAcceptingNotification(true);
+        const data = await acceptContractorJob(job);
+        if (data?.success === true) {
+          Toast.show({
+            type: "success",
+            text1: "Success!",
+            text2: "Job accepted",
+          });
+          celebrateJobAccepted();
+          setAvailableJobs((prev) =>
+            prev.filter(
+              (j: AvailableJob) => j.id !== (job?.id || job?.raw?.id),
+            ),
+          );
+          fetchAcceptedShifts();
+          navigation.navigate("AcceptedJobs");
+        } else {
+          Toast.show({
+            type: "error",
+            text1: data?.message || "Failed to accept job",
+          });
+        }
+      } catch (error: any) {
+        console.error("[DIRECT NOTIF ACCEPT ERROR]:", error);
+        Toast.show({
+          type: "error",
+          text1: "Failed to accept job",
+          text2:
+            error?.response?.data?.message ||
+            error?.message ||
+            "Network/server error",
+        });
+      } finally {
+        setAcceptingNotification(false);
+      }
+    },
+    [fetchAcceptedShifts, navigation],
+  );
+
+  const openBottomSheet = useCallback(
+    (job: any) => {
+      if (!job) return;
+      const jd = extractJobData(job);
+      if (!jd?.id) {
+        console.warn(
+          "[StaffShifts] Ignoring notification with no resolvable job id",
+        );
+        return;
+      }
+
+      const invoice = getContractorInvoiceValue(job);
+      if (userType === "contractor" && invoice === 0) {
+        acceptContractorNotification(job);
+        return;
+      }
+
+      const key = getNotifKey(job);
+      if (globalLastHandledNotifKey === key) {
+        console.log("[StaffShifts] Duplicate notification - skipping");
+        return;
+      }
+
+      console.log("[StaffShifts] Opening BottomSheet for job:", key);
+      globalLastHandledNotifKey = key;
+      lastHandledNotifKeyRef.current = key;
+      notifGenerationRef.current += 1;
+      closingGenerationRef.current = null;
+      isSheetReadyRef.current = false;
+
+      setAcceptingNotification(false);
+      setNotifSelectedGuard(null);
+      setNotificationJob(job);
+      setSheetOpen(true);
+    },
+    [acceptContractorNotification, userType],
+  );
 
   // ─── Single effect that drives opening the BottomSheet ──────────────────
   useEffect(() => {
@@ -1062,28 +1126,6 @@ export default function StaffShifts({ navigation, route }: Props) {
   }, [loadingMore, loadingAvailable, hasMore, currentPage, fetchAvailableJobs]);
 
   // ─── Fetch accepted shifts ──────────────────────────────────────────────────
-  const fetchAcceptedShifts = useCallback(async () => {
-    setLoadingToday(true);
-    try {
-      const todayRes = await postGuardJobs("confirmed", "today");
-      setTodayShifts(todayRes?.data?.today || todayRes?.data || []);
-    } catch {
-      Toast.show({ type: "error", text1: "Failed to load today's shifts" });
-    } finally {
-      setLoadingToday(false);
-    }
-
-    setLoadingWeek(true);
-    try {
-      const weekRes = await postGuardJobs("confirmed", "week");
-      setWeekShifts(weekRes?.data?.week || weekRes?.data || []);
-    } catch {
-      Toast.show({ type: "error", text1: "Failed to load week shifts" });
-    } finally {
-      setLoadingWeek(false);
-    }
-  }, []);
-
   useEffect(() => {
     fetchAvailableJobs();
 
@@ -1273,7 +1315,102 @@ export default function StaffShifts({ navigation, route }: Props) {
   // No staff assignment happens here anymore — no navigation to
   // AsapJobDetails either. The API call happens inside the sheet itself
   // (see handleAcceptSheetSubmit below).
-  const handleAcceptJobTap = (job: AvailableJob) => {
+  const getContractorInvoiceValue = (job: any): number => {
+    const raw = job?.raw || job;
+    const resolved = extractJobData(raw);
+    const invoice =
+      resolved?.contractor_invoice ??
+      raw?.contractor_invoice ??
+      job?.contractor_invoice ??
+      0;
+    return Number(invoice || 0);
+  };
+
+  const getShiftContractorInvoiceValue = (shift: any): number => {
+    const invoice =
+      shift?.contractor_invoice ?? shift?.roster?.contractor_invoice ?? 0;
+    return Number(invoice || 0);
+  };
+
+  const acceptContractorJob = async (
+    job: any,
+    guardId?: number | null,
+  ): Promise<any> => {
+    const rawJob = job?.raw || job;
+    const rosterId = rawJob?.id || job?.id;
+    if (!rosterId) {
+      throw new Error("Roster ID is missing");
+    }
+
+    const userJson = await AsyncStorage.getItem("user");
+    if (!userJson) throw new Error("User data not found");
+    const currentUser = JSON.parse(userJson);
+    const currentUserId = currentUser?.id;
+    if (!currentUserId) throw new Error("User ID missing");
+
+    const token = await AsyncStorage.getItem("@auth_token");
+    if (!token) throw new Error("No auth token");
+
+    const payload: { roster_id: number; guard_id?: string } = {
+      roster_id: rosterId,
+    };
+    if (guardId !== undefined)
+      payload.guard_id = guardId ? String(guardId) : "";
+
+    const acceptUrl = `${BASE_URL}/contractor/jobs/accept/${currentUserId}`;
+
+    const response = await axios.post(acceptUrl, payload, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      timeout: 15000,
+    });
+
+    return response.data;
+  };
+
+  const handleAcceptJobTap = async (job: AvailableJob) => {
+    if (userType === "contractor" && getContractorInvoiceValue(job) === 0) {
+      try {
+        setAcceptSubmitting(true);
+        const data = await acceptContractorJob(job);
+        if (data?.success === true) {
+          Toast.show({
+            type: "success",
+            text1: "Success!",
+            text2: "Job accepted",
+            position: "top",
+          });
+          setAvailableJobs((prev) =>
+            prev.filter((j: AvailableJob) => j.id !== job.id),
+          );
+          fetchAcceptedShifts();
+          navigation.navigate("AcceptedJobs");
+        } else {
+          Toast.show({
+            type: "error",
+            text1: data?.message || "Failed to accept job",
+            position: "top",
+          });
+        }
+      } catch (error: any) {
+        console.error("[DIRECT ACCEPT ERROR]:", error);
+        Toast.show({
+          type: "error",
+          text1: "Failed to accept job",
+          text2:
+            error?.response?.data?.message ||
+            error?.message ||
+            "Network/server error",
+          position: "top",
+        });
+      } finally {
+        setAcceptSubmitting(false);
+      }
+      return;
+    }
+
     setAcceptSheetJob(job);
     setAcceptSheetSelectedGuard(null);
     setAcceptSheetVisible(true);
@@ -1946,10 +2083,18 @@ export default function StaffShifts({ navigation, route }: Props) {
     // everything, unfiltered, same as before.
     const isContractor = userType === "contractor";
     const shownTodayShifts = isContractor
-      ? todayShifts.filter(shiftHasAssignedGuard)
+      ? todayShifts.filter(
+          (shift) =>
+            shiftHasAssignedGuard(shift) ||
+            getShiftContractorInvoiceValue(shift) === 0,
+        )
       : todayShifts;
     const shownWeekShifts = isContractor
-      ? weekShifts.filter(shiftHasAssignedGuard)
+      ? weekShifts.filter(
+          (shift) =>
+            shiftHasAssignedGuard(shift) ||
+            getShiftContractorInvoiceValue(shift) === 0,
+        )
       : weekShifts;
 
     return (
@@ -1989,8 +2134,14 @@ export default function StaffShifts({ navigation, route }: Props) {
       );
     }
 
-    const pendingToday = todayShifts.filter((s) => !shiftHasAssignedGuard(s));
-    const pendingWeek = weekShifts.filter((s) => !shiftHasAssignedGuard(s));
+    const pendingToday = todayShifts.filter(
+      (s) =>
+        !shiftHasAssignedGuard(s) && getShiftContractorInvoiceValue(s) === 1,
+    );
+    const pendingWeek = weekShifts.filter(
+      (s) =>
+        !shiftHasAssignedGuard(s) && getShiftContractorInvoiceValue(s) === 1,
+    );
 
     if (pendingToday.length === 0 && pendingWeek.length === 0) {
       return (
@@ -2108,7 +2259,14 @@ export default function StaffShifts({ navigation, route }: Props) {
             {(
               [
                 "Available Jobs",
-                userType === "contractor" ? "Pending Assigning" : null,
+                userType === "contractor" &&
+                [...todayShifts, ...weekShifts].some(
+                  (shift) =>
+                    !shiftHasAssignedGuard(shift) &&
+                    Number(shift.contractor_invoice ?? 0) === 1,
+                )
+                  ? "Pending Assigning"
+                  : null,
               ].filter(Boolean) as string[]
             ).map((tab) => {
               const isActive =

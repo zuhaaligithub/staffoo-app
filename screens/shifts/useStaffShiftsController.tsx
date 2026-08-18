@@ -1,4 +1,3 @@
-
 import { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import {
   View,
@@ -67,10 +66,6 @@ export function useStaffShiftsController(
 
   const isStaffooStaff = userId === 1;
 
-  const [contractorAvailableSubTab, setContractorAvailableSubTab] = useState<
-    "Available Jobs" | "Pending Assigning"
-  >("Available Jobs");
-
   const [userDocuments, setUserDocuments] = useState<any[]>([]);
   const [user, setUser] = useState<any>(null);
   const [profileImage, setProfileImage] = useState<string | null>(null);
@@ -113,6 +108,16 @@ export function useStaffShiftsController(
     Vibration.vibrate([0, 80, 60, 120]);
     playSound("success");
   }, []);
+  // Transient accept-success modal for contractor-accepted available jobs
+  const [showAcceptSuccessModal, setShowAcceptSuccessModal] = useState(false);
+  const acceptSuccessTimerRef = useRef<any>(null);
+  const hideAcceptSuccessModal = useCallback(() => {
+    if (acceptSuccessTimerRef.current) {
+      clearTimeout(acceptSuccessTimerRef.current);
+      acceptSuccessTimerRef.current = null;
+    }
+    setShowAcceptSuccessModal(false);
+  }, []);
   // Guard optionally picked from the Accept Job sheet's staff dropdown
   // (contractor only). Separate from the Accepted-tab assign flow's own
   // state (assignTargetShift / shiftStaffAssignments) so the two features
@@ -141,7 +146,7 @@ export function useStaffShiftsController(
   const isFetchingJobsRef = useRef(false);
 
   // ── Contractor staff (used for the "Assign to Staff Member" dropdown
-  // that now lives on shift cards in the Accepted tab) ────────────────────
+  // that lives on shift cards in the Accepted tab) ────────────────────────
   const [contractorStaffList, setContractorStaffList] = useState<any[]>([]);
   const [loadingContractorStaff, setLoadingContractorStaff] = useState(false);
 
@@ -168,8 +173,8 @@ export function useStaffShiftsController(
             setProfileImage(cachedImage);
           } else if (parsedUser?.staff?.profile_image) {
             setProfileImage(
-              // `https://apis.staffoo.com.au/storage/${parsedUser.staff.profile_image}`,
-              `https://apis-staging.staffoo.com.au/storage/${parsedUser.staff.profile_image}`,
+              `https://apis.staffoo.com.au/storage/${parsedUser.staff.profile_image}`,
+              // `https://apis-staging.staffoo.com.au/storage/${parsedUser.staff.profile_image}`,
             );
           }
         }
@@ -214,14 +219,223 @@ export function useStaffShiftsController(
     }, 100);
   }, []);
 
-  // ─── Open the bottom sheet for a given job ──────────────────────────────
+  const fetchAcceptedShifts = useCallback(async () => {
+    const token = await AsyncStorage.getItem("@auth_token");
+    if (!token) return;
+
+    setLoadingToday(true);
+    try {
+      const todayRes = await postGuardJobs("confirmed", "today");
+      setTodayShifts(todayRes?.data?.today || todayRes?.data || []);
+    } catch {
+      Toast.show({ type: "error", text1: "Failed to load today's shifts" });
+    } finally {
+      setLoadingToday(false);
+    }
+
+    setLoadingWeek(true);
+    try {
+      const weekRes = await postGuardJobs("confirmed", "week");
+      setWeekShifts(weekRes?.data?.week || weekRes?.data || []);
+    } catch {
+      Toast.show({ type: "error", text1: "Failed to load week shifts" });
+    } finally {
+      setLoadingWeek(false);
+    }
+  }, []);
+  // Contractor-only: whether this job/shift needs the contractor to pick a
+  // guard (contractor_invoice === 1) or can be accepted straight away with
+  // no assignment step (contractor_invoice === 0). Kept for potential
+  // future use / other checks — no longer used to decide whether the
+  // "Assign to Staff Member" dropdown is hidden (that's now decided by
+  // computeHideAssignDropdown, see below).
+  const getContractorInvoiceValue = (job: any): number => {
+    const raw = job?.raw || job;
+    const resolved = extractJobData(raw);
+    const invoice =
+      resolved?.contractor_invoice ??
+      raw?.contractor_invoice ??
+      job?.contractor_invoice ??
+      0;
+    return Number(invoice || 0);
+  };
+
+  const getShiftContractorInvoiceValue = (shift: any): number => {
+    if (!shift) return 0;
+
+    const candidates = [
+      shift,
+      shift?.raw,
+      shift?.roster,
+      shift?.job,
+      typeof extractJobData === "function" ? extractJobData(shift) : null,
+      typeof extractJobData === "function" ? extractJobData(shift?.raw) : null,
+      typeof extractJobData === "function" ? extractJobData(shift?.job) : null,
+    ].filter(Boolean);
+
+    for (const c of candidates) {
+      const val =
+        c?.contractor_invoice ??
+        c?.raw?.contractor_invoice ??
+        c?.roster?.contractor_invoice;
+      if (val !== undefined && val !== null && val !== "") {
+        return Number(val);
+      }
+    }
+    return 0;
+  };
+
+  // Duration (in hours) of a shift/job, computed from its start/end
+  // timestamps. Tries the accepted-shift shape (shift.start / shift.end),
+  // then the "available jobs" shape (start_time / end_time), and finally
+  // any pre-computed hours field the API might send, in case a given
+  // endpoint's shape differs.
+  //
+  // Handles both ISO-ish strings and the API's "DD-MM-YYYY HH:mm:ss"
+  // format (e.g. "16-08-2026 23:55:00") which native Date often rejects.
+  const parseShiftDateMs = (raw: any): number => {
+    if (raw == null || raw === "") return NaN;
+    if (typeof raw === "number") return raw;
+    const s = String(raw).trim();
+
+    // Try native first (works for ISO / "YYYY-MM-DD …")
+    let ms = new Date(s).getTime();
+    if (!isNaN(ms)) return ms;
+
+    // DD-MM-YYYY[ HH:mm[:ss]]  →  YYYY-MM-DDTHH:mm:ss
+    const m = s.match(
+      /^(\d{1,2})-(\d{1,2})-(\d{4})(?:[ T](\d{1,2}):(\d{2})(?::(\d{2}))?)?$/,
+    );
+    if (m) {
+      const [, dd, mm, yyyy, hh = "0", min = "0", sec = "0"] = m;
+      ms = new Date(
+        `${yyyy}-${mm.padStart(2, "0")}-${dd.padStart(2, "0")}T${hh.padStart(
+          2,
+          "0",
+        )}:${min}:${sec}`,
+      ).getTime();
+      if (!isNaN(ms)) return ms;
+    }
+    return NaN;
+  };
+
+  const getShiftDurationHours = (shift: any): number => {
+    const startRaw = shift?.start || shift?.start_time;
+    const endRaw = shift?.end || shift?.end_time;
+
+    if (startRaw && endRaw) {
+      const startMs = parseShiftDateMs(startRaw);
+      const endMs = parseShiftDateMs(endRaw);
+      if (!isNaN(startMs) && !isNaN(endMs) && endMs > startMs) {
+        return (endMs - startMs) / (1000 * 60 * 60);
+      }
+    }
+
+    const fallbackHours = Number(
+      shift?.hours ?? shift?.total_hours ?? shift?.job_hours ?? 0,
+    );
+    return fallbackHours || 0;
+  };
+
+  // ─── Single source of truth for hiding the "Assign to Staff Member"
+  // dropdown, for a contractor, wherever it appears (Today/Week shift
+  // cards, the Available Jobs "Accept Job" sheet, and the ASAP
+  // notification sheet). Works on either a shift object or a raw
+  // available-job object — both shapes expose start/start_time,
+  // end/end_time, job_status, and contractor_invoice (directly or via
+  // roster/raw), which is all getShiftDurationHours /
+  // getShiftContractorInvoiceValue already know how to read.
+  //
+  // Rules:
+  //   • contractor_invoice === 1  → always SHOW (any status, any duration)
+  //   • contractor_invoice === 0 + job_status === "confirmed" + duration < 12h  → SHOW
+  //   • contractor_invoice === 0 + job_status === "confirmed" + duration > 12h  → HIDE
+  //   • contractor_invoice === 0 + job_status === "pending"   + duration < 12h  → HIDE
+  //   • all other combinations (e.g. invoice 0 + pending + >12h)               → HIDE
+
+  const computeHideAssignDropdown = (item: any): boolean => {
+    if (!item) return true; // nothing to show
+
+    // Read invoice from every possible shape
+    const invoice = Number(
+      item?.contractor_invoice ??
+        item?.raw?.contractor_invoice ??
+        item?.roster?.contractor_invoice ??
+        (typeof extractJobData === "function"
+          ? extractJobData(item?.raw || item)?.contractor_invoice
+          : undefined) ??
+        0,
+    );
+
+    // invoice === 1 → always SHOW (any status / any duration)
+    if (invoice === 1) return false;
+
+    // Resolve job_status from every possible shape
+    const status = String(
+      item?.job_status ??
+        item?.raw?.job_status ??
+        item?.roster?.job_status ??
+        (typeof extractJobData === "function"
+          ? extractJobData(item?.raw || item)?.job_status
+          : undefined) ??
+        "",
+    )
+      .toLowerCase()
+      .trim();
+
+    const duration = getShiftDurationHours(item);
+
+    // invoice === 0:
+    //   confirmed + duration < 12 → SHOW
+    //   everything else           → HIDE
+    if (invoice === 0 && status === "confirmed" && duration < 12) {
+      return false; // show
+    }
+
+    return true; // hide
+  };
+  const acceptContractorJob = async (
+    job: any,
+    guardId?: number | null,
+  ): Promise<any> => {
+    const rawJob = job?.raw || job;
+    const rosterId = rawJob?.id || job?.id;
+    if (!rosterId) throw new Error("Roster ID is missing");
+
+    const userJson = await AsyncStorage.getItem("user");
+    if (!userJson) throw new Error("User data not found");
+    const currentUser = JSON.parse(userJson);
+    const currentUserId = currentUser?.id;
+    if (!currentUserId) throw new Error("User ID missing");
+
+    const token = await AsyncStorage.getItem("@auth_token");
+    if (!token) throw new Error("No auth token");
+
+    const payload: { roster_id: number; guard_id?: string } = {
+      roster_id: rosterId,
+    };
+    if (guardId !== undefined)
+      payload.guard_id = guardId ? String(guardId) : "";
+
+    const acceptUrl = `${BASE_URL}/contractor/jobs/accept/${currentUserId}`;
+    const response = await axios.post(acceptUrl, payload, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      timeout: 15000,
+    });
+    return response.data;
+  };
+
+  // NOTE: previously, contractor jobs with contractor_invoice === 0 were
+  // auto-accepted here, skipping the sheet entirely. Per updated behaviour,
+  // the sheet ALWAYS opens now — for every user type and every invoice
+  // value. The sheet itself just hides its "Assign to Staff Member"
+  // dropdown based on computeHideAssignDropdown above.
   const openBottomSheet = useCallback((job: any) => {
     if (!job) return;
 
-    // Never open a sheet for a job we can't actually show — this is the
-    // guard that prevents the "sheet reopens but is empty" bug: if the
-    // payload doesn't resolve to a real job id, we just skip it instead
-    // of rendering a blank sheet.
     const jd = extractJobData(job);
     if (!jd?.id) {
       console.warn(
@@ -231,9 +445,6 @@ export function useStaffShiftsController(
     }
 
     const key = getNotifKey(job);
-
-    // Cross-instance dedupe: only one mounted instance of this component
-    // (StaffShifts tab vs AcceptedJobs tab) may claim a given notification.
     if (globalLastHandledNotifKey === key) {
       console.log("[StaffShifts] Duplicate notification - skipping");
       return;
@@ -242,8 +453,8 @@ export function useStaffShiftsController(
     console.log("[StaffShifts] Opening BottomSheet for job:", key);
     globalLastHandledNotifKey = key;
     lastHandledNotifKeyRef.current = key;
-    notifGenerationRef.current += 1; // this job is now the "current" one
-    closingGenerationRef.current = null; // any pending close is now stale
+    notifGenerationRef.current += 1;
+    closingGenerationRef.current = null;
     isSheetReadyRef.current = false;
 
     setAcceptingNotification(false);
@@ -404,17 +615,12 @@ export function useStaffShiftsController(
     };
   };
 
-  const sortAvailableJobs = (list: AvailableJob[]) =>
-    [...list].sort((a, b) => {
-      const aStart = a.raw?.start_time || a.raw?.start;
-      const bStart = b.raw?.start_time || b.raw?.start;
-      const startDiff = new Date(bStart).getTime() - new Date(aStart).getTime();
-      if (startDiff !== 0) return startDiff;
-
-      const aEnd = a.raw?.end_time || a.raw?.end;
-      const bEnd = b.raw?.end_time || b.raw?.end;
-      return new Date(bEnd).getTime() - new Date(aEnd).getTime();
-    });
+  // NOTE: We intentionally do NOT re-sort the available jobs list by date.
+  // The API returns jobs in a specific order (see jobs.data in the
+  // paginator response) and the list should mirror that order exactly —
+  // otherwise the cards visibly reshuffle every time the 20s auto-refresh
+  // (or a manual pull-to-refresh) lands, which reads as the screen
+  // "jumping" underneath the user's thumb.
 
   const fetchAvailableJobs = useCallback(async (page = 1, append = false) => {
     if (isFetchingJobsRef.current) return;
@@ -454,20 +660,56 @@ export function useStaffShiftsController(
       const last = Number(jobsPaginator.last_page) || 1;
       const total = Number(jobsPaginator.total) || apiJobs.length;
 
+      // Preserve the exact order the API returned. `formatted` is already
+      // in API order, so for a fresh (non-append) fetch we can use it
+      // as-is. For "load more" (append), keep everything already on
+      // screen exactly where it is and simply add any not-yet-seen jobs
+      // from this page onto the end, in the order this page returned
+      // them — never re-sorted.
       const formatted = apiJobs.map(mapAvailableJob);
 
       setAvailableJobs((prev) => {
-        const base = append ? prev : [];
-        const seen = new Set(base.map((j: AvailableJob) => j.id));
-        const merged = [...base];
+        if (append) {
+          const seen = new Set(prev.map((j: AvailableJob) => j.id));
+          const merged = [...prev];
 
-        formatted.forEach((j: AvailableJob) => {
-          if (!seen.has(j.id)) {
-            merged.push(j);
-            seen.add(j.id);
-          }
-        });
-        return sortAvailableJobs(merged);
+          formatted.forEach((j: AvailableJob) => {
+            if (!seen.has(j.id)) {
+              merged.push(j);
+              seen.add(j.id);
+            }
+          });
+
+          return merged;
+        }
+
+        // No jobs before
+        if (prev.length === 0) {
+          return formatted;
+        }
+
+        // Check whether API actually changed anything
+        const same =
+          prev.length === formatted.length &&
+          prev.every((oldJob, index) => {
+            const newJob = formatted[index];
+
+            return (
+              oldJob.id === newJob.id &&
+              oldJob.status === newJob.status &&
+              oldJob.date === newJob.date &&
+              oldJob.startTime === newJob.startTime &&
+              oldJob.endTime === newJob.endTime
+            );
+          });
+
+        // IMPORTANT:
+        // Don't replace the array if nothing changed.
+        if (same) {
+          return prev;
+        }
+
+        return formatted;
       });
 
       setCurrentPage(current);
@@ -497,41 +739,13 @@ export function useStaffShiftsController(
     fetchAvailableJobs(currentPage + 1, true);
   }, [loadingMore, loadingAvailable, hasMore, currentPage, fetchAvailableJobs]);
 
-  // ─── Fetch accepted shifts ──────────────────────────────────────────────────
-  const fetchAcceptedShifts = useCallback(async () => {
-    // Same reasoning as fetchAvailableJobs above — this also runs on every
-    // focus event and AppState "active", regardless of login state.
-    const token = await AsyncStorage.getItem("@auth_token");
-    if (!token) return;
-
-    setLoadingToday(true);
-    try {
-      const todayRes = await postGuardJobs("confirmed", "today");
-      setTodayShifts(todayRes?.data?.today || todayRes?.data || []);
-    } catch {
-      Toast.show({ type: "error", text1: "Failed to load today's shifts" });
-    } finally {
-      setLoadingToday(false);
-    }
-
-    setLoadingWeek(true);
-    try {
-      const weekRes = await postGuardJobs("confirmed", "week");
-      setWeekShifts(weekRes?.data?.week || weekRes?.data || []);
-    } catch {
-      Toast.show({ type: "error", text1: "Failed to load week shifts" });
-    } finally {
-      setLoadingWeek(false);
-    }
-  }, []);
-
   useEffect(() => {
     fetchAvailableJobs();
 
-    // Refresh available jobs count every 30 seconds
+    // Refresh available jobs count every 20 seconds
     const interval = setInterval(() => {
       fetchAvailableJobs();
-    }, 20 * 1000); // 30 seconds
+    }, 20 * 1000);
 
     return () => clearInterval(interval);
   }, [fetchAvailableJobs]);
@@ -631,6 +845,11 @@ export function useStaffShiftsController(
   // the close request (by handleAcceptNotification / handleDeclineNotification)
   // and only performs the post-close navigation if that generation is still
   // the current one — i.e. no newer job has taken over the sheet since.
+  //
+  // NOTE: previously this routed contractors to a "Pending Assigning"
+  // sub-tab instead of Accepted Jobs. That tab no longer exists — every
+  // successful accept (contractor or staff) now lands on Accepted Jobs,
+  // where unassigned shifts show right alongside assigned ones.
   const handleSheetClose = useCallback(() => {
     console.log("[StaffShifts] Sheet closed");
     const closedGen = closingGenerationRef.current;
@@ -644,33 +863,14 @@ export function useStaffShiftsController(
       closedGen === notifGenerationRef.current
     ) {
       pendingAcceptSuccessRef.current = false;
-
-      // Same rule as handleAcceptSheetSubmit's post-accept redirect: a
-      // contractor who accepted WITHOUT picking a guard from the
-      // notification sheet's dropdown still needs to hand the job to a
-      // guard, so send them to Available Jobs → "Pending Assigning"
-      // instead of Accepted Jobs. Picking a guard (or being staff, who
-      // never sees that dropdown) keeps the existing behaviour.
-      if (userType === "contractor" && !notifSelectedGuard) {
-        setContractorAvailableSubTab("Pending Assigning");
-        navigation.navigate("StaffShifts");
-      } else {
-        navigation.navigate("AcceptedJobs");
-      }
+      navigation.navigate("AcceptedJobs");
       fetchAcceptedShifts();
     } else if (closedGen !== notifGenerationRef.current) {
       // Stale close from a previous job — don't navigate/refetch again,
       // a newer job is already in control of the sheet.
       pendingAcceptSuccessRef.current = false;
     }
-  }, [
-    resetNotificationState,
-    navigation,
-    fetchAcceptedShifts,
-    userType,
-    notifSelectedGuard,
-    setContractorAvailableSubTab,
-  ]);
+  }, [resetNotificationState, navigation, fetchAcceptedShifts]);
 
   const handleAcceptNotification = async () => {
     const jd = extractJobData(notificationJob);
@@ -747,15 +947,19 @@ export function useStaffShiftsController(
   };
 
   // ─── "Accept Job" tap in the Available Jobs tab ─────────────────────────
-  // Opens the accept sheet (works for both contractor & non-contractor).
-  // No staff assignment happens here anymore — no navigation to
-  // AsapJobDetails either. The API call happens inside the sheet itself
-  // (see handleAcceptSheetSubmit below).
-  const handleAcceptJobTap = (job: AvailableJob) => {
+  // Opens the accept sheet — ALWAYS, for every user type and every
+  // contractor_invoice value. No more auto-accept-and-skip-the-sheet
+  // branch for contractor_invoice === 0: that job now also goes through
+  // the sheet, which simply hides its "Assign to Staff Member" dropdown
+  // based on computeHideAssignDropdown (see acceptHideAssignForContractor
+  // below). The actual API call happens inside the sheet itself (see
+  // handleAcceptSheetSubmit below).
+  const handleAcceptJobTap = async (job: AvailableJob) => {
     setAcceptSheetJob(job);
     setAcceptSheetSelectedGuard(null);
     setAcceptSheetVisible(true);
   };
+
   const handleAcceptSheetSubmit = async () => {
     if (!acceptSheetJob) {
       Toast.show({
@@ -815,7 +1019,10 @@ export function useStaffShiftsController(
         acceptUrl = `${BASE_URL}/contractor/jobs/accept/${currentUserId}`;
         // Optional guard pick from the Accept Job sheet's dropdown — send
         // the id if one was selected, otherwise send an empty value.
-        // Staff flow (below) is untouched — this key is only added here.
+        // When the dropdown is hidden (see computeHideAssignDropdown),
+        // this is always empty, which is the correct payload for those
+        // jobs. Staff flow (below) is untouched — this key is only added
+        // here.
         payload.guard_id = acceptSheetSelectedGuard ?? "";
       } else if (userType === "staff") {
         acceptUrl = `${BASE_URL}/asap-jobs/accept/${currentUserId}`;
@@ -860,14 +1067,24 @@ export function useStaffShiftsController(
 
         // Refresh accepted shifts either way.
         fetchAcceptedShifts();
-
-        if (userType === "contractor") {
-          // Contractor stays on Available Jobs — flip to "Pending
-          // Assigning" so they see it waiting to be handed to a guard.
-          setContractorAvailableSubTab("Pending Assigning");
-        } else {
-          // Staffoo staff (and anyone else): the job now lives on the
-          // separate "Accepted Job" screen.
+        // If this was an Available Job accepted by a contractor where the
+        // contractor_invoice value is 0, show a transient success modal for
+        // one minute before navigating to Accepted Jobs. Otherwise navigate
+        // immediately.
+        try {
+          const invoiceVal = getContractorInvoiceValue(acceptSheetJob);
+          if (invoiceVal === 0 && userType === "contractor") {
+            setShowAcceptSuccessModal(true);
+            // navigate after 60s
+            acceptSuccessTimerRef.current = setTimeout(() => {
+              setShowAcceptSuccessModal(false);
+              acceptSuccessTimerRef.current = null;
+              navigation.navigate("AcceptedJobs");
+            }, 60000);
+          } else {
+            navigation.navigate("AcceptedJobs");
+          }
+        } catch (e) {
           navigation.navigate("AcceptedJobs");
         }
       } else {
@@ -1075,9 +1292,7 @@ export function useStaffShiftsController(
 
   // Whether an accepted shift already has a guard assigned — checks a
   // fresh local assignment first, then falls back to the API's `guard`
-  // object (singular) / `guard_id` id. Used to split a contractor's
-  // accepted shifts into "Accepted Jobs" (assigned) vs "Pending Assigning"
-  // (not). Matches the same fields renderShiftCard already reads below.
+  // object (singular) / `guard_id` id.
   const shiftHasAssignedGuard = (shift: any): boolean => {
     const shiftKey = String(shift.id);
     const localAssignment = shiftStaffAssignments[shiftKey];
@@ -1157,8 +1372,56 @@ export function useStaffShiftsController(
       localAssignment?.name || shift.guard?.name || null;
     const isAssigned = !!assignedGuardId;
 
+    // ── Contractor-only: decide whether to hide the "Assign to Staff
+    // Member" dropdown on this accepted shift card (Today + Week).
+    // See computeHideAssignDropdown for the full rule (duration > 12h,
+    // OR contractor_invoice === 0 + pending + duration < 12h).
+    //
+    // Applies to contractors only — staff/guard users never see this
+    // section regardless (see the `userType === "contractor"` check
+    // further below).
+    const hideAssignForContractor = computeHideAssignDropdown(shift);
+
+    // Status label shown on accepted cards (pending/confirmed/etc) so a
+    // contractor can see at a glance which of their accepted shifts are
+    // still pending vs already confirmed.
+    const shiftStatusLabel = shift.job_status
+      ? shift.job_status.charAt(0).toUpperCase() + shift.job_status.slice(1)
+      : null;
+
     return (
       <View key={index} style={styles.shiftCard}>
+        {userType === "contractor" && shiftStatusLabel ? (
+          <View
+            style={{
+              flexDirection: "row",
+              justifyContent: "flex-end",
+              marginBottom: 6,
+            }}
+          >
+            <View
+              style={[
+                cardStyles.statusBadge,
+                isConfirmed && {
+                  backgroundColor: "#DCFCE7",
+                  borderColor: "#86EFAC",
+                },
+              ]}
+            >
+              <Text
+                style={[
+                  cardStyles.statusBadgeText,
+                  isConfirmed && {
+                    color: "#16A34A",
+                  },
+                ]}
+              >
+                {shiftStatusLabel}
+              </Text>
+            </View>
+          </View>
+        ) : null}
+
         <View style={styles.rowBetween}>
           <View style={styles.rowItem}>
             <View style={styles.iconBgGrey}>
@@ -1193,49 +1456,6 @@ export function useStaffShiftsController(
             </Text>
           </View>
         </View>
-        {/* <View style={[styles.rowBetween, { alignItems: "flex-start" }]}>
-          <TouchableOpacity
-            style={[
-              styles.rowItem,
-              {
-                flex: 1,
-                marginRight: 15,
-                alignItems: "flex-start",
-              },
-            ]}
-            activeOpacity={1}
-          >
-            <View style={styles.iconBgGrey}>
-              <FileText size={14} color={COLORS.primary} />
-            </View>
-
-            <Text
-              style={styles.documentText}
-              numberOfLines={3} // remove if you want unlimited lines
-            >
-              {shift.description || "No site description"}
-            </Text>
-          </TouchableOpacity>
-
-          {showButton && (
-            <TouchableOpacity
-              activeOpacity={0.8}
-              onPress={onPress}
-              disabled={disabled}
-              style={[
-                styles.actionButton,
-                actionBtnStyle,
-                disabled && { opacity: 0.5 },
-              ]}
-            >
-              <Text
-                style={[styles.actionButtonText, { color: actionTextColor }]}
-              >
-                {buttonText}
-              </Text>
-            </TouchableOpacity>
-          )}
-        </View> */}
 
         <View
           style={{
@@ -1267,7 +1487,7 @@ export function useStaffShiftsController(
                 styles.actionButton,
                 actionBtnStyle,
                 {
-                  width: 100, // adjust as needed
+                  width: 100,
                   alignSelf: "flex-start",
                   marginLeft: 10,
                 },
@@ -1283,8 +1503,10 @@ export function useStaffShiftsController(
           )}
         </View>
 
-        {/* ── Contractor-only: assign this accepted shift to a staff member ── */}
-        {userType === "contractor" && (
+        {/* ── Contractor-only: assign this accepted shift to a staff member.
+            Hidden per computeHideAssignDropdown above. Non-contractor
+            users never see this. ── */}
+        {userType === "contractor" && !hideAssignForContractor && (
           <View style={styles.contractorAssignSection}>
             <Text style={styles.assignLabel}>Assign to Staff Member</Text>
             <TouchableOpacity
@@ -1408,6 +1630,14 @@ export function useStaffShiftsController(
     if (!text) return "";
     return text.toLowerCase().replace(/\b\w/g, (char) => char.toUpperCase());
   };
+
+  // Accepted tab now shows EVERY accepted shift for today/this week,
+  // for every user type — including contractor shifts that still need a
+  // guard assigned (pending) alongside ones that are already confirmed.
+  // There's no more separate "Pending Assigning" view; renderShiftCard's
+  // own hideAssignForContractor logic (computeHideAssignDropdown) decides
+  // whether the assign dropdown should show on a given card, and its
+  // status badge shows Pending/Confirmed for contractors.
   const renderAcceptedTab = () => {
     if (loadingToday || loadingWeek) {
       return (
@@ -1418,100 +1648,27 @@ export function useStaffShiftsController(
       );
     }
 
-    // Contractor's "Accepted Jobs" only shows shifts that already have a
-    // guard assigned — unassigned ones live under "Pending Assigning" on
-    // the Available Jobs screen instead. Staffoo staff / guards see
-    // everything, unfiltered, same as before.
-    const isContractor = userType === "contractor";
-    const shownTodayShifts = isContractor
-      ? todayShifts.filter(shiftHasAssignedGuard)
-      : todayShifts;
-    const shownWeekShifts = isContractor
-      ? weekShifts.filter(shiftHasAssignedGuard)
-      : weekShifts;
-
     return (
       <>
         <Text style={styles.sectionHeader}>Today's Shifts</Text>
-        {shownTodayShifts.length === 0 ? (
+        {todayShifts.length === 0 ? (
           <View style={styles.emptyBlock}>
             <Text style={styles.emptyText}>No shifts today</Text>
           </View>
         ) : (
-          shownTodayShifts.map((shift, index) =>
-            renderShiftCard(shift, index, true),
-          )
+          todayShifts.map((shift, index) => renderShiftCard(shift, index, true))
         )}
         <Text style={styles.sectionHeader}>This Week's Shifts</Text>
-        {shownWeekShifts.length === 0 ? (
+        {weekShifts.length === 0 ? (
           <View style={styles.emptyBlock}>
             <Text style={styles.emptyText}>No shifts this week</Text>
           </View>
         ) : (
-          shownWeekShifts.map((shift, index) =>
-            renderShiftCard(shift, index, false),
-          )
+          weekShifts.map((shift, index) => renderShiftCard(shift, index, false))
         )}
       </>
     );
   };
-
-  // Contractor-only: accepted shifts that don't have a guard assigned yet.
-  const renderPendingAssigningTab = () => {
-    if (loadingToday || loadingWeek) {
-      return (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={COLORS.primary} />
-          <Text style={styles.loadingText}>Loading Shifts…</Text>
-        </View>
-      );
-    }
-
-    const pendingToday = todayShifts.filter((s) => !shiftHasAssignedGuard(s));
-    const pendingWeek = weekShifts.filter((s) => !shiftHasAssignedGuard(s));
-
-    if (pendingToday.length === 0 && pendingWeek.length === 0) {
-      return (
-        <View style={cardStyles.emptyContainer}>
-          <View style={cardStyles.emptyIconWrap}>
-            <Briefcase size={36} color={COLORS.primary} />
-          </View>
-          <Text style={cardStyles.emptyText}>
-            No jobs waiting to be assigned
-          </Text>
-        </View>
-      );
-    }
-
-    return (
-      <>
-        {pendingToday.length > 0 && (
-          <>
-            <Text style={styles.sectionHeader}>Today</Text>
-            {pendingToday.map((shift, index) =>
-              renderShiftCard(shift, index, true),
-            )}
-          </>
-        )}
-        {pendingWeek.length > 0 && (
-          <>
-            <Text style={styles.sectionHeader}>This Week</Text>
-            {pendingWeek.map((shift, index) =>
-              renderShiftCard(shift, index, false),
-            )}
-          </>
-        )}
-      </>
-    );
-  };
-
-  // Count for the "Pending Assigning" tab badge — same "no guard assigned
-  // yet" filter used inside renderPendingAssigningTab, just exposed as a
-  // number so the tab bar (in AvailableJobsScreen/AcceptedJobsScreen) can
-  // show it next to the tab, mirroring the "Available Jobs" badge.
-  const pendingAssigningCount =
-    todayShifts.filter((s) => !shiftHasAssignedGuard(s)).length +
-    weekShifts.filter((s) => !shiftHasAssignedGuard(s)).length;
 
   // ─── Main render ────────────────────────────────────────────────────────────
   const jobData = extractJobData(notificationJob);
@@ -1525,6 +1682,14 @@ export function useStaffShiftsController(
   const notifHasWhiteCard = notifRequiredDocuments.includes("white_card");
   const notifDescription: string = jobData?.description || "";
 
+  // Contractor-only: hide the "Assign to Staff Member" dropdown in the
+  // ASAP notification sheet per computeHideAssignDropdown (duration > 12h,
+  // OR contractor_invoice === 0 + pending + duration < 12h). Staff/guard
+  // users never see this section regardless, so this only ever changes
+  // contractor behaviour.
+  const notifShiftDurationHours = getShiftDurationHours(jobData);
+  const notifHideAssignForContractor = computeHideAssignDropdown(jobData);
+
   // Description + required documents for the "Available Jobs" accept sheet,
   // read straight off the raw API job object (same source/shape as the
   // notification sheet above).
@@ -1534,10 +1699,16 @@ export function useStaffShiftsController(
     acceptRawJob?.document_list,
   );
 
-  const showingAvailableList =
-    screenMode === "available" &&
-    (userType !== "contractor" ||
-      contractorAvailableSubTab === "Available Jobs");
+  // Contractor-only: hide "Assign to Staff Member" in the Available Jobs
+  // accept sheet per computeHideAssignDropdown. Mirrors
+  // notifHideAssignForContractor above. Staff/guard users never see this
+  // section regardless.
+  const acceptShiftDurationHours = getShiftDurationHours(acceptRawJob);
+  const acceptHideAssignForContractor = computeHideAssignDropdown(acceptRawJob);
+
+  // No more contractor sub-tab to check — Available Jobs always shows the
+  // available-jobs list when screenMode is "available".
+  const showingAvailableList = screenMode === "available";
 
   const isRefreshing = showingAvailableList
     ? loadingAvailable && availableJobs.length === 0
@@ -1547,6 +1718,15 @@ export function useStaffShiftsController(
     if (showingAvailableList) fetchAvailableJobs(1, false);
     else fetchAcceptedShifts();
   };
+
+  useEffect(() => {
+    return () => {
+      if (acceptSuccessTimerRef.current) {
+        clearTimeout(acceptSuccessTimerRef.current);
+        acceptSuccessTimerRef.current = null;
+      }
+    };
+  }, []);
 
   return {
     screenMode,
@@ -1564,7 +1744,7 @@ export function useStaffShiftsController(
     fetchAvailableJobs,
     loadMoreAvailableJobs,
 
-    // accepted / pending shifts
+    // accepted shifts
     todayShifts,
     weekShifts,
     loadingToday,
@@ -1580,10 +1760,6 @@ export function useStaffShiftsController(
     profileImage,
     loadingProfile,
     userDocuments,
-
-    // contractor "Available Jobs" vs "Pending Assigning" sub-tab
-    contractorAvailableSubTab,
-    setContractorAvailableSubTab,
 
     // ASAP notification bottom sheet
     notificationJob,
@@ -1623,6 +1799,9 @@ export function useStaffShiftsController(
     // celebration overlay
     showCelebration,
     setShowCelebration,
+    // transient accept-success modal
+    showAcceptSuccessModal,
+    hideAcceptSuccessModal,
 
     // render helpers
     renderAvailableCard,
@@ -1630,8 +1809,6 @@ export function useStaffShiftsController(
     renderJobsListFooter,
     renderNewTab,
     renderAcceptedTab,
-    renderPendingAssigningTab,
-    pendingAssigningCount,
     capitalizeWords,
 
     // notification sheet derived data
@@ -1640,11 +1817,13 @@ export function useStaffShiftsController(
     notifHasWorkingWithChildren,
     notifHasWhiteCard,
     notifDescription,
+    notifHideAssignForContractor,
 
     // accept sheet derived data
     acceptRawJob,
     acceptDescription,
     acceptRequiredDocuments,
+    acceptHideAssignForContractor,
 
     // refresh
     showingAvailableList,

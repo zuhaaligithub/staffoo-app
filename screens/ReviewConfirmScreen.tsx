@@ -113,12 +113,15 @@
 //   android: "monospace",
 // });
 
-// // ─── Human-readable labels for each rate segment ─────────────────────────────
+// // ─── Human-readable labels for each rate segment (used only when the
+// //     day-rate and night-rate for that day type DIFFER, so the time
+// //     window is meaningful information) ───────────────────────────────
+// // NOTE: Friday is intentionally grouped together with Mon–Thu (see
+// // getDayType below) because the rate card only exposes a single
+// // "Mon to Fri" day/night rate — there is no separate Friday rate.
 // const SEGMENT_LABELS: Record<string, string> = {
-//   weekday_day: "Mon–Thu (Day 06:00–18:00)",
-//   weekday_night: "Mon–Thu (Night 18:00–06:00)",
-//   fri_day: "Friday (Day 06:00–18:00)",
-//   fri_night: "Friday (Night 18:00–06:00)",
+//   weekday_day: "Mon–Fri (Day 06:00–18:00)",
+//   weekday_night: "Mon–Fri (Night 18:00–06:00)",
 //   sat_day: "Saturday (06:00–18:00)",
 //   sat_night: "Saturday (18:00–06:00)",
 //   sun_day: "Sunday (06:00–18:00)",
@@ -127,13 +130,27 @@
 //   pub_holi_night: "Public Holiday (Night 18:00–06:00)",
 // };
 
-// function getDayType(d: Date): string {
+// // ─── Plain day-type labels used when day-rate === night-rate, so the
+// //     segment is merged into a single row with NO time window shown
+// //     (e.g. "Saturday" instead of "Saturday (06:00–18:00)" + "Saturday
+// //     (18:00–06:00)") ──────────────────────────────────────────────────
+// const DAY_TYPE_LABELS: Record<string, string> = {
+//   weekday: "Mon–Fri",
+//   sat: "Saturday",
+//   sun: "Sunday",
+//   pub_holi: "Public Holiday",
+// };
 
+// // FIX: Friday now maps to the same "weekday" bucket as Mon–Thu instead of
+// // its own "fri" bucket, since the rate card has no dedicated Friday rate —
+// // it reuses def_metro_mon_to_fri_day_rate / night_rate for both. This means
+// // a Mon–Thu shift and a Friday shift with the same time window now merge
+// // into a single "Mon–Fri" line instead of showing as two separate rows.
+// function getDayType(d: Date): string {
 //   const day = d.getDay();
 //   if (day === 0) return "sun";
-//   if (day === 5) return "fri";
 //   if (day === 6) return "sat";
-//   return "weekday";
+//   return "weekday"; // Mon, Tue, Wed, Thu, Fri all share the same rate
 // }
 
 // function getSlot(hour: number): "day" | "night" {
@@ -197,6 +214,15 @@
 //   };
 // }
 
+// // ─── FIX: calcBreakdown now merges Saturday/Sunday/Public-Holiday (or any
+// // day type) day+night segments into a SINGLE line item whenever the
+// // day-rate and night-rate for that day type are identical. In that case
+// // the row just shows the day name ("Saturday") with the combined hours
+// // and the single unit price — no 06:00–18:00 / 18:00–06:00 split.
+// // When day-rate and night-rate DIFFER (e.g. Mon–Thu / Friday in the
+// // current rate card), the two segments stay separate exactly as before,
+// // each with its own time-window label.
+// // ────────────────────────────────────────────────────────────────────────
 // function calcBreakdown(shiftsInput: any[], r: RatesConfig): CostBreakdown {
 //   if (!shiftsInput?.length) {
 //     return { chargeTotal: 0, guardHours: 0, breakdown: [], totalShiftHours: 0 };
@@ -205,7 +231,6 @@
 //   const hMap = new Map<string, number>();
 //   const order: string[] = [];
 
-//   let totalCharge = 0;
 //   let totalGuardHours = 0;
 //   let totalShiftHours = 0;
 
@@ -246,18 +271,64 @@
 //     }
 //   });
 
-//   const bd: ShiftSegment[] = [];
+//   // Preserve the order in which each day type (weekday / fri / sat / sun /
+//   // pub_holi) first appears across the shifts, regardless of whether the
+//   // day or night slot was hit first.
+//   const dayTypeOrder: string[] = [];
 //   order.forEach((k) => {
-//     const guardHrs = hMap.get(k) ?? 0;
-//     const [dayType, slotType] = k.split("_") as [string, "day" | "night"];
-//     const rate = r.charge[dayType]?.[slotType] ?? 0;
-//     totalCharge += guardHrs * rate;
-//     bd.push({
-//       label: SEGMENT_LABELS[k] ?? k,
-//       hours: guardHrs,
-//       payRate: 0,
-//       chargeRate: rate,
-//     });
+//     // "sat_day" -> "sat", "pub_holi_night" -> "pub_holi"
+//     const dayType = k.split("_").slice(0, -1).join("_");
+//     if (!dayTypeOrder.includes(dayType)) dayTypeOrder.push(dayType);
+//   });
+
+//   let totalCharge = 0;
+//   const bd: ShiftSegment[] = [];
+
+//   dayTypeOrder.forEach((dayType) => {
+//     const dayHours = hMap.get(`${dayType}_day`) ?? 0;
+//     const nightHours = hMap.get(`${dayType}_night`) ?? 0;
+//     const dayRate = r.charge[dayType]?.day ?? 0;
+//     const nightRate = r.charge[dayType]?.night ?? 0;
+
+//     // ── Same unit price for day & night on this day type → MERGE ──
+//     // e.g. Saturday 14:00–23:00 crosses the 18:00 boundary and would
+//     // normally produce "Saturday (06:00–18:00)" + "Saturday
+//     // (18:00–06:00)". Since the rate is identical, show one row:
+//     // "Saturday" with the combined hours.
+//     if (dayRate === nightRate) {
+//       const mergedHours = dayHours + nightHours;
+//       if (mergedHours > 0) {
+//         totalCharge += mergedHours * dayRate;
+//         bd.push({
+//           label: DAY_TYPE_LABELS[dayType] ?? dayType,
+//           hours: mergedHours,
+//           payRate: 0,
+//           chargeRate: dayRate,
+//         });
+//       }
+//       return;
+//     }
+
+//     // ── Different unit price for day vs night → keep split, with the
+//     // time-window label so the customer can see why the price differs.
+//     if (dayHours > 0) {
+//       totalCharge += dayHours * dayRate;
+//       bd.push({
+//         label: SEGMENT_LABELS[`${dayType}_day`] ?? `${dayType}_day`,
+//         hours: dayHours,
+//         payRate: 0,
+//         chargeRate: dayRate,
+//       });
+//     }
+//     if (nightHours > 0) {
+//       totalCharge += nightHours * nightRate;
+//       bd.push({
+//         label: SEGMENT_LABELS[`${dayType}_night`] ?? `${dayType}_night`,
+//         hours: nightHours,
+//         payRate: 0,
+//         chargeRate: nightRate,
+//       });
+//     }
 //   });
 
 //   return {
@@ -2204,6 +2275,10 @@ import {
   Check,
   X,
   User,
+  Info,
+  Scale,
+  CreditCard,
+  Send,
 } from "lucide-react-native";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import Toast from "react-native-toast-message";
@@ -2215,6 +2290,7 @@ import {
   holdPayment as holdPaymentAPI,
   getAuthToken,
   BASE_URL,
+  JobPostPayload,
 } from "../services/authApi";
 import { CardField, createPaymentMethod } from "@stripe/stripe-react-native";
 
@@ -2274,6 +2350,7 @@ type RouteParams = {
     lng?: number;
     guardsCount?: number;
     job_location_state?: string;
+    jobLocationState?: string;
     tasks?: JobTask[];
     jobLevel?: string | number;
     totalManHours?: number;
@@ -2284,6 +2361,12 @@ type RouteParams = {
     payableNow?: number;
     splitAmount?: number;
     totalAmount?: number;
+    stateMatch?: boolean | null;
+  };
+  estimate?: {
+    minPrice: number;
+    maxPrice: number;
+    isSegmented: boolean;
   };
   uploadedFileUrls?: string[];
   uploadedFileNames?: string[];
@@ -2295,12 +2378,6 @@ const courierFont = Platform.select({
   android: "monospace",
 });
 
-// ─── Human-readable labels for each rate segment (used only when the
-//     day-rate and night-rate for that day type DIFFER, so the time
-//     window is meaningful information) ───────────────────────────────
-// NOTE: Friday is intentionally grouped together with Mon–Thu (see
-// getDayType below) because the rate card only exposes a single
-// "Mon to Fri" day/night rate — there is no separate Friday rate.
 const SEGMENT_LABELS: Record<string, string> = {
   weekday_day: "Mon–Fri (Day 06:00–18:00)",
   weekday_night: "Mon–Fri (Night 18:00–06:00)",
@@ -2312,10 +2389,6 @@ const SEGMENT_LABELS: Record<string, string> = {
   pub_holi_night: "Public Holiday (Night 18:00–06:00)",
 };
 
-// ─── Plain day-type labels used when day-rate === night-rate, so the
-//     segment is merged into a single row with NO time window shown
-//     (e.g. "Saturday" instead of "Saturday (06:00–18:00)" + "Saturday
-//     (18:00–06:00)") ──────────────────────────────────────────────────
 const DAY_TYPE_LABELS: Record<string, string> = {
   weekday: "Mon–Fri",
   sat: "Saturday",
@@ -2323,16 +2396,11 @@ const DAY_TYPE_LABELS: Record<string, string> = {
   pub_holi: "Public Holiday",
 };
 
-// FIX: Friday now maps to the same "weekday" bucket as Mon–Thu instead of
-// its own "fri" bucket, since the rate card has no dedicated Friday rate —
-// it reuses def_metro_mon_to_fri_day_rate / night_rate for both. This means
-// a Mon–Thu shift and a Friday shift with the same time window now merge
-// into a single "Mon–Fri" line instead of showing as two separate rows.
 function getDayType(d: Date): string {
   const day = d.getDay();
   if (day === 0) return "sun";
   if (day === 6) return "sat";
-  return "weekday"; // Mon, Tue, Wed, Thu, Fri all share the same rate
+  return "weekday";
 }
 
 function getSlot(hour: number): "day" | "night" {
@@ -2348,7 +2416,6 @@ function nextBoundary(t: Date): Date {
   } else if (h < 18) {
     n.setHours(18, 0, 0, 0);
   } else {
-    // Night should split at midnight so the day type changes on the next calendar day.
     n.setDate(n.getDate() + 1);
     n.setHours(0, 0, 0, 0);
   }
@@ -2396,15 +2463,6 @@ function normalizeShift(shift: any) {
   };
 }
 
-// ─── FIX: calcBreakdown now merges Saturday/Sunday/Public-Holiday (or any
-// day type) day+night segments into a SINGLE line item whenever the
-// day-rate and night-rate for that day type are identical. In that case
-// the row just shows the day name ("Saturday") with the combined hours
-// and the single unit price — no 06:00–18:00 / 18:00–06:00 split.
-// When day-rate and night-rate DIFFER (e.g. Mon–Thu / Friday in the
-// current rate card), the two segments stay separate exactly as before,
-// each with its own time-window label.
-// ────────────────────────────────────────────────────────────────────────
 function calcBreakdown(shiftsInput: any[], r: RatesConfig): CostBreakdown {
   if (!shiftsInput?.length) {
     return { chargeTotal: 0, guardHours: 0, breakdown: [], totalShiftHours: 0 };
@@ -2427,8 +2485,6 @@ function calcBreakdown(shiftsInput: any[], r: RatesConfig): CostBreakdown {
       isNaN(endDt.getTime()) ||
       endDt <= startDt
     ) {
-      // Still invalid after normalization (bad/missing data) — skip safely
-      // instead of ever producing a negative or NaN contribution.
       return;
     }
 
@@ -2453,12 +2509,8 @@ function calcBreakdown(shiftsInput: any[], r: RatesConfig): CostBreakdown {
     }
   });
 
-  // Preserve the order in which each day type (weekday / fri / sat / sun /
-  // pub_holi) first appears across the shifts, regardless of whether the
-  // day or night slot was hit first.
   const dayTypeOrder: string[] = [];
   order.forEach((k) => {
-    // "sat_day" -> "sat", "pub_holi_night" -> "pub_holi"
     const dayType = k.split("_").slice(0, -1).join("_");
     if (!dayTypeOrder.includes(dayType)) dayTypeOrder.push(dayType);
   });
@@ -2472,11 +2524,6 @@ function calcBreakdown(shiftsInput: any[], r: RatesConfig): CostBreakdown {
     const dayRate = r.charge[dayType]?.day ?? 0;
     const nightRate = r.charge[dayType]?.night ?? 0;
 
-    // ── Same unit price for day & night on this day type → MERGE ──
-    // e.g. Saturday 14:00–23:00 crosses the 18:00 boundary and would
-    // normally produce "Saturday (06:00–18:00)" + "Saturday
-    // (18:00–06:00)". Since the rate is identical, show one row:
-    // "Saturday" with the combined hours.
     if (dayRate === nightRate) {
       const mergedHours = dayHours + nightHours;
       if (mergedHours > 0) {
@@ -2491,8 +2538,6 @@ function calcBreakdown(shiftsInput: any[], r: RatesConfig): CostBreakdown {
       return;
     }
 
-    // ── Different unit price for day vs night → keep split, with the
-    // time-window label so the customer can see why the price differs.
     if (dayHours > 0) {
       totalCharge += dayHours * dayRate;
       bd.push({
@@ -2530,11 +2575,12 @@ export default function ReviewConfirmScreen() {
     uploadedFileUrls = [],
     uploadedFileNames = [],
     selectedDocuments = [],
+    estimate,
   } = (route.params || {}) as RouteParams;
 
   const LOGO = require("../assets/staffoo.png");
 
-  // ── state ──
+  // State
   const [showPolicyModal, setShowPolicyModal] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [rates, setRates] = useState<RatesConfig | null>(null);
@@ -2549,14 +2595,20 @@ export default function ReviewConfirmScreen() {
   const [paymentTab, setPaymentTab] = useState<"saved" | "new">("saved");
   const [cardError, setCardError] = useState("");
   const [processing, setProcessing] = useState(false);
-  // cardComplete is only used for NEW card entry
   const [cardComplete, setCardComplete] = useState(false);
   const [cardHolderName, setCardHolderName] = useState("");
   const [nameError, setNameError] = useState("");
 
-  const extractedState = jobData.location?.split(",").pop()?.trim() ?? "";
+  // Unmatched-state estimate confirmation modal
+  const [confirmModalVisible, setConfirmModalVisible] = useState(false);
 
-  // ── helpers ──
+  // Flow detection based on stateMatch flag
+  const isStateNotMatched = jobData.stateMatch === false;
+  const contractorInvoice = jobData.stateMatch === true ? 1 : 0;
+  const minPrice = Number(estimate?.minPrice ?? 0);
+  const maxPrice = Number(estimate?.maxPrice ?? 0);
+  const isSegmented = !!estimate?.isSegmented;
+
   const pad = (n: number) => String(n).padStart(2, "0");
 
   const getCategoryDisplay = (cat?: string) => {
@@ -2602,10 +2654,6 @@ export default function ReviewConfirmScreen() {
     }
   };
 
-  // ─── FIX: isPaymentReady ─────────────────────────────────────────────────
-  // Saved card: only need a valid payment_method_id — NO card re-entry required.
-  // New card:   need holder name (≥3 chars) + complete card fields.
-  // ────────────────────────────────────────────────────────────────────────────
   const isPaymentReady = () => {
     return cardHolderName.trim().length >= 3 && cardComplete;
   };
@@ -2711,7 +2759,6 @@ export default function ReviewConfirmScreen() {
 
       const upper = address.toUpperCase();
 
-      // ───── Pakistan Provinces & Major Cities Mapping ─────
       const pakistanMap: Record<string, string> = {
         PUNJAB: "punjab",
         SINDH: "sindh",
@@ -2731,7 +2778,6 @@ export default function ReviewConfirmScreen() {
         QUETTA: "balochistan",
       };
 
-      // ───── Australia States ─────
       const australiaMap: Record<string, string> = {
         VIC: "vic",
         VICTORIA: "vic",
@@ -2754,18 +2800,15 @@ export default function ReviewConfirmScreen() {
         .map((p) => p.trim())
         .filter(Boolean);
 
-      // 1. Check from the end (most accurate)
       for (let i = parts.length - 1; i >= 0; i--) {
         const part = parts[i].toUpperCase();
 
-        // Pakistan check
         for (const [key, value] of Object.entries(pakistanMap)) {
           if (part.includes(key)) {
             return value;
           }
         }
 
-        // Australia check
         for (const [key, value] of Object.entries(australiaMap)) {
           if (part.includes(key)) {
             return value;
@@ -2773,7 +2816,6 @@ export default function ReviewConfirmScreen() {
         }
       }
 
-      // 2. Full address scan
       for (const [key, value] of Object.entries(pakistanMap)) {
         if (upper.includes(key)) {
           return value;
@@ -2786,11 +2828,9 @@ export default function ReviewConfirmScreen() {
         }
       }
 
-      // 3. Country fallback
       if (upper.includes("PAKISTAN")) return "pakistan";
       if (upper.includes("AUSTRALIA")) return "australia";
 
-      // 4. Last resort
       const lastPart = parts[parts.length - 1];
       if (lastPart && lastPart.length > 2 && !/^\d+$/.test(lastPart)) {
         return lastPart.toLowerCase();
@@ -2798,14 +2838,17 @@ export default function ReviewConfirmScreen() {
 
       return "";
     };
-    const extractedState = getStateFromAddress(jobData.location || "");
 
-    console.log("Location:", jobData.location);
-    console.log("Extracted State:", extractedState);
+    const extractedState =
+      jobData.jobLocationState || getStateFromAddress(jobData.location || "");
 
     const formattedShifts = (jobData.shifts || []).map((shift: any) => {
       const s = parseLocalDate(shift.startTime);
-      const e = parseLocalDate(shift.endTime);
+      let e = parseLocalDate(shift.endTime);
+
+      if (e <= s) {
+        e = new Date(e.getTime() + 24 * 60 * 60 * 1000);
+      }
 
       return {
         start: `${s.getFullYear()}-${pad(s.getMonth() + 1)}-${pad(
@@ -2821,12 +2864,11 @@ export default function ReviewConfirmScreen() {
     const filteredDocuments = (selectedDocuments || []).filter(
       (doc: string) => {
         const normalized = doc.toLowerCase().replace(/[_-]/g, " ").trim();
-
         return normalized !== "security license";
       },
     );
 
-    const payload = {
+    const payload: JobPostPayload = {
       user_id: user.id,
 
       job_type: jobData.category || "others",
@@ -2849,24 +2891,10 @@ export default function ReviewConfirmScreen() {
 
       job_location_state: extractedState,
 
-      financials: {
-        base_total_inc_gst: parseFloat(totalIncGST.toFixed(2)),
-        discount_applied:
-          selectedPlan === "full"
-            ? parseFloat((totalIncGST * 0.05).toFixed(2))
-            : 0,
-        amount_to_charge_today: parseFloat(ctaAmount.toFixed(2)),
-        balance_deferred:
-          selectedPlan === "split"
-            ? parseFloat((totalIncGST * 0.5).toFixed(2))
-            : 0,
-      },
-
       is_document: filteredDocuments.length > 0,
 
       document_list: uploadedFileUrls || [],
 
-      // security_license removed
       document_types: filteredDocuments,
 
       job_instruction: jobData.description || "",
@@ -2877,7 +2905,33 @@ export default function ReviewConfirmScreen() {
         task_end: t.task_end || formatTime(t.endTime),
       })),
 
-      payment_intent_id: intentId,
+      payment_intent_id: isStateNotMatched
+        ? "admin_override_no_payment"
+        : intentId,
+      contractor_invoice: contractorInvoice,
+
+      ...(isStateNotMatched
+        ? {
+            financials: {
+              estimated_min: parseFloat(minPrice.toFixed(2)),
+              estimated_max: parseFloat(maxPrice.toFixed(2)),
+              is_segmented: isSegmented,
+            },
+          }
+        : {
+            financials: {
+              base_total_inc_gst: parseFloat(totalIncGST.toFixed(2)),
+              discount_applied:
+                selectedPlan === "full"
+                  ? parseFloat((totalIncGST * 0.05).toFixed(2))
+                  : 0,
+              amount_to_charge_today: parseFloat(ctaAmount.toFixed(2)),
+              balance_deferred:
+                selectedPlan === "split"
+                  ? parseFloat((totalIncGST * 0.5).toFixed(2))
+                  : 0,
+            },
+          }),
     };
 
     console.log("[CREATE JOB PAYLOAD]", JSON.stringify(payload, null, 2));
@@ -2916,7 +2970,7 @@ export default function ReviewConfirmScreen() {
                 },
               ],
             },
-          } as never, // ← This suppresses the strict typing
+          } as never,
         ],
       });
     } catch (err: any) {
@@ -2933,6 +2987,48 @@ export default function ReviewConfirmScreen() {
       setProcessing(false);
     }
   };
+
+  const handleAcceptAndPostUnmatched = async () => {
+    if (isSubmitting) return;
+    setIsSubmitting(true);
+    try {
+      const response = await submitJob("admin_override_no_payment");
+      Toast.show({
+        type: "success",
+        text1: "Job Posted!",
+        text2: response?.message || "Job posted successfully.",
+        position: "bottom",
+      });
+      setConfirmModalVisible(false);
+      navigation.reset({
+        index: 0,
+        routes: [
+          {
+            name: "MainTabs" as const,
+            state: {
+              routes: [
+                {
+                  name: "Applications" as const,
+                },
+              ],
+            },
+          } as never,
+        ],
+      });
+    } catch (err: any) {
+      const msg =
+        err?.response?.data?.message || err.message || "Something went wrong.";
+      Toast.show({
+        type: "error",
+        text1: "Post Failed",
+        text2: msg,
+        position: "bottom",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const handleEditDetails = () => {
     (navigation as any).navigate("MainTabs", {
       screen: "CreateJob",
@@ -2942,12 +3038,14 @@ export default function ReviewConfirmScreen() {
       },
     });
   };
-  // ─── Fetch rates ──────────────────────────────────────────────────────────
-  // FIX (bug #1): parseInt-based level matching. Comparing String(level)
-  // strictly (e.g. " 2" !== "2", or 2 !== "2") silently falls through to
-  // res.data.data[0] (always Level 1), which is why the wrong unit price
-  // could show up regardless of which job level was actually selected.
+
+  // Fetch rates for stateMatch flow
   useEffect(() => {
+    if (isStateNotMatched) {
+      setRatesLoading(false);
+      return;
+    }
+
     (async () => {
       try {
         const token = await getAuthToken();
@@ -2970,10 +3068,6 @@ export default function ReviewConfirmScreen() {
           res.data.data.find(
             (item: any) => parseInt(String(item.level), 10) === jobLevelNum,
           ) ?? res.data.data[0];
-
-        console.log(
-          `[RATES] Requested level ${jobLevelNum} → matched "${matched?.title}" (level ${matched?.level})`,
-        );
 
         const r = matched;
         setMatchedRateRow(r);
@@ -3006,13 +3100,12 @@ export default function ReviewConfirmScreen() {
       } catch (e: any) {
         const msg =
           e.response?.data?.message || e.message || "Failed to load rates";
-        console.error("[RATES] error:", msg);
         setRatesError(msg);
       } finally {
         setRatesLoading(false);
       }
     })();
-  }, [jobData.jobLevel]);
+  }, [jobData.jobLevel, isStateNotMatched]);
 
   const costBreakdown = useMemo(() => {
     const shifts = Array.isArray(jobData.shifts)
@@ -3031,7 +3124,6 @@ export default function ReviewConfirmScreen() {
   }, [rates, jobData.shifts]);
 
   const totalBillableHours = costBreakdown.guardHours;
-
   const subtotal = costBreakdown.chargeTotal;
   const gst = subtotal * 0.1;
   const totalIncGST = subtotal * 1.1;
@@ -3083,9 +3175,16 @@ export default function ReviewConfirmScreen() {
     })();
   };
 
+  const openConfirmModalUnmatched = () => {
+    if (!acceptedPolicy) {
+      Alert.alert("Required", "Please agree to the Terms & Conditions first.");
+      return;
+    }
+    setConfirmModalVisible(true);
+  };
+
   const PRIVACY_POLICY_TEXT = `Staffoo: Terms of Service & Privacy Policy\nEffective Date: March 14, 2026\n\nOperated by: Capital Services Pty Ltd\nABN: 48 613 317 838\nRegistered Office: 21 Tanglewood Bvd, Truganina VIC 3029, Australia\n\nPart 1: Privacy Policy\n1.1 Overview\nStaffoo (operated by Capital Services Pty Ltd) is committed to protecting the privacy of our customers, contractors, and staff in accordance with the Privacy Act 1988 (Cth) and the Australian Privacy Principles (APPs).\n\n1.2 Information Collection & GPS Tracking\nGPS Movement Tracking: Staffoo tracks the GPS location of all staff and contractors while "Clocked In". By using the app, workforce users consent to real-time location monitoring.\n\n1.3 Payment Security (Stripe)\nStaffoo does not store sensitive financial or credit card data. All transactions are processed via Stripe (PCI-DSS compliant).\n\nPart 2: Terms for Customers\n2.1 Booking and Payment Holds\nA payment hold will be placed upon job acceptance. Funds are captured upon shift completion.\n\n2.2 Cancellation & Refund Policy\nCancellations more than 24 hours before shift: full release. Within 1 hour: minimum 4-hour charge applies.\n\nPart 3: Workforce Compliance\nAll personnel must hold a current Security License for their State or Territory.\n\nPart 4: Code of Conduct\nArrive 10 minutes early. Wear specified attire. Zero tolerance for alcohol/substances. Protect all customer site data.\n\nPart 5: Contact\nAdmin Office: 21 Tanglewood Bvd, Truganina VIC 3029\nEmail: admin@staffoo.com.au | Phone: 1800782366`;
 
-  // ── loading / error guards ──
   if (ratesLoading)
     return (
       <View style={styles.loadingContainer}>
@@ -3094,7 +3193,7 @@ export default function ReviewConfirmScreen() {
       </View>
     );
 
-  if (ratesError || !rates)
+  if (!isStateNotMatched && (ratesError || !rates))
     return (
       <View style={styles.errorContainer}>
         <Text style={styles.errorText}>
@@ -3114,7 +3213,6 @@ export default function ReviewConfirmScreen() {
       </View>
     );
 
-  // ── render ──
   return (
     <View style={styles.container}>
       {/* Header */}
@@ -3127,20 +3225,6 @@ export default function ReviewConfirmScreen() {
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        {/* ── Job Level Badge ─────────────────────────────────────────────── */}
-        {/* {matchedRateRow?.title ? (
-          <View style={styles.levelBadgeRow}>
-            <View style={styles.levelBadge}>
-              <Text style={styles.levelBadgeText}>
-                Level {jobData.jobLevel ?? 1}
-              </Text>
-            </View>
-            <Text style={styles.levelBadgeDesc} numberOfLines={1}>
-              Rates applied: {matchedRateRow.title}
-            </Text>
-          </View>
-        ) : null} */}
-
         {/* ── Job Details ─────────────────────────────────────────────────── */}
         <View style={styles.card}>
           <View style={styles.cardSectionHeader}>
@@ -3254,173 +3338,209 @@ export default function ReviewConfirmScreen() {
           </View>
         </View>
 
-        {/* ── Rate Breakdown ───────────────────────────────────────────────── */}
-        <View style={styles.rateCard}>
-          <View style={styles.rateMainHeader}>
-            <Text style={styles.rateMainTitle}>Quotation Breakdown</Text>
-            <Text style={styles.rateMainSubtitle}>
-              {totalBillableHours.toFixed(2)} Total Billable Hours
-            </Text>
+        {/* ── CONDITIONALLY RENDER: ESTIMATE VS BREAKDOWN/PAYMENT ────────────── */}
+        {isStateNotMatched ? (
+          /* UNMATCHED STATE FLOW: Estimate UI */
+          <View style={styles.estimateCard}>
+            <View style={styles.estimateHeaderRow}>
+              <CreditCard size={20} color="#0F172A" />
+              <Text style={styles.estimateHeading}>Job Estimate</Text>
+            </View>
+
+            <View style={styles.infoBox}>
+              <Info size={16} color="#0A7C6E" style={{ marginTop: 1 }} />
+              <Text style={styles.infoBoxText}>
+                No payment is collected now. Once you post this job, you'll be
+                asked to accept an estimated price range and it will always go
+                out as a broadcast job.
+              </Text>
+            </View>
+
+            <View style={styles.priceRangeBox}>
+              <Scale size={40} color="#0A7C6E" />
+              <Text style={styles.priceRangeTitle}>Estimated Price Range</Text>
+              <Text style={styles.priceRangeSubtitle}>
+                {isSegmented
+                  ? "This location uses segmented day/night rates."
+                  : "This location doesn't use segmented day/night rates. The final price will fall within this range."}
+              </Text>
+              <Text style={styles.priceRangeValue}>
+                ${minPrice.toFixed(2)} – ${maxPrice.toFixed(2)}
+              </Text>
+            </View>
           </View>
-
-          {costBreakdown.breakdown.length === 0 ? (
-            <Text style={styles.noDataText}>
-              No breakdown available — check shift dates and times.
-            </Text>
-          ) : (
-            <>
-              {costBreakdown.breakdown.map((item, i) => (
-                <View key={i} style={styles.rateSegmentCard}>
-                  <View style={styles.rowItem}>
-                    <Text style={styles.rowLabel}>Rate Type</Text>
-                    <View style={styles.valueWrap}>
-                      <Text style={styles.rowValue}>{item.label}</Text>
-                    </View>
-                  </View>
-
-                  <View style={styles.detailsRow}>
-                    <View style={styles.detailColumn}>
-                      <Text style={styles.rowLabel}>Billable Hours</Text>
-                      <Text style={styles.detailValue}>
-                        {item.hours.toFixed(2)}
-                      </Text>
-                    </View>
-                    <View style={styles.detailColumn}>
-                      <Text style={styles.rowLabel}>Unit Price</Text>
-                      <Text style={styles.detailValue}>
-                        ${item.chargeRate.toFixed(2)}
-                      </Text>
-                    </View>
-                    <View style={styles.detailColumn}>
-                      <Text style={styles.rowLabel}>Subtotal</Text>
-                      <Text style={styles.detailValueBold}>
-                        ${(item.chargeRate * item.hours).toFixed(2)}
-                      </Text>
-                    </View>
-                  </View>
-                </View>
-              ))}
-
-              {/* Totals block */}
-              <View style={styles.totalsBlock}>
-                <View style={[styles.totalLine, styles.totalLineNoBorder]}>
-                  <Text style={styles.totalLabel}>Subtotal (Ex GST)</Text>
-                  <Text style={styles.subtotalValue}>
-                    ${subtotal.toFixed(2)}
-                  </Text>
-                </View>
-                <View style={styles.totalLine}>
-                  <Text style={styles.totalLabel}>GST (10%)</Text>
-                  <Text style={styles.gstValue}>${gst.toFixed(2)}</Text>
-                </View>
-                <View style={[styles.totalLine, styles.totalLineNoBorder]}>
-                  <Text style={styles.quoteTotal}>Quote Total</Text>
-                  <Text style={styles.quoteTotalvalue}>
-                    ${totalIncGST.toFixed(2)}
-                  </Text>
-                </View>
-
-                {selectedPlan === "full" && (
-                  <View style={styles.totalLine}>
-                    <Text style={styles.totalLabel}>
-                      Pay In Full Discount (5%)
-                    </Text>
-                    <Text style={{ color: "#16A34A", fontWeight: "700" }}>
-                      -${(totalIncGST * 0.05).toFixed(2)}
-                    </Text>
-                  </View>
-                )}
-                {selectedPlan === "split" && (
-                  <View style={styles.totalLine}>
-                    <Text style={styles.totalLabel}>
-                      Split Payment (50% now)
-                    </Text>
-                    <Text style={{ color: "#64748B", fontWeight: "600" }}>
-                      ${splitUpfront.toFixed(2)}
-                    </Text>
-                  </View>
-                )}
-
-                <View style={styles.finalTotalLine}>
-                  <Text style={styles.finalTotalLabel}>
-                    {selectedPlan === "full"
-                      ? "Amount Payable"
-                      : "Amount Payable"}
-                  </Text>
-                  <Text style={[styles.finalTotalValue, { color: "#0A7C6E" }]}>
-                    {selectedPlan === "full"
-                      ? `$${fullPayAmount.toFixed(2)}`
-                      : `$${splitUpfront.toFixed(2)}`}
-                  </Text>
-                </View>
-              </View>
-            </>
-          )}
-        </View>
-
-        {/* ── Payment Options ──────────────────────────────────────────────── */}
-        <View style={styles.paymentOptionsCard}>
-          <View style={styles.paymentOptionsHeader}>
-            <Text style={styles.paymentOptionsTitle}>Payment Options</Text>
-          </View>
-          <View style={styles.paymentOptionsRow}>
-            {(["full", "split"] as PaymentPlan[]).map((plan) => (
-              <TouchableOpacity
-                key={plan}
-                style={[
-                  styles.planCard,
-                  selectedPlan === plan && styles.planCardSelected,
-                ]}
-                onPress={() => setSelectedPlan(plan)}
-                activeOpacity={0.85}
-              >
-                {selectedPlan === plan && (
-                  <View style={styles.planSelectedDot}>
-                    <Check size={10} color="#fff" />
-                  </View>
-                )}
-                <View style={styles.planTitleRow}>
-                  <Text
-                    style={[
-                      styles.planName,
-                      selectedPlan === plan && styles.planNameSelected,
-                    ]}
-                  >
-                    {plan === "full" ? "Pay In Full" : "Split Payment (50/50)"}
-                  </Text>
-                  {plan === "full" && (
-                    <View style={styles.saveBadge}>
-                      <Text style={styles.saveBadgeText}>Save 5%</Text>
-                    </View>
-                  )}
-                </View>
-                <Text style={styles.planDesc}>
-                  {plan === "full"
-                    ? "Pay the total amount now and receive an instant 5% discount on your booking."
-                    : "Pay 50% upfront to secure guards. The remaining 50% is charged upon shift completion."}
+        ) : (
+          /* MATCHED STATE FLOW: Full Quotation Breakdown & Split Payment Options */
+          <>
+            {/* ── Rate Breakdown ─────────────────────────────────────────────── */}
+            <View style={styles.rateCard}>
+              <View style={styles.rateMainHeader}>
+                <Text style={styles.rateMainTitle}>Quotation Breakdown</Text>
+                <Text style={styles.rateMainSubtitle}>
+                  {totalBillableHours.toFixed(2)} Total Billable Hours
                 </Text>
-                <View style={styles.planAmountRow}>
-                  <Text
-                    style={[
-                      styles.planAmount,
-                      selectedPlan === plan && styles.planAmountSelected,
-                    ]}
-                  >
-                    $
-                    {plan === "full"
-                      ? fullPayAmount.toFixed(2)
-                      : splitUpfront.toFixed(2)}
-                  </Text>
-                  <Text style={styles.planAmountLabel}>
-                    {plan === "full" ? " Total" : " Upfront"}
-                  </Text>
-                </View>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </View>
+              </View>
 
-        {/* ── Terms ───────────────────────────────────────────────────────── */}
+              {costBreakdown.breakdown.length === 0 ? (
+                <Text style={styles.noDataText}>
+                  No breakdown available — check shift dates and times.
+                </Text>
+              ) : (
+                <>
+                  {costBreakdown.breakdown.map((item, i) => (
+                    <View key={i} style={styles.rateSegmentCard}>
+                      <View style={styles.rowItem}>
+                        <Text style={styles.rowLabel}>Service</Text>
+                        <View style={styles.valueWrap}>
+                          <Text style={styles.rowValue}>{item.label}</Text>
+                        </View>
+                      </View>
+
+                      <View style={styles.detailsRow}>
+                        <View style={styles.detailColumn}>
+                          <Text style={styles.rowLabel}>Billable Hours</Text>
+                          <Text style={styles.detailValue}>
+                            {item.hours.toFixed(2)}
+                          </Text>
+                        </View>
+                        <View style={styles.detailColumn}>
+                          <Text style={styles.rowLabel}>Unit Price</Text>
+                          <Text style={styles.detailValue}>
+                            ${item.chargeRate.toFixed(2)}
+                          </Text>
+                        </View>
+                        <View style={styles.detailColumn}>
+                          <Text style={styles.rowLabel}>Subtotal</Text>
+                          <Text style={styles.detailValueBold}>
+                            ${(item.chargeRate * item.hours).toFixed(2)}
+                          </Text>
+                        </View>
+                      </View>
+                    </View>
+                  ))}
+
+                  {/* Totals block */}
+                  <View style={styles.totalsBlock}>
+                    <View style={[styles.totalLine, styles.totalLineNoBorder]}>
+                      <Text style={styles.totalLabel}>Subtotal (Ex GST)</Text>
+                      <Text style={styles.subtotalValue}>
+                        ${subtotal.toFixed(2)}
+                      </Text>
+                    </View>
+                    <View style={styles.totalLine}>
+                      <Text style={styles.totalLabel}>GST (10%)</Text>
+                      <Text style={styles.gstValue}>${gst.toFixed(2)}</Text>
+                    </View>
+                    <View style={[styles.totalLine, styles.totalLineNoBorder]}>
+                      <Text style={styles.quoteTotal}>Quote Total</Text>
+                      <Text style={styles.quoteTotalvalue}>
+                        ${totalIncGST.toFixed(2)}
+                      </Text>
+                    </View>
+
+                    {selectedPlan === "full" && (
+                      <View style={styles.totalLine}>
+                        <Text style={styles.totalLabel}>
+                          Pay In Full Discount (5%)
+                        </Text>
+                        <Text style={{ color: "#16A34A", fontWeight: "700" }}>
+                          -${(totalIncGST * 0.05).toFixed(2)}
+                        </Text>
+                      </View>
+                    )}
+                    {selectedPlan === "split" && (
+                      <View style={styles.totalLine}>
+                        <Text style={styles.totalLabel}>
+                          Split Payment (50% now)
+                        </Text>
+                        <Text style={{ color: "#64748B", fontWeight: "600" }}>
+                          ${splitUpfront.toFixed(2)}
+                        </Text>
+                      </View>
+                    )}
+
+                    <View style={styles.finalTotalLine}>
+                      <Text style={styles.finalTotalLabel}>Amount Payable</Text>
+                      <Text
+                        style={[styles.finalTotalValue, { color: "#0A7C6E" }]}
+                      >
+                        {selectedPlan === "full"
+                          ? `$${fullPayAmount.toFixed(2)}`
+                          : `$${splitUpfront.toFixed(2)}`}
+                      </Text>
+                    </View>
+                  </View>
+                </>
+              )}
+            </View>
+
+            {/* ── Payment Options ────────────────────────────────────────────── */}
+            <View style={styles.paymentOptionsCard}>
+              <View style={styles.paymentOptionsHeader}>
+                <Text style={styles.paymentOptionsTitle}>Payment Options</Text>
+              </View>
+              <View style={styles.paymentOptionsRow}>
+                {(["full", "split"] as PaymentPlan[]).map((plan) => (
+                  <TouchableOpacity
+                    key={plan}
+                    style={[
+                      styles.planCard,
+                      selectedPlan === plan && styles.planCardSelected,
+                    ]}
+                    onPress={() => setSelectedPlan(plan)}
+                    activeOpacity={0.85}
+                  >
+                    {selectedPlan === plan && (
+                      <View style={styles.planSelectedDot}>
+                        <Check size={10} color="#fff" />
+                      </View>
+                    )}
+                    <View style={styles.planTitleRow}>
+                      <Text
+                        style={[
+                          styles.planName,
+                          selectedPlan === plan && styles.planNameSelected,
+                        ]}
+                      >
+                        {plan === "full"
+                          ? "Pay In Full"
+                          : "Split Payment (50/50)"}
+                      </Text>
+                      {plan === "full" && (
+                        <View style={styles.saveBadge}>
+                          <Text style={styles.saveBadgeText}>Save 5%</Text>
+                        </View>
+                      )}
+                    </View>
+                    <Text style={styles.planDesc}>
+                      {plan === "full"
+                        ? "Pay the total amount now and receive an instant 5% discount on your booking."
+                        : "Pay 50% upfront to secure guards. The remaining 50% is charged upon shift completion."}
+                    </Text>
+                    <View style={styles.planAmountRow}>
+                      <Text
+                        style={[
+                          styles.planAmount,
+                          selectedPlan === plan && styles.planAmountSelected,
+                        ]}
+                      >
+                        $
+                        {plan === "full"
+                          ? fullPayAmount.toFixed(2)
+                          : splitUpfront.toFixed(2)}
+                      </Text>
+                      <Text style={styles.planAmountLabel}>
+                        {plan === "full" ? " Total" : " Upfront"}
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+          </>
+        )}
+
+        {/* ── Terms & Policy Toggle ────────────────────────────────────────── */}
         <TouchableOpacity
           style={styles.policyContainer}
           onPress={() => setAcceptedPolicy(!acceptedPolicy)}
@@ -3443,29 +3563,48 @@ export default function ReviewConfirmScreen() {
                 Terms & Conditions
               </Text>
             </Text>
-            <Text style={styles.noteText}>
-              *Note: A 10% incidental authorisation hold may be applied by
-              stripe to cover potential unplanned overtime. The hold will be
-              released after completion of the shift.
-            </Text>
+            {!isStateNotMatched && (
+              <Text style={styles.noteText}>
+                *Note: A 10% incidental authorisation hold may be applied by
+                stripe to cover potential unplanned overtime. The hold will be
+                released after completion of the shift.
+              </Text>
+            )}
           </View>
         </TouchableOpacity>
 
-        <TouchableOpacity
-          style={[
-            styles.payNowButton,
-            (!acceptedPolicy || isSubmitting) && styles.disabledButton,
-          ]}
-          onPress={openPaymentModal}
-          disabled={!acceptedPolicy || isSubmitting}
-        >
-          <Lock size={20} color="#fff" style={{ marginRight: 10 }} />
-          <Text style={styles.payNowText}>
-            {selectedPlan === "full"
-              ? `Pay $${fullPayAmount.toFixed(2)} & Post Job`
-              : `Pay $${splitUpfront.toFixed(2)} & Post Job`}
-          </Text>
-        </TouchableOpacity>
+        {/* Action Button: Payment Modal trigger (state match) vs Post Job trigger (unmatched) */}
+        {isStateNotMatched ? (
+          <TouchableOpacity
+            style={[
+              styles.reviewEstimateButton,
+              (!acceptedPolicy || isSubmitting) && styles.disabledButton,
+            ]}
+            onPress={openConfirmModalUnmatched}
+            disabled={!acceptedPolicy || isSubmitting}
+          >
+            <Send size={18} color="#fff" style={{ marginRight: 10 }} />
+            <Text style={styles.reviewEstimateButtonText}>
+              Review Estimate & Post
+            </Text>
+          </TouchableOpacity>
+        ) : (
+          <TouchableOpacity
+            style={[
+              styles.payNowButton,
+              (!acceptedPolicy || isSubmitting) && styles.disabledButton,
+            ]}
+            onPress={openPaymentModal}
+            disabled={!acceptedPolicy || isSubmitting}
+          >
+            <Lock size={20} color="#fff" style={{ marginRight: 10 }} />
+            <Text style={styles.payNowText}>
+              {selectedPlan === "full"
+                ? `Pay $${fullPayAmount.toFixed(2)} & Post Job`
+                : `Pay $${splitUpfront.toFixed(2)} & Post Job`}
+            </Text>
+          </TouchableOpacity>
+        )}
 
         <TouchableOpacity style={styles.editButton} onPress={handleEditDetails}>
           <ArrowLeft size={20} color="#0A7C6E" />
@@ -3541,7 +3680,69 @@ export default function ReviewConfirmScreen() {
         </SafeAreaView>
       </Modal>
 
-      {/* Payment Modal */}
+      {/* ── Unmatched State Confirmation Modal ─────────────────────────────── */}
+      <Modal
+        visible={confirmModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => !isSubmitting && setConfirmModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.confirmModalCard}>
+            <View style={styles.confirmModalHeader}>
+              <Text style={styles.confirmModalTitle}>
+                Confirm Estimated Price
+              </Text>
+              <TouchableOpacity
+                onPress={() => !isSubmitting && setConfirmModalVisible(false)}
+                disabled={isSubmitting}
+              >
+                <X size={20} color="#6B7280" />
+              </TouchableOpacity>
+            </View>
+
+            <Text style={styles.confirmModalSubtitle}>
+              This job's final price will fall within the range below.
+            </Text>
+
+            <View style={styles.confirmPriceBox}>
+              <Text style={styles.confirmPriceCategory}>
+                {jobData.category || "Job"}
+              </Text>
+              <Text style={styles.confirmPriceValue}>
+                ${minPrice.toFixed(2)} – ${maxPrice.toFixed(2)}
+              </Text>
+            </View>
+
+            <Text style={styles.confirmModalNote}>
+              No payment is taken now. By accepting, this job will be broadcast
+              to eligible staff and the final charge will fall within the
+              estimated range above.
+            </Text>
+
+            <View style={styles.confirmModalActions}>
+              <TouchableOpacity
+                style={[
+                  styles.acceptPostBtn,
+                  isSubmitting && styles.disabledButton,
+                ]}
+                onPress={handleAcceptAndPostUnmatched}
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? (
+                  <ActivityIndicator color="#fff" />
+                ) : (
+                  <Text style={styles.acceptPostBtnText}>
+                    Accept Price & Post Job
+                  </Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* ── Payment Modal (Matched State) ────────────────────────────────── */}
       <Modal
         visible={paymentModalVisible}
         animationType="slide"
@@ -3585,8 +3786,7 @@ export default function ReviewConfirmScreen() {
                       capitalizeAllWords(
                         getCategoryDisplay(jobData.category),
                       ) ||
-                      "Security Service"}{" "}
-                    {/* — Level {jobData.jobLevel ?? 1} */}
+                      "Security Service"}
                   </Text>
                   <Text style={pmStyles.amountBarValue}>
                     $
@@ -3597,10 +3797,10 @@ export default function ReviewConfirmScreen() {
                   </Text>
                 </View>
 
-                {/* Payment Method Section - NON SCROLLABLE */}
+                {/* Payment Method Section */}
                 <Text style={pmStyles.sectionLabel}>Payment Method</Text>
 
-                {/* Tabs - Fixed */}
+                {/* Tabs */}
                 <View style={pmStyles.tabRow}>
                   {(["saved", "new"] as const).map((tab) => (
                     <TouchableOpacity
@@ -3639,7 +3839,7 @@ export default function ReviewConfirmScreen() {
                   ))}
                 </View>
 
-                {/* Scrollable Saved Cards Only */}
+                {/* Saved Cards List */}
                 {paymentTab === "saved" && (
                   <ScrollView
                     style={pmStyles.savedCardsScroll}
@@ -3698,7 +3898,7 @@ export default function ReviewConfirmScreen() {
                   </ScrollView>
                 )}
 
-                {/* Card Details - Fixed (Non-scrollable) */}
+                {/* Card Entry Fields */}
                 <Text style={pmStyles.sectionLabel}>Card Details</Text>
 
                 <TextInput
@@ -3740,7 +3940,7 @@ export default function ReviewConfirmScreen() {
                   Powered By <Text style={pmStyles.stripeBlue}>Stripe</Text>
                 </Text>
 
-                {/* Fixed Action Buttons */}
+                {/* Actions */}
                 <View style={pmStyles.actionRow}>
                   <TouchableOpacity
                     style={[
@@ -3834,7 +4034,7 @@ const pmStyles = StyleSheet.create({
     marginRight: 8,
   },
   savedCardsScroll: {
-    maxHeight: 150, // Adjust this value as needed
+    maxHeight: 150,
     marginBottom: 12,
   },
   savedCardsContent: {
@@ -3846,7 +4046,6 @@ const pmStyles = StyleSheet.create({
     fontWeight: "700",
     color: "#111827",
     marginBottom: 3,
-    // marginTop: 4,
   },
   tabRow: { flexDirection: "row", gap: 10, marginBottom: 5 },
   tabBtn: {
@@ -3868,7 +4067,6 @@ const pmStyles = StyleSheet.create({
     backgroundColor: "#F9FAFB",
     marginBottom: 10,
   },
-  savedCardsHint: { fontSize: 12, color: "#6B7280", marginBottom: 8 },
   savedCardRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -3905,15 +4103,6 @@ const pmStyles = StyleSheet.create({
     marginTop: 2,
   },
   cardExpiry: { fontSize: 11, color: "#6B7280", marginTop: 2 },
-  selectedCheckBadge: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: "#0A7C6E",
-    alignItems: "center",
-    justifyContent: "center",
-    marginLeft: 8,
-  },
   noCardsText: {
     textAlign: "center",
     color: "#9CA3AF",
@@ -3983,34 +4172,6 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   scrollContent: { padding: 16, paddingBottom: 100 },
-  levelBadgeRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 14,
-    gap: 10,
-  },
-  levelBadge: {
-    backgroundColor: "#0A7C6E",
-    borderRadius: 20,
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-  },
-  levelBadgeText: { color: "#fff", fontWeight: "800", fontSize: 13 },
-  levelBadgeDesc: {
-    color: "#94A3B8",
-    fontSize: 13,
-    fontWeight: "500",
-    flex: 1,
-  },
-  levelRateBadge: {
-    backgroundColor: "rgba(20,230,201,0.12)",
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    alignSelf: "flex-start",
-    marginTop: 6,
-  },
-  levelRateBadgeText: { color: "#14E6C9", fontSize: 11, fontWeight: "700" },
   card: {
     backgroundColor: "#030508",
     borderRadius: 24,
@@ -4241,7 +4402,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.55)",
     justifyContent: "center",
-    padding: 10,
+    padding: 16,
   },
   policyText: { fontSize: 14, color: "#fff", flex: 1 },
   policyLink: { color: "#0A7C6E", fontWeight: "700" },
@@ -4431,4 +4592,138 @@ const styles = StyleSheet.create({
   detailColumn: { flex: 1 },
   detailValue: { fontSize: 16, color: "#fff", fontWeight: "600" },
   detailValueBold: { fontSize: 16, color: "#fff", fontWeight: "700" },
+
+  // Estimate UI Styles (Unmatched State)
+  estimateCard: {
+    backgroundColor: "#fff",
+    borderRadius: 18,
+    padding: 16,
+    marginBottom: 16,
+  },
+  estimateHeaderRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 12,
+    gap: 8,
+  },
+  estimateHeading: {
+    fontSize: 18,
+    fontWeight: "800",
+    color: "#0F172A",
+  },
+  infoBox: {
+    flexDirection: "row",
+    backgroundColor: "#E6F4F1",
+    padding: 12,
+    borderRadius: 12,
+    gap: 8,
+    marginBottom: 14,
+  },
+  infoBoxText: {
+    fontSize: 12,
+    color: "#0A7C6E",
+    flex: 1,
+    lineHeight: 18,
+  },
+  priceRangeBox: {
+    alignItems: "center",
+    backgroundColor: "#F8FAFC",
+    padding: 18,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+  },
+  priceRangeTitle: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#0F172A",
+    marginTop: 8,
+  },
+  priceRangeSubtitle: {
+    fontSize: 12,
+    color: "#64748B",
+    textAlign: "center",
+    marginTop: 4,
+    marginBottom: 12,
+  },
+  priceRangeValue: {
+    fontSize: 22,
+    fontWeight: "800",
+    color: "#0A7C6E",
+  },
+  reviewEstimateButton: {
+    backgroundColor: "#0047FF",
+    borderRadius: 20,
+    paddingVertical: 14,
+    marginBottom: 20,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  reviewEstimateButtonText: {
+    color: "#fff",
+    fontSize: 18,
+    fontWeight: "800",
+  },
+  confirmModalCard: {
+    backgroundColor: "#fff",
+    borderRadius: 20,
+    padding: 20,
+  },
+  confirmModalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  confirmModalTitle: {
+    fontSize: 18,
+    fontWeight: "800",
+    color: "#111827",
+  },
+  confirmModalSubtitle: {
+    fontSize: 13,
+    color: "#6B7280",
+    marginBottom: 16,
+  },
+  confirmPriceBox: {
+    backgroundColor: "#F3F4F6",
+    borderRadius: 12,
+    padding: 16,
+    alignItems: "center",
+    marginBottom: 16,
+  },
+  confirmPriceCategory: {
+    fontSize: 12,
+    color: "#6B7280",
+    textTransform: "uppercase",
+    fontWeight: "700",
+  },
+  confirmPriceValue: {
+    fontSize: 22,
+    fontWeight: "800",
+    color: "#0A7C6E",
+    marginTop: 4,
+  },
+  confirmModalNote: {
+    fontSize: 12,
+    color: "#6B7280",
+    lineHeight: 18,
+    marginBottom: 20,
+  },
+  confirmModalActions: {
+    flexDirection: "row",
+  },
+  acceptPostBtn: {
+    flex: 1,
+    backgroundColor: "#0A7C6E",
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: "center",
+  },
+  acceptPostBtnText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "700",
+  },
 });

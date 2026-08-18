@@ -37,25 +37,12 @@
 		@"RNGestureHandlerButton": NSClassFromString(@"RNGestureHandlerButtonComponentView"), // react-native-gesture-handler
 		@"RNMapsGoogleMapView": NSClassFromString(@"RNMapsGoogleMapView"), // react-native-maps
 		@"RNMapsGooglePolygon": NSClassFromString(@"RNMapsGooglePolygonView"), // react-native-maps
-		@"RNMapsGoogleMarker": NSClassFromString(@"RNMapsGoogleMarkerView"), // react-native-maps
 		@"RNMapsMapView": NSClassFromString(@"RNMapsMapView"), // react-native-maps
 		@"RNMapsMarker": NSClassFromString(@"RNMapsMarkerView"), // react-native-maps
-		@"RNMapsPolygon": NSClassFromString(@"RNMapsPolygonView"), // react-native-maps
 		@"RNPDFPdfView": NSClassFromString(@"RNPDFPdfView"), // react-native-pdf
 		@"REASharedTransitionBoundary": NSClassFromString(@"REASharedTransitionBoundaryView"), // react-native-reanimated
 		@"RNCSafeAreaProvider": NSClassFromString(@"RNCSafeAreaProviderComponentView"), // react-native-safe-area-context
 		@"RNCSafeAreaView": NSClassFromString(@"RNCSafeAreaViewComponentView"), // react-native-safe-area-context
-		@"RNSFullWindowOverlay": NSClassFromString(@"RNSFullWindowOverlay"), // react-native-screens
-		@"RNSModalScreen": NSClassFromString(@"RNSModalScreen"), // react-native-screens
-		@"RNSScreenContainer": NSClassFromString(@"RNSScreenContainerView"), // react-native-screens
-		@"RNSScreenContentWrapper": NSClassFromString(@"RNSScreenContentWrapper"), // react-native-screens
-		@"RNSScreenFooter": NSClassFromString(@"RNSScreenFooter"), // react-native-screens
-		@"RNSScreen": NSClassFromString(@"RNSScreenView"), // react-native-screens
-		@"RNSScreenNavigationContainer": NSClassFromString(@"RNSScreenNavigationContainerView"), // react-native-screens
-		@"RNSScreenStackHeaderConfig": NSClassFromString(@"RNSScreenStackHeaderConfig"), // react-native-screens
-		@"RNSScreenStackHeaderSubview": NSClassFromString(@"RNSScreenStackHeaderSubview"), // react-native-screens
-		@"RNSScreenStack": NSClassFromString(@"RNSScreenStackView"), // react-native-screens
-		@"RNSSearchBar": NSClassFromString(@"RNSSearchBar"), // react-native-screens
 		@"RNSVGCircle": NSClassFromString(@"RNSVGCircle"), // react-native-svg
 		@"RNSVGClipPath": NSClassFromString(@"RNSVGClipPath"), // react-native-svg
 		@"RNSVGDefs": NSClassFromString(@"RNSVGDefs"), // react-native-svg
@@ -86,6 +73,27 @@
 		@"RNSVGTextPath": NSClassFromString(@"RNSVGTextPath"), // react-native-svg
 		@"RNSVGUse": NSClassFromString(@"RNSVGUse"), // react-native-svg
 		@"RNCWebView": NSClassFromString(@"RNCWebView"), // react-native-webview
+		@"RNSFullWindowOverlay": NSClassFromString(@"RNSFullWindowOverlay"), // react-native-screens
+		@"RNSModalScreen": NSClassFromString(@"RNSModalScreen"), // react-native-screens
+		@"RNSScreenContainer": NSClassFromString(@"RNSScreenContainerView"), // react-native-screens
+		@"RNSScreenContentWrapper": NSClassFromString(@"RNSScreenContentWrapper"), // react-native-screens
+		@"RNSScreenFooter": NSClassFromString(@"RNSScreenFooter"), // react-native-screens
+		@"RNSScreen": NSClassFromString(@"RNSScreenView"), // react-native-screens
+		@"RNSScreenNavigationContainer": NSClassFromString(@"RNSScreenNavigationContainerView"), // react-native-screens
+		@"RNSScreenStackHeaderConfig": NSClassFromString(@"RNSScreenStackHeaderConfig"), // react-native-screens
+		@"RNSScreenStackHeaderSubview": NSClassFromString(@"RNSScreenStackHeaderSubview"), // react-native-screens
+		@"RNSScreenStack": NSClassFromString(@"RNSScreenStackView"), // react-native-screens
+		@"RNSSearchBar": NSClassFromString(@"RNSSearchBar"), // react-native-screens
+		@"RNSStackScreen": NSClassFromString(@"RNSStackScreenComponentView"), // react-native-screens
+		@"RNSStackHost": NSClassFromString(@"RNSStackHostComponentView"), // react-native-screens
+		@"RNSTabsScreenIOS": NSClassFromString(@"RNSTabsScreenComponentView"), // react-native-screens
+		@"RNSTabsHostIOS": NSClassFromString(@"RNSTabsHostComponentView"), // react-native-screens
+		@"RNSTabsBottomAccessory": NSClassFromString(@"RNSTabsBottomAccessoryComponentView"), // react-native-screens
+		@"RNSTabsBottomAccessoryContent": NSClassFromString(@"RNSTabsBottomAccessoryContentComponentView"), // react-native-screens
+		@"RNSSplitHost": NSClassFromString(@"RNSSplitHostComponentView"), // react-native-screens
+		@"RNSSplitScreen": NSClassFromString(@"RNSSplitScreenComponentView"), // react-native-screens
+		@"RNSSafeAreaView": NSClassFromString(@"RNSSafeAreaViewComponentView"), // react-native-screens
+		@"RNSScrollViewMarker": NSClassFromString(@"RNSScrollViewMarkerComponentView"), // react-native-screens
     };
   });
 

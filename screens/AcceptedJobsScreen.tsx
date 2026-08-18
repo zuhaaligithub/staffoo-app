@@ -1,9 +1,3 @@
-// ─────────────────────────────────────────────────────────────────────────────
-// Accepted Jobs screen (route name "AcceptedJobs" in the tab navigator).
-// All state/logic lives in useStaffShiftsController (screens/shifts) — this
-// file is just the screen's JSX, split out of the old combined StaffShifts.tsx
-// so "Available Jobs" and "Accepted Jobs" are separate pages/components.
-// ─────────────────────────────────────────────────────────────────────────────
 import React from "react";
 import {
   View,
@@ -27,6 +21,9 @@ import {
   XCircle,
   ChevronDown,
   UserCheck,
+  ChevronLeft,
+  Layers,
+  CalendarDays,
 } from "lucide-react-native";
 import BottomSheet, {
   BottomSheetBackdrop,
@@ -44,7 +41,6 @@ import {
   StaffAssignSheet,
   styles,
   cardStyles,
-  tabStyles,
   assignStyles,
 } from "./shifts/StaffShiftsShared";
 import { useStaffShiftsController } from "./shifts/useStaffShiftsController";
@@ -77,8 +73,6 @@ export default function AcceptedJobsScreen({ navigation, route }: Props) {
     profileImage,
     loadingProfile,
     userDocuments,
-    contractorAvailableSubTab,
-    setContractorAvailableSubTab,
     notificationJob,
     sheetOpen,
     acceptingNotification,
@@ -115,113 +109,85 @@ export default function AcceptedJobsScreen({ navigation, route }: Props) {
     renderJobsListFooter,
     renderNewTab,
     renderAcceptedTab,
-    renderPendingAssigningTab,
-    pendingAssigningCount,
     capitalizeWords,
     jobData,
     notifRequiredDocuments,
     notifHasWorkingWithChildren,
     notifHasWhiteCard,
     notifDescription,
+    notifHideAssignForContractor,
     acceptRawJob,
     acceptDescription,
     acceptRequiredDocuments,
+    acceptHideAssignForContractor,
     showingAvailableList,
     isRefreshing,
     onRefresh,
   } = useStaffShiftsController(navigation, route, "accepted");
-
+  const isStaffooStaffMember = userId === 1 || user?.user_id === 1;
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor={COLORS.background} />
 
-      {/* Header */}
-      <LinearGradient
-        colors={[COLORS.heroBg1, COLORS.heroBg2]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={styles.headerGradient}
-      >
-        <TouchableOpacity
-          style={styles.headerLeft}
-          onPress={() => navigation.navigate("Profile")}
-          activeOpacity={0.85}
+      <View style={styles.fixedHeader}>
+        <LinearGradient
+          colors={[COLORS.heroBg1, COLORS.heroBg2]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.hero}
         >
-          {profileImage ? (
-            <Image source={{ uri: profileImage }} style={styles.avatar} />
-          ) : (
-            <View style={styles.initialsAvatar}>
-              <Text style={styles.initialsText}>
-                {getInitials(user?.name || "User")}
-              </Text>
+          <View style={styles.heroInner}>
+            {/* Back + User Info in One Row */}
+            <View style={styles.userHeaderRow}>
+              <TouchableOpacity
+                style={styles.heroBackBtn}
+                onPress={() => navigation.navigate("Profile")}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                activeOpacity={0.8}
+              >
+                <ChevronLeft size={20} color="#fff" />
+              </TouchableOpacity>
+
+              <View style={styles.userInfo}>
+                <Text style={styles.heroTitle}>
+                  {capitalizeName(user?.name || "User Name")}
+                </Text>
+
+                <Text style={styles.heroSubtitle}>Welcome to Staffoo</Text>
+              </View>
             </View>
-          )}
-          <View>
-            <Text
-              style={styles.greeting}
-              numberOfLines={2}
-              ellipsizeMode="tail"
-            >
-              {capitalizeName(user?.name || "User Name")}
-            </Text>
-            <Text style={styles.staffName}>Welcome to Staffoo</Text>
-          </View>
-        </TouchableOpacity>
-      </LinearGradient>
 
-      {screenMode === "available" &&
-        (userType === "contractor" || userType === "staff") && (
-          <View style={tabStyles.tabBar}>
-            {(
-              [
-                "Available Jobs",
-                userType === "contractor" ? "Pending Assigning" : null,
-              ].filter(Boolean) as string[]
-            ).map((tab) => {
-              const isActive =
-                userType === "staff" ? true : contractorAvailableSubTab === tab;
+            {/* Stats - Only show if top-level user_id is 1 */}
+            {isStaffooStaffMember && (
+              <View style={styles.statsRow}>
+                <View style={styles.statBox}>
+                  <View style={styles.statLabelRow}>
+                    <CalendarDays size={12} color={COLORS.textSecondary} />
 
-              return (
-                <TouchableOpacity
-                  key={tab}
-                  style={[tabStyles.tab, isActive && tabStyles.tabActive]}
-                  onPress={() => {
-                    if (userType === "contractor") {
-                      setContractorAvailableSubTab(tab as any);
-                    }
-                  }}
-                  activeOpacity={0.85}
-                >
-                  <View style={tabStyles.tabInner}>
-                    <Text
-                      style={[
-                        tabStyles.tabText,
-                        isActive && tabStyles.tabTextActive,
-                      ]}
-                    >
-                      {tab}
-                    </Text>
-                    {tab === "Available Jobs" && availableJobs.length > 0 && (
-                      <View style={tabStyles.badge}>
-                        <Text style={tabStyles.badgeText}>
-                          {availableJobs.length}
-                        </Text>
-                      </View>
-                    )}
-                    {tab === "Pending Assigning" &&
-                      pendingAssigningCount > 0 && (
-                        <View style={tabStyles.badge}>
-                          <Text style={tabStyles.badgeText}>
-                            {pendingAssigningCount}
-                          </Text>
-                        </View>
-                      )}
+                    <Text style={styles.statLabel}>AVAILABLE JOBS</Text>
                   </View>
-                </TouchableOpacity>
-              );
-            })}
+
+                  <Text style={styles.statValue}>{totalJobsCount}</Text>
+                </View>
+
+                <View style={styles.statDivider} />
+
+                <View style={styles.statBox}>
+                  <View style={styles.statLabelRow}>
+                    <Layers size={12} color={COLORS.textSecondary} />
+
+                    <Text style={styles.statLabel}>ACCEPTED SHIFTS</Text>
+                  </View>
+
+                  <Text style={styles.statValue}>
+                    {weekShifts?.length ?? 0}
+                  </Text>
+                </View>
+              </View>
+            )}
           </View>
-        )}
+        </LinearGradient>
+      </View>
       <ScrollView
         style={styles.scrollContainer}
         contentContainerStyle={styles.scrollContent}
@@ -235,26 +201,21 @@ export default function AcceptedJobsScreen({ navigation, route }: Props) {
           />
         }
       >
-        {screenMode === "accepted"
-          ? renderAcceptedTab()
-          : userType === "contractor"
-          ? contractorAvailableSubTab === "Pending Assigning"
-            ? renderPendingAssigningTab()
-            : renderNewTab()
-          : renderNewTab()}
+        {screenMode === "accepted" ? renderAcceptedTab() : renderNewTab()}
         {!notificationJob && <View style={styles.placeholder} />}
       </ScrollView>
 
       {/* ── Accept Sheet — "Available Jobs" tab (contractor + guard) ──
           Shows full job info (description, required documents) for both
           user types. Staff dropdown (showStaffSection) is contractor-only
-          and optional — picking a guard sends their id with the accept
-          request, leaving it unpicked sends an empty guard_id. Non-
-          contractor ("staff") flow is unaffected: showStaffSection is
-          false for them, so nothing new renders and nothing new is sent.
-          The sheet's own content is now scrollable (see StaffAssignSheet
-          above), so long descriptions / document lists / staff lists no
-          longer overflow past the visible sheet. */}
+          AND only shown when the job actually needs a guard assigned
+          (contractor_invoice !== 0) — picking a guard sends their id
+          with the accept request, leaving it unpicked sends an empty
+          guard_id. Non-contractor ("staff") flow is unaffected:
+          showStaffSection is false for them, so nothing new renders and
+          nothing new is sent. The sheet's own content is scrollable
+          (see StaffAssignSheet above), so long descriptions / document
+          lists / staff lists no longer overflow past the visible sheet. */}
       <StaffAssignSheet
         visible={acceptSheetVisible}
         job={acceptSheetJob}
@@ -265,7 +226,9 @@ export default function AcceptedJobsScreen({ navigation, route }: Props) {
         onAccept={handleAcceptSheetSubmit}
         onDecline={handleAcceptSheetDecline}
         submitting={acceptSubmitting}
-        showStaffSection={userType === "contractor"}
+        showStaffSection={
+          userType === "contractor" && !acceptHideAssignForContractor
+        }
         staffSelectionRequired={false}
         description={acceptDescription}
         requiredDocuments={acceptRequiredDocuments}
@@ -392,7 +355,7 @@ export default function AcceptedJobsScreen({ navigation, route }: Props) {
               the accept request; leaving it unpicked sends none. Staff
               flow (non-contractor) is unaffected: nothing renders here
               for them and nothing extra is sent. */}
-          {userType === "contractor" && (
+          {userType === "contractor" && !notifHideAssignForContractor && (
             <View style={{ marginVertical: 2 }}>
               <Text style={styles.assignLabel}>
                 Assign to Staff Member (optional)

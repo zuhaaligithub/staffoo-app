@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 70;
+	objectVersion = 56;
 	objects = {
 
 /* Begin PBXBuildFile section */
@@ -14,8 +14,8 @@
 		7B407ACE03944EF3B36ADC70 /* BootSplash.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 410F227565894BB09843DB2C /* BootSplash.storyboard */; };
 		81AB9BB82411601600AC10FF /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */; };
 		860878B8123947C5A9B9DC84 /* Colors.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 3F0A26606AD844F09CE1B044 /* Colors.xcassets */; };
-		AC8497649A36D1F0542DF947 /* libPods-OneSignalNotificationServiceExtension.a in Frameworks */ = {isa = PBXBuildFile; fileRef = E26BA5890AF7AEC38D8FA146 /* libPods-OneSignalNotificationServiceExtension.a */; };
-		C0F2C13F2127CBBCE3781076 /* libPods-STAFFO.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 98BB73CFAF3ED53A296CF4CF /* libPods-STAFFO.a */; };
+		E1B10ADA6C88AE81B7CE0009 /* libPods-OneSignalNotificationServiceExtension.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 1EDE5FB7298293C7410577D6 /* libPods-OneSignalNotificationServiceExtension.a */; };
+		FD57C8BB435CFCD35EFF7C63 /* libPods-STAFFO.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 7D7C32E28BD597CDDD3E5F06 /* libPods-STAFFO.a */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -47,23 +47,23 @@
 		13B07FB51A68108700A75B9A /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Images.xcassets; path = STAFFO/Images.xcassets; sourceTree = "<group>"; };
 		13B07FB61A68108700A75B9A /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = Info.plist; path = STAFFO/Info.plist; sourceTree = "<group>"; };
 		13B07FB81A68108700A75B9A /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = PrivacyInfo.xcprivacy; path = STAFFO/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
-		1C4C06A71CB612FDC4F1386B /* Pods-OneSignalNotificationServiceExtension.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-OneSignalNotificationServiceExtension.debug.xcconfig"; path = "Target Support Files/Pods-OneSignalNotificationServiceExtension/Pods-OneSignalNotificationServiceExtension.debug.xcconfig"; sourceTree = "<group>"; };
+		1BDC09A37660336D33879586 /* Pods-OneSignalNotificationServiceExtension.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-OneSignalNotificationServiceExtension.debug.xcconfig"; path = "Target Support Files/Pods-OneSignalNotificationServiceExtension/Pods-OneSignalNotificationServiceExtension.debug.xcconfig"; sourceTree = "<group>"; };
+		1EDE5FB7298293C7410577D6 /* libPods-OneSignalNotificationServiceExtension.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-OneSignalNotificationServiceExtension.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		3F0A26606AD844F09CE1B044 /* Colors.xcassets */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = folder.assetcatalog; name = Colors.xcassets; path = STAFFO/Colors.xcassets; sourceTree = "<group>"; };
 		410F227565894BB09843DB2C /* BootSplash.storyboard */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = BootSplash.storyboard; path = STAFFO/BootSplash.storyboard; sourceTree = "<group>"; };
-		4B96D77D372239CE738C4129 /* Pods-STAFFO.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-STAFFO.debug.xcconfig"; path = "Target Support Files/Pods-STAFFO/Pods-STAFFO.debug.xcconfig"; sourceTree = "<group>"; };
 		5215B0922F74FD5C00CF72BE /* STAFFO.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; name = STAFFO.entitlements; path = STAFFO/STAFFO.entitlements; sourceTree = "<group>"; };
 		5215B0972F74FF1300CF72BE /* OneSignalNotificationServiceExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = OneSignalNotificationServiceExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		5E53ADF612D483D7E11607B2 /* Pods-STAFFO.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-STAFFO.release.xcconfig"; path = "Target Support Files/Pods-STAFFO/Pods-STAFFO.release.xcconfig"; sourceTree = "<group>"; };
 		761780EC2CA45674006654EE /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppDelegate.swift; path = STAFFO/AppDelegate.swift; sourceTree = "<group>"; };
+		7D7C32E28BD597CDDD3E5F06 /* libPods-STAFFO.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-STAFFO.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = LaunchScreen.storyboard; path = STAFFO/LaunchScreen.storyboard; sourceTree = "<group>"; };
-		98BB73CFAF3ED53A296CF4CF /* libPods-STAFFO.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-STAFFO.a"; sourceTree = BUILT_PRODUCTS_DIR; };
-		B1C4F9097AFD6C9273E3B913 /* Pods-STAFFO.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-STAFFO.release.xcconfig"; path = "Target Support Files/Pods-STAFFO/Pods-STAFFO.release.xcconfig"; sourceTree = "<group>"; };
-		E26BA5890AF7AEC38D8FA146 /* libPods-OneSignalNotificationServiceExtension.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-OneSignalNotificationServiceExtension.a"; sourceTree = BUILT_PRODUCTS_DIR; };
-		ED15DB29036F14FA3C2B1BD2 /* Pods-OneSignalNotificationServiceExtension.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-OneSignalNotificationServiceExtension.release.xcconfig"; path = "Target Support Files/Pods-OneSignalNotificationServiceExtension/Pods-OneSignalNotificationServiceExtension.release.xcconfig"; sourceTree = "<group>"; };
+		ECDCF0F82EC20A34D44AA7A7 /* Pods-STAFFO.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-STAFFO.debug.xcconfig"; path = "Target Support Files/Pods-STAFFO/Pods-STAFFO.debug.xcconfig"; sourceTree = "<group>"; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
+		FCF62158B79B64BBA7DDE542 /* Pods-OneSignalNotificationServiceExtension.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-OneSignalNotificationServiceExtension.release.xcconfig"; path = "Target Support Files/Pods-OneSignalNotificationServiceExtension/Pods-OneSignalNotificationServiceExtension.release.xcconfig"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		5215B09F2F74FF1300CF72BE /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
+		5215B09F2F74FF1300CF72BE /* Exceptions for "OneSignalNotificationServiceExtension" folder in "OneSignalNotificationServiceExtension" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
@@ -73,7 +73,18 @@
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		5215B0982F74FF1300CF72BE /* OneSignalNotificationServiceExtension */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (5215B09F2F74FF1300CF72BE /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = OneSignalNotificationServiceExtension; sourceTree = "<group>"; };
+		5215B0982F74FF1300CF72BE /* OneSignalNotificationServiceExtension */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				5215B09F2F74FF1300CF72BE /* Exceptions for "OneSignalNotificationServiceExtension" folder in "OneSignalNotificationServiceExtension" target */,
+			);
+			explicitFileTypes = {
+			};
+			explicitFolders = (
+			);
+			path = OneSignalNotificationServiceExtension;
+			sourceTree = "<group>";
+		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -81,7 +92,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				C0F2C13F2127CBBCE3781076 /* libPods-STAFFO.a in Frameworks */,
+				FD57C8BB435CFCD35EFF7C63 /* libPods-STAFFO.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -89,7 +100,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				AC8497649A36D1F0542DF947 /* libPods-OneSignalNotificationServiceExtension.a in Frameworks */,
+				E1B10ADA6C88AE81B7CE0009 /* libPods-OneSignalNotificationServiceExtension.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -115,8 +126,8 @@
 			isa = PBXGroup;
 			children = (
 				ED297162215061F000B7C4FE /* JavaScriptCore.framework */,
-				E26BA5890AF7AEC38D8FA146 /* libPods-OneSignalNotificationServiceExtension.a */,
-				98BB73CFAF3ED53A296CF4CF /* libPods-STAFFO.a */,
+				1EDE5FB7298293C7410577D6 /* libPods-OneSignalNotificationServiceExtension.a */,
+				7D7C32E28BD597CDDD3E5F06 /* libPods-STAFFO.a */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -155,10 +166,10 @@
 		BBD78D7AC51CEA395F1C20DB /* Pods */ = {
 			isa = PBXGroup;
 			children = (
-				1C4C06A71CB612FDC4F1386B /* Pods-OneSignalNotificationServiceExtension.debug.xcconfig */,
-				ED15DB29036F14FA3C2B1BD2 /* Pods-OneSignalNotificationServiceExtension.release.xcconfig */,
-				4B96D77D372239CE738C4129 /* Pods-STAFFO.debug.xcconfig */,
-				B1C4F9097AFD6C9273E3B913 /* Pods-STAFFO.release.xcconfig */,
+				1BDC09A37660336D33879586 /* Pods-OneSignalNotificationServiceExtension.debug.xcconfig */,
+				FCF62158B79B64BBA7DDE542 /* Pods-OneSignalNotificationServiceExtension.release.xcconfig */,
+				ECDCF0F82EC20A34D44AA7A7 /* Pods-STAFFO.debug.xcconfig */,
+				5E53ADF612D483D7E11607B2 /* Pods-STAFFO.release.xcconfig */,
 			);
 			path = Pods;
 			sourceTree = "<group>";
@@ -170,14 +181,14 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 13B07F931A680F5B00A75B9A /* Build configuration list for PBXNativeTarget "STAFFO" */;
 			buildPhases = (
-				237A2114749974957BE550E3 /* [CP] Check Pods Manifest.lock */,
+				90C08DB7296DF83D9DC93B78 /* [CP] Check Pods Manifest.lock */,
 				13B07F871A680F5B00A75B9A /* Sources */,
 				13B07F8C1A680F5B00A75B9A /* Frameworks */,
 				13B07F8E1A680F5B00A75B9A /* Resources */,
 				00DD1BFF1BD5951E006B06BC /* Bundle React Native code and images */,
 				5215B0A32F74FF1300CF72BE /* Embed Foundation Extensions */,
-				EA35E0698FD0529B2C25BFF5 /* [CP] Embed Pods Frameworks */,
-				F34F476EC0CE7851EAAFC6DA /* [CP] Copy Pods Resources */,
+				CD161A262980559B3F2B32AE /* [CP] Embed Pods Frameworks */,
+				98249FE68E70CDAA619C9E44 /* [CP] Copy Pods Resources */,
 			);
 			buildRules = (
 			);
@@ -193,7 +204,7 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 5215B0A02F74FF1300CF72BE /* Build configuration list for PBXNativeTarget "OneSignalNotificationServiceExtension" */;
 			buildPhases = (
-				2D11DDEED47ED51CA5022694 /* [CP] Check Pods Manifest.lock */,
+				235B5DFEEF19504CB86A5901 /* [CP] Check Pods Manifest.lock */,
 				5215B0932F74FF1300CF72BE /* Sources */,
 				5215B0942F74FF1300CF72BE /* Frameworks */,
 				5215B0952F74FF1300CF72BE /* Resources */,
@@ -285,29 +296,7 @@
 			shellPath = /bin/sh;
 			shellScript = "set -e\n\nWITH_ENVIRONMENT=\"$REACT_NATIVE_PATH/scripts/xcode/with-environment.sh\"\nREACT_NATIVE_XCODE=\"$REACT_NATIVE_PATH/scripts/react-native-xcode.sh\"\n\n/bin/sh -c \"\\\"$WITH_ENVIRONMENT\\\" \\\"$REACT_NATIVE_XCODE\\\"\"\n";
 		};
-		237A2114749974957BE550E3 /* [CP] Check Pods Manifest.lock */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-			);
-			inputPaths = (
-				"${PODS_PODFILE_DIR_PATH}/Podfile.lock",
-				"${PODS_ROOT}/Manifest.lock",
-			);
-			name = "[CP] Check Pods Manifest.lock";
-			outputFileListPaths = (
-			);
-			outputPaths = (
-				"$(DERIVED_FILE_DIR)/Pods-STAFFO-checkManifestLockResult.txt",
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
-			showEnvVarsInLog = 0;
-		};
-		2D11DDEED47ED51CA5022694 /* [CP] Check Pods Manifest.lock */ = {
+		235B5DFEEF19504CB86A5901 /* [CP] Check Pods Manifest.lock */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -329,28 +318,29 @@
 			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
 			showEnvVarsInLog = 0;
 		};
-		EA35E0698FD0529B2C25BFF5 /* [CP] Embed Pods Frameworks */ = {
+		90C08DB7296DF83D9DC93B78 /* [CP] Check Pods Manifest.lock */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 			);
 			inputFileListPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-STAFFO/Pods-STAFFO-frameworks-${CONFIGURATION}-input-files.xcfilelist",
 			);
 			inputPaths = (
+				"${PODS_PODFILE_DIR_PATH}/Podfile.lock",
+				"${PODS_ROOT}/Manifest.lock",
 			);
-			name = "[CP] Embed Pods Frameworks";
+			name = "[CP] Check Pods Manifest.lock";
 			outputFileListPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-STAFFO/Pods-STAFFO-frameworks-${CONFIGURATION}-output-files.xcfilelist",
 			);
 			outputPaths = (
+				"$(DERIVED_FILE_DIR)/Pods-STAFFO-checkManifestLockResult.txt",
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-STAFFO/Pods-STAFFO-frameworks.sh\"\n";
+			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
 			showEnvVarsInLog = 0;
 		};
-		F34F476EC0CE7851EAAFC6DA /* [CP] Copy Pods Resources */ = {
+		98249FE68E70CDAA619C9E44 /* [CP] Copy Pods Resources */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -358,17 +348,30 @@
 			inputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-STAFFO/Pods-STAFFO-resources-${CONFIGURATION}-input-files.xcfilelist",
 			);
-			inputPaths = (
-			);
 			name = "[CP] Copy Pods Resources";
 			outputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-STAFFO/Pods-STAFFO-resources-${CONFIGURATION}-output-files.xcfilelist",
 			);
-			outputPaths = (
-			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
 			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-STAFFO/Pods-STAFFO-resources.sh\"\n";
+			showEnvVarsInLog = 0;
+		};
+		CD161A262980559B3F2B32AE /* [CP] Embed Pods Frameworks */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-STAFFO/Pods-STAFFO-frameworks-${CONFIGURATION}-input-files.xcfilelist",
+			);
+			name = "[CP] Embed Pods Frameworks";
+			outputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-STAFFO/Pods-STAFFO-frameworks-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-STAFFO/Pods-STAFFO-frameworks.sh\"\n";
 			showEnvVarsInLog = 0;
 		};
 /* End PBXShellScriptBuildPhase section */
@@ -402,7 +405,7 @@
 /* Begin XCBuildConfiguration section */
 		13B07F941A680F5B00A75B9A /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 4B96D77D372239CE738C4129 /* Pods-STAFFO.debug.xcconfig */;
+			baseConfigurationReference = ECDCF0F82EC20A34D44AA7A7 /* Pods-STAFFO.debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
@@ -410,9 +413,9 @@
 				CODE_SIGN_ENTITLEMENTS = STAFFO/STAFFO.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 6;
+				CURRENT_PROJECT_VERSION = 8;
 				DEBUG_INFORMATION_FORMAT = dwarf;
-				DEVELOPMENT_TEAM = S77ZY3N8V7;
+				DEVELOPMENT_TEAM = 7M84FA32NC;
 				ENABLE_BITCODE = NO;
 				INFOPLIST_FILE = STAFFO/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = STAFFOO;
@@ -422,13 +425,13 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0.5;
+				MARKETING_VERSION = 1.0.7;
 				OTHER_LDFLAGS = (
 					"$(inherited)",
 					"-ObjC",
 					"-lc++",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = au.com.staffoo.new.app;
+				PRODUCT_BUNDLE_IDENTIFIER = au.com.staffoo;
 				PRODUCT_NAME = STAFFO;
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
@@ -439,7 +442,7 @@
 		};
 		13B07F951A680F5B00A75B9A /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = B1C4F9097AFD6C9273E3B913 /* Pods-STAFFO.release.xcconfig */;
+			baseConfigurationReference = 5E53ADF612D483D7E11607B2 /* Pods-STAFFO.release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
@@ -447,9 +450,9 @@
 				CODE_SIGN_ENTITLEMENTS = STAFFO/STAFFO.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 6;
+				CURRENT_PROJECT_VERSION = 8;
 				DEBUG_INFORMATION_FORMAT = dwarf;
-				DEVELOPMENT_TEAM = S77ZY3N8V7;
+				DEVELOPMENT_TEAM = 7M84FA32NC;
 				INFOPLIST_FILE = STAFFO/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = STAFFOO;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.business";
@@ -458,13 +461,13 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0.5;
+				MARKETING_VERSION = 1.0.7;
 				OTHER_LDFLAGS = (
 					"$(inherited)",
 					"-ObjC",
 					"-lc++",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = au.com.staffoo.new.app;
+				PRODUCT_BUNDLE_IDENTIFIER = au.com.staffoo;
 				PRODUCT_NAME = STAFFO;
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				SWIFT_VERSION = 5.0;
@@ -474,7 +477,7 @@
 		};
 		5215B0A12F74FF1300CF72BE /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 1C4C06A71CB612FDC4F1386B /* Pods-OneSignalNotificationServiceExtension.debug.xcconfig */;
+			baseConfigurationReference = 1BDC09A37660336D33879586 /* Pods-OneSignalNotificationServiceExtension.debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				CLANG_ANALYZER_NONNULL = YES;
@@ -485,9 +488,9 @@
 				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
 				CODE_SIGN_ENTITLEMENTS = OneSignalNotificationServiceExtension/OneSignalNotificationServiceExtension.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 6;
+				CURRENT_PROJECT_VERSION = 8;
 				DEBUG_INFORMATION_FORMAT = dwarf;
-				DEVELOPMENT_TEAM = S77ZY3N8V7;
+				DEVELOPMENT_TEAM = 7M84FA32NC;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu17;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -501,10 +504,10 @@
 					"@executable_path/../../Frameworks",
 				);
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
-				MARKETING_VERSION = 1.0.5;
+				MARKETING_VERSION = 1.0.7;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
-				PRODUCT_BUNDLE_IDENTIFIER = au.com.staffoo.new.app.OneSignalNotificationServiceExtension;
+				PRODUCT_BUNDLE_IDENTIFIER = au.com.staffoo.OneSignalNotificationServiceExtension;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
@@ -517,7 +520,7 @@
 		};
 		5215B0A22F74FF1300CF72BE /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = ED15DB29036F14FA3C2B1BD2 /* Pods-OneSignalNotificationServiceExtension.release.xcconfig */;
+			baseConfigurationReference = FCF62158B79B64BBA7DDE542 /* Pods-OneSignalNotificationServiceExtension.release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				CLANG_ANALYZER_NONNULL = YES;
@@ -530,9 +533,9 @@
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 6;
+				CURRENT_PROJECT_VERSION = 8;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
-				DEVELOPMENT_TEAM = S77ZY3N8V7;
+				DEVELOPMENT_TEAM = 7M84FA32NC;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu17;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -546,9 +549,9 @@
 					"@executable_path/../../Frameworks",
 				);
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
-				MARKETING_VERSION = 1.0.5;
+				MARKETING_VERSION = 1.0.7;
 				MTL_FAST_MATH = YES;
-				PRODUCT_BUNDLE_IDENTIFIER = au.com.staffoo.new.app.OneSignalNotificationServiceExtension;
+				PRODUCT_BUNDLE_IDENTIFIER = au.com.staffoo.OneSignalNotificationServiceExtension;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
 				SWIFT_COMPILATION_MODE = wholemodule;

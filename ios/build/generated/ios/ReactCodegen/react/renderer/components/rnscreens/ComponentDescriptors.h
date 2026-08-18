@@ -16,12 +16,18 @@
 
 namespace facebook::react {
 
+using RNSScrollViewMarkerComponentDescriptor = ConcreteComponentDescriptor<RNSScrollViewMarkerShadowNode>;
+using RNSSplitHostComponentDescriptor = ConcreteComponentDescriptor<RNSSplitHostShadowNode>;
+using RNSStackHostComponentDescriptor = ConcreteComponentDescriptor<RNSStackHostShadowNode>;
 using RNSScreenContainerComponentDescriptor = ConcreteComponentDescriptor<RNSScreenContainerShadowNode>;
 using RNSScreenContentWrapperComponentDescriptor = ConcreteComponentDescriptor<RNSScreenContentWrapperShadowNode>;
 using RNSScreenFooterComponentDescriptor = ConcreteComponentDescriptor<RNSScreenFooterShadowNode>;
 using RNSScreenNavigationContainerComponentDescriptor = ConcreteComponentDescriptor<RNSScreenNavigationContainerShadowNode>;
 using RNSScreenStackComponentDescriptor = ConcreteComponentDescriptor<RNSScreenStackShadowNode>;
 using RNSSearchBarComponentDescriptor = ConcreteComponentDescriptor<RNSSearchBarShadowNode>;
+using RNSTabsBottomAccessoryContentComponentDescriptor = ConcreteComponentDescriptor<RNSTabsBottomAccessoryContentShadowNode>;
+using RNSTabsScreenAndroidComponentDescriptor = ConcreteComponentDescriptor<RNSTabsScreenAndroidShadowNode>;
+using RNSTabsScreenIOSComponentDescriptor = ConcreteComponentDescriptor<RNSTabsScreenIOSShadowNode>;
 
 void rnscreens_registerComponentDescriptorsFromCodegen(
   std::shared_ptr<const ComponentDescriptorProviderRegistry> registry);
