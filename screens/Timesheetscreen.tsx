@@ -30,8 +30,8 @@ type Props = { navigation: any };
 // ─────────────────────────────────────────────────────────
 // CONFIG
 // ─────────────────────────────────────────────────────────
-// const API_BASE = "https://apis-staging.staffoo.com.au/api";
-const API_BASE = "https://apis.staffoo.com.au/api";
+const API_BASE = "https://apis-staging.staffoo.com.au/api";
+// const API_BASE = "https://apis.staffoo.com.au/api";
 const GET_TIMESHEET_URL = `${API_BASE}/getTimesheet`;
 const GET_TIMESHEET_DETAILS_URL = `${API_BASE}/get-timesheet-details`;
 

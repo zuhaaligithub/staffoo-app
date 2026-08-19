@@ -234,14 +234,6 @@ export default function AcceptedJobsScreen({ navigation, route }: Props) {
         requiredDocuments={acceptRequiredDocuments}
       />
 
-      {/* ── ASAP notification bottom sheet ──
-          Staff assignment section removed here too — contractors accept
-          directly, then assign staff from the "Accepted" tab. Content now
-          renders inside BottomSheetScrollView (instead of a plain
-          ScrollView nested in BottomSheetView) so it scrolls properly
-          within the sheet's gesture handler when there's more data than
-          fits — required documents, a longer description, the staff
-          picker, etc. */}
       <BottomSheet
         ref={bottomSheetRef}
         index={-1}

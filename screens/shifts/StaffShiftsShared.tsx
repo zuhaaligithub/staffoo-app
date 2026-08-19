@@ -50,7 +50,6 @@ export const COLORS = {
 
 export const PENDING_NOTIF_KEY = "@pending_asap_notification";
 
-// ─── Types ─────────────────────────────────────────────────────────────────────
 export type AvailableJob = {
   id: number;
   title: string;
@@ -67,7 +66,6 @@ export type AvailableJob = {
 
 export type Props = { navigation: any; route: any };
 
-// ─── Helpers ───────────────────────────────────────────────────────────────────
 export const formatDate = (val: any): string => {
   if (!val) return "—";
   const clean = String(val).split("T")[0].split(" ")[0];
@@ -119,7 +117,6 @@ export const shapeJobForDetails = (raw: any) => {
   };
 };
 
-// Stable key used to dedupe / identify a notification payload, regardless of shape
 export const getNotifKey = (job: any): string => {
   if (!job) return "";
   try {
@@ -151,49 +148,34 @@ export const parseDocumentList = (docList: any): string[] => {
 
 export const extractJobData = (notif: any): any => {
   if (!notif) return {};
-
-  // 1. Direct match (most common for Available Jobs)
   if (notif?.id && (notif.start_time || notif.start || notif.end_time)) {
     return notif;
   }
-
-  // 2. Common notification wrappers
   if (notif?.additionalData?.roster?.roster?.id)
     return notif.additionalData.roster.roster;
   if (notif?.additionalData?.roster?.id) return notif.additionalData.roster;
   if (notif?.roster?.roster?.id) return notif.roster.roster;
   if (notif?.roster?.id) return notif.roster;
-
-  // 3. Deep search with priority to job-like objects
   const deepSearch = (obj: any, depth = 0): any => {
     if (!obj || typeof obj !== "object" || depth > 6) return null;
-
     if (
       obj.id &&
       (obj.site_name || obj.site_address || obj.start_time || obj.start)
     ) {
       return obj;
     }
-
     for (const key in obj) {
       const found = deepSearch(obj[key], depth + 1);
       if (found) return found;
     }
     return null;
   };
-
   const found = deepSearch(notif);
   if (found) return found;
-
   return notif;
 };
 export const JOBS_PAGE_SIZE = 50;
 
-// ─── Accept Job Bottom Sheet Component ────────────────────────────────────────
-// Used for the "Available Jobs" tab. The API call happens *inside* this sheet —
-// on success the sheet closes itself (via the parent's onAccept handler).
-// NOTE: Staff assignment is no longer done here — contractors accept the job
-// directly and assign it to a staff member later, from the "Accepted" tab.
 export interface StaffAssignSheetProps {
   visible: boolean;
   job: AvailableJob | null;
@@ -205,13 +187,7 @@ export interface StaffAssignSheetProps {
   onDecline: () => void;
   submitting?: boolean;
   showStaffSection?: boolean;
-  // When true (default, matches old behaviour) a staff pick is mandatory
-  // before ACCEPT is enabled. Pass false to make it optional — used by the
-  // "Available Jobs" accept sheet, where guard assignment is a choice, not
-  // a requirement.
   staffSelectionRequired?: boolean;
-  // Optional job description + required-document flags to render above the
-  // staff section. All optional / additive — omitting them changes nothing.
   description?: string;
   requiredDocuments?: string[];
 }
@@ -232,9 +208,7 @@ export const StaffAssignSheet = ({
   requiredDocuments = [],
 }: StaffAssignSheetProps) => {
   const [showStaffModal, setShowStaffModal] = useState(false);
-
   if (!visible || !job) return null;
-
   const selectedName = selectedStaff
     ? staffList.find((s) => s.id === selectedStaff)?.name ||
       `Staff #${selectedStaff}`
@@ -265,16 +239,8 @@ export const StaffAssignSheet = ({
     >
       <View style={assignStyles.overlay}>
         <View style={assignStyles.sheet}>
-          {/* Handle bar */}
           <View style={assignStyles.handle} />
-
-          {/* Title */}
           <Text style={assignStyles.title}>🔔 Accept Job</Text>
-
-          {/* Scrollable content — kicks in once the info cards, description,
-              required documents, and staff list push past the sheet's
-              max height. Action buttons stay pinned below, outside the
-              scroll area, so they're always reachable. */}
           <ScrollView
             style={assignStyles.scrollArea}
             contentContainerStyle={assignStyles.scrollContent}
@@ -368,11 +334,6 @@ export const StaffAssignSheet = ({
               </View>
             )}
 
-            {/* Staff Assignment Section — shown when showStaffSection is true
-                (currently: only the "Available Jobs" accept sheet, contractor
-                only). Selection is optional here (staffSelectionRequired is
-                passed as false by that caller) — picking a guard sends their
-                id with the accept request, leaving it unpicked sends none. */}
             {showStaffSection && (
               <>
                 <Text style={assignStyles.assignLabel}>
@@ -392,7 +353,6 @@ export const StaffAssignSheet = ({
                   </View>
                 ) : (
                   <>
-                    {/* Staff selector button */}
                     <TouchableOpacity
                       style={[
                         assignStyles.staffSelector,
@@ -452,7 +412,6 @@ export const StaffAssignSheet = ({
                       </Text>
                     )}
 
-                    {/* Staff picker modal */}
                     <Modal
                       visible={showStaffModal}
                       transparent
@@ -540,7 +499,6 @@ export const StaffAssignSheet = ({
             )}
           </ScrollView>
 
-          {/* Action buttons — pinned below the scroll area, always visible */}
           <View style={assignStyles.buttonRow}>
             <TouchableOpacity
               style={[
@@ -581,14 +539,6 @@ export const StaffAssignSheet = ({
   );
 };
 
-// ─── Pending Client Confirmation Modal ─────────────────────────────────────────
-// Shown after a CONTRACTOR successfully accepts a job from the "Available
-// Jobs" accept sheet where contractor_invoice === 1 — that job still needs
-// the CLIENT to give further confirmation before it's locked in, so instead
-// of the usual celebration overlay we tell the contractor to wait. Dismissed
-// with the "Awesome, Thanks!" button (see useStaffShiftsController's
-// closePendingClientConfirmation, which also handles the deferred
-// navigation to Accepted Jobs).
 export interface PendingConfirmationModalProps {
   visible: boolean;
   onDismiss: () => void;
@@ -1229,7 +1179,7 @@ export const styles = StyleSheet.create({
     backgroundColor: COLORS.card,
     borderColor: COLORS.cardBorder,
     borderRadius: 16,
-  marginHorizontal: 16,
+    marginHorizontal: 16,
     padding: 16,
     marginBottom: 14,
     borderWidth: 1,
@@ -1632,8 +1582,6 @@ export const styles = StyleSheet.create({
     letterSpacing: 0.6,
   },
 
-
-
   statsRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -1677,26 +1625,25 @@ export const styles = StyleSheet.create({
     marginHorizontal: 8,
   },
   userHeaderRow: {
-  flexDirection: "row",
-  alignItems: "center",
-  marginBottom: 14,
-},
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 14,
+  },
 
-userInfo: {
-  flex: 1,
-  marginLeft: 12,
-},
+  userInfo: {
+    flex: 1,
+    marginLeft: 12,
+  },
 
-heroTitle: {
-  fontSize: 20,
-  fontWeight: "800",
-  color: COLORS.text,
-  marginBottom: 2,
-},
+  heroTitle: {
+    fontSize: 20,
+    fontWeight: "800",
+    color: COLORS.text,
+    marginBottom: 2,
+  },
 
-heroSubtitle: {
-  fontSize: 12,
-  color: COLORS.textSecondary,
-},
-
+  heroSubtitle: {
+    fontSize: 12,
+    color: COLORS.textSecondary,
+  },
 });

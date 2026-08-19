@@ -392,8 +392,8 @@ export default function HomeScreen({ navigation }: any) {
         if (cachedImage) {
           setProfileImage(cachedImage);
         } else if (parsedUser?.staff?.profile_image) {
-          // const BASE_IMAGE_URL = "https://apis-staging.staffoo.com.au/storage/";
-           const BASE_IMAGE_URL = "https://apis.staffoo.com.au/storage/";
+          const BASE_IMAGE_URL = "https://apis-staging.staffoo.com.au/storage/";
+          //  const BASE_IMAGE_URL = "https://apis.staffoo.com.au/storage/";
           setProfileImage(`${BASE_IMAGE_URL}${parsedUser.staff.profile_image}`);
         }
       }
@@ -964,7 +964,7 @@ const styles = StyleSheet.create({
   sectionTitle: { fontSize: 16, fontWeight: "700", color: COLORS.text },
   seeAll: { fontSize: 13, color: COLORS.primary, fontWeight: "600" },
   shiftsWrapper: {
-    backgroundColor: COLORS.card,
+    backgroundColor: '#111111',
     borderRadius: 14,
     borderWidth: 1,
     borderColor: COLORS.cardBorder,

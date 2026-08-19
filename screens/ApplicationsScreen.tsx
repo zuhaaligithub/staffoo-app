@@ -81,8 +81,6 @@ interface Guard {
   email: string;
   phone: string;
   user_type: string;
-  // >1 means this guard belongs to a resource partner (RP) rather than
-  // being directly managed — used to decide whether to show "Assigned by".
   user_id?: number;
 }
 
@@ -93,8 +91,6 @@ interface Shift {
   signoutLocation?: string;
   signinNotes?: string;
   signoutNotes?: string;
-  // Resource partner (contractor) name — who this shift was assigned by,
-  // only meaningful when guardData.user_id > 1 (an RP guard).
   assignedByName?: string;
   id: number;
   siteName: string;
@@ -166,7 +162,6 @@ const loadPersistedRange = async (): Promise<{
   return null;
 };
 
-// Initials for the guard avatar bubble on each shift card.
 const getInitials = (name?: string): string => {
   if (!name) return "?";
   const parts = name.trim().split(" ").filter(Boolean);
@@ -197,20 +192,11 @@ export default function WeeklyRosterScreen({ navigation }: any) {
   const [loadingStaff, setLoadingStaff] = useState(false);
   const [user, setUser] = useState<any>(null);
   const isRestrictedUser = userType === "staff" || userType === "customer";
-
-  // ─── PAGINATION STATE ───────────────────────────────────────────────────
   const [page, setPage] = useState(1);
   const [lastPage, setLastPage] = useState(1);
   const [loadingMore, setLoadingMore] = useState(false);
-  // The REAL total shift count across every page, straight from the API's
-  // pagination.total. This — not shifts.length — is what should drive the
-  // "Total Shifts" badge, since shifts.length only reflects how many pages
-  // have been loaded into memory so far via "Load More".
   const [totalJobs, setTotalJobs] = useState(0);
-
   const currentDate = new Date();
-
-  // ─── DATE RANGE STATE (replaces fixed weekStart) ───────────────────────────
   const getMonday = (d: Date) => {
     const nd = new Date(d);
     nd.setHours(0, 0, 0, 0);
@@ -221,7 +207,7 @@ export default function WeeklyRosterScreen({ navigation }: any) {
   const onRefresh = async () => {
     setRefreshing(true);
     try {
-      await fetchShifts(1); // always restart from page 1
+      await fetchShifts(1);
     } finally {
       setRefreshing(false);
     }
@@ -236,7 +222,6 @@ export default function WeeklyRosterScreen({ navigation }: any) {
     return d;
   });
 
-  // Temp values used inside the date modal before the user hits "Apply"
   const [tempStart, setTempStart] = useState<Date>(rangeStart);
   const [tempEnd, setTempEnd] = useState<Date>(rangeEnd);
   const [showStartPicker, setShowStartPicker] = useState(false);
@@ -280,12 +265,10 @@ export default function WeeklyRosterScreen({ navigation }: any) {
     }, []),
   );
 
-  // Save search text
   useEffect(() => {
     AsyncStorage.setItem(STORAGE_KEYS.searchText, searchText);
   }, [searchText]);
 
-  // Save date range
   useEffect(() => {
     AsyncStorage.setItem(STORAGE_KEYS.rangeStart, rangeStart.toISOString());
     AsyncStorage.setItem(STORAGE_KEYS.rangeEnd, rangeEnd.toISOString());
@@ -308,14 +291,12 @@ export default function WeeklyRosterScreen({ navigation }: any) {
     loadFilters();
   }, []);
 
-  // Full month name display, e.g. "13 July 2026"
   const formatDateDisplay = (date: Date) =>
     `${date.getDate().toString().padStart(2, "0")} ${date.toLocaleString(
       "default",
       { month: "long" },
     )} ${date.getFullYear()}`;
 
-  // Number of days currently selected (inclusive)
   const rangeDayCount = useMemo(() => {
     const diff = Math.round(
       (rangeEnd.getTime() - rangeStart.getTime()) / (1000 * 60 * 60 * 24),
@@ -368,15 +349,10 @@ export default function WeeklyRosterScreen({ navigation }: any) {
           signout_notes: shift.signoutNotes || "N/A",
         },
       };
-
-      // Generate PDF
       const filePath = await PDFGenerator.generateShiftReportPDF(reportData);
-
       if (!filePath || !filePath.endsWith(".pdf")) {
         throw new Error("PDF file path not returned");
       }
-
-      // Success Alert with Open Option
       Alert.alert(
         "✅ PDF Generated Successfully",
         `File saved as:\n${filePath.split("/").pop()}`,
@@ -1412,9 +1388,7 @@ export default function WeeklyRosterScreen({ navigation }: any) {
                       value={toTitleCase(selectedShift.tag)}
                     />
 
-                    {/* Staff-only, RP-guard-only row — shows who assigned
-                        this shift. Renders nothing for every other case,
-                        so contractor/customer views are unaffected. */}
+                 
                     {userType === "staff" &&
                       showAssignedByForShift(selectedShift) && (
                         <DetailRow

@@ -111,7 +111,7 @@ export default function ProfileScreen({ navigation }: Props) {
     ((event: any) => Promise<void>) | null
   >(null);
   const hasLoadedOnceRef = useRef(false);
-
+  const hasShownChargeRatePopupRef = useRef(false);
   const [imageFile, setImageFile] = useState<any>(null);
   const GOOGLE_API_KEY = "AIzaSyCS-DB39Kk-Z25C5GWymVGshXIALbjXPGY";
   const getInitials = (name: string): string => {
@@ -133,8 +133,8 @@ export default function ProfileScreen({ navigation }: Props) {
     setIsActive(freshData.is_active === true);
 
     let imageUri = null;
-    // const BASE_IMAGE_URL = "https://apis-staging.staffoo.com.au/storage/";
-    const BASE_IMAGE_URL = "https://apis.staffoo.com.au/storage/";
+    const BASE_IMAGE_URL = "https://apis-staging.staffoo.com.au/storage/";
+    // const BASE_IMAGE_URL = "https://apis.staffoo.com.au/storage/";
 
     if (freshData.user_type === "customer") {
       imageUri = freshData.customer?.profile_image || freshData.profile_image;
@@ -189,18 +189,24 @@ export default function ProfileScreen({ navigation }: Props) {
             applyProfileData(freshData);
             await AsyncStorage.setItem("user", JSON.stringify(freshData));
 
-            // ── Charge Rates Missing popup logic ──
-            // Shown only for contractors whose charge rates haven't been
-            // added yet (charge_rate === false) AND whose profile is
-            // currently inactive (is_active === false).
-            const chargeRateAdded = profileResponse?.charge_rate;
+            const isInactive =
+              freshData?.is_active === false || freshData?.is_active === 0;
+
             const shouldShowChargeRatePopup =
               freshData?.user_type === "contractor" &&
-              chargeRateAdded === false &&
-              freshData?.is_active === false;
+              isInactive &&
+              !hasShownChargeRatePopupRef.current;
 
-            if (mounted) {
-              setChargeRatePopupVisible(shouldShowChargeRatePopup);
+            console.log("Charge rate popup check:", {
+              userType: freshData?.user_type,
+              is_active: freshData?.is_active,
+              alreadyShown: hasShownChargeRatePopupRef.current,
+              shouldShow: shouldShowChargeRatePopup,
+            });
+
+            if (mounted && shouldShowChargeRatePopup) {
+              hasShownChargeRatePopupRef.current = true;
+              setChargeRatePopupVisible(true);
             }
 
             // Only update location on first real load
@@ -1047,7 +1053,7 @@ export default function ProfileScreen({ navigation }: Props) {
                 </View>
                 <View style={styles.reqStepContent}>
                   <Text style={styles.reqStepTitle}>
-                    Select Your Licensed States
+                    Select Your States Licensed
                   </Text>
                   <Text style={styles.reqStepDesc}>
                     Select the states where you currently hold a valid Security
