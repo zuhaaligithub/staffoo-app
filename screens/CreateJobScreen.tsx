@@ -197,11 +197,7 @@ const datesBetween = (from: Date, to: Date): Date[] => {
   return dates;
 };
 
-/**
- * Takes the CALENDAR DATE from `anchorDate` and the TIME from `timePicker`.
- * This ensures the resulting Date always has the correct calendar date (16th, 17th, 18th…)
- * regardless of what date is stored inside the timePicker value.
- */
+
 const combineDateAndTime = (anchorDate: Date, timePicker: Date): Date => {
   const anchor =
     anchorDate instanceof Date && !isNaN(anchorDate.getTime())
@@ -212,7 +208,6 @@ const combineDateAndTime = (anchorDate: Date, timePicker: Date): Date => {
       ? timePicker
       : new Date();
 
-  // Always take year/month/day from the ANCHOR (the DaySchedule.date)
   const result = new Date(
     anchor.getFullYear(),
     anchor.getMonth(),
@@ -281,10 +276,7 @@ const splitShift = (
   return result;
 };
 
-/**
- * makeDefaultShift accepts the parent day's date so startTime/endTime
- * are always anchored to the correct calendar date (not today's date).
- */
+
 const makeDefaultShift = (anchorDate?: Date): Shift => {
   try {
     const base =
@@ -324,10 +316,7 @@ const makeDefaultShift = (anchorDate?: Date): Shift => {
   }
 };
 
-/**
- * makeDaySchedule passes the date into makeDefaultShift so its
- * inner Date objects carry the correct calendar date from the start.
- */
+
 const makeDaySchedule = (date: Date): DaySchedule => ({
   date: date || new Date(),
   shifts: [makeDefaultShift(date)],
@@ -344,7 +333,6 @@ const safeDate = (v: any): Date => {
   }
 };
 
-// ─── Error Boundary ───────────────────────────────────────────────────────────
 class ScheduleErrorBoundary extends React.Component<
   { onReset: () => void; children: React.ReactNode },
   { hasError: boolean }
@@ -403,7 +391,6 @@ type CreateJobRouteParams = {
   jobData?: any;
 };
 
-// ─── Main Component ───────────────────────────────────────────────────────────
 export default function CreateJobScreen() {
   const navigation =
     useNavigation<NativeStackNavigationProp<RootStackParamList>>();
@@ -412,8 +399,6 @@ export default function CreateJobScreen() {
   const mapRef = useRef<MapView>(null);
   const [mapReady, setMapReady] = useState(false);
   const GOOGLE_PLACES_KEY = "AIzaSyCS-DB39Kk-Z25C5GWymVGshXIALbjXPGY";
-
-  // ── Refs used to fix the "Description field jumps to top on Android" bug ──
   const scrollViewRef = useRef<ScrollView>(null);
   const descriptionInputRef = useRef<TextInput>(null);
   const scrollOffsetY = useRef(0);
@@ -430,30 +415,10 @@ export default function CreateJobScreen() {
   const [autocompleteQuery, setAutocompleteQuery] = useState("");
   const [suggestions, setSuggestions] = useState<PlacePrediction[]>([]);
   const [loadingSuggestions, setLoadingSuggestions] = useState(false);
-
-  // ── State-match / shift-splitting control ──────────────────────────────
-  // Set by the /check-state API (called after the user picks a location).
-  //  - true  → job location state is one of the user's allowed states.
-  //            ReviewConfirmScreen renders the ORIGINAL flow: fetch charge
-  //            rates itself, show the full quotation breakdown, collect
-  //            payment via Stripe immediately. No estimate is calculated
-  //            here and /calculate-job-amount is never called.
-  //  - false → job location state does NOT match. ReviewConfirmScreen
-  //            renders the NEW broadcast/estimate flow (no payment
-  //            collected now, admin payment override + contractor
-  //            invoice). We DO call /calculate-job-amount here to get the
-  //            estimated price range to show on that screen.
-  //  - null  → not yet checked (no location selected, or the check-state
-  //            call failed). Treated the same as `true` (default/
-  //            restricted behaviour) everywhere in this screen.
   const [locationStateCode, setLocationStateCode] = useState<string>("");
   const [stateMatch, setStateMatch] = useState<boolean | null>(null);
   const [userAllowedStates, setUserAllowedStates] = useState<string[]>([]);
   const [calculatingQuote, setCalculatingQuote] = useState(false);
-
-  // Returns true when shifts should be auto-split/validated (default —
-  // state matched or not yet checked). Returns false only when the
-  // check-state API explicitly reported no match.
   const canSplitShifts = () => stateMatch !== false;
 
   const [scheduleMode, setScheduleMode] = useState<ScheduleMode>("single");
@@ -777,17 +742,13 @@ export default function CreateJobScreen() {
     setUserAllowedStates([]);
   }, []);
 
-  // Reset form only on fresh navigation (not when editing from ReviewConfirm)
   useFocusEffect(
     useCallback(() => {
       if (!isEdit) {
         resetForm();
       }
-      // If isEdit is true → keep the data passed from ReviewConfirm
     }, [isEdit, resetForm]),
   );
-
-
 
   useEffect(() => {
     if (autocompleteQuery.length < 3) {
@@ -906,11 +867,7 @@ export default function CreateJobScreen() {
           "Content-Type": "application/json",
         },
       });
-
       console.log("check-state response:", res.data);
-
-      // Expected shape:
-      // { state_match: true, message: "...", user_id: 1, user_states: ["vic"] }
       const match = !!res.data?.state_match;
       setStateMatch(match);
       setUserAllowedStates(
@@ -918,16 +875,12 @@ export default function CreateJobScreen() {
       );
     } catch (error) {
       console.error("check-state API error:", error);
-      // Fail safe: unknown state-match status keeps the default
-      // (restricted / splitting) behaviour rather than silently
-      // removing restrictions on an API error.
       setStateMatch(null);
       setUserAllowedStates([]);
     }
   };
 
-  // When range dates change, preserve existing shifts for matching days
-  // and create properly-dated new DaySchedules for new days.
+
   useEffect(() => {
     if (scheduleMode !== "range" || multiDayMode !== "range") return;
     const days = datesBetween(rangeFrom, rangeTo);
@@ -950,7 +903,6 @@ export default function CreateJobScreen() {
     );
   }, [rangeFrom, rangeTo, scheduleMode, multiDayMode]);
 
-  // Same anchor-date correction for individual mode
   useEffect(() => {
     if (scheduleMode !== "range" || multiDayMode !== "individual") return;
     setIndividualSchedules((prev) =>
@@ -1363,7 +1315,6 @@ export default function CreateJobScreen() {
       return;
     }
 
-    // ── NORMAL UPDATE (no split) ──────────────────────────────────────────────
     const updateValue = field === "startTime" ? newStart : newEnd;
     if (isSingle) {
       updateSingleShift(shiftIndex, field, updateValue);
@@ -1576,15 +1527,7 @@ export default function CreateJobScreen() {
     }
   };
 
-  // ─────────────────────────────────────────────────────────────
-  // Proceed to Quotation: validates the form, then — ONLY when the
-  // job's location state does NOT match one of the user's allowed
-  // states (stateMatch === false) — calls the dynamic
-  // /calculate-job-amount API to get a price estimate. When the state
-  // DOES match (stateMatch === true, or hasn't been checked / is null),
-  // no estimate call is made at all: ReviewConfirmScreen fetches its own
-  // charge rates and runs the original quotation + payment flow.
-  // ─────────────────────────────────────────────────────────────
+
   const validateAndNext = async () => {
     const newErrors: FormErrors = {};
 
@@ -1615,12 +1558,7 @@ export default function CreateJobScreen() {
         ? individualSchedules
         : rangeSchedules;
 
-    // ─────────────────────────────────────────────────────────────
-    // SHIFT DURATION VALIDATION - Minimum 4 Hours
-    // Only enforced when the job's state matches the user's allowed
-    // states (or hasn't been checked yet). When it does NOT match, any
-    // shift length is allowed.
-    // ─────────────────────────────────────────────────────────────
+
     if (canSplitShifts()) {
       let hasInvalidShift = false;
 
@@ -1666,10 +1604,6 @@ export default function CreateJobScreen() {
       return;
     }
 
-    // ── State matches (or hasn't been checked) → go straight to
-    // ReviewConfirmScreen. That screen fetches its own charge rates and
-    // runs the original quotation + Stripe payment flow. No estimate API
-    // call is made here in that case. ──────────────────────────────────
     if (stateMatch !== false) {
       navigation.navigate("ReviewConfirm", {
         jobData: {
@@ -1700,8 +1634,7 @@ export default function CreateJobScreen() {
       return;
     }
 
-    // ── State does NOT match → get an estimated price range, then go to
-    // ReviewConfirmScreen's broadcast/estimate flow. ────────────────────
+   
     const pad2 = (n: number) => String(n).padStart(2, "0");
     const formatApiDateTime = (d: Date) =>
       `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())} ${pad2(

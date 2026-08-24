@@ -35,20 +35,15 @@ const COLORS = {
   background: "#030508",
   surface: "#07111A",
   card: "#0D1421",
-
   cardBorder: "rgba(98,97,97,0.35)",
-
   primary: "#00A99D",
   primaryDark: "#007E76",
   primaryGlow: "rgba(0,169,157,0.25)",
-
   text: "#FFFFFF",
   textSecondary: "#B7C4D4",
   textMuted: "#738295",
-
   success: "#34C88A",
   danger: "#F87171",
-
   heroBg1: "#0D1F2D",
   heroBg2: "#061014",
 };
@@ -132,12 +127,6 @@ export default function LoginScreen({ navigation }: Props) {
     }
   }, []);
 
-  // Location permission is requested once, on mount — NOT tied to a
-  // TextInput's onFocus. Requesting it on focus was popping a native
-  // system dialog the instant the keyboard opened, which steals focus
-  // and immediately closes the keyboard again (the "shows then hides"
-  // flicker). A short delay lets the screen finish its entrance
-  // animation first so the dialog doesn't appear mid-transition.
   useEffect(() => {
     const timer = setTimeout(() => {
       requestLocationPermission();
@@ -145,25 +134,7 @@ export default function LoginScreen({ navigation }: Props) {
     return () => clearTimeout(timer);
   }, []);
 
-  // const requestLocationPermission = async () => {
-  //   if (Platform.OS === "android") {
-  //     const granted = await PermissionsAndroid.request(
-  //       PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
-  //       {
-  //         title: "Location Permission",
-  //         message:
-  //           "This app needs your location for security and shift tracking.",
-  //         buttonNeutral: "Ask Me Later",
-  //         buttonNegative: "Cancel",
-  //         buttonPositive: "OK",
-  //       },
-  //     );
-  //     return granted === PermissionsAndroid.RESULTS.GRANTED;
-  //   }
 
-  //   const result = await request(PERMISSIONS.IOS.LOCATION_WHEN_IN_USE);
-  //   return result === RESULTS.GRANTED;
-  // };
 
   const requestLocationPermission = async () => {
     if (hasRequestedLocation.current) return true;
@@ -192,9 +163,7 @@ export default function LoginScreen({ navigation }: Props) {
       );
       return granted === PermissionsAndroid.RESULTS.GRANTED;
     } else {
-      // iOS
       const result = await request(PERMISSIONS.IOS.LOCATION_WHEN_IN_USE);
-      // If you need background location too, request BACKGROUND too
       return result === RESULTS.GRANTED;
     }
   };
@@ -202,37 +171,27 @@ export default function LoginScreen({ navigation }: Props) {
   const handleGoogleLogin = async () => {
     try {
       setLoading(true);
-
       const netState = await NetInfo.fetch();
       if (!netState.isConnected) {
         throw new Error("No internet connection. Please check your network.");
       }
-
       console.log("🌐 Network connected. BASE_URL:", BASE_URL);
-
       await GoogleSignin.hasPlayServices({
         showPlayServicesUpdateDialog: true,
       });
       await GoogleSignin.signOut().catch(() => {});
-
       const userInfo = await GoogleSignin.signIn();
-
       if (userInfo.type !== "success" || !userInfo.data) {
         throw new Error("Google sign-in failed");
       }
-
       const tokens = await GoogleSignin.getTokens();
       const credential = tokens.accessToken;
-
       if (!credential) {
         throw new Error("Failed to get Google credential");
       }
-
       console.log("✅ Google credential received");
       setGoogleCredential(credential);
-
       console.log("📤 Checking user with backend...");
-
       const response = await fetch(`${BASE_URL}/auth/google/callback`, {
         method: "POST",
         headers: {
@@ -252,8 +211,6 @@ export default function LoginScreen({ navigation }: Props) {
       }
 
       console.log("📥 Response Data:", JSON.stringify(data, null, 2));
-
-      // === SUCCESS: Existing User ===
       if (response.ok && data.success && data.user && data.token) {
         const user = data.user;
 
@@ -263,7 +220,6 @@ export default function LoginScreen({ navigation }: Props) {
           ["@user_id", String(user.id)],
           ["@user_type", user.user_type],
         ]);
-
         try {
           const playerId = await OneSignal.User.pushSubscription.getIdAsync();
           if (playerId) {
@@ -284,8 +240,6 @@ export default function LoginScreen({ navigation }: Props) {
         setTimeout(() => redirectAfterLogin(user), 500);
         return;
       }
-
-      // === NEW USER: Show Account Type Modal ===
       if (
         data.needs_account_type ||
         response.status === 401 ||
@@ -298,8 +252,6 @@ export default function LoginScreen({ navigation }: Props) {
         setShowAccountTypeModal(true);
         return;
       }
-
-      // === Other Errors ===
       throw new Error(data.message || "Google login failed");
     } catch (error: any) {
       console.error("❌ Google Login Error:", error.message);
@@ -373,7 +325,6 @@ export default function LoginScreen({ navigation }: Props) {
         ["@user_type", user.user_type || selectedAccountType],
       ]);
 
-      // OneSignal setup
       try {
         const playerId = await OneSignal.User.pushSubscription.getIdAsync();
         if (playerId) {
@@ -439,213 +390,7 @@ export default function LoginScreen({ navigation }: Props) {
       setLoading(false);
     }
   };
-  // const handleGoogleLogin = async () => {
-  //   try {
-  //     setLoading(true);
-
-  //     console.log("🚀 [GOOGLE] Starting Google Sign-In...");
-
-  //     await GoogleSignin.hasPlayServices({
-  //       showPlayServicesUpdateDialog: true,
-  //     });
-
-  //     await GoogleSignin.signOut().catch(() => {});
-
-  //     const userInfo = await GoogleSignin.signIn();
-
-  //     if (userInfo.type !== "success" || !userInfo.data) {
-  //       throw new Error("Google sign-in failed");
-  //     }
-
-  //     const tokens = await GoogleSignin.getTokens();
-
-  //     const credential = tokens.accessToken;
-
-  //     if (!credential) {
-  //       throw new Error("Failed to get Google credential");
-  //     }
-
-  //     console.log("✅ Google credential received");
-
-  //     // Save credential in case we need it for account creation
-  //     setGoogleCredential(credential);
-
-  //     // FIRST CHECK IF USER ALREADY EXISTS
-  //     const response = await fetch(`${BASE_URL}/auth/google/callback`, {
-  //       method: "POST",
-  //       headers: {
-  //         "Content-Type": "application/json",
-  //         Accept: "application/json",
-  //       },
-  //       body: JSON.stringify({
-  //         credential,
-  //       }),
-  //     });
-
-  //     const data = await response.json();
-
-  //     console.log("📥 Google Response:", data);
-
-  //     // Existing user -> Login directly
-  //     if (response.ok && data.success && data.user && data.token) {
-  //       const user = data.user;
-
-  //       await AsyncStorage.multiSet([
-  //         ["@auth_token", data.token],
-  //         ["user", JSON.stringify(user)],
-  //         ["@user_id", String(user.id)],
-  //         ["@user_type", user.user_type],
-  //       ]);
-
-  //       try {
-  //         const playerId = await OneSignal.User.pushSubscription.getIdAsync();
-
-  //         if (playerId) {
-  //           await sendNotificationTokenToServer(playerId, String(user.id));
-  //           OneSignal.login(String(user.id));
-  //         }
-  //       } catch (e) {
-  //         console.log("OneSignal Error:", e);
-  //       }
-
-  //       Toast.show({
-  //         type: "success",
-  //         text1: "Login Successful",
-  //         text2: `Welcome ${user.name || user.email}`,
-  //         position: "bottom",
-  //       });
-
-  //       setTimeout(() => {
-  //         redirectAfterLogin(user);
-  //       }, 500);
-
-  //       return;
-  //     }
-
-  //     // New user -> Open account type modal
-  //     if (
-  //       data.needs_account_type ||
-  //       response.status === 404 ||
-  //       response.status === 422
-  //     ) {
-  //       setShowAccountTypeModal(true);
-  //       return;
-  //     }
-
-  //     throw new Error(data.message || "Google login failed");
-  //   } catch (error: any) {
-  //     console.error("❌ Google Login Error:", error);
-
-  //     Toast.show({
-  //       type: "error",
-  //       text1: "Google Login Failed",
-  //       text2: error.message || "Please try again",
-  //       position: "bottom",
-  //     });
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
-
-  // const completeGoogleLogin = async () => {
-  //   if (!selectedAccountType) {
-  //     return Toast.show({
-  //       type: "error",
-  //       text1: "Please select account type",
-  //       position: "bottom",
-  //     });
-  //   }
-
-  //   try {
-  //     setLoading(true);
-
-  //     const payload = {
-  //       credential: googleCredential,
-  //       user_type: selectedAccountType,
-  //     };
-
-  //     console.log(
-  //       "📤 Sending Google Payload:",
-  //       JSON.stringify(payload, null, 2),
-  //     );
-
-  //     const response = await fetch(`${BASE_URL}/auth/google/callback`, {
-  //       method: "POST",
-  //       headers: {
-  //         "Content-Type": "application/json",
-  //         Accept: "application/json",
-  //       },
-  //       body: JSON.stringify(payload),
-  //     });
-
-  //     const data = await response.json();
-
-  //     console.log(
-  //       "📥 Google Callback Response:",
-  //       JSON.stringify(data, null, 2),
-  //     );
-
-  //     if (!response.ok) {
-  //       throw new Error(data?.message || "Login failed");
-  //     }
-
-  //     if (!data.success) {
-  //       throw new Error(data?.message || "Login failed");
-  //     }
-
-  //     const user = data.user;
-  //     const token = data.token;
-
-  //     if (!user?.id || !token) {
-  //       throw new Error("Invalid server response");
-  //     }
-
-  //     await AsyncStorage.multiSet([
-  //       ["@auth_token", token],
-  //       ["user", JSON.stringify(user)],
-  //       ["@user_id", String(user.id)],
-  //       ["@user_type", user.user_type || selectedAccountType],
-  //     ]);
-
-  //     try {
-  //       const playerId = await OneSignal.User.pushSubscription.getIdAsync();
-
-  //       if (playerId) {
-  //         await sendNotificationTokenToServer(playerId, String(user.id));
-
-  //         OneSignal.login(String(user.id));
-  //       }
-  //     } catch (e) {
-  //       console.log("OneSignal Error:", e);
-  //     }
-
-  //     setShowAccountTypeModal(false);
-
-  //     Toast.show({
-  //       type: "success",
-  //       text1: "Login Successful",
-  //       text2: `Welcome ${user.name || user.email}`,
-  //       position: "bottom",
-  //     });
-
-  //     setTimeout(() => {
-  //       navigation.navigate("MainTabs", {
-  //         screen: "Profile",
-  //       });
-  //     }, 500);
-  //   } catch (error: any) {
-  //     console.error("❌ Google Callback Error:", error);
-
-  //     Toast.show({
-  //       type: "error",
-  //       text1: "Login Failed",
-  //       text2: error.message || "Please try again",
-  //       position: "bottom",
-  //     });
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
+ 
   const handleForgotPassword = async () => {
     if (!email.trim()) {
       return Toast.show({
@@ -689,117 +434,7 @@ export default function LoginScreen({ navigation }: Props) {
     }
   };
 
-  // const redirectAfterLogin = (user: any) => {
-  //   const type = (user.user_type || "").toLowerCase();
 
-  //   setNavigationLoading(true);
-
-  //   setTimeout(() => {
-  //     if (type === "customer") {
-  //       navigation.reset({
-  //         index: 0,
-  //         routes: [
-  //           {
-  //             name: "MainTabs",
-  //             params: {
-  //               screen: "CreateJob",
-  //             },
-  //           },
-  //         ],
-  //       });
-  //     } else {
-  //       navigation.reset({
-  //         index: 0,
-  //         routes: [
-  //           {
-  //             name: "MainTabs",
-  //             params: {
-  //               screen: "Profile",
-  //             },
-  //           },
-  //         ],
-  //       });
-  //     }
-
-  //     setTimeout(() => {
-  //       setNavigationLoading(false);
-  //     }, 2000);
-  //   }, 100);
-  // };
-
-  // const handleSignIn = async () => {
-  //   if (!email.trim()) {
-  //     Toast.show({
-  //       type: "error",
-  //       text1: "Email Required",
-  //       position: "bottom",
-  //     });
-  //     return;
-  //   }
-
-  //   if (!password.trim()) {
-  //     Toast.show({
-  //       type: "error",
-  //       text1: "Password Required",
-  //       position: "bottom",
-  //     });
-  //     return;
-  //   }
-
-  //   setLoading(true);
-
-  //   try {
-  //     const netState = await NetInfo.fetch();
-  //     if (!netState.isConnected) {
-  //       throw new Error("No internet connection. Please try again.");
-  //     }
-
-  //     const response = await loginUser({
-  //       email: email.trim(),
-  //       password: password.trim(),
-  //     });
-  //     const user = response;
-  //     const token = response.token;
-  //     await AsyncStorage.setItem("@auth_token", token);
-  //     await AsyncStorage.setItem("@user_id", String(user.id));
-  //     const userTypeValue = user.user_type || "staff";
-  //     await AsyncStorage.setItem("@user_type", userTypeValue);
-  //     await AsyncStorage.setItem("user", JSON.stringify(user));
-  //     const allKeys = await AsyncStorage.getAllKeys();
-  //     console.log("AsyncStorage keys after login:", allKeys);
-  //     console.log("✅ Login Success - Saved:");
-  //     console.log("   • User ID   :", user.id);
-  //     console.log("   • User Type :", userTypeValue);
-  //     console.log("   • Token     :", token ? "Saved" : "Missing");
-  //     try {
-  //       await new Promise((r) => setTimeout(r, 1200));
-  //       const playerId = await OneSignal.User.pushSubscription.getIdAsync();
-  //       if (playerId) {
-  //         await sendNotificationTokenToServer(playerId, String(user.id));
-  //         OneSignal.login(String(user.id));
-  //       }
-  //     } catch (e) {
-  //       console.log("OneSignal error:", e);
-  //     }
-
-  //     Toast.show({
-  //       type: "success",
-  //       text1: "Login Successful",
-  //       position: "bottom",
-  //     });
-
-  //     setTimeout(() => redirectAfterLogin(user), 500);
-  //   } catch (err: any) {
-  //     Toast.show({
-  //       type: "error",
-  //       text1: "Login Failed",
-  //       text2: err.message || "Please try again",
-  //       position: "bottom",
-  //     });
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
   const handleSignIn = async () => {
     if (!email.trim()) {
       return Toast.show({
@@ -843,16 +478,12 @@ export default function LoginScreen({ navigation }: Props) {
         });
         return;
       }
-
-      // Save basic auth data first
       await AsyncStorage.multiSet([
         ["@auth_token", token],
         ["@user_id", String(user.id)],
         ["@user_type", user.user_type || "staff"],
         ["user", JSON.stringify(user)],
       ]);
-
-      // ── Fetch full profile so we get is_active ──
       try {
         const profileRes = await getUserProfile(String(user.id));
         if (profileRes?.success && profileRes?.data) {
@@ -862,8 +493,6 @@ export default function LoginScreen({ navigation }: Props) {
       } catch (e) {
         console.log("Could not fetch full profile after login:", e);
       }
-
-      // OneSignal
       try {
         const playerId = await OneSignal.User.pushSubscription.getIdAsync();
         if (playerId) {
@@ -873,8 +502,6 @@ export default function LoginScreen({ navigation }: Props) {
       } catch (e) {
         console.log("OneSignal error:", e);
       }
-
-      // Fire-and-forget: update coordinates immediately after login
       (async () => {
         try {
           const userIdStr = String(user.id);
@@ -951,8 +578,6 @@ export default function LoginScreen({ navigation }: Props) {
 
   const redirectAfterLogin = (user: any) => {
     const type = (user.user_type || "").toLowerCase();
-
-    // Customer → always CreateJob
     if (type === "customer") {
       navigation.reset({
         index: 0,
@@ -965,12 +590,7 @@ export default function LoginScreen({ navigation }: Props) {
       });
       return;
     }
-
-    // Staff / Contractor
-    // is_active true  → Home
-    // is_active false → Profile
     const targetScreen = user.is_active === true ? "Home" : "Profile";
-
     console.log("Redirect →", {
       type,
       is_active: user.is_active,
@@ -987,12 +607,10 @@ export default function LoginScreen({ navigation }: Props) {
       ],
     });
   };
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor={COLORS.background} />
-
-      {/* ── Decorative background artifacts — purely visual, same palette,
-          sit behind everything and never intercept touches. ── */}
       <View style={StyleSheet.absoluteFill} pointerEvents="none">
         <View style={styles.orbTopRight}>
           <LinearGradient
@@ -1300,8 +918,6 @@ const styles = StyleSheet.create({
     position: "relative",
     overflow: "hidden",
   },
-
-  // ── Decorative background artifacts (same palette, purely visual) ──
   orbTopRight: {
     position: "absolute",
     top: -90,

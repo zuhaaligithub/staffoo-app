@@ -1,5 +1,3 @@
-
-
 import React, { useState, useEffect, useMemo } from "react";
 import {
   View,
@@ -89,10 +87,7 @@ const ALLOWED_FILE_TYPES = [
   "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
 ];
 
-// STRICT: ONLY these exact document names will show the verify button
 const VERIFIABLE_DOCUMENT_NAMES = ["visa", "security license"];
-
-// ─── Country name -> ISO3 code map (extend as needed) ────────────────────────
 const COUNTRY_TO_ISO3: Record<string, string> = {
   pakistan: "PAK",
   australia: "AUS",
@@ -114,10 +109,6 @@ const COUNTRY_TO_ISO3: Record<string, string> = {
   thailand: "THA",
 };
 
-// ─── State Tabs (Contractor only) ────────────────────────────────────────────
-// Maps a state code (as it appears in the `states_allowed` field returned by
-// getUserProfile) to a display label and the `document_category` value used
-// to filter the `documents` array for that state.
 type StateTab = { code: string; label: string; category: string };
 
 const STATE_TAB_CONFIG: StateTab[] = [
@@ -129,9 +120,6 @@ const STATE_TAB_CONFIG: StateTab[] = [
   { code: "sa", label: "South Australia", category: "sa_document" },
 ];
 
-// Safely parses the `states_allowed` field, which the API returns as a JSON
-// encoded string (e.g. '["tas","sa","wa","qld"]') but could in theory also
-// arrive as an actual array.
 const parseStatesAllowed = (raw: unknown): string[] => {
   if (!raw) return [];
   if (Array.isArray(raw)) {
@@ -144,7 +132,6 @@ const parseStatesAllowed = (raw: unknown): string[] => {
         return parsed.map((s) => String(s).toLowerCase().trim());
       }
     } catch {
-      // Fallback: comma separated string
       return raw
         .split(",")
         .map((s) =>
@@ -158,8 +145,6 @@ const parseStatesAllowed = (raw: unknown): string[] => {
   }
   return [];
 };
-
-// ─── Helpers ─────────────────────────────────────────────────────────────────
 
 const isImageFile = (
   fileStr?: string | null,
@@ -193,7 +178,6 @@ const getExpiryStatus = (
   return "ok";
 };
 
-// Formats string timeline keys (YYYY-MM-DD) or Date entities directly into Australian Syntax (DD/MM/YYYY)
 const formatAUDate = (dateSource?: string | Date | null): string => {
   if (!dateSource) return "—";
 
@@ -209,7 +193,6 @@ const formatAUDate = (dateSource?: string | Date | null): string => {
   return `${day}/${month}/${year}`;
 };
 
-// STRICT CHECK: ONLY returns true for documents named "Visa" or "Security License"
 const isVerifiableDocType = (opts: {
   label?: string | null;
   value?: string | null;
@@ -227,40 +210,30 @@ const isVerifiableDocType = (opts: {
   return isVerifiable;
 };
 
-// Parses an expiry date that may come back as DD/MM/YYYY, DD-MM-YYYY, or YYYY-MM-DD
 const parseApiExpiryDate = (value: string): Date | null => {
   if (!value) return null;
-
-  // DD/MM/YYYY
   const ddmmyyyy = value.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
   if (ddmmyyyy) {
     const [, dd, mm, yyyy] = ddmmyyyy;
     const d = new Date(Number(yyyy), Number(mm) - 1, Number(dd));
     return isNaN(d.getTime()) ? null : d;
   }
-
-  // DD-MM-YYYY
   const ddmmyyyyDash = value.match(/^(\d{1,2})-(\d{1,2})-(\d{4})$/);
   if (ddmmyyyyDash) {
     const [, dd, mm, yyyy] = ddmmyyyyDash;
     const d = new Date(Number(yyyy), Number(mm) - 1, Number(dd));
     return isNaN(d.getTime()) ? null : d;
   }
-
-  // YYYY-MM-DD
   const yyyymmdd = value.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
   if (yyyymmdd) {
     const [, yyyy, mm, dd] = yyyymmdd;
     const d = new Date(Number(yyyy), Number(mm) - 1, Number(dd));
     return isNaN(d.getTime()) ? null : d;
   }
-
-  // Fallback - let Date try
   const d = new Date(value);
   return isNaN(d.getTime()) ? null : d;
 };
 
-// Maps a full country name to an ISO3 code (falls back to uppercased input)
 const getCountryCode = (countryName?: string | null): string => {
   if (!countryName) return "";
   const key = countryName.toLowerCase().trim();
@@ -280,22 +253,18 @@ const splitName = (
   };
 };
 
-// Normalises a date-of-birth value (handles DD/MM/YYYY or YYYY-MM-DD) into YYYY-MM-DD
 const normalizeDobToISO = (value?: string | null): string => {
   if (!value) return "";
-
   const yyyymmdd = value.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
   if (yyyymmdd) {
     const [, yyyy, mm, dd] = yyyymmdd;
     return `${yyyy}-${mm.padStart(2, "0")}-${dd.padStart(2, "0")}`;
   }
-
   const ddmmyyyy = value.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
   if (ddmmyyyy) {
     const [, dd, mm, yyyy] = ddmmyyyy;
     return `${yyyy}-${mm.padStart(2, "0")}-${dd.padStart(2, "0")}`;
   }
-
   const d = new Date(value);
   if (!isNaN(d.getTime())) {
     const yyyy = d.getFullYear();
@@ -303,16 +272,12 @@ const normalizeDobToISO = (value?: string | null): string => {
     const dd = String(d.getDate()).padStart(2, "0");
     return `${yyyy}-${mm}-${dd}`;
   }
-
   return "";
 };
-
-// ─── LazyImage ───────────────────────────────────────────────────────────────
 
 const LazyImage = ({ uri, style }: { uri: string; style: any }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
-
   return (
     <View style={[style, { justifyContent: "center", alignItems: "center" }]}>
       <Image
@@ -341,14 +306,11 @@ const LazyImage = ({ uri, style }: { uri: string; style: any }) => {
         <View style={styles.errorPreviewContainer}>
           <FileText size={48} color="#ff6b6b" />
           <Text style={styles.errorPreviewText}>File Not Found</Text>
-          {/* <Text style={styles.errorPreviewSubtext}>404 or removed</Text> */}
         </View>
       )}
     </View>
   );
 };
-
-// ─── ExpiryBadge ─────────────────────────────────────────────────────────────
 
 const ExpiryBadge = ({
   status,
@@ -376,8 +338,6 @@ const ExpiryBadge = ({
   );
 };
 
-// ─── Main Screen ─────────────────────────────────────────────────────────────
-
 export default function DocumentsScreen({ navigation }: Props) {
   const [modalVisible, setModalVisible] = useState(false);
   const [fileError, setFileError] = useState("");
@@ -391,18 +351,10 @@ export default function DocumentsScreen({ navigation }: Props) {
   } | null>(null);
   const [verifying, setVerifying] = useState(false);
   const [isVerified, setIsVerified] = useState(false);
-
-  // documentNumber = "Passport Number for Verification" when the selected
-  // document is a Visa, or the plain document number for every other type
-  // (including Security License, which is still verified via this field).
+  const [isEditing, setIsEditing] = useState(false);
   const [documentNumber, setDocumentNumber] = useState("");
-
-  // visaGrantNumber = the actual Visa Grant Number the user enters. This
-  // is what gets saved as document_no for a Visa document — it is never
-  // sent to the verification endpoint.
   const [visaGrantNumber, setVisaGrantNumber] = useState("");
   const [visaGrantNumberError, setVisaGrantNumberError] = useState("");
-
   const [expirationDate, setExpirationDate] = useState<Date | null>(null);
   const [showExpiryPicker, setShowExpiryPicker] = useState(false);
   const [selectedFile, setSelectedFile] = useState<any>(null);
@@ -413,19 +365,10 @@ export default function DocumentsScreen({ navigation }: Props) {
   const [loadingDocs, setLoadingDocs] = useState(true);
   const [userId, setUserId] = useState<string | number | null>(null);
   const [userProfile, setUserProfile] = useState<any>(null);
-
-  // ── State Tabs (Contractor only) ───────────────────────────────────────
-  // Which state category ("wa_document", "qld_document", ...) is currently
-  // selected. Only relevant when the logged-in user is a contractor.
   const [selectedStateCategory, setSelectedStateCategory] = useState<
     string | null
   >(null);
 
-  // ── Work Rights Document (visa "show_document" flow) ──────────────────────
-  // When the visa expiry check returns show_document: true, the expiry date
-  // field is hidden and the user instead uploads a "Work Rights Document"
-  // which gets saved to the `work_right` key on the guard-update-documents
-  // payload.
   const [showWorkDocument, setShowWorkDocument] = useState(false);
   const [workEntitlement, setWorkEntitlement] = useState<string | null>(null);
   const [workRightsFile, setWorkRightsFile] = useState<any>(null);
@@ -435,7 +378,6 @@ export default function DocumentsScreen({ navigation }: Props) {
   const [uploadingWorkRights, setUploadingWorkRights] = useState(false);
   const [workRightsError, setWorkRightsError] = useState("");
 
-  // ─── Visa-specific helpers ─────────────────────────────────────────────
   const isVisaDocType = (opts: {
     label?: string | null;
     value?: string | null;
@@ -444,29 +386,18 @@ export default function DocumentsScreen({ navigation }: Props) {
     return name === "visa" || name.includes("visa");
   };
 
-  // STRICT: ONLY Visa and Security License documents need verification
   const needsVerification = selectedDocType
     ? isVerifiableDocType(selectedDocType)
     : false;
 
-  // True when the currently open document type is a Visa — drives the
-  // split "Passport Number for Verification" / "Visa Grant Number" UI.
   const isVisaSelected = selectedDocType
     ? isVisaDocType(selectedDocType)
     : false;
 
-  // ✅ Only lock expiry for Visa & Security License
   const isExpiryLocked = needsVerification;
-
-  // True only when the logged-in user is a contractor. State tabs (and the
-  // "Proceed to My Rates" button) are only ever shown for contractors —
-  // staff keep the original, un-tabbed list with no rates step.
   const isContractor =
     (userProfile?.user_type || "").toLowerCase().trim() === "contractor";
 
-  // Builds the list of state tabs to display, derived from the contractor's
-  // `states_allowed` field. Only states present in `states_allowed` (and
-  // recognised in STATE_TAB_CONFIG) get a tab — nothing extra is shown.
   const contractorStateTabs = useMemo((): StateTab[] => {
     if (!isContractor) return [];
     const allowedCodes = parseStatesAllowed(userProfile?.states_allowed);
@@ -474,9 +405,6 @@ export default function DocumentsScreen({ navigation }: Props) {
     return STATE_TAB_CONFIG.filter((tab) => allowedCodes.includes(tab.code));
   }, [isContractor, userProfile?.states_allowed]);
 
-  // Auto-select the first available state tab once we know which ones the
-  // contractor has, but only if nothing is selected yet (or the previously
-  // selected tab is no longer in the allowed list).
   useEffect(() => {
     if (!isContractor) {
       setSelectedStateCategory(null);
@@ -492,11 +420,8 @@ export default function DocumentsScreen({ navigation }: Props) {
     if (!stillValid) {
       setSelectedStateCategory(contractorStateTabs[0].category);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isContractor, contractorStateTabs]);
 
-  // Documents actually rendered in the list: for a contractor, filtered
-  // down to whichever state tab is selected; for staff, the full list.
   const displayedDocuments = useMemo(() => {
     if (!isContractor) return uploadedDocuments;
     if (!selectedStateCategory) return uploadedDocuments;
@@ -505,11 +430,6 @@ export default function DocumentsScreen({ navigation }: Props) {
     );
   }, [isContractor, uploadedDocuments, selectedStateCategory]);
 
-  // ── ALL documents across every state the contractor is allowed to work in ──
-  // (not just the currently selected tab). This is what actually gates the
-  // "Proceed to My Rates" button — a contractor allowed in both VIC and QLD
-  // must complete BOTH states' documents before proceeding, even though the
-  // list view above only shows one state at a time.
   const allRequiredStateDocuments = useMemo(() => {
     if (!isContractor) return uploadedDocuments;
 
@@ -521,27 +441,16 @@ export default function DocumentsScreen({ navigation }: Props) {
     );
   }, [isContractor, uploadedDocuments, contractorStateTabs]);
 
-  // Profile completion flag — used to gate the "Proceed to My Rates" step.
   const profileCompletion = Number(
     userProfile?.profile_completion_percentage ?? 0,
   );
 
-  // Consider the contractor ready for rates only when EVERY document across
-  // EVERY allowed state has an uploaded file — not just the state tab
-  // currently being viewed. This covers cases where the backend hasn't yet
-  // updated the profile percentage but the uploads are present locally.
   const haveAllRequiredDocs =
     Array.isArray(allRequiredStateDocuments) &&
-    // `every` returns true for an empty array — treat "no required
-    // documents" as already complete so the Proceed button isn't
-    // unnecessarily blocked.
     allRequiredStateDocuments.every(
       (d) => !!(d.file && String(d.file).trim().length > 0),
     );
 
-  // Also make sure every allowed state actually HAS at least one document
-  // record returned for it — if the API hasn't returned documents for a
-  // state yet at all, don't treat that as "complete".
   const everyAllowedStateHasDocs = useMemo(() => {
     if (!isContractor) return true;
     if (contractorStateTabs.length === 0) return true;
@@ -550,13 +459,7 @@ export default function DocumentsScreen({ navigation }: Props) {
     );
   }, [isContractor, contractorStateTabs, uploadedDocuments]);
 
-  // Require local document completeness across ALL allowed states only: the
-  // Proceed button is enabled only when every state's document set is fully
-  // uploaded. We no longer rely on the server-side
-  // `profile_completion_percentage`, and we no longer consider only the
-  // currently selected state tab.
   const isProfileComplete = haveAllRequiredDocs && everyAllowedStateHasDocs;
-
   const handleProceedRates = () => {
     if (!isProfileComplete) {
       Toast.show({
@@ -577,9 +480,6 @@ export default function DocumentsScreen({ navigation }: Props) {
     loadData();
   }, []);
 
-  // Reads staff_document_type off the cached profile (checks both the
-  // nested `staff` object and the top level, since the API has returned it
-  // in either shape).
   const isBridgingVisaStaff = (): boolean => {
     const staffDocType =
       userProfile?.staff?.staff_document_type ||
@@ -588,10 +488,6 @@ export default function DocumentsScreen({ navigation }: Props) {
     return staffDocType.toLowerCase().trim() === "bridging_visa";
   };
 
-  // True only for the Visa document type, when the logged-in staff member's
-  // staff_document_type is "bridging_visa". For these users the Visa
-  // document never shows an expiry date field — a Work Rights Document
-  // upload is shown instead, in both the Add and Edit modals.
   const isBridgingVisaDocument = (): boolean => {
     return !!(
       selectedDocType &&
@@ -600,17 +496,8 @@ export default function DocumentsScreen({ navigation }: Props) {
     );
   };
 
-  // Combined flag: hide the Expiration Date field / show the Work Rights
-  // Document upload instead. True when either (a) the visa-expiry-check
-  // verification response returned show_document: true, or (b) the staff
-  // member's staff_document_type is "bridging_visa" — the latter applies
-  // immediately when the Add/Edit modal opens, without needing a fresh
-  // verification call.
   const hideExpiryDate = showWorkDocument || isBridgingVisaDocument();
 
-  // Finds the Passport entry from the user's documents (as returned by
-  // getUserProfile) so its document_no can be auto-filled into the
-  // Passport Number for Verification field.
   const getPassportDocument = (): Document | undefined => {
     return userProfile?.documents?.find(
       (d: Document) => d.document_name?.toLowerCase().trim() === "passport",
@@ -760,8 +647,7 @@ export default function DocumentsScreen({ navigation }: Props) {
     setExpiryError("");
     setVerifying(false);
     setIsVerified(false);
-
-    // Reset work-rights document state
+    setIsEditing(false);
     setShowWorkDocument(false);
     setWorkEntitlement(null);
     setWorkRightsFile(null);
@@ -774,9 +660,6 @@ export default function DocumentsScreen({ navigation }: Props) {
     value: string;
     category: string;
   }) => {
-    // STRICT: A Passport (with a document number) must already exist
-    // before a Visa document can be added, since the Visa verification
-    // is performed against the passport number.
     if (isVisaDocType(docType)) {
       const passportDoc = getPassportDocument();
       if (!passportDoc || !passportDoc.document_no) {
@@ -791,13 +674,11 @@ export default function DocumentsScreen({ navigation }: Props) {
     }
 
     resetForm();
+    setIsEditing(false);
     setSelectedDocType(docType);
     setIsVerified(false);
     setExpirationDate(null);
 
-    // Auto-fill the Passport Number for Verification field from the
-    // passport on file. Visa Grant Number starts blank — it's a fresh
-    // value the user types in.
     if (isVisaDocType(docType)) {
       const passportDoc = getPassportDocument();
       if (passportDoc?.document_no) {
@@ -809,6 +690,7 @@ export default function DocumentsScreen({ navigation }: Props) {
   };
   const handleOpenEditModal = (item: Document) => {
     resetForm();
+    setIsEditing(true);
 
     const docType = {
       label: item.document_name,
@@ -819,13 +701,8 @@ export default function DocumentsScreen({ navigation }: Props) {
     setSelectedDocType(docType);
 
     if (isVisaDocType(docType)) {
-      // Passport Number for Verification is always pulled from the
-      // Passport document on file — it's only ever used for the
-      // visa-expiry-check call, never saved against the Visa document.
       const passportDoc = getPassportDocument();
       setDocumentNumber(passportDoc?.document_no?.toUpperCase() || "");
-
-      // Visa Grant Number is the value actually saved as document_no.
       setVisaGrantNumber(item.document_no || "");
     } else {
       setDocumentNumber(item.document_no || "");
@@ -839,23 +716,16 @@ export default function DocumentsScreen({ navigation }: Props) {
     if (item.file) {
       setUploadedFilePath(item.file);
     }
-
-    // For a bridging-visa Visa document, show any previously uploaded
-    // Work Rights Document in the preview straight away.
     if (isVisaDocType(docType) && item.working_rights) {
       setWorkRightsFilePath(item.working_rights);
     }
 
-    // Set verified state
     if (isVerifiableDocType(docType)) {
       if (isVisaDocType(docType)) {
         const passportDoc = getPassportDocument();
         const hasPassportNumber = !!passportDoc?.document_no;
         const bridging = isBridgingVisaStaff();
         if (bridging) {
-          // Expiry isn't required for bridging-visa users; a passport
-          // number plus either an expiry or an existing work rights file
-          // is enough to consider it already verified.
           setIsVerified(
             !!(
               hasPassportNumber &&
@@ -946,10 +816,6 @@ export default function DocumentsScreen({ navigation }: Props) {
     }
   };
 
-  // ─── Handle Work Rights Document Upload ────────────────────────────────
-  // Shown only when the visa expiry check response returns
-  // show_document: true. Uploaded path is saved to the `work_right`
-  // key of the guard-update-documents payload.
   const handleWorkRightsUpload = async () => {
     try {
       const result = await launchImageLibrary({
@@ -1002,7 +868,6 @@ export default function DocumentsScreen({ navigation }: Props) {
     }
   };
 
-  // ─── Handle Verify Document ─────────────────────────────────────────────
   const handleVerifyDocument = async () => {
     if (!selectedDocType) {
       Toast.show({
@@ -1043,8 +908,6 @@ export default function DocumentsScreen({ navigation }: Props) {
       let response;
 
       if (isVisa) {
-        // VISA VERIFICATION — always uses the Passport Number for
-        // Verification field (documentNumber), never the Visa Grant Number.
         let profile = userProfile;
         if (!profile) {
           const uid = userId || (await AsyncStorage.getItem("@user_id"));
@@ -1135,7 +998,6 @@ export default function DocumentsScreen({ navigation }: Props) {
           },
         );
       } else if (isSecurityLicense) {
-        // SECURITY LICENSE VERIFICATION
         let profile = userProfile;
         if (!profile) {
           const uid = userId || (await AsyncStorage.getItem("@user_id"));
@@ -1144,14 +1006,9 @@ export default function DocumentsScreen({ navigation }: Props) {
             if (res?.success && res?.data) profile = res.data;
           }
         }
-
-        // For a contractor, prefer the state of the currently selected
-        // state tab (e.g. WA tab selected -> verify against "wa"), falling
-        // back to the profile's own state field.
         const selectedTabState = contractorStateTabs.find(
           (t) => t.category === selectedStateCategory,
         )?.code;
-
         const userState =
           (isContractor && selectedTabState) ||
           profile?.state ||
@@ -1214,13 +1071,7 @@ export default function DocumentsScreen({ navigation }: Props) {
         });
         return;
       }
-
-      // ── Capture the "show_document" / "work_entitlement" flags returned
-      //    by the visa expiry check. When show_document is true, the expiry
-      //    date field is hidden in favour of a Work Rights Document upload.
-      // Inside handleVerifyDocument() when verification succeeds:
       if (isVisa) {
-        // Always force show Work Rights document on successful verification
         const shouldShowWorkDoc =
           data?.show_document === true || data?.data?.show_document === true;
 
@@ -1229,6 +1080,30 @@ export default function DocumentsScreen({ navigation }: Props) {
         const entitlement =
           data?.work_entitlement || data?.data?.work_entitlement || null;
         setWorkEntitlement(entitlement);
+
+        // Auto-fill expiry when the API returns one (e.g. show_document: false)
+        const expiryRaw =
+          data?.expiry ||
+          data?.expiry_date ||
+          data?.document_expiry ||
+          data?.expired_at ||
+          data?.data?.expiry ||
+          data?.data?.expiry_date ||
+          data?.data?.document_expiry ||
+          data?.data?.expired_at;
+
+        if (expiryRaw) {
+          const dateObj = parseApiExpiryDate(expiryRaw);
+          if (dateObj) {
+            setExpirationDate(dateObj);
+            setShowExpiryPicker(false);
+            setExpiryError("");
+          }
+        } else if (!shouldShowWorkDoc) {
+          // No expiry and not switching to work-rights upload
+          setExpirationDate(null);
+        }
+
         setIsVerified(true);
 
         Toast.show({
@@ -1256,7 +1131,6 @@ export default function DocumentsScreen({ navigation }: Props) {
           setShowExpiryPicker(false);
         }
       } else {
-        // Explicitly clear when API returns null
         setExpirationDate(null);
       }
       Toast.show({
@@ -1335,9 +1209,6 @@ export default function DocumentsScreen({ navigation }: Props) {
       // }
 
       if (hideExpiryDate) {
-        // Bridging-visa staff, or a visa-expiry-check response with
-        // show_document: true — expiry field is hidden, a Work Rights
-        // Document upload is required instead.
         if (!workRightsFile && !workRightsFilePath) {
           setWorkRightsError("Please upload work rights document");
           hasError = true;
@@ -1351,7 +1222,6 @@ export default function DocumentsScreen({ navigation }: Props) {
         return;
       }
     } else if (!expirationDate) {
-      // All other documents simply need an expiry date picked manually.
       setExpiryError("Please select an expiry date");
       hasError = true;
     }
@@ -1376,8 +1246,6 @@ export default function DocumentsScreen({ navigation }: Props) {
         fileName = "unknown_file";
       }
 
-      // expirationDate may legitimately be null when showWorkDocument is
-      // true and the verification response didn't include an expiry date.
       let expDate = "";
       if (expirationDate) {
         const year = expirationDate.getFullYear();
@@ -1386,8 +1254,6 @@ export default function DocumentsScreen({ navigation }: Props) {
         expDate = `${year}-${month}-${day}`;
       }
 
-      // The saved document number: Visa Grant Number for a Visa document,
-      // otherwise the plain document number field.
       const savedDocumentNo = isVisaSelected
         ? visaGrantNumber.trim()
         : documentNumber.trim();
@@ -1403,9 +1269,7 @@ export default function DocumentsScreen({ navigation }: Props) {
           .replace(/[\s_]+/g, "");
         const nameOrTypeMatches =
           apiName === matchValue || apiType === matchValue;
-        // For a contractor, also make sure the row belongs to the state
-        // category currently open, so the same document name in a
-        // different state isn't updated by mistake.
+
         if (isContractor && selectedDocType!.category) {
           return nameOrTypeMatches && apiCategory === selectedDocType!.category;
         }
@@ -1420,7 +1284,6 @@ export default function DocumentsScreen({ navigation }: Props) {
         document_category: selectedDocType!.category,
       };
 
-      // Attach the Work Rights Document path when applicable.
       if (hideExpiryDate) {
         let workRightFileName = "";
         if (workRightsFilePath) {
@@ -1473,8 +1336,6 @@ export default function DocumentsScreen({ navigation }: Props) {
     }
   };
 
-  // ─── Modal File Preview ───────────────────────────────────────────────────
-
   const renderFilePreview = (
     fileUri: string | null,
     fileMime: string | null,
@@ -1502,7 +1363,6 @@ export default function DocumentsScreen({ navigation }: Props) {
       );
     }
 
-    // PDF / DOC / Other files
     return (
       <View style={styles.docPreviewCard}>
         <View style={styles.docPreviewIconWrap}>
@@ -1556,8 +1416,6 @@ export default function DocumentsScreen({ navigation }: Props) {
       "No work rights document uploaded yet",
     );
   };
-
-  // ─── Card: API-driven (filled state) ─────────────────────────────────────
 
   const renderFilledCard = (item: Document) => {
     const status = getExpiryStatus(item.document_expiry);
@@ -1640,8 +1498,6 @@ export default function DocumentsScreen({ navigation }: Props) {
     );
   };
 
-  // ─── Card: API-driven (empty state) ──────────────────────────────────────
-
   const renderEmptyCard = (item: Document) => (
     <LinearGradient
       colors={["#171d30", "#0f1322"]}
@@ -1699,10 +1555,8 @@ export default function DocumentsScreen({ navigation }: Props) {
     return isFilled ? renderFilledCard(item) : renderEmptyCard(item);
   };
 
-  // ─── State Tab Bar (Contractor only) ──────────────────────────────────────
   const renderStateTabs = () => {
     if (!isContractor || contractorStateTabs.length === 0) return null;
-
     return (
       <View style={styles.tabBarWrapper}>
         <ScrollView
@@ -1712,9 +1566,6 @@ export default function DocumentsScreen({ navigation }: Props) {
         >
           {contractorStateTabs.map((tab) => {
             const isActive = tab.category === selectedStateCategory;
-
-            // Is THIS state's document set fully uploaded? Drives the small
-            // completeness indicator dot next to the tab label.
             const tabDocs = uploadedDocuments.filter(
               (d) => d.document_category === tab.category,
             );
@@ -1723,7 +1574,6 @@ export default function DocumentsScreen({ navigation }: Props) {
               tabDocs.every(
                 (d) => !!(d.file && String(d.file).trim().length > 0),
               );
-
             return (
               <TouchableOpacity
                 key={tab.category}
@@ -1769,8 +1619,6 @@ export default function DocumentsScreen({ navigation }: Props) {
         <Text style={styles.headerTitle}>Documents</Text>
         <View style={{ width: 40 }} />
       </View>
-
-      {/* State tabs — contractors only, only the states they're allowed */}
       {renderStateTabs()}
 
       {loadingDocs ? (
@@ -1830,7 +1678,6 @@ export default function DocumentsScreen({ navigation }: Props) {
         </>
       )}
 
-      {/* ── Upload Modal ── */}
       <Modal
         animationType="slide"
         transparent
@@ -1981,11 +1828,9 @@ export default function DocumentsScreen({ navigation }: Props) {
                 </>
               ) : (
                 <>
-                  {/* Document Number */}
                   <Text style={[styles.fieldLabel, { marginTop: 18 }]}>
                     DOCUMENT NUMBER *
                   </Text>
-                  {/* STRICT: Show verify button ONLY for Security License */}
                   {needsVerification ? (
                     <View style={{ flexDirection: "row" }}>
                       <TextInput
@@ -2124,7 +1969,6 @@ export default function DocumentsScreen({ navigation }: Props) {
                 </>
               )}
 
-              {/* Work Entitlement – shown after a successful Visa verification */}
               {workEntitlement && (
                 <View style={styles.workEntitlementBanner}>
                   <Text style={styles.workEntitlementLabel}>
@@ -2136,10 +1980,6 @@ export default function DocumentsScreen({ navigation }: Props) {
                 </View>
               )}
 
-              {/* Work Rights Document — shown for bridging-visa staff on
-                  the Visa document, or when the visa check returned
-                  show_document: true */}
-              {/* Show Work Rights Document Upload once verified or if bridging visa */}
               {(showWorkDocument || isBridgingVisaDocument()) && (
                 <View style={styles.workRightsSection}>
                   <View style={styles.sectionHeader}>
@@ -2168,7 +2008,7 @@ export default function DocumentsScreen({ navigation }: Props) {
                   >
                     <CloudUpload
                       size={18}
-                      color="#111111"
+                      color="#fff"
                       style={{ marginRight: 8 }}
                     />
                     <Text style={styles.uploadBtnText}>
@@ -2195,16 +2035,14 @@ export default function DocumentsScreen({ navigation }: Props) {
               {saving ? (
                 <ActivityIndicator color="#fff" />
               ) : (
-                <Text style={styles.saveButtonText}>SAVE DOCUMENT</Text>
+                <Text style={styles.saveButtonText}>
+                  {isEditing ? "UPDATE DOCUMENT" : "SAVE DOCUMENT"}
+                </Text>
               )}
             </TouchableOpacity>
           </View>
         </View>
 
-        {/* Toast rendered INSIDE the Modal so it appears ABOVE the modal content.
-            RN Modal is a separate native window layer — the app-level <Toast />
-            (usually mounted in App.tsx) gets covered by this Modal, so we mount
-            a second Toast instance here, scoped to this Modal's layer. */}
         <Toast />
       </Modal>
     </SafeAreaView>
@@ -2430,7 +2268,7 @@ const styles = StyleSheet.create({
     flex: 1,
     marginRight: 12,
   },
-  modalBody: { padding: 16 },
+  modalBody: { padding: 16, backgroundColor: "#111111" },
 
   imageUploadArea: { alignItems: "center", marginBottom: 20 },
 
@@ -2568,7 +2406,7 @@ const styles = StyleSheet.create({
   imagePlaceholder: {
     width: "100%",
     height: 160,
-    backgroundColor: THEME.cardBg,
+    // backgroundColor: THEME.cardBg,
     borderRadius: 8,
     overflow: "hidden",
     alignItems: "center",
@@ -2632,7 +2470,7 @@ const styles = StyleSheet.create({
   // ─── Upload Button ────────────────────────────────
   uploadBtn: {
     flexDirection: "row",
-    backgroundColor: THEME.teal,
+    backgroundColor: "#0A7C6E",
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderRadius: 8,
@@ -2640,8 +2478,8 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   uploadBtnText: {
-    color: "#090909",
-    fontSize: 13,
+    color: "#fff",
+    fontSize: 11,
     fontWeight: "700",
     // letterSpacing: 0.5,
   },

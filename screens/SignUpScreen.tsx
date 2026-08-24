@@ -40,8 +40,7 @@ import LinearGradient from "react-native-linear-gradient";
 
 const LOGO = require("../assets/staffoo.png");
 
-// ── Same palette/tokens as the redesigned LoginScreen, so both auth
-// screens read as one visual system. ──
+
 const COLORS = {
   background: "#030508",
   surface: "#07111A",
@@ -120,24 +119,19 @@ Email: [admin@staffoo.com.au]
 Phone: [1800782366]`;
 
 export default function SignUpScreen({ navigation }: { navigation: any }) {
-  // const [userType, setUserType] = useState<'staff' | 'customer' | 'contractor'>(
-  //   'customer',
-  // );
+
 
   const [userType, setUserType] = useState<
     "staff" | "customer" | "contractor" | null
   >(null);
   const [acceptedPolicy, setAcceptedPolicy] = useState(false);
   const [showPolicyModal, setShowPolicyModal] = useState(false);
-
   const fadeAnim = useRef(new Animated.Value(1)).current;
   const { width } = useWindowDimensions();
   const isTablet = width >= 768;
-  // Same responsive label/subtitle scaling as LoginScreen.
   const scale = (size: number) => (width / 375) * size;
   const [showVerifyModal, setShowVerifyModal] = useState(false);
   const [registeredEmail, setRegisteredEmail] = useState("");
-  // Form fields
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -147,8 +141,6 @@ export default function SignUpScreen({ navigation }: { navigation: any }) {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  // Focus states purely for the same "glow on focus" input treatment used
-  // on the redesigned LoginScreen — visual only, no effect on submission.
   const [nameFocused, setNameFocused] = useState(false);
   const [emailFocused, setEmailFocused] = useState(false);
   const [passwordFocused, setPasswordFocused] = useState(false);
@@ -165,9 +157,7 @@ export default function SignUpScreen({ navigation }: { navigation: any }) {
   }, []);
 
   const validatePassword = (password: string) => {
-    // Minimum 8 chars, 1 letter, 1 special character
     const passwordRegex = /^(?=.*[A-Za-z])(?=.*[\W_]).{8,}$/;
-
     if (!passwordRegex.test(password)) {
       return {
         valid: false,
@@ -182,7 +172,6 @@ export default function SignUpScreen({ navigation }: { navigation: any }) {
     };
   };
 
-  // ✅ ADD THIS HERE
   const passwordValidation = validatePassword(password);
 
   const handleUserTypeChange = (
@@ -266,18 +255,13 @@ export default function SignUpScreen({ navigation }: { navigation: any }) {
   const handleOpenGmail = async () => {
     try {
       if (Platform.OS === "android") {
-        // Opens Gmail app directly (app home/inbox state)
         await Linking.openURL("android-app://com.google.android.gm");
       } else {
-        // iOS Gmail app
         const url = "googlegmail://";
-
         const supported = await Linking.canOpenURL(url);
-
         if (supported) {
           await Linking.openURL(url);
         } else {
-          // fallback only if Gmail not installed
           await Linking.openURL("message://");
         }
       }
@@ -286,7 +270,6 @@ export default function SignUpScreen({ navigation }: { navigation: any }) {
     }
   };
 
-  // Replace your existing UserTypeOption with this:
   const UserTypeOption = ({
     type,
   }: {
@@ -321,10 +304,6 @@ export default function SignUpScreen({ navigation }: { navigation: any }) {
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor={COLORS.background} />
-
-      {/* ── Decorative background artifacts — same treatment as
-          LoginScreen: purely visual, sit behind everything, never
-          intercept touches. ── */}
       <View style={StyleSheet.absoluteFill} pointerEvents="none">
         <View style={styles.orbTopRight}>
           <LinearGradient
@@ -738,8 +717,7 @@ const styles = StyleSheet.create({
     overflow: "hidden",
   },
 
-  // ── Decorative background artifacts (same palette/positions as
-  // LoginScreen, purely visual) ──
+
   orbTopRight: {
     position: "absolute",
     top: -90,
@@ -943,7 +921,6 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
 
-  // ── Primary CTA — same gradient pill as LoginScreen's "Sign in" ──
   signUpButton: {
     borderRadius: 50,
     height: 52,
@@ -975,8 +952,6 @@ const styles = StyleSheet.create({
     color: COLORS.primary,
     fontWeight: "600",
   },
-
-  // ================= MODALS (unchanged) =================
 
   modalContainer: {
     flex: 1,

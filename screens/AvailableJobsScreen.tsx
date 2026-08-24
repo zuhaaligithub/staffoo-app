@@ -135,8 +135,6 @@ export default function AvailableJobsScreen({ navigation, route }: Props) {
           <Text style={styles.availableLabel}>AVAILABLE JOBS</Text>
         </View>
 
-      
-
         {/* {!loadingAvailable && (
           <Text style={styles.coverJobsSubtitle}>
             {totalJobsCount === 0
@@ -164,17 +162,25 @@ export default function AvailableJobsScreen({ navigation, route }: Props) {
         {!notificationJob && <View style={styles.placeholder} />}
       </ScrollView>
 
-      {/* ── Accept Sheet — "Available Jobs" tab (contractor + guard) ──
-          Shows full job info (description, required documents) for both
-          user types. Staff dropdown (showStaffSection) is contractor-only
-          AND only shown when the job actually needs a guard assigned
-          (contractor_invoice !== 0) — picking a guard sends their id
-          with the accept request, leaving it unpicked sends an empty
-          guard_id. Non-contractor ("staff") flow is unaffected:
-          showStaffSection is false for them, so nothing new renders and
-          nothing new is sent. The sheet's own content is scrollable
-          (see StaffAssignSheet above), so long descriptions / document
-          lists / staff lists no longer overflow past the visible sheet. */}
+      {/* <ScrollView
+        style={styles.scrollContainer}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefreshing}
+            onRefresh={onRefresh}
+            tintColor="transparent"
+            colors={["transparent"]}
+            progressBackgroundColor="transparent"
+          />
+        }
+      >
+        {screenMode === "accepted" ? renderAcceptedTab() : renderNewTab()}
+        {!notificationJob && <View style={styles.placeholder} />}
+      </ScrollView> */}
+
+   
       <StaffAssignSheet
         visible={acceptSheetVisible}
         job={acceptSheetJob}
@@ -193,14 +199,7 @@ export default function AvailableJobsScreen({ navigation, route }: Props) {
         requiredDocuments={acceptRequiredDocuments}
       />
 
-      {/* ── ASAP notification bottom sheet ──
-          Staff assignment section removed here too — contractors accept
-          directly, then assign staff from the "Accepted" tab. Content now
-          renders inside BottomSheetScrollView (instead of a plain
-          ScrollView nested in BottomSheetView) so it scrolls properly
-          within the sheet's gesture handler when there's more data than
-          fits — required documents, a longer description, the staff
-          picker, etc. */}
+    
       <BottomSheet
         ref={bottomSheetRef}
         index={-1}
@@ -309,11 +308,7 @@ export default function AvailableJobsScreen({ navigation, route }: Props) {
             </View>
           )}
 
-          {/* Contractor-only, optional guard pick — mirrors the Accept
-              Job sheet's dropdown. Picking a guard sends their id with
-              the accept request; leaving it unpicked sends none. Staff
-              flow (non-contractor) is unaffected: nothing renders here
-              for them and nothing extra is sent. */}
+   
           {userType === "contractor" && !notifHideAssignForContractor && (
             <View style={{ marginVertical: 5 }}>
               <Text style={styles.assignLabel}>

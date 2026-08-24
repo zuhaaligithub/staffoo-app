@@ -403,9 +403,7 @@ const styles = StyleSheet.create({
     color: "#EF4444",
     marginLeft: 2,
   },
-  // =========================
-  // CARD PREVIEW
-  // =========================
+
 
   previewWrapper: {
     alignItems: "center",
@@ -541,9 +539,7 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
   },
 
-  // =========================
-  // FORM
-  // =========================
+
 
   form: {
     // backgroundColor: COLORS.surface2,

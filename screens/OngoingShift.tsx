@@ -39,7 +39,6 @@ import {
 } from "react-native-vision-camera";
 import { BASE_URL } from "../services/authApi";
 
-// ─── Helpers ────────────────────────────────────────────────────────────────
 const COLORS = {
   background: "#030508",
   surface: "#07111A",
@@ -79,8 +78,6 @@ const getDistanceMeters = (
   return R * c;
 };
 
-// ─── Interfaces ─────────────────────────────────────────────────────────────
-
 interface Task {
   id: number;
   job_roster_id: number;
@@ -119,8 +116,6 @@ interface Shift {
   start?: string;
   end?: string;
 }
-
-// ─── QR Scanner Component ──────────────────────────────────────────────
 
 function QRScannerModal({
   visible,
@@ -186,8 +181,6 @@ function QRScannerModal({
   );
 }
 
-// ─── Component ──────────────────────────────────────────────────────────────
-
 export default function OngoingShift({
   navigation,
   route,
@@ -195,46 +188,29 @@ export default function OngoingShift({
   navigation: any;
   route: any;
 }) {
-  // Timer
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [shiftStartTime, setShiftStartTime] = useState<Date | null>(null);
-
-  // Selfie
   const [selfieUri, setSelfieUri] = useState<string | null>(null);
   const [selfieBase64, setSelfieBase64] = useState<string | null>(null);
-
-  // Shift
   const [currentShift, setCurrentShift] = useState<Shift | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [loginId, setLoginId] = useState<number | null>(null);
-
-  // Sign-out
   const [isSigningOut, setIsSigningOut] = useState(false);
   const [signoutNotes, setSignoutNotes] = useState("");
-
-  // Break
   const [breakModalVisible, setBreakModalVisible] = useState(false);
   const [breakNote, setBreakNote] = useState("");
   const [informedTo, setInformedTo] = useState("");
   const [isOnBreak, setIsOnBreak] = useState(false);
   const [breakLoading, setBreakLoading] = useState(false);
   const [breakStartTime, setBreakStartTime] = useState<string | null>(null);
-
-  // Tasks
   const [startedTasks, setStartedTasks] = useState<Set<number>>(new Set());
   const [taskLoading, setTaskLoading] = useState<number | null>(null);
   const [remainingMinutes, setRemainingMinutes] = useState<number>(999);
-
-  // QR / Handover
   const [isScannerVisible, setIsScannerVisible] = useState(false);
   const [isScanningHandover, setIsScanningHandover] = useState(false);
-
-  // ── NEW: store the SVG string returned by the API so we can render it ──
   const [qrSvgXml, setQrSvgXml] = useState<string | null>(null);
   const [showQR, setShowQR] = useState(false);
   const [isHandingOver, setIsHandingOver] = useState(false);
-
-  // Proximity / Alarm
   const [jobCoordinates, setJobCoordinates] = useState<{
     lat: number;
     lng: number;
@@ -252,7 +228,6 @@ export default function OngoingShift({
 
   const rosterId = currentShift?.job_roster_activities?.job_roster_id;
 
-  // ─── QR scan callback ─────────────────────────────────────────────────
   const onCodeScanned = (codes: any[]) => {
     if (codes.length > 0 && isScannerVisible) {
       const value = codes[0].value;
@@ -273,18 +248,13 @@ export default function OngoingShift({
     }
   };
 
-  // ─── Remaining minutes until shift end ────────────────────────────────
-
   useEffect(() => {
     if (!currentShift) return;
-
     const endTimeStr = currentShift.shift_end_time || currentShift.end;
-
     if (!endTimeStr) {
       setRemainingMinutes(999);
       return;
     }
-
     const interval = setInterval(() => {
       const now = new Date();
       let shiftEndDate: Date;
@@ -316,17 +286,13 @@ export default function OngoingShift({
     return () => clearInterval(interval);
   }, [currentShift]);
 
-  // ─── Load shift from params ────────────────────────────────────────────
-
   useEffect(() => {
     const shiftFromParams = route.params?.currentShift;
     if (!shiftFromParams) {
       Alert.alert("Error", "No shift data received.");
       return;
     }
-
     setCurrentShift(shiftFromParams);
-
     const rawSigninTime =
       shiftFromParams.signin_time ||
       shiftFromParams.signinTime ||
@@ -393,8 +359,6 @@ export default function OngoingShift({
     setIsLoading(false);
   }, [route.params]);
 
-  // ─── Load user from storage ────────────────────────────────────────────
-
   useEffect(() => {
     const getUserFromStorage = async () => {
       try {
@@ -410,8 +374,6 @@ export default function OngoingShift({
     getUserFromStorage();
   }, []);
 
-  // ─── Timer tick ───────────────────────────────────────────────────────
-
   useEffect(() => {
     if (!shiftStartTime) return;
 
@@ -422,8 +384,6 @@ export default function OngoingShift({
 
     return () => clearInterval(interval);
   }, [shiftStartTime]);
-
-  // ─── Alarm helpers ────────────────────────────────────────────────────
 
   const triggerAlarm = () => {
     if (!jobCoordinates) return;
@@ -439,8 +399,6 @@ export default function OngoingShift({
       console.log("[ALARM] Sound failed:", error);
     }
   };
-
-  // ─── Proximity check ──────────────────────────────────────────────────
 
   useEffect(() => {
     if (!currentShift || !jobCoordinates) return;
@@ -537,8 +495,6 @@ export default function OngoingShift({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentShift, jobCoordinates]);
 
-  // ─── Helpers ──────────────────────────────────────────────────────────
-
   const formatTime = (seconds: number) => {
     const totalSeconds = Math.max(0, seconds);
     const h = Math.floor(totalSeconds / 3600);
@@ -584,8 +540,6 @@ export default function OngoingShift({
     }
   };
 
-  // ─── Tasks ────────────────────────────────────────────────────────────
-
   const handleStartTask = async (taskId: number) => {
     if (taskLoading !== null) return;
 
@@ -596,31 +550,23 @@ export default function OngoingShift({
         onPress: async () => {
           try {
             setTaskLoading(taskId);
-
             const userJson = await AsyncStorage.getItem("user");
             if (!userJson) throw new Error("User not found");
-
             const user = JSON.parse(userJson);
             const guardId = user?.id;
             if (!guardId) throw new Error("Guard ID missing");
-
             const token = await AsyncStorage.getItem("@auth_token");
             if (!token) throw new Error("No auth token");
-
-            // ✅ Removed Geolocation, using stored shift/site coordinates
             const locationStr = jobCoordinates
               ? `${jobCoordinates.lat},${jobCoordinates.lng}`
               : "0,0";
-
             const now = new Date();
             const pad = (n: number) => n.toString().padStart(2, "0");
-
             const startTime = `${pad(now.getDate())}-${pad(
               now.getMonth() + 1,
             )}-${now.getFullYear()} ${pad(now.getHours())}:${pad(
               now.getMinutes(),
             )}`;
-
             const payload = {
               roster_id: rosterId,
               guard_id: guardId,
@@ -628,7 +574,6 @@ export default function OngoingShift({
               start_time: startTime,
               location: locationStr,
             };
-
             const response = await fetch(`${BASE_URL}/start_task/${taskId}`, {
               method: "POST",
               headers: {
@@ -638,13 +583,10 @@ export default function OngoingShift({
               },
               body: JSON.stringify(payload),
             });
-
             const result = await response.json();
-
             if (!response.ok || !result?.success) {
               throw new Error(result?.message || "Failed to start task");
             }
-
             setStartedTasks((prev) => new Set([...prev, taskId]));
             Alert.alert("Success", "Task started successfully!");
           } catch (error: any) {
@@ -657,14 +599,11 @@ export default function OngoingShift({
     ]);
   };
 
-  // ─── Sign Out ─────────────────────────────────────────────────────────
-
   const handleSignOut = async () => {
     if (!selfieUri || !selfieBase64) {
       Alert.alert("Missing Selfie", "Please take a sign-out selfie first.");
       return;
     }
-
     Alert.alert(
       "Confirm Sign Out",
       "Are you sure you want to end this shift?",
@@ -676,15 +615,11 @@ export default function OngoingShift({
           onPress: async () => {
             try {
               setIsSigningOut(true);
-
               const token = await AsyncStorage.getItem("@auth_token");
               if (!token) throw new Error("Authentication token not found");
-
-              // ✅ Use already stored job coordinates instead of Geolocation
               const locationStr = jobCoordinates
                 ? `${jobCoordinates.lat},${jobCoordinates.lng}`
                 : "0,0";
-
               const now = new Date();
               const pad = (n: number) => n.toString().padStart(2, "0");
 
@@ -730,28 +665,23 @@ export default function OngoingShift({
       ],
     );
   };
+
   const formatAustralianDateTime = (dateTime: string | null | undefined) => {
     if (!dateTime) return "-";
 
     try {
-      // Handle "07-20-2026 12:41" format
       if (dateTime.includes("-")) {
         const [datePart, timePart] = dateTime.split(" ");
-
         if (datePart) {
           const [month, day, year] = datePart.split("-").map(Number);
 
           const formattedDate = `${String(day).padStart(2, "0")}-${String(
             month,
           ).padStart(2, "0")}-${year}`;
-
           let formattedTime = timePart || "00:00";
-
-          // If time is already HH:mm, keep it
           if (timePart && timePart.includes(":")) {
             formattedTime = timePart;
           } else {
-            // Try to parse with new Date for AM/PM cases
             const tempDate = new Date(
               `${month}-${day}-${year} ${timePart || ""}`,
             );
@@ -761,12 +691,10 @@ export default function OngoingShift({
               formattedTime = `${h}:${m}`;
             }
           }
-
           return `${formattedDate} ${formattedTime}`;
         }
       }
 
-      // Fallback
       const date = new Date(dateTime);
       if (!isNaN(date.getTime())) {
         const day = String(date.getDate()).padStart(2, "0");
@@ -779,11 +707,9 @@ export default function OngoingShift({
 
       return dateTime;
     } catch (e) {
-      // console.log("Date format error:", e);
       return dateTime || "-";
     }
   };
-  // ─── HANDOVER ──────────────────────────────────────────────────────────
 
   const handleHandoverShift = async () => {
     Alert.alert("Handover Shift", "Generate QR Code for next staff?", [
@@ -986,8 +912,6 @@ export default function OngoingShift({
     }
   };
 
-  // ─── Render ───────────────────────────────────────────────────────────
-
   if (isLoading) {
     return (
       <SafeAreaView style={styles.container}>
@@ -1048,21 +972,7 @@ export default function OngoingShift({
                 </Text>
               </View>
             </View>
-            {/* <View style={[styles.halfCard, { marginTop: 12 }]}>
-              <View style={styles.iconCircleBlue}>
-                <AlertCircle size={14} color={COLORS.primary} />
-              </View>
-              <View>
-                <Text style={styles.cardTitle}>Sign-out Notes</Text>
-                <TextInput
-                  style={{ fontSize: 10, color: COLORS.text, padding: 0 }}
-                  placeholder="Add any notes (optional)"
-                  placeholderTextColor={COLORS.textSecondary}
-                  value={signoutNotes}
-                  onChangeText={setSignoutNotes}
-                />
-              </View>
-            </View> */}
+          
 
             <View style={[styles.halfCard, { marginTop: 12 }]}>
               <View style={styles.iconCircleBlue}>
@@ -1077,7 +987,7 @@ export default function OngoingShift({
                   value={signoutNotes}
                   onChangeText={setSignoutNotes}
                   multiline
-                  numberOfLines={5} // ← Increased to 5 lines
+                  numberOfLines={5} 
                   textAlignVertical="top"
                 />
               </View>
@@ -1250,7 +1160,6 @@ export default function OngoingShift({
             </View>
           )}
 
-        {/* ── Scan QR (Shift B: incoming guard scans Shift A's QR) ── */}
         <TouchableOpacity
           style={styles.shakehandButton}
           onPress={handleShakehandScan}
@@ -1263,7 +1172,6 @@ export default function OngoingShift({
           )}
         </TouchableOpacity>
 
-        {/* ── Generate Handover QR (Shift A: outgoing guard shows QR) ── */}
         {remainingMinutes <= 10 && remainingMinutes > 0 && (
           <View style={styles.handoverSection}>
             <TouchableOpacity
@@ -1280,7 +1188,6 @@ export default function OngoingShift({
               )}
             </TouchableOpacity>
 
-            {/* Render the SVG QR code returned by the API */}
             {showQR && qrSvgXml && (
               <View style={styles.qrContainer}>
                 <SvgXml xml={qrSvgXml} width="200" height="200" />

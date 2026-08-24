@@ -35,12 +35,10 @@ import JobAcceptedCelebration from "./JobAcceptedCelebration";
 import {
   COLORS,
   capitalizeName,
-  getInitials,
   formatDate,
   formatTime,
   StaffAssignSheet,
   styles,
-  cardStyles,
   assignStyles,
 } from "./shifts/StaffShiftsShared";
 import { useStaffShiftsController } from "./shifts/useStaffShiftsController";
@@ -53,28 +51,12 @@ export default function AcceptedJobsScreen({ navigation, route }: Props) {
     screenMode,
     bottomSheetRef,
     snapPoints,
-    availableJobs,
-    loadingAvailable,
-    loadingMore,
-    hasMore,
     totalJobsCount,
-    fetchAvailableJobs,
-    loadMoreAvailableJobs,
-    todayShifts,
     weekShifts,
-    loadingToday,
-    loadingWeek,
-    fetchAcceptedShifts,
-    shiftStaffAssignments,
     userType,
     userId,
-    isStaffooStaff,
     user,
-    profileImage,
-    loadingProfile,
-    userDocuments,
     notificationJob,
-    sheetOpen,
     acceptingNotification,
     notifSelectedGuard,
     setNotifSelectedGuard,
@@ -88,39 +70,27 @@ export default function AcceptedJobsScreen({ navigation, route }: Props) {
     acceptSubmitting,
     acceptSheetSelectedGuard,
     setAcceptSheetSelectedGuard,
-    handleAcceptJobTap,
     handleAcceptSheetSubmit,
     handleAcceptSheetDecline,
-    handleRejectJob,
     contractorStaffList,
     loadingContractorStaff,
     assignTargetShift,
     showAssignStaffModal,
-    setShowAssignStaffModal,
-    setAssignTargetShift,
     assigningStaff,
     handleAssignStaffToShift,
     closeAssignStaffModal,
-    shiftHasAssignedGuard,
     showCelebration,
     setShowCelebration,
-    renderAvailableCard,
-    renderShiftCard,
-    renderJobsListFooter,
     renderNewTab,
     renderAcceptedTab,
     capitalizeWords,
     jobData,
-    notifRequiredDocuments,
     notifHasWorkingWithChildren,
     notifHasWhiteCard,
-    notifDescription,
     notifHideAssignForContractor,
-    acceptRawJob,
     acceptDescription,
     acceptRequiredDocuments,
     acceptHideAssignForContractor,
-    showingAvailableList,
     isRefreshing,
     onRefresh,
   } = useStaffShiftsController(navigation, route, "accepted");
@@ -157,7 +127,6 @@ export default function AcceptedJobsScreen({ navigation, route }: Props) {
               </View>
             </View>
 
-            {/* Stats - Only show if top-level user_id is 1 */}
             {isStaffooStaffMember && (
               <View style={styles.statsRow}>
                 <View style={styles.statBox}>
@@ -196,8 +165,9 @@ export default function AcceptedJobsScreen({ navigation, route }: Props) {
           <RefreshControl
             refreshing={isRefreshing}
             onRefresh={onRefresh}
-            tintColor={COLORS.primary}
-            colors={[COLORS.primary]}
+            tintColor="transparent"
+            colors={["transparent"]}
+            progressBackgroundColor="transparent"
           />
         }
       >
@@ -205,17 +175,6 @@ export default function AcceptedJobsScreen({ navigation, route }: Props) {
         {!notificationJob && <View style={styles.placeholder} />}
       </ScrollView>
 
-      {/* ── Accept Sheet — "Available Jobs" tab (contractor + guard) ──
-          Shows full job info (description, required documents) for both
-          user types. Staff dropdown (showStaffSection) is contractor-only
-          AND only shown when the job actually needs a guard assigned
-          (contractor_invoice !== 0) — picking a guard sends their id
-          with the accept request, leaving it unpicked sends an empty
-          guard_id. Non-contractor ("staff") flow is unaffected:
-          showStaffSection is false for them, so nothing new renders and
-          nothing new is sent. The sheet's own content is scrollable
-          (see StaffAssignSheet above), so long descriptions / document
-          lists / staff lists no longer overflow past the visible sheet. */}
       <StaffAssignSheet
         visible={acceptSheetVisible}
         job={acceptSheetJob}
@@ -342,11 +301,6 @@ export default function AcceptedJobsScreen({ navigation, route }: Props) {
             </View>
           )}
 
-          {/* Contractor-only, optional guard pick — mirrors the Accept
-              Job sheet's dropdown. Picking a guard sends their id with
-              the accept request; leaving it unpicked sends none. Staff
-              flow (non-contractor) is unaffected: nothing renders here
-              for them and nothing extra is sent. */}
           {userType === "contractor" && !notifHideAssignForContractor && (
             <View style={{ marginVertical: 2 }}>
               <Text style={styles.assignLabel}>
@@ -460,7 +414,6 @@ export default function AcceptedJobsScreen({ navigation, route }: Props) {
         </BottomSheetScrollView>
       </BottomSheet>
 
-      {/* ── Assign-to-staff modal — Accepted tab, contractor only ── */}
       <Modal
         visible={showAssignStaffModal}
         transparent
@@ -524,15 +477,10 @@ export default function AcceptedJobsScreen({ navigation, route }: Props) {
         </View>
       </Modal>
 
-      {/* ── Job-accepted celebration — full screen, confetti + sound +
-          vibration, triggered from the accept sheet and the ASAP
-          notification sheet's success handlers. Auto-hides itself. ── */}
       <JobAcceptedCelebration
         visible={showCelebration}
         onDone={() => setShowCelebration(false)}
       />
-
-      {/* <BottomTab navigation={navigation} activeTab="StaffShifts" /> */}
     </SafeAreaView>
   );
 }

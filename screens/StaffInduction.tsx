@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import {
   SafeAreaView,
@@ -80,33 +79,22 @@ export default function StaffInductionScreen({
     try {
       setLoading(true);
       setError(null);
-
-      // ✅ Get cached values
       const cachedUserId = await AsyncStorage.getItem("@user_id");
       const cachedUser = await AsyncStorage.getItem("user");
       const token = await getAuthToken();
-
-      // ✅ Check token
       if (!token) {
         setError("Session expired. Please login again.");
         setLoading(false);
         return;
       }
-
       let userId: string | null = cachedUserId || null;
-
-      // ✅ Parse cached user
       if (cachedUser) {
         const parsedUser = JSON.parse(cachedUser);
-
         console.log(
           "INDUCTION USER DATA:",
           JSON.stringify(parsedUser, null, 2),
         );
-
         setUser(parsedUser);
-
-        // ✅ Find user ID safely
         userId =
           userId ||
           parsedUser?.id ||
@@ -116,10 +104,7 @@ export default function StaffInductionScreen({
           parsedUser?.customer?.id ||
           parsedUser?.guard_id ||
           null;
-
-        // ✅ Handle profile image by user type
         let imageUri: string | null = null;
-
         if (parsedUser?.user_type === "staff") {
           imageUri = parsedUser?.staff?.profile_image;
         } else if (parsedUser?.user_type === "contractor") {
@@ -128,13 +113,11 @@ export default function StaffInductionScreen({
           imageUri =
             parsedUser?.customer?.profile_image || parsedUser?.profile_image;
         }
-
-        // ✅ Set profile image
         if (imageUri) {
           const fullImage = imageUri.startsWith("http")
             ? imageUri
-            //  : `https://apis.staffoo.com.au/storage/${imageUri}`;
-            :  `https://apis-staging.staffoo.com.au/storage/${imageUri}`;
+            : //  : `https://apis.staffoo.com.au/storage/${imageUri}`;
+              `https://apis-staging.staffoo.com.au/storage/${imageUri}`;
           setProfileImage(fullImage);
         }
       }
@@ -167,8 +150,6 @@ export default function StaffInductionScreen({
       });
 
       const data = await response.json();
-
-      // ✅ Handle "no data" case safely
       if (
         !data.success ||
         !Array.isArray(data.data) ||
@@ -177,7 +158,6 @@ export default function StaffInductionScreen({
         setInductions([]); // important
         return;
       }
-
       const formatted = data.data
         .sort(
           (a: any, b: any) =>
@@ -381,12 +361,6 @@ export default function StaffInductionScreen({
           </TouchableOpacity>
         </View>
 
-        {/* <Text style={styles.headerSubtitle}>
-          Complete your mandatory inductions to stay compliant.
-        </Text> */}
-
-        {/* Progress */}
-        {/* RECENT CARD */}
         {recentInduction && (
           <TouchableOpacity
             activeOpacity={0.9}
@@ -463,74 +437,40 @@ export default function StaffInductionScreen({
             )}
           </TouchableOpacity>
         )}
-
-        {/* <View style={styles.progressCard}>
-          <View style={styles.progressRow}>
-            <View>
-              <Text style={styles.progressTitle}>Overall Progress</Text>
-
-              <Text style={styles.progressSubtitle}>
-                {inductions.filter((i) => isCompleted(i.status)).length}
-                {" / "}
-                {inductions.length} Completed
-              </Text>
-            </View>
-
-            <Text style={styles.progressPercent}>
-              {inductions.length
-                ? Math.round(
-                    (inductions.filter((i) => isCompleted(i.status)).length /
-                      inductions.length) *
-                      100,
-                  )
-                : 0}
-              %
-            </Text>
-          </View>
-
-          <View style={styles.progressTrack}>
-            <View
-              style={[
-                styles.progressFill,
-                {
-                  width: `${
-                    inductions.length
-                      ? (inductions.filter((i) => isCompleted(i.status))
-                          .length /
-                          inductions.length) *
-                        100
-                      : 0
-                  }%`,
-                },
-              ]}
-            />
-          </View>
-        </View> */}
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
         {error && <Text style={{ color: "red" }}>{error}</Text>}
 
-        <Text style={styles.sectionTitle}>All Inductions</Text>
-        {inductions.length === 0 && !loading && (
+        {inductions.length > 0 ? (
+          <>
+            <Text style={styles.sectionTitle}>All Inductions</Text>
+
+            <FlatList
+              data={inductions}
+              renderItem={renderInductionItem}
+              keyExtractor={(item, index) => `${item.id || index}`}
+              scrollEnabled={false}
+            />
+          </>
+        ) : (
           <View style={{ alignItems: "center", marginTop: 40 }}>
-            <Text style={{ fontSize: 16, fontWeight: "600", color: "#64748b" }}>
+            <Text
+              style={{
+                fontSize: 16,
+                fontWeight: "600",
+                color: "#64748b",
+              }}
+            >
               No induction found
             </Text>
           </View>
         )}
-        <FlatList
-          data={inductions}
-          renderItem={renderInductionItem}
-          keyExtractor={(item, index) => `${item.id || index}`}
-          scrollEnabled={false}
-        />
       </ScrollView>
     </SafeAreaView>
   );
 }
 
-/* Styles remain the same as your original */
 const styles = StyleSheet.create({
   container: {
     flex: 1,

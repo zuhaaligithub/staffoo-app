@@ -78,13 +78,11 @@ export default function PayslipScreen({ navigation }: Props) {
     }
   };
 
-  // Simple Download - Open PDF in default viewer/browser
   const downloadSlip = (url: string) => {
     if (!url) {
       Alert.alert('Error', 'File URL is not available');
       return;
     }
-
     Linking.openURL(url).catch(err => {
       console.error('Error opening PDF:', err);
       Alert.alert('Error', 'Could not open the payslip PDF');

@@ -6,11 +6,9 @@ import {
   TouchableOpacity,
   StyleSheet,
   ScrollView,
-  ActivityIndicator,
   SafeAreaView,
   StatusBar,
   Dimensions,
-  Alert,
   Animated,
   Pressable,
   Modal,
@@ -30,13 +28,7 @@ import {
   CalendarDays,
   Clock,
   FileWarning,
-  Users,
-  Timer,
-  UserCheck,
   FileText,
-  Receipt,
-  MessageSquare,
-  ClipboardList,
   ChevronRight,
   BellRing,
   X,
@@ -94,20 +86,16 @@ export default function HomeScreen({ navigation }: any) {
   const [userType, setUserType] = useState<"customer" | "contractor" | "staff">(
     "staff",
   );
-
   const [showJobAlert, setShowJobAlert] = useState(false);
   const slideAnim = useState(new Animated.Value(-120))[0]; // for smooth slide-in
   const [isActive, setIsActive] = useState<boolean>(false);
   const [profileImage, setProfileImage] = useState<string | null>(null);
-
   const [availableJobsCount, setAvailableJobsCount] = useState(0);
   const [docsExpiringCount, setDocsExpiringCount] = useState(0);
   const [activeGuardsCount, setActiveGuardsCount] = useState(0);
   const [pendingAssigningCount, setPendingAssigningCount] = useState(0);
   const [statsLoading, setStatsLoading] = useState(true);
-
   const [refreshing, setRefreshing] = useState(false);
-
   const onRefresh = async () => {
     setRefreshing(true);
     try {
@@ -120,10 +108,6 @@ export default function HomeScreen({ navigation }: any) {
     }
   };
   const isStaffooStaff = Number(user?.user_id) === 1;
-
-  // Job notifications only for:
-  // - contractors
-  // - staff whose parent user_id is 1
   const canSeeJobNotifications =
     userType === "contractor" || (userType === "staff" && isStaffooStaff);
   const currentDate = new Date();
@@ -132,7 +116,6 @@ export default function HomeScreen({ navigation }: any) {
     d.setDate(d.getDate() - d.getDay() + (d.getDay() === 0 ? -6 : 1));
     return d;
   });
-
   const formatDateMMDDYYYY = (date: Date) =>
     `${(date.getMonth() + 1).toString().padStart(2, "0")}-${date
       .getDate()
@@ -624,7 +607,6 @@ export default function HomeScreen({ navigation }: any) {
             )}
           </View>
 
-          {/* Show Documents Row for both staff and contractor */}
           {(userType === "staff" || userType === "contractor") && (
             <TouchableOpacity
               activeOpacity={0.85}
@@ -671,7 +653,6 @@ export default function HomeScreen({ navigation }: any) {
           )}
         </View>
 
-        {/* Shifts Section */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Shifts This Week</Text>
@@ -779,7 +760,6 @@ export default function HomeScreen({ navigation }: any) {
         </View>
       </ScrollView>
 
-      {/* NEW JOB NOTIFICATION POPUP */}
       <Modal
         transparent
         visible={showJobAlert}
@@ -939,6 +919,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     marginBottom: 6,
+    marginRight:10
   },
   statLabel: { fontSize: 12, color: COLORS.textSecondary },
   statValue: { fontSize: 18, fontWeight: "700", color: COLORS.text },
@@ -951,6 +932,7 @@ const styles = StyleSheet.create({
     borderColor: COLORS.cardBorder,
     padding: 12,
     marginTop: 5,
+  
   },
   docsRowAlert: { borderColor: COLORS.warning },
   docsRowLabel: { fontSize: 13, fontWeight: "600", color: COLORS.text },

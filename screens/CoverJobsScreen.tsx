@@ -49,9 +49,9 @@ type Job = {
   siteName: string;
   location: string;
   address: string;
-  date: string; // e.g. "Thursday, 18 June 2026"
-  startTime: string; // e.g. "17:00"
-  endTime: string; // e.g. "01:00"
+  date: string; 
+  startTime: string;
+  endTime: string; 
   rate: string;
   urgency?: string;
   status?: string;
@@ -68,18 +68,12 @@ const CoverJobsScreen = ({ navigation }: Props) => {
     try {
       setLoading(true);
       const token = await AsyncStorage.getItem("@auth_token");
-
       console.log("🔑 Token exists:", !!token);
-
       const response = await axios.get(`${BASE_URL}/jobs/available`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-
       console.log("📡 Full API Response received");
-
-      // ✅ Correct path based on your API response
       let apiJobs = [];
-
       if (
         response.data?.data?.jobs?.data &&
         Array.isArray(response.data.data.jobs.data)
@@ -103,7 +97,6 @@ const CoverJobsScreen = ({ navigation }: Props) => {
       console.log(`📋 Found ${apiJobs.length} available jobs`);
 
       const formattedJobs: Job[] = apiJobs.map((job: any) => {
-        // Date in DD/MM/YYYY format
         let formattedDate = "TBD";
         if (job.start_time) {
           const dateObj = new Date(job.start_time);
@@ -112,8 +105,6 @@ const CoverJobsScreen = ({ navigation }: Props) => {
           const year = dateObj.getFullYear();
           formattedDate = `${day}/${month}/${year}`;
         }
-
-        // Time formatting: HH:mm with space around dash
         const startTime = job.start_time
           ? new Date(job.start_time).toLocaleTimeString("en-AU", {
               hour: "2-digit",
@@ -180,11 +171,6 @@ const CoverJobsScreen = ({ navigation }: Props) => {
 
     try {
       const token = await AsyncStorage.getItem("@auth_token");
-      // Uncomment when backend endpoint is ready
-      // await axios.post(`${BASE_URL}/jobs/${jobId}/accept`, {}, {
-      //   headers: { Authorization: `Bearer ${token}` },
-      // });
-
       setTimeout(() => {
         setJobs((prev) => prev.filter((j) => j.id !== jobId));
         setLoadingIds((prev) => prev.filter((id) => id !== jobId));
@@ -232,9 +218,7 @@ const CoverJobsScreen = ({ navigation }: Props) => {
 
     return (
       <View style={styles.card}>
-        {/* Header */}
         <View style={styles.cardHeader}>
-          {/* <Text style={styles.jobTitle}>{item.title}</Text> */}
           {item.siteName && (
             <Text style={styles.siteName}>{item.siteName}</Text>
           )}
@@ -245,14 +229,11 @@ const CoverJobsScreen = ({ navigation }: Props) => {
           )}
         </View>
 
-        {/* {item.siteName && <Text style={styles.siteName}>{item.siteName}</Text>} */}
-
         <View style={styles.infoRow}>
           <MapPin size={18} color={COLORS.primary} />
           <Text style={styles.infoText}>{item.location}</Text>
         </View>
 
-        {/* Date and Time Row */}
         <View style={styles.infoRow}>
           <Clock size={18} color={COLORS.primary} />
           <Text style={styles.infoText}>
@@ -260,10 +241,8 @@ const CoverJobsScreen = ({ navigation }: Props) => {
           </Text>
         </View>
 
-        {/* <Text style={styles.rate}>{item.rate}</Text> */}
         <Text style={styles.address}>{item.address}</Text>
 
-        {/* Action Buttons */}
         <View style={styles.buttonContainer}>
           <TouchableOpacity
             style={styles.acceptButton}

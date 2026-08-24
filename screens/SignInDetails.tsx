@@ -373,38 +373,7 @@ export default function SignInDetails({
           </View>
         </View>
 
-        {/* Location status banner */}
-        {/* {locationLoading ? (
-          <View style={[styles.statusBanner, styles.infoBanner]}>
-            <ActivityIndicator size="small" color={COLORS.primary} />
-            <Text style={styles.statusBannerText}>
-              Fetching your current location…
-            </Text>
-          </View>
-        ) : locationError ? (
-          <TouchableOpacity
-            style={[styles.statusBanner, styles.errorBanner]}
-            onPress={fetchLocation}
-            activeOpacity={0.8}
-          >
-            <MapPinOff size={18} color={COLORS.danger} />
-            <Text style={[styles.statusBannerText, { color: COLORS.danger }]}>
-              {locationError}
-            </Text>
-            <View style={styles.retryPill}>
-              <RefreshCw size={13} color={COLORS.danger} />
-              <Text style={styles.retryPillText}>Retry</Text>
-            </View>
-          </TouchableOpacity>
-        ) : (
-          <View style={[styles.statusBanner, styles.successBanner]}>
-            <MapPin size={18} color={COLORS.success} />
-            <Text style={[styles.statusBannerText, { color: COLORS.success }]}>
-              Location confirmed
-            </Text>
-            <Check size={16} color={COLORS.success} />
-          </View>
-        )} */}
+      
 
         {/* Status + Notes */}
         <View style={styles.mainContentRow}>

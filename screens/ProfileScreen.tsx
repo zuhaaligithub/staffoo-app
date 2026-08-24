@@ -9,25 +9,18 @@ import {
   SafeAreaView,
   StatusBar,
   Modal,
-  ActivityIndicator,
   Alert,
   Dimensions,
   Platform,
-  Linking,
 } from "react-native";
 import {
   LogOut,
   User,
   FileText,
-  CheckCircle,
-  AlertCircle,
   CreditCard,
-  Trash2,
   Wallet,
   Clock,
   BookOpen,
-  ChevronRight,
-  Settings,
   Shield,
   Briefcase,
   MapPin,
@@ -70,7 +63,6 @@ const { width } = Dimensions.get("window");
 const isSmall = width < 375;
 const isTablet = width >= 768;
 const isSmallMobile = width < 375;
-// ─── Brand Palette (matches Staffoo portal) ───────────────────────────────────
 const COLORS = {
   background: "#030508",
   surface: "#07111A",
@@ -95,16 +87,12 @@ export default function ProfileScreen({ navigation }: Props) {
   const [profileImage, setProfileImage] = useState<string | null>(null);
   const [user, setUser] = useState<any>(null);
   const [userId, setUserId] = useState<string | null>(null);
-  // Only used to block the first paint, before we have ANY data (cached or fresh).
   const [loading, setLoading] = useState(true);
   const [completionPercentage, setCompletionPercentage] = useState<number>(0);
   const [isActive, setIsActive] = useState<boolean>(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [jobData, setJobData] = useState<AsapJobData | null>(null);
-
-  // ── Charge Rates Missing popup ────────────────────────────────────────────
   const [chargeRatePopupVisible, setChargeRatePopupVisible] = useState(false);
-
   const foregroundHandlerRef = useRef<((event: any) => void) | null>(null);
   const clickHandlerRef = useRef<((event: any) => void) | null>(null);
   const subscriptionChangeHandlerRef = useRef<
@@ -127,11 +115,9 @@ export default function ProfileScreen({ navigation }: Props) {
 
   const applyProfileData = useCallback((freshData: any) => {
     if (!freshData) return;
-
     setUser(freshData);
     setCompletionPercentage(freshData.profile_completion_percentage || 0);
     setIsActive(freshData.is_active === true);
-
     let imageUri = null;
     const BASE_IMAGE_URL = "https://apis-staging.staffoo.com.au/storage/";
     // const BASE_IMAGE_URL = "https://apis.staffoo.com.au/storage/";
@@ -169,8 +155,6 @@ export default function ProfileScreen({ navigation }: Props) {
           }
 
           setUserId(uid);
-
-          // 1. Show cached data immediately (fast UI)
           if (isFirstLoad) {
             const cached = await AsyncStorage.getItem("user");
             if (cached && mounted) {
@@ -179,11 +163,8 @@ export default function ProfileScreen({ navigation }: Props) {
               hasLoadedOnceRef.current = true;
             }
           }
-
-          // 2. ALWAYS fetch fresh data from server (but only once per focus if possible)
           console.log("🔹 getUserProfile called with ID:", uid);
           const profileResponse = await getUserProfile(uid);
-
           if (profileResponse?.success && profileResponse?.data && mounted) {
             const freshData = profileResponse.data;
             applyProfileData(freshData);
@@ -208,8 +189,6 @@ export default function ProfileScreen({ navigation }: Props) {
               hasShownChargeRatePopupRef.current = true;
               setChargeRatePopupVisible(true);
             }
-
-            // Only update location on first real load
             if (isFirstLoad) {
               updateCoordinatesWithGoogle(uid);
             }
@@ -234,9 +213,7 @@ export default function ProfileScreen({ navigation }: Props) {
 
   useEffect(() => {
     if (!userId || !user?.user_type || user.user_type === "customer") return;
-
     let pollTimer: ReturnType<typeof setTimeout> | undefined;
-
     const setupOneSignal = async () => {
       OneSignal.Debug.setLogLevel(LogLevel.Verbose);
       OneSignal.initialize(ONESIGNAL_APP_ID);
@@ -325,15 +302,11 @@ export default function ProfileScreen({ navigation }: Props) {
   const updateCoordinatesWithGoogle = async (uid: string) => {
     try {
       const token = await AsyncStorage.getItem("@auth_token");
-
       if (!token || !uid) {
         console.log("❌ Missing token or user id");
         return;
       }
-
-      // Request location permission
       let hasPermission = true;
-
       if (Platform.OS === "android") {
         const result = await PermissionsAndroid.request(
           PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
@@ -341,24 +314,19 @@ export default function ProfileScreen({ navigation }: Props) {
 
         hasPermission = result === PermissionsAndroid.RESULTS.GRANTED;
       }
-
       if (!hasPermission) {
         console.log("❌ Location permission denied");
         return;
       }
 
-      // Get current location
       Geolocation.getCurrentPosition(
         async (position) => {
           try {
             const { latitude, longitude } = position.coords;
-
             const payload = {
               current_coordinates: `${latitude},${longitude}`,
             };
-
             console.log("📍 Sending Coordinates:", payload.current_coordinates);
-
             const response = await fetch(
               `${BASE_URL}/update-coordinates/${uid}`,
               {
@@ -370,11 +338,8 @@ export default function ProfileScreen({ navigation }: Props) {
                 body: JSON.stringify(payload),
               },
             );
-
             const data = await response.json();
-
             console.log("📍 Update Coordinate Response:", data);
-
             if (response.ok && data.success) {
               console.log("✅ Coordinates updated successfully");
             } else {
@@ -398,7 +363,6 @@ export default function ProfileScreen({ navigation }: Props) {
     }
   };
 
-  // Add this outside the component
   updateCoordinatesWithGoogle.isRunning = false;
   updateCoordinatesWithGoogle.hasShownError = false;
 
@@ -412,26 +376,18 @@ export default function ProfileScreen({ navigation }: Props) {
         console.log("⏭️ Location update already in progress");
         return;
       }
-
       console.log("📍 Updating coordinates...");
       await updateCoordinatesWithGoogle(userId);
     };
-
-    // Call immediately after login
     updateLocation();
-
-    // Then every 10 minutes
     interval = setInterval(() => {
       updateLocation();
     }, 10 * 60 * 1000);
-
     return () => {
       if (interval) clearInterval(interval);
     };
   }, [userId]);
 
-  // Helpers for document completeness (moved to component scope so other
-  // parts of this screen can call them)
   const parseStatesAllowed = (raw: unknown): string[] => {
     if (!raw) return [];
     if (Array.isArray(raw))
@@ -578,9 +534,7 @@ export default function ProfileScreen({ navigation }: Props) {
       },
     ];
 
-    // Helper: check if contractor has completed required documents for
-    // all allowed states. Returns true only when every document record
-    // the server expects for those state categories has a `file` set.
+
     const parseStatesAllowed = (raw: unknown): string[] => {
       if (!raw) return [];
       if (Array.isArray(raw))
@@ -613,55 +567,41 @@ export default function ProfileScreen({ navigation }: Props) {
 
     const hasCompletedStateDocuments = () => {
       if (!user) return false;
-
       const allowed = parseStatesAllowed(user?.states_allowed);
       if (!allowed || allowed.length === 0) return false;
-
       const docs: any[] = Array.isArray(user.documents) ? user.documents : [];
-
-      // For each allowed state, ensure there exists at least one document
-      // record for the corresponding category and that ALL such records
-      // have a non-empty `file` value.
       for (const code of allowed) {
         const category = STATE_TO_CATEGORY[code];
         if (!category) return false; // unknown state → treat as incomplete
-
         const docsForCategory = docs.filter(
           (d) =>
             String(d.document_category || "").toLowerCase() ===
             String(category).toLowerCase(),
         );
-
         if (docsForCategory.length === 0) return false;
-
         const everyHasFile = docsForCategory.every(
           (d) => !!(d.file && String(d.file).trim().length > 0),
         );
         if (!everyHasFile) return false;
       }
-
       return true;
     };
 
     const isLocked = (title: string) => {
       if (isActive) return false; // fully active → nothing locked
-
       if (type === "contractor") {
         if (["Job History", "Staff Management", "Timesheet"].includes(title)) {
           return true;
         }
         if (title === "My Rates") {
-          // Locked until documents for selected state are filled
           return !hasCompletedStateDocuments();
         }
       }
-
       if (type === "staff") {
         if (["Induction", "Job History", "Timesheet"].includes(title)) {
           return true;
         }
       }
-
       return false;
     };
 
@@ -684,8 +624,7 @@ export default function ProfileScreen({ navigation }: Props) {
 
       filtered = allSections.filter((s) => staffTabs.includes(s.title));
     } else if (type === "contractor") {
-      // Desired order: Personal Information → Documents → My Rates → rest
-      // (My Rates = 3rd item = 1st row, 3rd column on a 3-col grid)
+   
       const contractorOrder = [
         "Personal Information",
         "Documents",
@@ -711,8 +650,6 @@ export default function ProfileScreen({ navigation }: Props) {
     } else {
       filtered = allSections;
     }
-
-    // Attach locked flag
     return filtered.map((s) => ({
       ...s,
       locked: isLocked(s.title),
@@ -775,18 +712,15 @@ export default function ProfileScreen({ navigation }: Props) {
       ]);
       return;
     }
-
     if (route === "DeleteProfile") {
       navigation.navigate("DeleteProfileVerification");
       return;
     }
-
     navigation.navigate(route);
   };
 
   const getFormattedLocation = (data: any) => {
     if (!data.address) return "Location not set";
-
     const placeName = data.address.split(",")[0].trim();
     const city = data.city ? data.city.trim() : "";
     const country = data.country ? data.country.trim() : "";
@@ -794,9 +728,9 @@ export default function ProfileScreen({ navigation }: Props) {
     if (city && country) {
       return `${placeName}, ${city}, ${country}`;
     }
-
     return placeName;
   };
+
   const capitalizeName = (name: string = "") => {
     return name
       .toLowerCase()
@@ -849,14 +783,7 @@ export default function ProfileScreen({ navigation }: Props) {
           <View style={styles.innercontainer}>
             <View style={styles.heroTopRow}>
               <Text style={styles.heroTitle}>My Profile</Text>
-              {/* <TouchableOpacity
-                style={styles.settingsBtn}
-                onPress={() => navigation.navigate("ProfileSetup")}
-              >
-                <Settings size={18} color={COLORS.primary} />
-              </TouchableOpacity> */}
             </View>
-
             <View style={styles.profileInfoContainer}>
               <TouchableOpacity
                 style={styles.avatarWrapper}
@@ -1018,7 +945,6 @@ export default function ProfileScreen({ navigation }: Props) {
         </View>
       </ScrollView>
 
-      {/* ── Complete Profile Requirements popup ── */}
       <Modal
         visible={chargeRatePopupVisible}
         transparent
@@ -1041,9 +967,7 @@ export default function ProfileScreen({ navigation }: Props) {
               </TouchableOpacity>
             </View>
 
-            {/* Body */}
             <View style={styles.reqModalBody}>
-              {/* Step 1 */}
               <View style={styles.reqStepRow}>
                 <View style={styles.reqStepLeft}>
                   <View style={[styles.reqStepCircle, styles.reqStepCircle1]}>
@@ -1062,7 +986,6 @@ export default function ProfileScreen({ navigation }: Props) {
                 </View>
               </View>
 
-              {/* Step 2 */}
               <View style={styles.reqStepRow}>
                 <View style={styles.reqStepLeft}>
                   <View style={[styles.reqStepCircle, styles.reqStepCircle2]}>
@@ -1081,7 +1004,6 @@ export default function ProfileScreen({ navigation }: Props) {
                 </View>
               </View>
 
-              {/* Step 3 */}
               <View style={[styles.reqStepRow, { marginBottom: 0 }]}>
                 <View style={styles.reqStepLeft}>
                   <View style={[styles.reqStepCircle, styles.reqStepCircle3]}>
@@ -1097,7 +1019,6 @@ export default function ProfileScreen({ navigation }: Props) {
                 </View>
               </View>
 
-              {/* Info box */}
               <View style={styles.reqInfoBox}>
                 <View style={styles.reqInfoIcon}>
                   <Text style={styles.reqInfoIconText}>i</Text>
@@ -1112,30 +1033,7 @@ export default function ProfileScreen({ navigation }: Props) {
                 </View>
               </View>
 
-              {/* Actions */}
-              {/* <View style={styles.chargeModalBtnRow}>
-                <TouchableOpacity
-                  style={styles.chargeModalCloseTextBtn}
-                  onPress={() => setChargeRatePopupVisible(false)}
-                  activeOpacity={0.8}
-                >
-                  <Text style={styles.chargeModalCloseTextBtnText}>Close</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={styles.chargeModalPrimaryBtn}
-                  activeOpacity={0.85}
-                  onPress={() => {
-                    setChargeRatePopupVisible(false);
-                    // Go to Documents first (steps 1–2), or ContractorRates for step 3
-                    navigation.navigate("Documents");
-                  }}
-                >
-                  <Text style={styles.chargeModalPrimaryBtnText}>
-                    Continue Setup
-                  </Text>
-                </TouchableOpacity>
-              </View> */}
+            
             </View>
           </View>
         </View>

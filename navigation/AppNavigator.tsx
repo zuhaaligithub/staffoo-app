@@ -10,15 +10,10 @@ import SignUpScreen from "../screens/SignUpScreen";
 import ForgotPasswordScreen from "../screens/ForgotPasswordScreen";
 import SplashScreen from "../screens/SplashScreen";
 
-// Stack-only screens (no bottom tab needed or pushed on top of tabs)
-import FilterScreen from "../screens/FilterScreen";
 import ProfileSetupScreen from "../screens/ProfileSetupScreen";
-import NotificationScreen from "../screens/NotificationScreen";
-import JobDetailScreen from "../screens/JobDetailScreen";
-import AllJobsScreen from "../screens/AllJobsScreen";
-import ViewApplicationScreen from "../screens/ViewApplicationScreen";
+
 import MessageDetailScreen from "../screens/MessageDetailScreen";
-import ApplyJobScreen from "../screens/ApplyJobScreen";
+
 import SuccessScreen from "../screens/SuccessScreen";
 import DocumentsScreen from "../screens/DocumentsScreen";
 import AccountsScreen from "../screens/AccountsScreen";
@@ -167,16 +162,10 @@ export default function AppNavigator() {
       />
 
       {/* ── Stack screens pushed on top of tabs ── */}
-      <Stack.Screen name="Filter" component={FilterScreen} />
       <Stack.Screen name="ProfileSetup" component={ProfileSetupScreen} />
       <Stack.Screen name="LeaveManagement" component={LeaveManagementScreen} />
       <Stack.Screen name="Timesheet" component={TimesheetScreen} />
-      <Stack.Screen name="Notifications" component={NotificationScreen} />
-      <Stack.Screen name="JobDetails" component={JobDetailScreen} />
-      <Stack.Screen name="AllJobs" component={AllJobsScreen} />
-      <Stack.Screen name="ViewApplications" component={ViewApplicationScreen} />
       <Stack.Screen name="MessageDetail" component={MessageDetailScreen} />
-      <Stack.Screen name="ApplyJob" component={ApplyJobScreen} />
       <Stack.Screen name="Documents" component={DocumentsScreen} />
       <Stack.Screen name="Payslip" component={PayslipScreen} />
       <Stack.Screen name="Accounts" component={AccountsScreen} />

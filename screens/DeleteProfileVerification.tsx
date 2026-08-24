@@ -209,8 +209,6 @@ export default function DeleteProfileVerification({ navigation }: any) {
   );
 }
 
-/* ---------------- STYLES ---------------- */
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,

@@ -2,36 +2,6 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Receipt } from 'lucide-react-native';
 
-/**
- * QuotationBreakdown
- * ------------------------------------------------------------------
- * A drop-in "invoice style" breakdown card that mirrors the
- * Description / Rate Type / Billable Hours / Unit Price / Subtotal
- * layout, finishing with Subtotal (Ex GST), GST, Quote Total,
- * an optional discount line and a final "Amount Payable" row.
- *
- * FONTS
- * ------------------------------------------------------------------
- * To match the screenshot exactly, install + load these fonts once
- * in your app's root (App.tsx) using @expo-google-fonts:
- *
- *   npx expo install @expo-google-fonts/poppins @expo-google-fonts/jetbrains-mono expo-font
- *
- *   import { useFonts, Poppins_500Medium, Poppins_600SemiBold, Poppins_700Bold } from '@expo-google-fonts/poppins';
- *   import { JetBrainsMono_500Medium, JetBrainsMono_700Bold } from '@expo-google-fonts/jetbrains-mono';
- *
- *   const [fontsLoaded] = useFonts({
- *     Poppins_500Medium,
- *     Poppins_600SemiBold,
- *     Poppins_700Bold,
- *     JetBrainsMono_500Medium,
- *     JetBrainsMono_700Bold,
- *   });
- *
- * If the fonts aren't loaded, this component falls back to the
- * system font automatically — it will never crash.
- * ------------------------------------------------------------------
- */
 
 export interface QuotationLineItem {
     description: string;
@@ -43,17 +13,14 @@ export interface QuotationLineItem {
 
 export interface QuotationBreakdownProps {
     items: QuotationLineItem[];
-    /** Override the badge value. Defaults to sum of all item billable hours */
     totalBillableHours?: number;
     subtotalExGst: number;
     gstAmount: number;
     quoteTotal: number;
-    /** e.g. "Pay In Full Discount (5%)" — omit to hide the discount row */
     discountLabel?: string;
     discountAmount?: number;
     amountPayable: number;
     title?: string;
-    /** Pass false if you haven't loaded the custom fonts */
     useCustomFonts?: boolean;
 }
 
@@ -122,8 +89,7 @@ export default function QuotationBreakdown({
                 </View>
             </View>
 
-            {/* Column headers — hidden on very small screens via numberOfLines/ellipsis is not needed,
-          they wrap naturally since flex basis is generous */}
+         
             <View style={styles.colHeaderRow}>
                 <Text style={[styles.colHeader, styles.colDescription, f.subheading && { fontFamily: f.subheading }]}>
                     DESCRIPTION

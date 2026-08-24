@@ -31,12 +31,7 @@ export default function BottomTab({ navigation, activeTab = "Home" }: Props) {
   const [userType, setUserType] = useState<string | null>(null);
   const [isActive, setIsActive] = useState(false);
   const [loading, setLoading] = useState(true);
-  // "staff" covers two different people: Staffoo's own staff (account id 1)
-  // and a contractor's guards (any other staff account). Only the former
-  // gets the "Available Jobs" tab.
   const [isStaffooStaff, setIsStaffooStaff] = useState(false);
-  // Badge count for the "Available Jobs" tab — shown for staffoo staff and
-  // contractors only.
   const [availableJobsCount, setAvailableJobsCount] = useState(0);
 
   useFocusEffect(
@@ -96,11 +91,6 @@ export default function BottomTab({ navigation, activeTab = "Home" }: Props) {
             setIsActive(userData.is_active === true);
             setIsStaffooStaff(Number(userData.id) === 1);
           }
-
-          // ── Available Jobs badge — only relevant for staffoo staff
-          // (userData.id === 1) and contractors, since they're the only
-          // ones who see the "Available Jobs" tab. Fetch is best-effort:
-          // a failure here just means no badge, never a broken nav.
           const showsAvailableJobsTab =
             userData?.user_type === "contractor" ||
             (userData?.user_type === "staff" && Number(userData?.id) === 1);
@@ -221,16 +211,6 @@ export default function BottomTab({ navigation, activeTab = "Home" }: Props) {
     );
   }
 
-  // ── Per-user-type tab configs ──────────────────────────────────────────
-  // "staff" is two different people: Staffoo's own staff (isStaffooStaff,
-  // account id 1) and a contractor's guards (any other staff account).
-  // "AcceptedJobs" and "StaffShifts" are both registered as hidden-button
-  // Tab.Screens rendering the same StaffShifts component — it reads
-  // route.name to decide which section to show. "Applications" (My Jobs)
-  // is likewise still registered but no longer has a visible tab button
-  // for these three types — it's reached from the "Job History" box on
-  // Profile instead. Customers are the one exception and keep My Jobs
-  // as a bottom tab, unchanged.
   type TabConfig = {
     name: string;
     label: string;
@@ -289,7 +269,7 @@ export default function BottomTab({ navigation, activeTab = "Home" }: Props) {
       ? staffooStaffTabs
       : userType === "staff"
       ? contractorGuardTabs
-      : customerTabs; // fallback while userType is unrecognised
+      : customerTabs;
 
   return (
     <View style={styles.wrapper}>

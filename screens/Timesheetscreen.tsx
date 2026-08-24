@@ -27,17 +27,11 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { getAuthToken } from "../services/authApi";
 
 type Props = { navigation: any };
-// ─────────────────────────────────────────────────────────
-// CONFIG
-// ─────────────────────────────────────────────────────────
+
 const API_BASE = "https://apis-staging.staffoo.com.au/api";
 // const API_BASE = "https://apis.staffoo.com.au/api";
 const GET_TIMESHEET_URL = `${API_BASE}/getTimesheet`;
 const GET_TIMESHEET_DETAILS_URL = `${API_BASE}/get-timesheet-details`;
-
-// ─────────────────────────────────────────────────────────
-// THEME
-// ─────────────────────────────────────────────────────────
 const COLORS = {
   background: "#030508",
   surface: "#07111A",
@@ -60,13 +54,9 @@ const COLORS = {
   heroBg2: "#061014",
 };
 
-// ─────────────────────────────────────────────────────────
-// TYPES
-// ─────────────────────────────────────────────────────────
 type Job = "Regular" | "Public Holiday" | "Saturday" | "Sunday";
 type JobStatus = "confirmed" | "completed" | "pending" | string;
 
-// Row coming back from the getTimesheet summary API (one per staff/guard)
 type TimesheetRow = {
   id: number | null;
   name: string | null;
@@ -82,7 +72,6 @@ type TimesheetRow = {
   shift_collection: number[];
 };
 
-// A single shift, expanded from get-timesheet-details
 type ShiftDetail = {
   shiftId: number;
   site: string;
@@ -104,17 +93,12 @@ type LoggedInUser = {
   user_type?: string | null;
 };
 
-// ─────────────────────────────────────────────────────────
-// HELPERS
-// ─────────────────────────────────────────────────────────
 
-// Australian date format: DD/MM/YYYY
 const formatAU = (date: Date) =>
   `${date.getDate().toString().padStart(2, "0")}/${(date.getMonth() + 1)
     .toString()
     .padStart(2, "0")}/${date.getFullYear()}`;
 
-// API expects MM-DD-YYYY (matches the sample payload: "05-05-2026" / "01-28-2027")
 const formatAPIDate = (date: Date) =>
   `${(date.getMonth() + 1).toString().padStart(2, "0")}-${date
     .getDate()
@@ -124,7 +108,6 @@ const formatAPIDate = (date: Date) =>
 const startOfDay = (d: Date) =>
   new Date(d.getFullYear(), d.getMonth(), d.getDate(), 0, 0, 0, 0);
 
-// Parses "YYYY-MM-DD HH:mm" (or ISO) strings returned by the API into a Date
 const parseAPIDateTime = (value: string | null | undefined): Date => {
   if (!value) return new Date(NaN);
   const normalized = value.includes("T") ? value : value.replace(" ", "T");
@@ -141,7 +124,6 @@ const formatTime24h = (date: Date) => {
   return `${hours}:${minutes}`;
 };
 
-// Start of current week (Monday) → end of current week (Sunday)
 const getCurrentWeekRange = () => {
   const now = new Date();
   const day = now.getDay(); // 0 = Sun, 1 = Mon, … 6 = Sat
@@ -186,9 +168,7 @@ const statusBadgeStyle = (status: JobStatus) => {
   }
 };
 
-// Derive a display "job type" (Regular / Public Holiday / Saturday / Sunday)
-// from the hour buckets returned for a shift's owning timesheet row, or —
-// when unavailable per-shift — fall back to Regular.
+
 const deriveJobFromRow = (row: TimesheetRow): Job => {
   if ((row.ph_morning_hours || 0) > 0 || (row.ph_night_hours || 0) > 0)
     return "Public Holiday";
@@ -202,14 +182,9 @@ const deriveJobFromRow = (row: TimesheetRow): Job => {
   return "Regular";
 };
 
-/**
- * Resolve the currently logged-in user (id + user_type).
- * Tries common AsyncStorage keys used across the app.
- * Adjust the keys if your auth layer stores them differently.
- */
+
 const getLoggedInUser = async (): Promise<LoggedInUser | null> => {
   try {
-    // Try a few common storage shapes
     const rawCandidates = await Promise.all([
       AsyncStorage.getItem("user"),
       AsyncStorage.getItem("userData"),
@@ -260,25 +235,17 @@ const getLoggedInUser = async (): Promise<LoggedInUser | null> => {
   return null;
 };
 
-// ─────────────────────────────────────────────────────────
-// SCREEN
-// ─────────────────────────────────────────────────────────
 export default function TimesheetScreen({ navigation }: Props) {
-  // ── Date range state ──
   const [tempFrom, setTempFrom] = useState<Date>(DEFAULT_FROM);
   const [tempTo, setTempTo] = useState<Date>(DEFAULT_TO);
   const [appliedFrom, setAppliedFrom] = useState<Date | null>(null);
   const [appliedTo, setAppliedTo] = useState<Date | null>(null);
   const [showFromPicker, setShowFromPicker] = useState(false);
   const [showToPicker, setShowToPicker] = useState(false);
-
-  // ── Timesheet summary state ──
   const [hasSearched, setHasSearched] = useState(false);
   const [timesheetLoading, setTimesheetLoading] = useState(false);
   const [timesheetError, setTimesheetError] = useState<string | null>(null);
   const [timesheetRows, setTimesheetRows] = useState<TimesheetRow[]>([]);
-
-  // ── Detailed shift breakdown state ──
   const [selectedStaffId, setSelectedStaffId] = useState<number | null>(null);
   const [staffDetailLoading, setStaffDetailLoading] = useState(false);
   const [staffDetailError, setStaffDetailError] = useState<string | null>(null);

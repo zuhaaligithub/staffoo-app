@@ -13,9 +13,9 @@ import {
   Modal,
   Platform,
   Animated,
-  Dimensions,
+ 
   Linking,
-  FlatList,
+  
 } from "react-native";
 
 import RNFS from "react-native-fs";
@@ -45,7 +45,7 @@ import { pick, types } from "@react-native-documents/picker";
 // const BASE_URL = "https://apis.staffoo.com.au";
 const BASE_URL = "https://apis-staging.staffoo.com.au";
 const GOOGLE_API_KEY = "AIzaSyCS-DB39Kk-Z25C5GWymVGshXIALbjXPGY";
-const BRAND = "#89E7D0";
+const BRAND = "#0A7C6E";
 const BRAND_DARK = "#030508";
 const BRAND_LIGHT = "#030508";
 const ACCENT = "#0047FF";
@@ -62,7 +62,6 @@ type FormUrls = {
   onboarding?: string;
 };
 
-// ── Google Places Suggestion Type ──────────────────────────────────────────
 type PlaceSuggestion = {
   place_id: string;
   description: string;
@@ -75,8 +74,6 @@ const StaffFormsScreen = ({ navigation }: any) => {
   const [fetching, setFetching] = useState(true);
   const tabAnim = useRef(new Animated.Value(0)).current;
   const [tabLoading, setTabLoading] = useState(false);
-
-  // ── TFN Fields ──────────────────────────────────────────────────────────────
   const [tfnNumber, setTfnNumber] = useState("");
   const [tfnTitle, setTfnTitle] = useState("");
   const [tfnFullName, setTfnFullName] = useState("");
@@ -93,8 +90,6 @@ const StaffFormsScreen = ({ navigation }: any) => {
   const [signatureTfn, setSignatureTfn] = useState("");
   const [dateTfn, setDateTfn] = useState("");
   const [dateTfnBackend, setDateTfnBackend] = useState("");
-
-  // ── Google Places Address Suggestions ──────────────────────────────────────
   const [tfnAddressSuggestions, setTfnAddressSuggestions] = useState<
     PlaceSuggestion[]
   >([]);
@@ -104,8 +99,6 @@ const StaffFormsScreen = ({ navigation }: any) => {
   >([]);
   const [showOnboardSuggestions, setShowOnboardSuggestions] = useState(false);
   const addressDebounceRef = useRef<any>(null);
-
-  // ── Super Fields ────────────────────────────────────────────────────────────
   const [superFullName, setSuperFullName] = useState("");
   const [superEmployeeNumber, setSuperEmployeeNumber] = useState("");
   const [fundChoice, setFundChoice] = useState<"own" | "employer">("employer");
@@ -117,8 +110,6 @@ const StaffFormsScreen = ({ navigation }: any) => {
   const [dateSuper, setDateSuper] = useState("");
   const [dateSuperBackend, setDateSuperBackend] = useState("");
   const [formUrls, setFormUrls] = useState<FormUrls>({});
-
-  // ── Onboarding Fields ───────────────────────────────────────────────────────
   const [onboardTfn, setOnboardTfn] = useState("");
   const [onboardSuperFundName, setOnboardSuperFundName] = useState("");
   const [onboardSuperUsi, setOnboardSuperUsi] = useState("");
@@ -127,33 +118,24 @@ const StaffFormsScreen = ({ navigation }: any) => {
   const [onboardMobile, setOnboardMobile] = useState("");
   const [onboardEmail, setOnboardEmail] = useState("");
   const [onboardAddress, setOnboardAddress] = useState("");
-
   const [passportNumber, setPassportNumber] = useState("");
   const [passportCountry, setPassportCountry] = useState("Australia");
-
-  // UI Display Dates
   const [onboardDob, setOnboardDob] = useState("");
   const [passportExpiry, setPassportExpiry] = useState("");
   const [securityExpiry, setSecurityExpiry] = useState("");
   const [firstAidExpiry, setFirstAidExpiry] = useState("");
-
-  // API Backend Dates (YYYY-MM-DD)
   const [onboardDobBackend, setOnboardDobBackend] = useState("");
   const [passportExpiryBackend, setPassportExpiryBackend] = useState("");
   const [securityExpiryBackend, setSecurityExpiryBackend] = useState("");
   const [firstAidExpiryBackend, setFirstAidExpiryBackend] = useState("");
-
   const [workRights, setWorkRights] = useState<string | null>(null);
   const [otherVisaType, setOtherVisaType] = useState("");
   const [residentialStatus, setResidentialStatus] = useState<string | null>(
     null,
   );
-
   const [verifyingSecurity, setVerifyingSecurity] = useState(false);
   const [isSecurityVerified, setIsSecurityVerified] = useState(false);
-
   const [staffState, setStaffState] = useState("");
-
   const [idChecks, setIdChecks] = useState({
     primary_id: false,
     drivers_license: false,
@@ -171,7 +153,6 @@ const StaffFormsScreen = ({ navigation }: any) => {
   const [dateOnboardBackend, setDateOnboardBackend] = useState("");
   const [superConfirmation, setSuperConfirmation] = useState(false);
 
-  // ── Document Upload State ─────────────────────────────────────────────────
   const [passportDoc, setPassportDoc] = useState("");
   const [passportDocName, setPassportDocName] = useState("");
   const [passportDocUploading, setPassportDocUploading] = useState(false);
@@ -185,7 +166,6 @@ const StaffFormsScreen = ({ navigation }: any) => {
   const [firstAidDocName, setFirstAidDocName] = useState("");
   const [firstAidDocUploading, setFirstAidDocUploading] = useState(false);
 
-  // ── UI State ────────────────────────────────────────────────────────────────
   const [showTitleModal, setShowTitleModal] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [selectedDateField, setSelectedDateField] = useState<string | null>(
@@ -200,7 +180,6 @@ const StaffFormsScreen = ({ navigation }: any) => {
   const titleOptions = ["Mr", "Mrs", "Miss"];
   const autoFullName = tfnFullName;
 
-  // ── Google Places Address Fetch ─────────────────────────────────────────────
   const fetchAddressSuggestions = async (
     text: string,
     setSuggestions: (s: PlaceSuggestion[]) => void,
@@ -258,16 +237,7 @@ const StaffFormsScreen = ({ navigation }: any) => {
     }, 400);
   };
 
-  // ═══════════════════════════════════════════════════════════════════════════
-  // NOTE (FIX): getStaffInfo now runs BEFORE fetchFormData on every tab load.
-  // getStaffInfo seeds sensible *defaults* (name/address/dob/idChecks) from the
-  // staff profile; fetchFormData then overrides those defaults with whatever
-  // was actually saved for this specific form (if anything was saved before).
-  // Previously fetchFormData ran first and getStaffInfo ran second, which could
-  // silently stomp on saved data — and idChecks was never defaulted from the
-  // profile at all, so a staff member with verified documents on file would
-  // still see all four 100-point checkboxes unticked on a fresh onboarding form.
-  // ═══════════════════════════════════════════════════════════════════════════
+
   useEffect(() => {
     const loadAllFormData = async () => {
       if (userId && activeStaffTab) {
@@ -306,7 +276,6 @@ const StaffFormsScreen = ({ navigation }: any) => {
     });
   };
 
-  // ── Init + Auto-fill from get-staff-info API ────────────────────────────────
   useEffect(() => {
     const init = async () => {
       try {
@@ -315,8 +284,6 @@ const StaffFormsScreen = ({ navigation }: any) => {
 
         const parsed = JSON.parse(storedUser);
         setUserId(parsed.id);
-
-        // Fetch staff info (contains passport, security, first aid, etc.)
         await getStaffInfo(parsed.id);
       } catch (e) {
         console.log("Profile load error:", e);
@@ -341,32 +308,22 @@ const StaffFormsScreen = ({ navigation }: any) => {
       );
 
       const data = response.data?.data || {};
-
-      // ── Auto-fill name fields ──────────────────────────────────────────────
       if (data.name) {
         const fullName = data.name.trim();
         setTfnFullName(fullName);
         setSuperFullName(fullName);
         setOnboardFullName(fullName);
       }
-
-      // ── Email (disabled — read-only) ───────────────────────────────────────
       if (data.email) {
         setOnboardEmail(data.email);
       }
-
-      // ── Phone ──────────────────────────────────────────────────────────────
       if (data.phone) {
         setOnboardMobile(data.phone);
       }
-
-      // ── Address (editable, with Google Places suggestions) ─────────────────
       if (data.address) {
         setTfnAddress(data.address);
         setOnboardAddress(data.address);
       }
-
-      // ── State (used for online verification payload) ───────────────────────
       const rawState =
         data.state ||
         data.staff?.state ||
@@ -376,8 +333,6 @@ const StaffFormsScreen = ({ navigation }: any) => {
       if (rawState) {
         setStaffState(rawState);
       }
-
-      // ── Date of Birth ──────────────────────────────────────────────────────
       const dobRaw = data.date_of_birth;
       if (dobRaw) {
         const formattedDob = formatDateToDDMMYYYY(dobRaw);
@@ -386,8 +341,6 @@ const StaffFormsScreen = ({ navigation }: any) => {
         setOnboardDob(formattedDob);
         setOnboardDobBackend(dobRaw);
       }
-
-      // ── Passport ──────────────────────────────────────────────────────────
       if (data.passport_no) {
         setPassportNumber(data.passport_no);
       }
@@ -415,8 +368,6 @@ const StaffFormsScreen = ({ navigation }: any) => {
         setSecurityLicenseDoc(data.security_license_file);
         setSecurityLicenseDocName(data.security_license_file);
       }
-
-      // ── First Aid ─────────────────────────────────────────────────────────
       if (data.first_aid_no) {
         setFirstAidNumber(data.first_aid_no);
       }
@@ -428,7 +379,6 @@ const StaffFormsScreen = ({ navigation }: any) => {
         setFirstAidDoc(data.first_aid_file);
         setFirstAidDocName(data.first_aid_file);
       }
-
       setIdChecks((prev) => ({
         primary_id:
           !!(data.passport_checkbox || data.passport_no) || prev.primary_id,
@@ -438,9 +388,7 @@ const StaffFormsScreen = ({ navigation }: any) => {
         security_license:
           !!(data.security_license_checkbox || data.security_license_no) ||
           prev.security_license,
-        // No dedicated "Medicare / utility bill" flag comes back from
-        // get-staff-info, so this stays whatever the user has already set
-        // (or false by default) — it is not auto-derived.
+      
         medicare_or_utility: prev.medicare_or_utility,
       }));
     } catch (error) {
@@ -519,10 +467,8 @@ const StaffFormsScreen = ({ navigation }: any) => {
       return;
     }
 
-    // ── STRICT: State is required for online verification ──────────────────
     let userState = staffState;
     if (!userState) {
-      // Attempt a fresh fetch in case staff info wasn't loaded yet
       try {
         const uid = userId || (await AsyncStorage.getItem("@user_id"));
         if (uid) {
@@ -735,7 +681,6 @@ const StaffFormsScreen = ({ navigation }: any) => {
     (await AsyncStorage.getItem("auth_token")) ||
     (await AsyncStorage.getItem("@token"));
 
-  // ── Document Upload Helper ────────────────────────────────────────────────
   const uploadDocumentFile = async (
     setUploading: (v: boolean) => void,
     setFileName: (v: string) => void,
@@ -803,9 +748,7 @@ const StaffFormsScreen = ({ navigation }: any) => {
     }
   };
 
-  // ═══════════════════════════════════════════════════════════════════════════
-  // PDF GENERATORS
-  // ═══════════════════════════════════════════════════════════════════════════
+
   const generateTfnPdf = async (data: Record<string, any>): Promise<string> => {
     const formatAUDate = (dateStr?: string): string => {
       if (!dateStr) return "__/__/____";
@@ -1399,9 +1342,7 @@ const StaffFormsScreen = ({ navigation }: any) => {
     }
   };
 
-  // ═══════════════════════════════════════════════════════════════════════════
-  // SAVE / FETCH FLOWS
-  // ═══════════════════════════════════════════════════════════════════════════
+  
   const openPdf = async (url?: string) => {
     if (!url) return;
     try {
@@ -1470,11 +1411,9 @@ const StaffFormsScreen = ({ navigation }: any) => {
         return;
       }
 
-      // ================= TFN =================
       if (activeStaffTab === "tfn") {
         setTfnNumber(formData.tfn || "");
         setTfnTitle(formData.title || "");
-        // Only set name from form data if it exists (staff info autofill takes priority on first load)
         if (formData.full_name) setTfnFullName(formData.full_name);
         setTfnPrevName(formData.previous_name || "");
         if (formData.address) setTfnAddress(formData.address);
@@ -1494,7 +1433,6 @@ const StaffFormsScreen = ({ navigation }: any) => {
         }
       }
 
-      // ================= SUPER =================
       else if (activeStaffTab === "super") {
         if (formData.full_name) setSuperFullName(formData.full_name);
         setSuperEmployeeNumber(formData.employee_number || "");
@@ -1507,14 +1445,12 @@ const StaffFormsScreen = ({ navigation }: any) => {
         setSuperConfirmation(
           formData.super_confirm === 1 || formData.super_confirm === true,
         );
-
         if (formData.signed_date) {
           setDateSuperBackend(formData.signed_date);
           setDateSuper(formatDateToDDMMYYYY(formData.signed_date));
         }
       }
 
-      // ================= ONBOARDING =================
       else if (activeStaffTab === "onboarding") {
         setOnboardTfn(formData.tfn || "");
         setOnboardSuperFundName(formData.super_fund || "");
@@ -1542,11 +1478,6 @@ const StaffFormsScreen = ({ navigation }: any) => {
           }
         }
 
-        // ── FIX: only override idChecks when the saved record actually has
-        // an id_checks value. Previously this always ran with `formData.id_checks
-        // || {}`, which reset every checkbox to false whenever an onboarding
-        // record existed but had no id_checks saved yet — wiping out the
-        // profile-derived defaults set by getStaffInfo(). ──────────────────────
         if (formData.id_checks) {
           let checks = formData.id_checks;
           if (typeof checks === "string") {
@@ -1564,18 +1495,13 @@ const StaffFormsScreen = ({ navigation }: any) => {
             medicare_or_utility: !!checks?.medicare_or_utility,
           });
         }
-        // else: leave idChecks as whatever getStaffInfo() already defaulted it to.
-
         setResidentialStatus(formData.residential_status || "");
         setBankName(formData.bank_name || "");
         setBsb(formData.bsb || "");
         setAccountNumber(formData.account_number || "");
-
         const savedLicence = formData.security_license || "";
         const savedSecurityExpiry = formData.security_license_expiry || "";
-
         setSecurityLicence(savedLicence);
-
         if (savedSecurityExpiry) {
           setSecurityExpiryBackend(savedSecurityExpiry);
           setSecurityExpiry(formatDateToDDMMYYYY(savedSecurityExpiry));
@@ -1642,9 +1568,6 @@ const StaffFormsScreen = ({ navigation }: any) => {
     setIsSecurityVerified(false);
     setSecurityExpiry("");
     setSecurityExpiryBackend("");
-
-    // ── FIX: also reset the 100-point ID checks so a stale value from a
-    // previous tab/user doesn't linger while the fresh defaults load. ───────
     setIdChecks({
       primary_id: false,
       drivers_license: false,
@@ -1888,9 +1811,7 @@ const StaffFormsScreen = ({ navigation }: any) => {
     return false;
   };
 
-  // ═══════════════════════════════════════════════════════════════════════════
-  // RENDER
-  // ═══════════════════════════════════════════════════════════════════════════
+
   if (fetching) {
     return (
       <SafeAreaView style={s.container}>
@@ -1944,7 +1865,6 @@ const StaffFormsScreen = ({ navigation }: any) => {
         nestedScrollEnabled={true} // ← THIS FIXES THE ERROR
         showsVerticalScrollIndicator={true}
       >
-        {/* ── TFN TAB ── */}
         {activeStaffTab === "tfn" && (
           <View style={s.card}>
             <SectionLabel>Tax File Number</SectionLabel>
@@ -2958,9 +2878,7 @@ const DocUploadField = ({
   </View>
 );
 
-// ═══════════════════════════════════════════════════════════════════════════
-// STYLES
-// ═══════════════════════════════════════════════════════════════════════════
+
 const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#030508", paddingTop: 25 },
   fieldWrapper: { marginBottom: 16 },
@@ -3025,8 +2943,8 @@ const s = StyleSheet.create({
     backgroundColor: CARD_BG,
     borderRadius: 16,
     padding: 16,
-    borderWidth: 1,
-    borderColor: "rgba(137, 231, 208, 0.1)",
+    borderWidth: 2,
+    borderColor: "rgba(31, 237, 186, 0.1)",
   },
   sectionLabelWrap: {
     marginTop: 16,
@@ -3126,7 +3044,7 @@ const s = StyleSheet.create({
     alignItems: "center",
     marginTop: 20,
   },
-  saveBtnText: { color: BRAND_DARK, fontSize: 15, fontWeight: "700" },
+  saveBtnText: { color: '#fff', fontSize: 15, fontWeight: "700" },
   downloadBtn: {
     flexDirection: "row",
     backgroundColor: "#fff",
@@ -3193,15 +3111,20 @@ const s = StyleSheet.create({
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: "rgba(0, 31, 63, 0.6)",
+    backgroundColor: "rgba(0, 0, 0, 0.6)",
     justifyContent: "flex-end",
   },
   modalSheet: {
     backgroundColor: CARD_BG,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
-    padding: 16,
+     borderBottomLeftRadius: 20,
+    borderBottomRightRadius: 20,
+    padding: 12,
+    borderWidth:2,
+     borderColor: "#748397",
     paddingBottom: 30,
+   
   },
   modalHandle: {
     width: 40,
@@ -3215,7 +3138,7 @@ const s = StyleSheet.create({
     color: "#fff",
     fontSize: 16,
     fontWeight: "700",
-    marginBottom: 12,
+    marginBottom: 10,
     textAlign: "center",
   },
   modalOption: {
@@ -3223,11 +3146,13 @@ const s = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     paddingVertical: 12,
+     paddingHorizontal:15,
     borderBottomWidth: 1,
     borderBottomColor: "rgba(255,255,255,0.05)",
+    backgroundColor: "transparent",
   },
   modalOptionActive: { opacity: 0.8 },
-  modalOptionText: { color: "#94A3B8", fontSize: 15 },
+  modalOptionText: { color: "#fff", fontSize: 15 },
   modalOptionTextActive: { color: BRAND, fontWeight: "600" },
   sigCancelBtn: { flexDirection: "row", alignItems: "center", gap: 4 },
   sigCancelText: { color: ERROR, fontSize: 15, fontWeight: "600" },
@@ -3256,7 +3181,7 @@ const s = StyleSheet.create({
     elevation: 8,
   },
   tabLabel: { fontSize: 10, fontWeight: "700", color: "#94A3B8", marginTop: 4 },
-  tabLabelActive: { color: BRAND_DARK, fontWeight: "700" },
+  tabLabelActive: { color: '#fff', fontWeight: "700" },
   docUploadRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -3273,7 +3198,7 @@ const s = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  docPickBtnText: { color: BRAND_DARK, fontSize: 13, fontWeight: "700" },
+  docPickBtnText: { color: '#fff', fontSize: 13, fontWeight: "700" },
   docFileName: { flex: 1, color: "#fff", fontSize: 12, paddingHorizontal: 10 },
   docClearBtn: { padding: 10 },
   docViewBtn: {
@@ -3307,14 +3232,14 @@ const s = StyleSheet.create({
     color: "#fff",
   },
   secVerifyBtn: {
-    backgroundColor: "#89E7D0",
+    backgroundColor: "#0A7C6E",
     paddingHorizontal: 18,
     justifyContent: "center",
     alignItems: "center",
     minWidth: 80,
     minHeight: 44,
   },
-  secVerifyBtnText: { color: "#030508", fontWeight: "700", fontSize: 12 },
+  secVerifyBtnText: { color: "#fff", fontWeight: "700", fontSize: 12 },
   secVerifiedBadge: {
     flexDirection: "row",
     alignItems: "center",

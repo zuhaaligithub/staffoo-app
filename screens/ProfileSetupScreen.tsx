@@ -117,7 +117,6 @@ const STATIC_COUNTRIES = [
 
 type Props = { navigation: any };
 
-// ─── Date helpers ──────────────────────────────────────────────────────────────
 const australianToApiDate = (dateStr: string): string => {
   if (!dateStr) return "";
   const [day, month, year] = dateStr.split("/");
@@ -153,7 +152,6 @@ const formatACN = (value: string = "") => {
   );
 };
 
-// ─── InputField ────────────────────────────────────────────────────────────────
 const InputField = ({
   icon: Icon,
   label,
@@ -192,7 +190,6 @@ const InputField = ({
   </View>
 );
 
-// ─── Main Component ────────────────────────────────────────────────────────────
 export default function ProfileSetupScreen({ navigation }: Props) {
   const [fullName, setFullName] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
@@ -203,7 +200,6 @@ export default function ProfileSetupScreen({ navigation }: Props) {
   const [residentialStatus, setResidentialStatus] = useState<string | null>(
     null,
   );
-
   const [isStaffooStaff, setIsStaffooStaff] = useState(false);
   const [securityLicenseNo, setSecurityLicenseNo] = useState("");
   const [scrollY, setScrollY] = useState(0);
@@ -225,28 +221,18 @@ export default function ProfileSetupScreen({ navigation }: Props) {
   const [profileImage, setProfileImage] = useState<string | null>(null);
   const [imageFile, setImageFile] = useState<any>(null);
   const [addressLayout, setAddressLayout] = useState({ y: 0, height: 0 });
-  // KeyboardAwareScrollView's ref type isn't exported cleanly, `any` is fine here.
   const scrollRef = useRef<any>(null);
   const addressInputRef = useRef<TextInput>(null);
   const addressFieldWrapperRef = useRef<View>(null);
-
-  // ─── Contractor flow: Profile → Documents → My Rates ─────────────────────
-  // Tracks whether the contractor has changed anything since the profile
-  // finished loading, so the primary button can read "Next" instead of
-  // "Save". Staff behaviour is completely unaffected by this.
   const [hasChanges, setHasChanges] = useState(false);
   const [hasTextChanges, setHasTextChanges] = useState(false);
   const [hasStateChanges, setHasStateChanges] = useState(false);
   const initialSnapshotRef = useRef<string | null>(null);
   const initialTextSnapshotRef = useRef<string | null>(null);
   const initialStateSnapshotRef = useRef<string | null>(null);
-
-  // ─── Email OTP state ─────────────────────────────────────────────────────────
   const [otp, setOtp] = useState<string>("");
   const [otpModalVisible, setOtpModalVisible] = useState(false);
   const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
-
-  // ─── Phone verification state ─────────────────────────────────────────────────
   const [phoneVerified, setPhoneVerified] = useState<boolean>(false);
   const [phoneVerifyModalVisible, setPhoneVerifyModalVisible] = useState(false);
   const [phoneVerifyStep, setPhoneVerifyStep] = useState<
@@ -257,7 +243,6 @@ export default function ProfileSetupScreen({ navigation }: Props) {
   const [isSendingOtp, setIsSendingOtp] = useState(false);
   const [isVerifyingPhone, setIsVerifyingPhone] = useState(false);
   const [phoneOtpError, setPhoneOtpError] = useState("");
-
   const [showCountryModal, setShowCountryModal] = useState(false);
   const [countrySearch, setCountrySearch] = useState("");
   const [countries] = useState(STATIC_COUNTRIES);
@@ -271,7 +256,6 @@ export default function ProfileSetupScreen({ navigation }: Props) {
   ];
   const [selectedStates, setSelectedStates] = useState<string[]>([]);
   const [showStatesModal, setShowStatesModal] = useState(false);
-
   const countryCodeToNameFallback: Record<string, string> = {
     PAK: "Pakistan",
     AUS: "Australia",
@@ -286,8 +270,6 @@ export default function ProfileSetupScreen({ navigation }: Props) {
     US: "United States",
     GB: "United Kingdom",
   };
-
-  // Add this mapping object near stateAbbrToFull
   const docCategoryToFullState: Record<string, string> = {
     contractor_document: "Victoria",
     nsw_document: "New South Wales",
@@ -338,9 +320,6 @@ export default function ProfileSetupScreen({ navigation }: Props) {
     return stateAbbrToFull[trimmed] || trimmed;
   };
 
-  // Reverse of stateAbbrToFull, built once: "Victoria" -> "VIC". Falls back
-  // to whatever value was passed in (e.g. already an abbreviation, or a
-  // state name Google returned that isn't in our map).
   const fullStateToAbbr: Record<string, string> = Object.fromEntries(
     Object.entries(stateAbbrToFull)
       .filter(([abbr]) => abbr === abbr.toUpperCase())
@@ -371,7 +350,6 @@ export default function ProfileSetupScreen({ navigation }: Props) {
     { label: "Visa Subclass 485", value: "visa_485" },
   ];
 
-  // ─── Snapshot helper (contractor Save vs Next detection) ─────────────────
   const buildProfileSnapshot = () =>
     JSON.stringify({
       fullName: fullName.trim(),
@@ -394,14 +372,11 @@ export default function ProfileSetupScreen({ navigation }: Props) {
       originCountry: originCountry.trim(),
     });
 
-  // ─── Capture initial snapshot once profile data has finished loading.
-  // Use requestAnimationFrame to ensure all state updates from the
-  // initialization flow have flushed before taking the snapshot.
+  
   useEffect(() => {
     if (!fetching && initialSnapshotRef.current === null) {
       requestAnimationFrame(() => {
         initialSnapshotRef.current = buildProfileSnapshot();
-        // capture text-only and states-only snapshots for granular comparison
         initialTextSnapshotRef.current = JSON.stringify({
           fullName: fullName.trim(),
           companyName: companyName.trim(),
@@ -418,11 +393,9 @@ export default function ProfileSetupScreen({ navigation }: Props) {
     }
   }, [fetching]);
 
-  // ─── Recompute changes accurately for ALL fields (text + states) ─────────
   useEffect(() => {
     if (fetching || initialSnapshotRef.current === null) return;
     const current = buildProfileSnapshot();
-    // compute text-only snapshot
     const currentText = JSON.stringify({
       fullName: fullName.trim(),
       companyName: companyName.trim(),
@@ -463,10 +436,7 @@ export default function ProfileSetupScreen({ navigation }: Props) {
     fetching,
   ]);
 
-  // ─── Operating states ─────────────────────────────────────────────────────
-  // Selection is kept purely local (no per-checkbox API call). The full
-  // list of selected states is sent as short-form codes (e.g. "vic", "qld")
-  // under `states_allowed` when the whole profile form is saved.
+
   const toggleState = (state: string) => {
     setSelectedStates((prev) =>
       prev.includes(state)
@@ -475,7 +445,6 @@ export default function ProfileSetupScreen({ navigation }: Props) {
     );
   };
 
-  // ─── Phone handler ──────────────────────────────────────────────────────────
   const handlePhoneChange = (text: string) => {
     let cleaned = text.replace(/[^\d+]/g, "");
     if (cleaned.includes("+")) {
@@ -506,7 +475,6 @@ export default function ProfileSetupScreen({ navigation }: Props) {
     setPhoneNumber(cleaned);
   };
 
-  // ─── Load profile ───────────────────────────────────────────────────────────
   useEffect(() => {
     const initializeProfile = async () => {
       try {
@@ -515,7 +483,6 @@ export default function ProfileSetupScreen({ navigation }: Props) {
           navigation.replace("Login");
           return;
         }
-
         const parsedUser = JSON.parse(storedUserRaw);
         const uid = parsedUser?.id;
         setUserId(uid);
@@ -541,8 +508,6 @@ export default function ProfileSetupScreen({ navigation }: Props) {
         setGmail(profile?.email ?? "");
         setOriginalGmail(profile?.email ?? "");
 
-        // ── Phone verified status ──
-        // phone_verified: 1 = verified, 0 = not verified
         const isPhoneVerified =
           profile?.phone_verified === 1 || profile?.phone_verified === "1";
         setPhoneVerified(isPhoneVerified);
@@ -618,6 +583,12 @@ export default function ProfileSetupScreen({ navigation }: Props) {
           setAcn(formatACN(profile?.contractor?.acn ?? ""));
           setAbn(formatABN(profile?.contractor?.abn ?? ""));
 
+          setSecurityLicenseNo(
+    profile?.contractor?.security_license_no ??
+      profile?.security_license_no ??
+      "",
+  );
+
           // 1. Check for documents array in response
           const documents = profile?.documents || [];
 
@@ -635,7 +606,6 @@ export default function ProfileSetupScreen({ navigation }: Props) {
             );
             setSelectedStates(derivedStates);
           } else {
-            // Fallback to states_allowed if documents array is empty
             const existingStates: string[] =
               profile?.contractor?.states_allowed ||
               profile?.states_allowed ||
@@ -681,15 +651,10 @@ export default function ProfileSetupScreen({ navigation }: Props) {
     initializeProfile();
   }, [navigation]);
 
-  // (Initial snapshot handled above.)
-
-  // ─── Recompute whether anything has changed compared to the initial
-  // snapshot. A changed profile picture also counts as a change. ──────────
   useEffect(() => {
     if (fetching || initialSnapshotRef.current === null) return;
     const current = buildProfileSnapshot();
     setHasChanges(current !== initialSnapshotRef.current || !!imageFile);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     fullName,
     phoneNumber,
@@ -728,10 +693,6 @@ export default function ProfileSetupScreen({ navigation }: Props) {
       const json = await res.json();
       setPredictions(json.predictions || []);
       setShowSuggestions(true);
-
-      // The suggestions list just grew below the address field — re-run the
-      // keyboard-aware scroll so the field + dropdown stay above the keyboard
-      // instead of the newly-added height pushing them back down under it.
       requestAnimationFrame(() => {
         scrollRef.current?.scrollToFocusedInput?.(addressInputRef.current);
       });
@@ -783,7 +744,6 @@ export default function ProfileSetupScreen({ navigation }: Props) {
     }
   };
 
-  // ─── Validation ─────────────────────────────────────────────────────────────
   const validateForm = () => {
     if (!fullName.trim()) {
       Toast.show({ type: "error", text1: "Full Name is required" });
@@ -823,9 +783,6 @@ export default function ProfileSetupScreen({ navigation }: Props) {
         return false;
       }
 
-      // ACN/ABN are optional, but if the person started typing one, make
-      // sure it's actually complete before letting them save a half-typed
-      // number (9 digits for ACN, 11 for ABN — dashes don't count).
       const acnDigits = acn.replace(/\D/g, "");
       if (acnDigits.length > 0 && acnDigits.length !== 9) {
         Toast.show({
@@ -884,7 +841,6 @@ export default function ProfileSetupScreen({ navigation }: Props) {
     return true;
   };
 
-  // ─── Image picker ───────────────────────────────────────────────────────────
   const pickImage = async () => {
     const result = await launchImageLibrary({
       mediaType: "photo",
@@ -910,7 +866,6 @@ export default function ProfileSetupScreen({ navigation }: Props) {
     }
   };
 
-  // ─── Phone Verification Handlers ─────────────────────────────────────────────
   const openPhoneVerifyModal = () => {
     setPhoneModalNumber(phoneNumber);
     setPhoneOtp("");
@@ -919,25 +874,19 @@ export default function ProfileSetupScreen({ navigation }: Props) {
     setPhoneVerifyModalVisible(true);
   };
 
-  // ─── Send OTP ─────────────────────────────────────────────────────────────
   const handleSendOtp = async () => {
     if (!phoneModalNumber.trim()) {
       Toast.show({ type: "error", text1: "Please enter a phone number" });
       return;
     }
-
     const cleanPhone = phoneModalNumber.replace(/[^\d]/g, "");
-
     setIsSendingOtp(true);
-
     try {
       const token = await getAuthToken();
-
       const payload = {
         phone: cleanPhone,
         id: userId,
       };
-
       const response = await fetch(`${BASE_URL}/auth/resend-otp`, {
         method: "POST",
         headers: {
@@ -984,18 +933,14 @@ export default function ProfileSetupScreen({ navigation }: Props) {
     }
   };
 
-  // ─── Verify Phone ─────────────────────────────────────────────────────────
   const handleVerifyPhone = async () => {
     if (phoneOtp.length !== 6) {
       setPhoneOtpError("Please enter a valid 6-digit OTP.");
       return;
     }
-
     const cleanPhone = phoneModalNumber.replace(/[^\d]/g, "");
-
     setIsVerifyingPhone(true);
     setPhoneOtpError("");
-
     try {
       const token = await getAuthToken();
 
@@ -1004,7 +949,6 @@ export default function ProfileSetupScreen({ navigation }: Props) {
         otp: phoneOtp.trim(),
         phone: cleanPhone,
       };
-
       const response = await fetch(`${BASE_URL}/auth/verify-phone`, {
         method: "POST",
         headers: {
@@ -1062,14 +1006,11 @@ export default function ProfileSetupScreen({ navigation }: Props) {
     const endpoint = `${BASE_URL}/user-update/${userId}`;
     const formData = new FormData();
 
-    // Basic fields
     if (payload.name !== undefined) formData.append("name", payload.name);
     if (payload.phone !== undefined) formData.append("phone", payload.phone);
     if (payload.email !== undefined) formData.append("email", payload.email);
     if (payload.email_otp !== undefined)
       formData.append("email_otp", payload.email_otp);
-
-    // Staff fields
     if (payload.gender !== undefined && payload.gender !== null) {
       formData.append("gender", payload.gender);
     }
@@ -1088,8 +1029,6 @@ export default function ProfileSetupScreen({ navigation }: Props) {
     if (payload.origin_country !== undefined) {
       formData.append("origin_country", payload.origin_country);
     }
-
-    // Address
     if (payload.address !== undefined)
       formData.append("address", payload.address);
     if (payload.city !== undefined) formData.append("city", payload.city);
@@ -1098,16 +1037,11 @@ export default function ProfileSetupScreen({ navigation }: Props) {
       formData.append("country", payload.country);
     if (payload.coordinates !== undefined)
       formData.append("coordinates", payload.coordinates);
-
-    // Contractor
     if (payload.company_name !== undefined)
       formData.append("company_name", payload.company_name);
-
     if (payload.registration_number !== undefined) {
       formData.append("registration_number", payload.registration_number ?? "");
     }
-
-    // ACN / ABN → digits only (backend often validates length on digits)
     if (payload.acn !== undefined && payload.acn !== null) {
       formData.append("acn", String(payload.acn).replace(/\D/g, ""));
     }
@@ -1115,8 +1049,6 @@ export default function ProfileSetupScreen({ navigation }: Props) {
       formData.append("abn", String(payload.abn).replace(/\D/g, ""));
     }
 
-    // states_allowed — try the format Laravel usually accepts for arrays
-    // Backend requires a valid JSON string for states_allowed
     if (Array.isArray(payload.states_allowed)) {
       formData.append(
         "states_allowed",
@@ -1126,7 +1058,6 @@ export default function ProfileSetupScreen({ navigation }: Props) {
       );
     }
 
-    // Profile image
     if (payload.profile_image) {
       formData.append("profile_image", {
         uri: payload.profile_image.uri,
@@ -1153,7 +1084,6 @@ export default function ProfileSetupScreen({ navigation }: Props) {
       headers: {
         Authorization: `Bearer ${token}`,
         Accept: "application/json",
-        // Do NOT set Content-Type — RN sets multipart boundary automatically
       },
       body: formData,
     });
@@ -1172,7 +1102,6 @@ export default function ProfileSetupScreen({ navigation }: Props) {
     console.log("[UPDATE PROFILE] ← Success:", data);
     return data;
   };
-  // ─── Save / Continue ────────────────────────────────────────────────────────
   const handleContinue = async () => {
     Keyboard.dismiss();
     if (!validateForm() || !userId) return;
@@ -1191,7 +1120,6 @@ export default function ProfileSetupScreen({ navigation }: Props) {
         coordinates: coordinates ? `${coordinates.lat},${coordinates.lng}` : "",
       };
 
-      // STAFF FIELDS
       if (userType === "staff") {
         payload.gender = gender;
         payload.security_license_no = securityLicenseNo?.trim() || "";
@@ -1202,19 +1130,18 @@ export default function ProfileSetupScreen({ navigation }: Props) {
           payload.origin_country = originCountry?.trim() || "";
       }
 
-      // CONTRACTOR FIELDS
       if (userType === "contractor") {
         payload.company_name = companyName.trim();
         payload.registration_number = registrationNumber.trim();
         payload.acn = acn?.trim() || null;
         payload.abn = abn?.trim() || null;
+        payload.security_license_no = securityLicenseNo?.trim() || "";
         // Short-form codes, e.g. ["vic", "qld", "act"]
         payload.states_allowed = selectedStates.map((s) =>
           getStateAbbr(s).toLowerCase(),
         );
       }
 
-      // PROFILE IMAGE
       if (imageFile) {
         payload.profile_image = imageFile;
       }
@@ -1231,14 +1158,7 @@ export default function ProfileSetupScreen({ navigation }: Props) {
         type: "success",
         text1: "Profile Updated Successfully",
       });
-
       setOriginalGmail(gmail.trim().toLowerCase());
-
-      // ─── Contractor flow: Profile → Documents → My Rates ────────────────
-      // After saving, contractors who changed operating states go to Documents
-      // so they can upload supporting files. Contractors who changed only
-      // text fields should be returned to the app home. Staff keep the
-      // original behaviour of returning to the Profile tab.
       if (userType === "contractor") {
         if (hasStateChanges) {
           navigation.navigate("Documents");
@@ -1268,9 +1188,7 @@ export default function ProfileSetupScreen({ navigation }: Props) {
     setCoordinates(null);
   };
 
-  // ─── Scroll the Address field into view above the keyboard ──────────────────
-  // KeyboardAwareScrollView already does this automatically on focus, but we
-  // expose this so it can be called again if needed (e.g. after layout shifts).
+ 
   const scrollToAddressField = () => {
     requestAnimationFrame(() => {
       scrollRef.current?.scrollToFocusedInput?.(addressInputRef.current);
@@ -1310,10 +1228,6 @@ export default function ProfileSetupScreen({ navigation }: Props) {
     }
   };
 
-  // ─── Contractor flow: Save vs Next label ─────────────────────────────────
-  // Contractors: "Save" until they change something, then "Next" — either
-  // way, tapping it saves the profile and moves on to Documents. Staff
-  // always see "Save", exactly as before.
   const isContractorFlow = userType === "contractor";
   const continueButtonLabel = isContractorFlow
     ? hasStateChanges
@@ -1321,7 +1235,6 @@ export default function ProfileSetupScreen({ navigation }: Props) {
       : "Save"
     : "Save";
 
-  // ─── Loading state ──────────────────────────────────────────────────────────
   if (fetching) {
     return (
       <SafeAreaView style={styles.container}>
@@ -1334,7 +1247,6 @@ export default function ProfileSetupScreen({ navigation }: Props) {
     );
   }
 
-  // ─── Render ─────────────────────────────────────────────────────────────────
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#fff" />
@@ -1353,7 +1265,6 @@ export default function ProfileSetupScreen({ navigation }: Props) {
         extraHeight={150}
         keyboardOpeningTime={0}
       >
-        {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity onPress={() => navigation.goBack()}>
             <ArrowLeft size={24} color="#fff" />
@@ -1362,7 +1273,6 @@ export default function ProfileSetupScreen({ navigation }: Props) {
           <View style={{ width: 24 }} />
         </View>
 
-        {/* Profile image */}
         <TouchableOpacity onPress={pickImage} style={styles.imageContainer}>
           {profileImage ? (
             <Image source={{ uri: profileImage }} style={styles.profileImage} />
@@ -1377,7 +1287,6 @@ export default function ProfileSetupScreen({ navigation }: Props) {
           </View>
         </TouchableOpacity>
 
-        {/* Full Name */}
         <InputField
           icon={User}
           label={
@@ -1393,7 +1302,6 @@ export default function ProfileSetupScreen({ navigation }: Props) {
           placeholder="Enter your full name"
         />
 
-        {/* Phone Number - Single Field Design */}
         <View style={styles.field}>
           <Text style={styles.label}>
             Phone Number <Text style={styles.required}>*</Text>
@@ -1465,7 +1373,6 @@ export default function ProfileSetupScreen({ navigation }: Props) {
           </LinearGradient>
         </View>
 
-        {/* ── Contractor-specific fields ── */}
         {userType === "contractor" && (
           <>
             <InputField
@@ -1499,6 +1406,25 @@ export default function ProfileSetupScreen({ navigation }: Props) {
               maxLength={14}
             />
             <View style={styles.field}>
+      <Text style={styles.label}>Security Master License</Text>
+      <LinearGradient
+        colors={["#171d30", "#171d30"]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.inputContainer}
+      >
+        <FileText size={20} color="#fff" style={styles.inputIcon} />
+        <TextInput
+          style={styles.input}
+          value={securityLicenseNo}
+          onChangeText={setSecurityLicenseNo}
+          placeholder="Enter Security Master License"
+          placeholderTextColor="rgba(255,255,255,0.6)"
+          autoCapitalize="characters"
+        />
+      </LinearGradient>
+    </View>
+            <View style={styles.field}>
               <Text style={styles.label}>Operating States</Text>
 
               <TouchableOpacity
@@ -1527,7 +1453,6 @@ export default function ProfileSetupScreen({ navigation }: Props) {
                 </LinearGradient>
               </TouchableOpacity>
 
-              {/* Selected states shown as chips, 3 per row */}
               {selectedStates.length > 0 && (
                 <View style={styles.chipsWrap}>
                   {selectedStates.map((s) => (
@@ -1545,7 +1470,6 @@ export default function ProfileSetupScreen({ navigation }: Props) {
           </>
         )}
 
-        {/* Country of Birth — staff only */}
         {userType === "staff" && isStaffooStaff && (
           <TouchableOpacity
             style={styles.field}
@@ -1574,10 +1498,8 @@ export default function ProfileSetupScreen({ navigation }: Props) {
           </TouchableOpacity>
         )}
 
-        {/* ── Staff-specific fields ── */}
         {userType === "staff" && (
           <>
-            {/* Gender dropdown */}
             <TouchableOpacity
               style={styles.field}
               onPress={() => setShowGenderModal(true)}
@@ -1606,7 +1528,6 @@ export default function ProfileSetupScreen({ navigation }: Props) {
               </LinearGradient>
             </TouchableOpacity>
 
-            {/* Security License */}
             <View style={styles.field}>
               <Text style={styles.label}>
                 Security Licence Number <Text style={styles.required}>*</Text>
@@ -1629,7 +1550,6 @@ export default function ProfileSetupScreen({ navigation }: Props) {
               </LinearGradient>
             </View>
 
-            {/* Date of birth */}
             {isStaffooStaff && (
               <TouchableOpacity
                 style={styles.field}
@@ -2058,12 +1978,9 @@ export default function ProfileSetupScreen({ navigation }: Props) {
           <Text style={styles.deleteButtonText}>Delete Profile</Text>
         </TouchableOpacity>
 
-        {/* Extra bottom spacer so the last fields can still scroll clear
-              of the keyboard on smaller devices. */}
         <View style={{ height: 120 }} />
       </KeyboardAwareScrollView>
 
-      {/* ─── Phone Verify Modal ────────────────────────────────────────────────── */}
       <Modal
         animationType="slide"
         transparent={true}
@@ -2260,7 +2177,6 @@ export default function ProfileSetupScreen({ navigation }: Props) {
   );
 }
 
-// ─── Styles ────────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,

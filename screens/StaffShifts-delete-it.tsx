@@ -100,7 +100,6 @@ type AvailableJob = {
 
 type Props = { navigation: any; route: any };
 
-// ─── Helpers ───────────────────────────────────────────────────────────────────
 const formatDate = (val: any): string => {
   if (!val) return "—";
   const clean = String(val).split("T")[0].split(" ")[0];
@@ -152,7 +151,6 @@ const shapeJobForDetails = (raw: any) => {
   };
 };
 
-// Stable key used to dedupe / identify a notification payload, regardless of shape
 const getNotifKey = (job: any): string => {
   if (!job) return "";
   try {
@@ -184,20 +182,14 @@ const parseDocumentList = (docList: any): string[] => {
 
 const extractJobData = (notif: any): any => {
   if (!notif) return {};
-
-  // 1. Direct match (most common for Available Jobs)
   if (notif?.id && (notif.start_time || notif.start || notif.end_time)) {
     return notif;
   }
-
-  // 2. Common notification wrappers
   if (notif?.additionalData?.roster?.roster?.id)
     return notif.additionalData.roster.roster;
   if (notif?.additionalData?.roster?.id) return notif.additionalData.roster;
   if (notif?.roster?.roster?.id) return notif.roster.roster;
   if (notif?.roster?.id) return notif.roster;
-
-  // 3. Deep search with priority to job-like objects
   const deepSearch = (obj: any, depth = 0): any => {
     if (!obj || typeof obj !== "object" || depth > 6) return null;
 
@@ -223,11 +215,6 @@ const extractJobData = (notif: any): any => {
 
 const JOBS_PAGE_SIZE = 50;
 
-// ─── Accept Job Bottom Sheet Component ────────────────────────────────────────
-// Used for the "Available Jobs" tab. The API call happens *inside* this sheet —
-// on success the sheet closes itself (via the parent's onAccept handler).
-// NOTE: Staff assignment is no longer done here — contractors accept the job
-// directly and assign it to a staff member later, from the "Accepted" tab.
 interface StaffAssignSheetProps {
   visible: boolean;
   job: AvailableJob | null;
@@ -239,13 +226,7 @@ interface StaffAssignSheetProps {
   onDecline: () => void;
   submitting?: boolean;
   showStaffSection?: boolean;
-  // When true (default, matches old behaviour) a staff pick is mandatory
-  // before ACCEPT is enabled. Pass false to make it optional — used by the
-  // "Available Jobs" accept sheet, where guard assignment is a choice, not
-  // a requirement.
   staffSelectionRequired?: boolean;
-  // Optional job description + required-document flags to render above the
-  // staff section. All optional / additive — omitting them changes nothing.
   description?: string;
   requiredDocuments?: string[];
 }
@@ -299,23 +280,14 @@ const StaffAssignSheet = ({
     >
       <View style={assignStyles.overlay}>
         <View style={assignStyles.sheet}>
-          {/* Handle bar */}
           <View style={assignStyles.handle} />
-
-          {/* Title */}
           <Text style={assignStyles.title}>🔔 Accept Job</Text>
-
-          {/* Scrollable content — kicks in once the info cards, description,
-              required documents, and staff list push past the sheet's
-              max height. Action buttons stay pinned below, outside the
-              scroll area, so they're always reachable. */}
           <ScrollView
             style={assignStyles.scrollArea}
             contentContainerStyle={assignStyles.scrollContent}
             showsVerticalScrollIndicator={false}
             nestedScrollEnabled
           >
-            {/* Job Info Cards */}
             <View style={assignStyles.infoCard}>
               <CalendarDays size={16} color={COLORS.primary} />
               <View style={{ flex: 1 }}>
@@ -402,11 +374,6 @@ const StaffAssignSheet = ({
               </View>
             )}
 
-            {/* Staff Assignment Section — shown when showStaffSection is true
-                (currently: only the "Available Jobs" accept sheet, contractor
-                only). Selection is optional here (staffSelectionRequired is
-                passed as false by that caller) — picking a guard sends their
-                id with the accept request, leaving it unpicked sends none. */}
             {showStaffSection && (
               <>
                 <Text style={assignStyles.assignLabel}>
@@ -426,7 +393,6 @@ const StaffAssignSheet = ({
                   </View>
                 ) : (
                   <>
-                    {/* Staff selector button */}
                     <TouchableOpacity
                       style={[
                         assignStyles.staffSelector,
@@ -486,7 +452,6 @@ const StaffAssignSheet = ({
                       </Text>
                     )}
 
-                    {/* Staff picker modal */}
                     <Modal
                       visible={showStaffModal}
                       transparent
@@ -574,7 +539,6 @@ const StaffAssignSheet = ({
             )}
           </ScrollView>
 
-          {/* Action buttons — pinned below the scroll area, always visible */}
           <View style={assignStyles.buttonRow}>
             <TouchableOpacity
               style={[
@@ -615,7 +579,6 @@ const StaffAssignSheet = ({
   );
 };
 
-// ─── Component ─────────────────────────────────────────────────────────────────
 export default function StaffShifts({ navigation, route }: Props) {
   const bottomSheetRef = useRef<BottomSheet>(null);
   const snapPoints = useMemo(() => ["95%", "98%"], []);
@@ -643,30 +606,13 @@ export default function StaffShifts({ navigation, route }: Props) {
   const [user, setUser] = useState<any>(null);
   const [profileImage, setProfileImage] = useState<string | null>(null);
   const [loadingProfile, setLoadingProfile] = useState(true);
-
   const [notificationJob, setNotificationJob] = useState<any>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
-
   const [acceptingNotification, setAcceptingNotification] = useState(false);
-
-  // Per-instance mirror of the module-level key (kept for any legacy
-  // reads elsewhere in this file); the actual dedupe decision is made
-  // against globalLastHandledNotifKey so it holds across both mounted
-  // instances of this component (StaffShifts + AcceptedJobs tabs).
   const lastHandledNotifKeyRef = useRef<string | null>(null);
   const isSheetReadyRef = useRef(false);
-
-  // Bumped every time a *new* job successfully takes over the sheet.
-  // closingGenerationRef captures "which job's close request is this"
-  // so a late-arriving onChange(-1)/onClose callback from an OLD job
-  // can never wipe out state that now belongs to a NEWER job.
   const notifGenerationRef = useRef(0);
   const closingGenerationRef = useRef<number | null>(null);
-
-  // Set right before we close the sheet after a successful accept.
-  // handleSheetClose reads this once the sheet's own onChange(-1) fires,
-  // so navigation only happens *after* the sheet has actually finished
-  // closing — no racing setTimeouts.
   const pendingAcceptSuccessRef = useRef(false);
 
   const [acceptSheetJob, setAcceptSheetJob] = useState<AvailableJob | null>(
@@ -681,49 +627,30 @@ export default function StaffShifts({ navigation, route }: Props) {
     Vibration.vibrate([0, 80, 60, 120]);
     playSound("success");
   }, []);
-  // Guard optionally picked from the Accept Job sheet's staff dropdown
-  // (contractor only). Separate from the Accepted-tab assign flow's own
-  // state (assignTargetShift / shiftStaffAssignments) so the two features
-  // never interfere with each other.
+
   const [acceptSheetSelectedGuard, setAcceptSheetSelectedGuard] = useState<
     number | null
   >(null);
 
-  // Guard optionally picked from the ASAP notification bottom sheet's own
-  // dropdown (contractor only). Kept separate from acceptSheetSelectedGuard
-  // (Available Jobs accept sheet) and shiftStaffAssignments (Accepted tab)
-  // — three different pickers, three different flows, no shared state.
   const [notifSelectedGuard, setNotifSelectedGuard] = useState<number | null>(
     null,
   );
   const [showNotifGuardModal, setShowNotifGuardModal] = useState(false);
-
-  // ── Available Jobs pagination / "load more" state ───────────────────────
   const [loadingMore, setLoadingMore] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [lastPage, setLastPage] = useState(1);
   const [hasMore, setHasMore] = useState(false);
   const [totalJobsCount, setTotalJobsCount] = useState<number | null>(null);
-  // Prevents overlapping requests (e.g. pull-to-refresh while a load-more
-  // request is already in flight)
   const isFetchingJobsRef = useRef(false);
-
-  // ── Contractor staff (used for the "Assign to Staff Member" dropdown
-  // that now lives on shift cards in the Accepted tab) ────────────────────
   const [contractorStaffList, setContractorStaffList] = useState<any[]>([]);
   const [loadingContractorStaff, setLoadingContractorStaff] = useState(false);
-
-  // ── Assign-to-staff modal (Accepted tab, contractor only) ───────────────
   const [assignTargetShift, setAssignTargetShift] = useState<any>(null);
   const [showAssignStaffModal, setShowAssignStaffModal] = useState(false);
   const [assigningStaff, setAssigningStaff] = useState(false);
-  // Tracks which shift (by roster id) has been assigned to which staff
-  // member locally, so the UI updates immediately after a successful call.
   const [shiftStaffAssignments, setShiftStaffAssignments] = useState<
     Record<string, { id: number; name: string }>
   >({});
 
-  // ─── Load user from storage ─────────────────────────────────────────────────
   useEffect(() => {
     const loadUser = async () => {
       try {
@@ -748,11 +675,6 @@ export default function StaffShifts({ navigation, route }: Props) {
     loadUser();
   }, []);
 
-  // ─── Reset all notification-sheet state ─────────────────────────────────
-  // If forGeneration is provided, the reset only actually applies when it
-  // still matches the CURRENT generation — otherwise it's a stale call
-  // (e.g. a delayed close callback from a job that's already been
-  // superseded by a newer one) and is safely ignored.
   const resetNotificationState = useCallback((forGeneration?: number) => {
     if (
       forGeneration !== undefined &&
@@ -767,16 +689,11 @@ export default function StaffShifts({ navigation, route }: Props) {
     lastHandledNotifKeyRef.current = null;
     globalLastHandledNotifKey = null;
     isSheetReadyRef.current = false;
-
     setNotificationJob(null);
     setSheetOpen(false);
     setAcceptingNotification(false);
     setNotifSelectedGuard(null);
-
-    // Force clear pending storage to prevent re-trigger
     AsyncStorage.removeItem(PENDING_ASAP_NOTIFICATION_KEY).catch(() => {});
-
-    // Force close bottom sheet
     setTimeout(() => {
       bottomSheetRef.current?.close?.();
     }, 100);
@@ -884,12 +801,8 @@ export default function StaffShifts({ navigation, route }: Props) {
     [acceptContractorNotification, userType],
   );
 
-  // ─── Single effect that drives opening the BottomSheet ──────────────────
   useEffect(() => {
     if (!sheetOpen || !notificationJob) return;
-
-    // Belt-and-braces: if somehow a job with no valid id got this far,
-    // don't render a blank sheet — close and reset instead.
     const jd = extractJobData(notificationJob);
     if (!jd?.id) {
       console.warn(
@@ -930,7 +843,6 @@ export default function StaffShifts({ navigation, route }: Props) {
     };
   }, [sheetOpen, notificationJob, resetNotificationState]);
 
-  // ─── Fetch profile ──────────────────────────────────────────────────────────
   useEffect(() => {
     const fetchProfile = async () => {
       setLoadingProfile(true);
@@ -961,8 +873,6 @@ export default function StaffShifts({ navigation, route }: Props) {
     fetchProfile();
   }, []);
 
-  // ─── Load contractor's staff list (used by the Accepted-tab assign
-  // dropdown). Loaded once whenever we know the user is a contractor. ───────
   useEffect(() => {
     if (userType !== "contractor" || !userId) return;
     let cancelled = false;
@@ -985,7 +895,6 @@ export default function StaffShifts({ navigation, route }: Props) {
     };
   }, [userType, userId]);
 
-  // ─── Helper: map a raw API job object into our AvailableJob shape ──────────
   const mapAvailableJob = (job: any): AvailableJob => {
     let formattedDate = "TBD";
 
@@ -1125,11 +1034,8 @@ export default function StaffShifts({ navigation, route }: Props) {
     fetchAvailableJobs(currentPage + 1, true);
   }, [loadingMore, loadingAvailable, hasMore, currentPage, fetchAvailableJobs]);
 
-  // ─── Fetch accepted shifts ──────────────────────────────────────────────────
   useEffect(() => {
     fetchAvailableJobs();
-
-    // Refresh available jobs count every 30 seconds
     const interval = setInterval(() => {
       fetchAvailableJobs();
     }, 20 * 1000); // 30 seconds
@@ -1144,9 +1050,6 @@ export default function StaffShifts({ navigation, route }: Props) {
     }, [fetchAcceptedShifts, fetchAvailableJobs]),
   );
 
-  // Kept only as a harmless legacy fallback — App.tsx no longer sends the
-  // job via route params (see App.tsx comments), so this effect should
-  // normally never fire. checkPendingNotification (below) is the real path.
   useEffect(() => {
     const job = route?.params?.notificationJob;
     if (!job) return;
@@ -1156,11 +1059,6 @@ export default function StaffShifts({ navigation, route }: Props) {
     navigation.setParams({ notificationJob: undefined });
   }, [route?.params?.notificationJob, openBottomSheet, navigation]);
 
-  // ─── Check AsyncStorage for a pending ASAP notification ─────────────────
-  // Uses the module-level globalIsCheckingPending lock so that if both the
-  // "StaffShifts" and "AcceptedJobs" instances of this component happen to
-  // check at the same time (e.g. both just focused, or AppState went
-  // active), only one of them actually performs the read-then-remove.
   const checkPendingNotification = useCallback(async () => {
     if (globalIsCheckingPending) return;
     globalIsCheckingPending = true;
@@ -1186,8 +1084,6 @@ export default function StaffShifts({ navigation, route }: Props) {
       console.log(
         "[StaffShifts] Screen focused → checking pending notification",
       );
-
-      // Small delay helps avoid race with navigation
       const timer = setTimeout(() => {
         checkPendingNotification();
       }, 150);
@@ -1208,19 +1104,11 @@ export default function StaffShifts({ navigation, route }: Props) {
     return () => sub.remove();
   }, [checkPendingNotification]);
 
-  // ─── Sheet close handler ─────────────────────────────────────────────────
-  // Fires from BOTH the BottomSheet's `onClose` prop and its `onChange`
-  // callback when index === -1. Reads the generation that was tagged onto
-  // the close request (by handleAcceptNotification / handleDeclineNotification)
-  // and only performs the post-close navigation if that generation is still
-  // the current one — i.e. no newer job has taken over the sheet since.
   const handleSheetClose = useCallback(() => {
     console.log("[StaffShifts] Sheet closed");
     const closedGen = closingGenerationRef.current;
     closingGenerationRef.current = null;
-
     resetNotificationState(closedGen ?? undefined);
-
     if (
       pendingAcceptSuccessRef.current &&
       closedGen !== null &&
@@ -1230,8 +1118,6 @@ export default function StaffShifts({ navigation, route }: Props) {
       navigation.navigate("AcceptedJobs");
       fetchAcceptedShifts();
     } else if (closedGen !== notifGenerationRef.current) {
-      // Stale close from a previous job — don't navigate/refetch again,
-      // a newer job is already in control of the sheet.
       pendingAcceptSuccessRef.current = false;
     }
   }, [resetNotificationState, navigation, fetchAcceptedShifts]);
@@ -1282,9 +1168,6 @@ export default function StaffShifts({ navigation, route }: Props) {
         });
         celebrateJobAccepted();
 
-        // Tag this close request with the job's generation, then request
-        // the close. handleSheetClose takes it from here once the sheet
-        // actually finishes closing.
         pendingAcceptSuccessRef.current = true;
         closingGenerationRef.current = notifGenerationRef.current;
         setAcceptingNotification(false);
@@ -1310,11 +1193,6 @@ export default function StaffShifts({ navigation, route }: Props) {
     setSheetOpen(false);
   };
 
-  // ─── "Accept Job" tap in the Available Jobs tab ─────────────────────────
-  // Opens the accept sheet (works for both contractor & non-contractor).
-  // No staff assignment happens here anymore — no navigation to
-  // AsapJobDetails either. The API call happens inside the sheet itself
-  // (see handleAcceptSheetSubmit below).
   const getContractorInvoiceValue = (job: any): number => {
     const raw = job?.raw || job;
     const resolved = extractJobData(raw);
@@ -1425,10 +1303,8 @@ export default function StaffShifts({ navigation, route }: Props) {
       return;
     }
 
-    // Extract roster_id from Available Jobs API response
     const rawJob = acceptSheetJob.raw || acceptSheetJob;
     const rosterId = rawJob?.id || acceptSheetJob?.id;
-
     console.log("[ACCEPT SHEET] Full Job Object:", rawJob);
     console.log("[ACCEPT SHEET] Extracted roster_id =", rosterId);
 
@@ -1466,15 +1342,10 @@ export default function StaffShifts({ navigation, route }: Props) {
       const payload: { roster_id: number; guard_id?: number | string } = {
         roster_id: rosterId,
       };
-
-      // Select API based on user type
       let acceptUrl = "";
 
       if (userType === "contractor") {
         acceptUrl = `${BASE_URL}/contractor/jobs/accept/${currentUserId}`;
-        // Optional guard pick from the Accept Job sheet's dropdown — send
-        // the id if one was selected, otherwise send an empty value.
-        // Staff flow (below) is untouched — this key is only added here.
         payload.guard_id = acceptSheetSelectedGuard ?? "";
       } else if (userType === "staff") {
         acceptUrl = `${BASE_URL}/asap-jobs/accept/${currentUserId}`;
@@ -1505,28 +1376,18 @@ export default function StaffShifts({ navigation, route }: Props) {
         });
 
         const acceptedJobId = acceptSheetJob.id;
-
-        // Close sheet
         setAcceptSheetVisible(false);
         setAcceptSheetJob(null);
         setAcceptSheetSelectedGuard(null);
         celebrateJobAccepted();
-
-        // Remove from Available Jobs list
         setAvailableJobs((prev) =>
           prev.filter((j: AvailableJob) => j.id !== acceptedJobId),
         );
-
-        // Refresh accepted shifts either way.
         fetchAcceptedShifts();
 
         if (userType === "contractor") {
-          // Contractor stays on Available Jobs — flip to "Pending
-          // Assigning" so they see it waiting to be handed to a guard.
           setContractorAvailableSubTab("Pending Assigning");
         } else {
-          // Staffoo staff (and anyone else): the job now lives on the
-          // separate "Accepted Job" screen.
           navigation.navigate("AcceptedJobs");
         }
       } else {
@@ -1581,10 +1442,6 @@ export default function StaffShifts({ navigation, route }: Props) {
     }, [route?.params?.jobAccepted]),
   );
 
-  // ─── Assign a staff member to an already-accepted shift (contractor only,
-  // driven from the "Accepted" tab). Hits the same endpoint the Accept Job
-  // sheet uses for contractors — the contractor's own accept endpoint, with
-  // the chosen guard's id sent in the payload. ─────────────────────────────
   const handleAssignStaffToShift = async (
     shift: any,
     staffId: number,
@@ -1672,7 +1529,6 @@ export default function StaffShifts({ navigation, route }: Props) {
     setAssignTargetShift(null);
   };
 
-  // ─── Render: Available job card ─────────────────────────────────────────────
   const renderAvailableCard = ({ item }: { item: AvailableJob }) => (
     <View style={styles.shiftCard}>
       <View style={cardStyles.headerRow}>
@@ -1732,11 +1588,6 @@ export default function StaffShifts({ navigation, route }: Props) {
     </View>
   );
 
-  // Whether an accepted shift already has a guard assigned — checks a
-  // fresh local assignment first, then falls back to the API's `guard`
-  // object (singular) / `guard_id` id. Used to split a contractor's
-  // accepted shifts into "Accepted Jobs" (assigned) vs "Pending Assigning"
-  // (not). Matches the same fields renderShiftCard already reads below.
   const shiftHasAssignedGuard = (shift: any): boolean => {
     const shiftKey = String(shift.id);
     const localAssignment = shiftStaffAssignments[shiftKey];
@@ -1745,7 +1596,6 @@ export default function StaffShifts({ navigation, route }: Props) {
     return !!assignedGuardId;
   };
 
-  // ─── Render: Accepted shift card ────────────────────────────────────────────
   const renderShiftCard = (shift: any, index: number, isToday = false) => {
     const isConfirmed = shift.job_status?.toLowerCase() === "confirmed";
     const signinStatus = Number(shift.signin_status ?? 0);
@@ -1760,8 +1610,16 @@ export default function StaffShifts({ navigation, route }: Props) {
       showButton = true;
       buttonText = "Sign In";
       buttonVariant = "signIn";
+
+      // Profile is active → never disable the button & never show docs toast
+      const isProfileActive =
+        user?.is_active === true ||
+        user?.is_active === 1 ||
+        user?.is_active === "1";
+
       const guardUserId = shift.guard?.user_id ?? shift.user_id;
       const isUserAdmin = Number(guardUserId) === 1;
+
       let hasMissingDocs = false;
       if (!isUserAdmin && Number(shift.is_document) === 1) {
         hasMissingDocs =
@@ -1769,15 +1627,20 @@ export default function StaffShifts({ navigation, route }: Props) {
           userDocuments.length === 0 ||
           userDocuments.some((doc: any) => !doc.file || !doc.document_no);
       }
-      if (hasMissingDocs) {
+
+      // Only disable + show error toast when profile is NOT active AND docs are missing
+      if (!isProfileActive && hasMissingDocs) {
+        disabled = true;
         onPress = () =>
           Toast.show({
             type: "error",
             text1: "Incomplete Profile",
             text2: "Please add your documents first then you can sign-in",
+            position: "top",
           });
-        disabled = true;
       } else {
+        // is_active === true  →  button enabled, no toast, just navigate
+        disabled = false;
         onPress = () => navigation.navigate("SignIn", { shift });
       }
     } else if (isToday && isConfirmed && signinStatus === 1) {
@@ -1805,9 +1668,6 @@ export default function StaffShifts({ navigation, route }: Props) {
         ? COLORS.success
         : COLORS.textMuted;
 
-    // Contractor-only: figure out who (if anyone) this shift is currently
-    // assigned to, preferring a fresh local update over whatever the API
-    // last told us. Matches shiftHasAssignedGuard's fields above.
     const shiftKey = String(shift.id ?? `${isToday ? "t" : "w"}-${index}`);
     const localAssignment = shiftStaffAssignments[shiftKey];
     const assignedGuardId =
@@ -1852,49 +1712,6 @@ export default function StaffShifts({ navigation, route }: Props) {
             </Text>
           </View>
         </View>
-        {/* <View style={[styles.rowBetween, { alignItems: "flex-start" }]}>
-          <TouchableOpacity
-            style={[
-              styles.rowItem,
-              {
-                flex: 1,
-                marginRight: 15,
-                alignItems: "flex-start",
-              },
-            ]}
-            activeOpacity={1}
-          >
-            <View style={styles.iconBgGrey}>
-              <FileText size={14} color={COLORS.primary} />
-            </View>
-
-            <Text
-              style={styles.documentText}
-              numberOfLines={3} // remove if you want unlimited lines
-            >
-              {shift.description || "No site description"}
-            </Text>
-          </TouchableOpacity>
-
-          {showButton && (
-            <TouchableOpacity
-              activeOpacity={0.8}
-              onPress={onPress}
-              disabled={disabled}
-              style={[
-                styles.actionButton,
-                actionBtnStyle,
-                disabled && { opacity: 0.5 },
-              ]}
-            >
-              <Text
-                style={[styles.actionButtonText, { color: actionTextColor }]}
-              >
-                {buttonText}
-              </Text>
-            </TouchableOpacity>
-          )}
-        </View> */}
 
         <View
           style={{
@@ -1942,7 +1759,6 @@ export default function StaffShifts({ navigation, route }: Props) {
           )}
         </View>
 
-        {/* ── Contractor-only: assign this accepted shift to a staff member ── */}
         {userType === "contractor" && (
           <View style={styles.contractorAssignSection}>
             <Text style={styles.assignLabel}>Assign to Staff Member</Text>
@@ -1993,7 +1809,6 @@ export default function StaffShifts({ navigation, route }: Props) {
     );
   };
 
-  // ─── Render: Load-more footer for the Available Jobs list ──────────────────
   const renderJobsListFooter = () => {
     if (loadingMore) {
       return (
@@ -2077,10 +1892,6 @@ export default function StaffShifts({ navigation, route }: Props) {
       );
     }
 
-    // Contractor's "Accepted Jobs" only shows shifts that already have a
-    // guard assigned — unassigned ones live under "Pending Assigning" on
-    // the Available Jobs screen instead. Staffoo staff / guards see
-    // everything, unfiltered, same as before.
     const isContractor = userType === "contractor";
     const shownTodayShifts = isContractor
       ? todayShifts.filter(
@@ -2180,30 +1991,21 @@ export default function StaffShifts({ navigation, route }: Props) {
 
   // ─── Main render ────────────────────────────────────────────────────────────
   const jobData = extractJobData(notificationJob);
-
-  // Required documents for the notification bottom sheet — same source
-  // (roster.document_list) and same parsing approach as AsapJobDetails.tsx.
   const notifRequiredDocuments = parseDocumentList(jobData?.document_list);
   const notifHasWorkingWithChildren = notifRequiredDocuments.includes(
     "working_with_children",
   );
   const notifHasWhiteCard = notifRequiredDocuments.includes("white_card");
   const notifDescription: string = jobData?.description || "";
-
-  // Description + required documents for the "Available Jobs" accept sheet,
-  // read straight off the raw API job object (same source/shape as the
-  // notification sheet above).
   const acceptRawJob = acceptSheetJob?.raw || {};
   const acceptDescription: string = acceptRawJob?.description || "";
   const acceptRequiredDocuments = parseDocumentList(
     acceptRawJob?.document_list,
   );
-
   const showingAvailableList =
     screenMode === "available" &&
     (userType !== "contractor" ||
       contractorAvailableSubTab === "Available Jobs");
-
   const isRefreshing = showingAvailableList
     ? loadingAvailable && availableJobs.length === 0
     : loadingToday || loadingWeek;
@@ -2216,9 +2018,6 @@ export default function StaffShifts({ navigation, route }: Props) {
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor={COLORS.background} />
-
-      {/* Header */}
-      {/* Header */}
       <LinearGradient
         colors={[COLORS.heroBg1, COLORS.heroBg2]}
         start={{ x: 0, y: 0 }}
@@ -2328,16 +2127,6 @@ export default function StaffShifts({ navigation, route }: Props) {
         {!notificationJob && <View style={styles.placeholder} />}
       </ScrollView>
 
-      {/* ── Accept Sheet — "Available Jobs" tab (contractor + guard) ──
-          Shows full job info (description, required documents) for both
-          user types. Staff dropdown (showStaffSection) is contractor-only
-          and optional — picking a guard sends their id with the accept
-          request, leaving it unpicked sends an empty guard_id. Non-
-          contractor ("staff") flow is unaffected: showStaffSection is
-          false for them, so nothing new renders and nothing new is sent.
-          The sheet's own content is now scrollable (see StaffAssignSheet
-          above), so long descriptions / document lists / staff lists no
-          longer overflow past the visible sheet. */}
       <StaffAssignSheet
         visible={acceptSheetVisible}
         job={acceptSheetJob}
@@ -2354,14 +2143,6 @@ export default function StaffShifts({ navigation, route }: Props) {
         requiredDocuments={acceptRequiredDocuments}
       />
 
-      {/* ── ASAP notification bottom sheet ──
-          Staff assignment section removed here too — contractors accept
-          directly, then assign staff from the "Accepted" tab. Content now
-          renders inside BottomSheetScrollView (instead of a plain
-          ScrollView nested in BottomSheetView) so it scrolls properly
-          within the sheet's gesture handler when there's more data than
-          fits — required documents, a longer description, the staff
-          picker, etc. */}
       <BottomSheet
         ref={bottomSheetRef}
         index={-1}
@@ -2470,11 +2251,6 @@ export default function StaffShifts({ navigation, route }: Props) {
             </View>
           )}
 
-          {/* Contractor-only, optional guard pick — mirrors the Accept
-              Job sheet's dropdown. Picking a guard sends their id with
-              the accept request; leaving it unpicked sends none. Staff
-              flow (non-contractor) is unaffected: nothing renders here
-              for them and nothing extra is sent. */}
           {userType === "contractor" && (
             <View style={{ marginVertical: 5 }}>
               <Text style={styles.assignLabel}>
@@ -2586,7 +2362,6 @@ export default function StaffShifts({ navigation, route }: Props) {
         </BottomSheetScrollView>
       </BottomSheet>
 
-      {/* ── Assign-to-staff modal — Accepted tab, contractor only ── */}
       <Modal
         visible={showAssignStaffModal}
         transparent
@@ -2650,20 +2425,14 @@ export default function StaffShifts({ navigation, route }: Props) {
         </View>
       </Modal>
 
-      {/* ── Job-accepted celebration — full screen, confetti + sound +
-          vibration, triggered from the accept sheet and the ASAP
-          notification sheet's success handlers. Auto-hides itself. ── */}
       <JobAcceptedCelebration
         visible={showCelebration}
         onDone={() => setShowCelebration(false)}
       />
-
-      {/* <BottomTab navigation={navigation} activeTab="StaffShifts" /> */}
     </SafeAreaView>
   );
 }
 
-// ─── Accept Sheet Styles ───────────────────────────────────────────────────────
 const assignStyles = StyleSheet.create({
   overlay: {
     flex: 1,

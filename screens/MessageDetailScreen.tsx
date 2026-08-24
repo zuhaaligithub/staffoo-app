@@ -26,38 +26,26 @@ import {
   Paperclip,
   Send,
 } from "lucide-react-native";
-import { getEchoInstance } from "../echo";
-import { getAuthToken } from "../services/authApi";
+
 import BottomSheet, { BottomSheetView } from "@gorhom/bottom-sheet";
 import { BottomSheetBackdrop } from "@gorhom/bottom-sheet";
 import { useCallManagerRN } from "../useCallManagerRN";
 
 type MessageDetailRouteProp = RouteProp<RootStackParamList, "MessageDetail">;
 const COLORS = {
-  // 🌿 Primary Brand
   primary: "#89E7D0", // mint accent
   primaryDark: "#4FCBB3",
-
-  // 🌙 Background system (clean dark navy)
   background: "#001F3F",
   surface: "#20b72c",
   surface2: "#12243A",
-
-  // ✨ Card / Glass
   card: "rgba(255,255,255,0.06)",
   cardBorder: "rgba(255,255,255,0.08)",
-
-  // ✍️ Text
   text: "#FFFFFF",
   textSecondary: "rgba(255,255,255,0.7)",
   textMuted: "rgba(255,255,255,0.5)",
-
-  // 🔴🟡🟢 Status
   success: "#22C55E",
   warning: "#F59E0B",
   danger: "#EF4444",
-
-  // Border
   border: "rgba(255,255,255,0.08)",
 };
 type Message = {
@@ -99,7 +87,6 @@ export default function MessageDetailScreen() {
 
   const bottomSheetRef = useRef<BottomSheet>(null);
   const flatListRef = useRef<FlatList>(null);
-
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState("");
   const [loading, setLoading] = useState(false);
@@ -108,12 +95,9 @@ export default function MessageDetailScreen() {
     null,
   );
   const [callLoading, setCallLoading] = useState(false);
-
   const { initiateCall, isCurrentlyInCall } = useCallManagerRN();
-
   const snapPoints = ["65%", "70%"];
 
-  // Handle Call
   const handleCallPress = async () => {
     if (!chatId) {
       Alert.alert("Cannot Call", "No user ID available for this conversation.");
@@ -123,7 +107,6 @@ export default function MessageDetailScreen() {
       Alert.alert("Already in Call", "You are currently in another call.");
       return;
     }
-
     setCallLoading(true);
     try {
       await initiateCall({ id: chatId, name });
@@ -134,18 +117,11 @@ export default function MessageDetailScreen() {
     }
   };
 
-  // Inside MessageDetailScreen.tsx
-
-  // Updated helper to match your actual API response
   const extractMessagesArray = (res: any) => {
     if (!res) return [];
-
-    // New structure: res.messages.data
     if (res.messages?.data && Array.isArray(res.messages.data)) {
       return res.messages.data;
     }
-
-    // Fallbacks
     if (Array.isArray(res)) return res;
     if (res.data?.data) return res.data.data;
     if (res.data) return Array.isArray(res.data) ? res.data : [];
@@ -154,7 +130,6 @@ export default function MessageDetailScreen() {
     return [];
   };
 
-  // Updated mapping function
   const mapMessage = (
     m: any,
     currentUserId: string | number | null,
@@ -203,22 +178,18 @@ export default function MessageDetailScreen() {
     bootstrap();
   }, [chatId, passedConversation]);
 
-  // Send Message
   const handleSend = async () => {
     if (!inputText.trim() || !chatId) return;
-
     setSending(true);
     try {
       const { sendMessage, getConversation } = await import(
         "../services/authApi"
       );
-
       await sendMessage({
         receiver_id: chatId as any,
         message: inputText.trim(),
       });
 
-      // Refresh messages
       const res = await getConversation(chatId);
       const source = extractMessagesArray(res);
       setMessages(
@@ -326,7 +297,6 @@ export default function MessageDetailScreen() {
           showsVerticalScrollIndicator={false}
         />
 
-        {/* Input Bar */}
         <View style={styles.inputBar}>
           <TextInput
             style={styles.textInput}
@@ -350,7 +320,6 @@ export default function MessageDetailScreen() {
         </View>
       </KeyboardAvoidingView>
 
-      {/* Attachments Bottom Sheet */}
       <BottomSheet
         ref={bottomSheetRef}
         index={-1}
@@ -375,11 +344,9 @@ export default function MessageDetailScreen() {
   );
 }
 
-// ==================== STYLES ====================
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    // backgroundColor: COLORS.background,
     backgroundColor: "#030508",
   },
   keyboardAvoid: { flex: 1 },
@@ -389,15 +356,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: 14,
     paddingVertical: 16,
-
     marginHorizontal: 16,
     marginTop: 30,
     marginBottom: 10,
-
     borderRadius: 20,
-
     backgroundColor: COLORS.surface2,
-
     borderWidth: 1,
     borderColor: COLORS.border,
   },

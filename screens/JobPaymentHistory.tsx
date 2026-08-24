@@ -173,12 +173,9 @@ const downloadPdfToPath = async (
   url: string,
   destPath: string,
 ): Promise<string> => {
-  // Clean up any leftover file at the destination before writing.
   await safeUnlink(destPath);
-
   await ReactNativeBlobUtil.config({
     path: destPath,
-    // trusty: false  ← REMOVED: causes IllegalStateException on Android
   }).fetch("GET", url);
 
   const exists = await ReactNativeBlobUtil.fs.exists(destPath);
@@ -270,7 +267,7 @@ export default function JobPaymentHistory({ navigation }: Props) {
       Alert.alert("Cannot Open", "Please check your internet connection.");
     });
   };
-  // ── Download PDF to Downloads / Documents folder ──────────────────────────
+
   const handleDownloadInvoice = async (item: Transaction) => {
     if (!item.invoice_filename) {
       Alert.alert("No Invoice", "Invoice not available for this transaction.");
@@ -285,7 +282,6 @@ export default function JobPaymentHistory({ navigation }: Props) {
       setDownloadingId(item.id);
 
       if (Platform.OS === "android") {
-        // Android DownloadManager handles its own path; we don't need to clean up.
         const destPath = `${ReactNativeBlobUtil.fs.dirs.DownloadDir}/${filename}`;
         await ReactNativeBlobUtil.config({
           addAndroidDownloads: {
@@ -319,7 +315,6 @@ export default function JobPaymentHistory({ navigation }: Props) {
           ],
         );
       } else {
-        // iOS: write directly to DocumentDir (no tmp dance needed).
         const destPath = `${ReactNativeBlobUtil.fs.dirs.DocumentDir}/${filename}`;
         const filePath = await downloadPdfToPath(pdfUrl, destPath);
 
@@ -386,11 +381,7 @@ export default function JobPaymentHistory({ navigation }: Props) {
     if (!selectedTransaction) return;
 
     const typedEmail = emailInput.trim().toLowerCase();
-
-    // Start with already added emails
     let emails = [...emailList];
-
-    // If user typed a valid email but didn't press Add, include it automatically
     if (
       typedEmail &&
       emailRegex.test(typedEmail) &&
@@ -426,8 +417,6 @@ export default function JobPaymentHistory({ navigation }: Props) {
 
       if (response.ok) {
         Alert.alert("Success", "Invoice sent successfully!");
-
-        // Reset state
         setEmailInput("");
         setEmailList([]);
         setShareModalVisible(false);
@@ -441,10 +430,9 @@ export default function JobPaymentHistory({ navigation }: Props) {
       setSharing(false);
     }
   };
-  // Load invoice share history
+
   const loadInvoiceHistory = async (item: Transaction) => {
     if (!item) return;
-
     setHistoryLoading(true);
     try {
       const token = await getAuthToken();
@@ -608,22 +596,6 @@ export default function JobPaymentHistory({ navigation }: Props) {
             <Text style={styles.actionBtnPrimaryText}>View</Text>
           </TouchableOpacity>
 
-          {/* <TouchableOpacity
-            style={[styles.actionBtn, styles.actionBtnDownload]}
-            onPress={() => handleDownloadInvoice(item)}
-            disabled={isDownloading}
-            activeOpacity={0.75}
-          >
-            {isDownloading ? (
-              <ActivityIndicator size="small" color={COLORS.downloadColor} />
-            ) : (
-              <>
-                <Download size={14} color={COLORS.downloadColor} />
-                <Text style={styles.actionBtnDownloadText}>Save</Text>
-              </>
-            )}
-          </TouchableOpacity> */}
-
           <TouchableOpacity
             style={[styles.actionBtn, styles.actionBtnOutline]}
             onPress={() => handleOpenShare(item)}
@@ -632,15 +604,6 @@ export default function JobPaymentHistory({ navigation }: Props) {
             <Share2 size={14} color={COLORS.primary} />
             <Text style={styles.actionBtnOutlineText}>Share</Text>
           </TouchableOpacity>
-
-          {/* <TouchableOpacity
-            style={[styles.actionBtn, styles.actionBtnGhost]}
-            onPress={() => handleOpenHistory(item)}
-            activeOpacity={0.75}
-          >
-            <History size={14} color={COLORS.textSecondary} />
-            <Text style={styles.actionBtnGhostText}>History</Text>
-          </TouchableOpacity> */}
         </View>
       </View>
     );
@@ -703,8 +666,6 @@ export default function JobPaymentHistory({ navigation }: Props) {
         showsVerticalScrollIndicator={false}
       />
 
-      {/* Share Modal */}
-      {/* ── Share Invoice Modal (New Design) ── */}
       <Modal
         visible={shareModalVisible}
         transparent
@@ -815,7 +776,6 @@ export default function JobPaymentHistory({ navigation }: Props) {
               )}
             </View>
 
-            {/* Bottom Buttons */}
             <View style={styles.bottomButtons}>
               <TouchableOpacity
                 style={styles.cancelButton}

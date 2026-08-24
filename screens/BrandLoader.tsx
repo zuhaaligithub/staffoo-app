@@ -1,22 +1,4 @@
-// ─────────────────────────────────────────────────────────────────────────────
-// BrandLoader — an on-brand animated loading indicator built from the
-// Staffoo mark's own ring/arc/dot motif, instead of a generic spinner.
-//
-// Three independently animated layers:
-//   1. Outer teal ring (has a gap, like a "C") — rotates continuously.
-//   2. A lime arc segment on the middle ring — rotates at a different
-//      speed, echoing the mark's own colored quarter-segment.
-//   3. Two center dots — gently pulse in and out of phase.
-//
-// Usage:
-//   <BrandLoader />                          // responsive default size, inline
-//   <BrandLoader size={28} />                // small, e.g. inside a button
-//   <BrandLoader fullScreen />                // centered full-screen (splash / page loader)
-//   <BrandLoader fullScreen backgroundColor="#030508" />
-//
-// Drop-in swap for any <ActivityIndicator size="large" color={COLORS.primary} />
-// elsewhere in the app — just replace that line with <BrandLoader />.
-// ─────────────────────────────────────────────────────────────────────────────
+
 import React, { useEffect } from "react";
 import { View, StyleSheet, useWindowDimensions, ViewStyle } from "react-native";
 import Svg, { Circle } from "react-native-svg";
@@ -37,13 +19,8 @@ const VIEWBOX = 100;
 const CENTER = VIEWBOX / 2;
 
 type Props = {
-  /** Diameter in px. Omit to use a responsive default (clamped so it looks
-   * right on both small phones and tablets). */
   size?: number;
-  /** Centers the loader in a full-flex container — use for splash/page-level
-   * loading states. Default false (renders inline at just its own size). */
   fullScreen?: boolean;
-  /** Only applied when fullScreen is true. */
   backgroundColor?: string;
   style?: ViewStyle;
 };
@@ -55,13 +32,8 @@ export default function BrandLoader({
   style,
 }: Props) {
   const { width, height } = useWindowDimensions();
-
-  // Responsive default: scales with the smaller screen dimension so it
-  // reads the same relative size on a compact phone or a tablet, clamped
-  // to sensible min/max so it's never too small to see or absurdly huge.
   const resolvedSize =
     size ?? Math.max(72, Math.min(160, Math.min(width, height) * 0.32));
-
   const outerRotation = useSharedValue(0);
   const arcRotation = useSharedValue(0);
   const dotPulse = useSharedValue(0);
@@ -103,27 +75,19 @@ export default function BrandLoader({
     transform: [{ scale: 1 - dotPulse.value * 0.18 }],
   }));
 
-  // Ring geometry
   const outerR = 42;
   const outerStroke = 8;
   const outerCircumference = 2 * Math.PI * outerR;
-  // ~66° gap, like the mark's outer "C" ring
   const outerDash = outerCircumference * (294 / 360);
-
   const arcR = 30;
   const arcStroke = 7;
   const arcCircumference = 2 * Math.PI * arcR;
-  // ~85° visible segment, matching the mark's colored quarter
   const arcDash = arcCircumference * (85 / 360);
-
-  // Dot sizes scale with the loader itself so they stay proportional
-  // whether this renders at 28px inline or 160px full-screen.
   const bigDotSize = resolvedSize * 0.14;
   const smallDotSize = resolvedSize * 0.09;
 
   const mark = (
     <View style={{ width: resolvedSize, height: resolvedSize }}>
-      {/* Outer teal ring with a gap — the primary spin */}
       <Animated.View
         style={[StyleSheet.absoluteFill, outerRingStyle]}
         pointerEvents="none"
@@ -142,7 +106,6 @@ export default function BrandLoader({
         </Svg>
       </Animated.View>
 
-      {/* Static, low-opacity full track for the middle ring */}
       <View style={StyleSheet.absoluteFill} pointerEvents="none">
         <Svg width={resolvedSize} height={resolvedSize} viewBox="0 0 100 100">
           <Circle
@@ -157,7 +120,6 @@ export default function BrandLoader({
         </Svg>
       </View>
 
-      {/* Lime arc segment — spins independently, opposite direction */}
       <Animated.View
         style={[StyleSheet.absoluteFill, arcStyle]}
         pointerEvents="none"
@@ -176,8 +138,7 @@ export default function BrandLoader({
         </Svg>
       </Animated.View>
 
-      {/* Center dots — gentle out-of-phase pulse, positioned like the
-          mark's own pair near the lower-left of the inner ring. */}
+  
       <View style={StyleSheet.absoluteFill} pointerEvents="none">
         <Animated.View
           style={[

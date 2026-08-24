@@ -485,11 +485,7 @@ export default function WeeklyRosterScreen({ navigation }: any) {
           }
         : undefined,
 
-      // Resource partner (contractor) this guard belongs to. Only actually
-      // shown when guardData.user_id > 1 (see cardBottom / DetailRow below) —
-      // storing it unconditionally here is harmless for everyone else.
       assignedByName: job.contractor?.name,
-
       customer: job.customer
         ? {
             id: job.customer.id,
@@ -542,8 +538,6 @@ export default function WeeklyRosterScreen({ navigation }: any) {
     };
   };
 
-  // pageNum = which page to fetch. Page 1 replaces the list, any page > 1
-  // (triggered by "Load More") appends to the existing list.
   const fetchShifts = async (pageNum: number = 1) => {
     try {
       if (pageNum === 1) {
@@ -593,19 +587,12 @@ export default function WeeklyRosterScreen({ navigation }: any) {
         return sorted;
       });
 
-      // ── Pagination: current_page / last_page / total ALWAYS come from
-      // the API's pagination object when present — this is the fix for
-      // the "Total Shifts" badge only ever showing the loaded-so-far
-      // count instead of the real total (58 in your example, even though
-      // only 16 were loaded on page 1).
       const pagination: Pagination | undefined = res.data?.pagination;
       if (pagination) {
         setPage(pagination.current_page || pageNum);
         setLastPage(pagination.last_page || 1);
         setTotalJobs(pagination.total || 0);
       } else {
-        // Backend didn't return pagination info — fall back to counting
-        // what we actually have loaded, and assume there's no more.
         setPage(pageNum);
         setLastPage(pageNum);
         setTotalJobs((prev) =>
@@ -627,7 +614,6 @@ export default function WeeklyRosterScreen({ navigation }: any) {
   };
 
   useEffect(() => {
-    // New date range selected -> always restart from page 1
     fetchShifts(1);
   }, [rangeStart, rangeEnd]);
 
@@ -637,8 +623,6 @@ export default function WeeklyRosterScreen({ navigation }: any) {
     }
   }, [userType]);
 
-  // Shifts the whole range forward/back by however many days are
-  // currently selected, so a 20-day range moves 20 days at a time.
   const navigateRange = (dir: "prev" | "next") => {
     const delta = (dir === "next" ? 1 : -1) * rangeDayCount;
     const newStart = new Date(rangeStart);
@@ -790,9 +774,6 @@ export default function WeeklyRosterScreen({ navigation }: any) {
     };
   };
 
-  // Updated status colors: pending -> danger, confirmed -> warning,
-  // completed -> success. "solid" mirrors the same base color and is used
-  // for the card's top strip / status dot.
   const getStatusPill = (status: string) => {
     switch (status.toLowerCase()) {
       case "pending":
@@ -841,7 +822,6 @@ export default function WeeklyRosterScreen({ navigation }: any) {
     }
   };
 
-  // ─── DETAIL CARD COMPONENT ───────────────────────────────────────────────────
   const DetailCard = ({
     icon,
     title,
@@ -865,9 +845,6 @@ export default function WeeklyRosterScreen({ navigation }: any) {
     </View>
   );
 
-  // value is typed string on purpose — every call site below passes a
-  // string (numbers are formatted/interpolated first) so a stray number
-  // never gets handed to <Text> as a raw child.
   const DetailRow = ({ label, value }: { label: string; value: string }) => (
     <View style={detailStyles.row}>
       <Text style={detailStyles.rowLabel}>{label}</Text>
@@ -875,8 +852,6 @@ export default function WeeklyRosterScreen({ navigation }: any) {
     </View>
   );
 
-  // Whether the currently-viewed shift's guard is a resource-partner (RP)
-  // guard whose "Assigned by" name we have and should show to staff users.
   const showAssignedByForShift = (shift: Shift | null) =>
     !!(
       shift &&
@@ -887,9 +862,7 @@ export default function WeeklyRosterScreen({ navigation }: any) {
 
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
-      {/* ── FIXED TOP SECTION: hero, search, date navigator, section header ── */}
       <View style={styles.fixedHeader}>
-        {/* ── Hero header ── */}
         <LinearGradient
           colors={[COLORS.heroBg1, COLORS.heroBg2]}
           start={{ x: 0, y: 0 }}
@@ -906,17 +879,16 @@ export default function WeeklyRosterScreen({ navigation }: any) {
                 <ChevronLeft size={20} color="#fff" />
               </TouchableOpacity>
 
-              <View style={styles.liveBadge}>
-                <View style={styles.liveDot} />
-                <Text style={styles.liveText}>LIVE</Text>
+              <View style={styles.heroTextContainer}>
+                <Text style={styles.heroTitle} numberOfLines={1}>
+                  Job Applications and Shifts
+                </Text>
+
+                <Text style={styles.heroSubtitle} numberOfLines={1}>
+                  Viewing shifts for the selected date range
+                </Text>
               </View>
             </View>
-
-            <Text style={styles.heroTitle}>Job Applications and Shifts</Text>
-
-            <Text style={styles.heroSubtitle}>
-              Viewing shifts for the selected date range
-            </Text>
 
             <View style={styles.statsRow}>
               <View style={styles.statBox}>
@@ -947,7 +919,23 @@ export default function WeeklyRosterScreen({ navigation }: any) {
             </View>
           </View>
         </LinearGradient>
-        {/* ── Search ── */}
+        {/* search, date-range navigation and section header moved into ScrollView below */}
+      </View>
+
+      <ScrollView
+        style={styles.scroll}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={COLORS.primary} // iOS spinner color
+            colors={[COLORS.primary]} // Android spinner color
+            progressBackgroundColor="#fff"
+          />
+        }
+      >
+        {/* ── Search (inside ScrollView so pull-to-refresh covers it) ── */}
         <View style={styles.searchContainer}>
           <View style={styles.searchInputWrap}>
             <Search size={16} color={COLORS.textMuted} />
@@ -961,7 +949,7 @@ export default function WeeklyRosterScreen({ navigation }: any) {
           </View>
         </View>
 
-        {/* ── Date range navigator ── */}
+        {/* ── Date range navigator (inside ScrollView) ── */}
         <View style={styles.weekNav}>
           <TouchableOpacity
             style={styles.weekArrow}
@@ -996,7 +984,7 @@ export default function WeeklyRosterScreen({ navigation }: any) {
           </TouchableOpacity>
         </View>
 
-        {/* ── Section title row ── */}
+        {/* ── Section title row (inside ScrollView) ── */}
         <View style={styles.sectionHeader}>
           <View style={styles.countBadge}>
             <Text style={styles.countText}>
@@ -1005,30 +993,11 @@ export default function WeeklyRosterScreen({ navigation }: any) {
             </Text>
           </View>
           <View>
-            {/* <Text style={styles.sectionTitle}>
-              Shifts · {rangeDayCount} {rangeDayCount === 1 ? "Day" : "Days"}
-            </Text> */}
             <Text style={styles.sectionSubTitle}>
               Total Hours: {totalHours.toFixed(2)}
             </Text>
           </View>
         </View>
-      </View>
-
-      {/* ── SCROLLABLE SHIFTS LIST ── */}
-      <ScrollView
-        style={styles.scroll}
-        showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            tintColor={COLORS.primary} // iOS spinner color
-            colors={[COLORS.primary]} // Android spinner color
-            progressBackgroundColor="#fff"
-          />
-        }
-      >
         {loading ? (
           <View style={styles.center}>
             <BrandLoader size={64} />
@@ -1049,15 +1018,10 @@ export default function WeeklyRosterScreen({ navigation }: any) {
             {filteredShifts.map((shift) => {
               const pill = getStatusPill(shift.jobStatus);
               const isCompleted = shift.jobStatus === "completed";
-              // RP (resource-partner) guard whose "assigned by" name we
-              // can show to a staff viewer. Computed once per card so the
-              // JSX below stays a plain ternary (never a bare && chain
-              // that could leak a raw 0/number into <View>).
               const isRpAssignment = showAssignedByForShift(shift);
 
               return (
                 <View key={shift.id} style={styles.shiftCard}>
-                  {/* Status-colored top strip */}
                   <View
                     style={[
                       styles.statusStrip,
@@ -1123,11 +1087,6 @@ export default function WeeklyRosterScreen({ navigation }: any) {
                     <View style={styles.cardDivider} />
 
                     <View style={styles.cardBottom}>
-                      {/* Non-staff (contractor / customer) logins: always
-                          show "Assigned to <guard>" — UNCHANGED from
-                          before. Staff logins: normally blank, EXCEPT
-                          when this is a resource-partner guard's shift,
-                          in which case show "Assigned by <RP name>". */}
                       {userType === "staff" ? (
                         isRpAssignment ? (
                           <View style={styles.guardWrap}>
@@ -1188,7 +1147,6 @@ export default function WeeklyRosterScreen({ navigation }: any) {
               );
             })}
 
-            {/* ─── LOAD MORE BUTTON ─────────────────────────────────────── */}
             {!searchText.trim() && page < lastPage && (
               <TouchableOpacity
                 style={[
@@ -1221,7 +1179,6 @@ export default function WeeklyRosterScreen({ navigation }: any) {
         <View style={{ height: 20 }} />
       </ScrollView>
 
-      {/* ─── DATE RANGE PICKER MODAL ────────────────────────────────────────── */}
       <Modal visible={showDateModal} transparent animationType="fade">
         <View style={styles.modalOverlay}>
           <View style={[styles.modalContent, { width: "90%" }]}>
@@ -1241,7 +1198,7 @@ export default function WeeklyRosterScreen({ navigation }: any) {
             {showStartPicker && (
               <DateTimePicker
                 value={tempStart}
-                 textColor="#FFFFFF"
+                textColor="#FFFFFF"
                 mode="date"
                 display={Platform.OS === "ios" ? "spinner" : "default"}
                 onChange={(e, date) => {
@@ -1257,7 +1214,6 @@ export default function WeeklyRosterScreen({ navigation }: any) {
               />
             )}
 
-            {/* End date */}
             <Text style={[styles.pickerLabel, { marginTop: 14 }]}>
               End Date
             </Text>
@@ -1273,7 +1229,7 @@ export default function WeeklyRosterScreen({ navigation }: any) {
             {showEndPicker && (
               <DateTimePicker
                 value={tempEnd}
-                 textColor="#FFFFFF"
+                textColor="#FFFFFF"
                 mode="date"
                 minimumDate={tempStart}
                 display={Platform.OS === "ios" ? "spinner" : "default"}
@@ -1304,7 +1260,6 @@ export default function WeeklyRosterScreen({ navigation }: any) {
         </View>
       </Modal>
 
-      {/* ─── SHIFT DETAIL MODAL ─────────────────────────────────────────────────── */}
       <Modal
         visible={showShiftModal}
         transparent
@@ -1322,7 +1277,6 @@ export default function WeeklyRosterScreen({ navigation }: any) {
           <View
             style={[styles.sheetModal, { minHeight: "88%", maxHeight: "95%" }]}
           >
-            {/* Header */}
             <View style={detailStyles.modalHeader}>
               <View style={detailStyles.modalHeaderLeft}>
                 <ShieldCheck size={24} color="#fff" />
@@ -1388,7 +1342,6 @@ export default function WeeklyRosterScreen({ navigation }: any) {
                       value={toTitleCase(selectedShift.tag)}
                     />
 
-                 
                     {userType === "staff" &&
                       showAssignedByForShift(selectedShift) && (
                         <DetailRow
@@ -1444,122 +1397,8 @@ export default function WeeklyRosterScreen({ navigation }: any) {
                       }
                     />
                   </DetailCard>
-
-                  {/* Customer Details */}
-                  {/* {userType !== "customer" && (
-                    <DetailCard
-                      icon={<UserCircle size={20} color="#A78BFA" />}
-                      title="Client Details"
-                      iconBg="rgba(167,139,250,0.25)"
-                    >
-                      <DetailRow
-                        label="Name"
-                        value={
-                          toTitleCase(selectedShift.customer?.name) || "N/A"
-                        }
-                      />
-                      <DetailRow
-                        label="Email"
-                        value={selectedShift.customer?.email || "N/A"}
-                      />
-                      <DetailRow
-                        label="Phone"
-                        value={selectedShift.customer?.phone || "N/A"}
-                      />
-                    </DetailCard>
-                  )} */}
-
-                  {/* Assignment Details */}
-                  {/* <DetailCard
-                    icon={<ShieldCheck size={20} color="#34C88A" />}
-                    title="Assignment Details"
-                    iconBg="rgba(52,200,138,0.25)"
-                  >
-                    {userType !== "staff" && (
-                      <DetailRow
-                        label="Assigned To"
-                        value={toTitleCase(selectedShift.guard)}
-                      />
-                    )}
-                    <DetailRow
-                      label="Job Type"
-                      value={toTitleCase(selectedShift?.jobType) || "N/A"}
-                    />
-                    <DetailRow
-                      label="Job Amount"
-                      value={
-                        selectedShift.jobAmount
-                          ? `$${parseFloat(selectedShift.jobAmount)}`
-                          : "N/A"
-                      }
-                    />
-                  </DetailCard> */}
                 </View>
 
-                {/* Assign staff section (for contractors) */}
-                {/* {selectedShift.jobStatus === "pending" && !isRestrictedUser && (
-                  <View
-                    style={[
-                      styles.assignSection,
-                      { marginHorizontal: 16, marginTop: 16 },
-                    ]}
-                  >
-                    <Text style={styles.assignLabel}>Assign to staff</Text>
-                    {loadingStaff ? (
-                      <ActivityIndicator
-                        size="small"
-                        color={COLORS.primary}
-                        style={{ marginTop: 12 }}
-                      />
-                    ) : staffList.length === 0 ? (
-                      <Text style={styles.noStaffText}>No staff available</Text>
-                    ) : (
-                      <View style={styles.pickerContainer}>
-                        <Picker
-                          selectedValue={selectedStaffId}
-                          onValueChange={(val) => setSelectedStaffId(val)}
-                          style={styles.picker}
-                        >
-                          <Picker.Item
-                            label="Select staff..."
-                            value={null}
-                            color="#aaa"
-                          />
-                          {staffList.map((s) => (
-                            <Picker.Item
-                              key={s.id}
-                              label={s.name}
-                              value={s.id}
-                              color="#000"
-                            />
-                          ))}
-                        </Picker>
-                      </View>
-                    )}
-
-                    <TouchableOpacity
-                      style={[
-                        styles.acceptBtn,
-                        (!selectedStaffId || accepting) &&
-                          styles.acceptDisabled,
-                      ]}
-                      onPress={handleAcceptJob}
-                      disabled={!selectedStaffId || accepting}
-                    >
-                      {accepting ? (
-                        <ActivityIndicator color="#fff" size="small" />
-                      ) : (
-                        <Text style={styles.acceptText}>
-                          {selectedStaffId
-                            ? "Assign Shift"
-                            : "Select Staff First"}
-                        </Text>
-                      )}
-                    </TouchableOpacity>
-                  </View>
-                )} */}
-
-                {/* Close Button */}
                 <TouchableOpacity
                   style={[
                     styles.closeBtn,
@@ -1579,7 +1418,6 @@ export default function WeeklyRosterScreen({ navigation }: any) {
   );
 }
 
-// ─── DETAIL MODAL STYLES ────────────────────────────────────────────────────────
 const detailStyles = StyleSheet.create({
   modalHeader: {
     backgroundColor: COLORS.primary,
@@ -1697,22 +1535,25 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.background,
   },
-  // Fixed (non-scrolling) top section: hero, search, date navigator,
-  // section header. Only the shifts list below it scrolls.
+
   fixedHeader: {
     backgroundColor: COLORS.background,
     paddingBottom: 5,
   },
   scroll: { flex: 1 },
-
+  heroTextContainer: {
+    flex: 1,
+    marginLeft: 10,
+    justifyContent: "center",
+  },
   hero: {
-    paddingTop: Platform.OS === "ios" ? 5 : 26,
+    paddingTop: Platform.OS === "ios" ? 5 : 15,
     paddingBottom: 10,
     paddingHorizontal: Platform.OS === "ios" ? 0 : 10,
     borderBottomLeftRadius: 26,
     borderBottomRightRadius: 26,
     borderColor: COLORS.cardBorder,
-     height: Platform.OS === "ios" ? 200 : undefined,
+    height: Platform.OS === "ios" ? 200 : undefined,
   },
   heroInner: {
     width: "100%",
@@ -1758,13 +1599,13 @@ const styles = StyleSheet.create({
     letterSpacing: 0.6,
   },
   heroTitle: {
-    fontSize: 22,
+    fontSize: 18,
     fontWeight: "800",
     color: COLORS.text,
     marginBottom: 2,
   },
   heroSubtitle: {
-    fontSize: 13,
+    fontSize: 12,
     color: COLORS.textSecondary,
     marginBottom: 10,
   },
@@ -1775,9 +1616,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: COLORS.cardBorder,
     borderRadius: 16,
-    paddingVertical: 14,
+    paddingVertical: 10,
     paddingHorizontal: 12,
-    paddingBottom: 12,
+    // paddingBottom: 12,
   },
   statBox: {
     flex: 1,
@@ -1792,7 +1633,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.6,
   },
   statValue: {
-    fontSize: 13,
+    fontSize: 11,
     fontWeight: "700",
     color: COLORS.text,
     flexShrink: 1,
@@ -1817,7 +1658,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: COLORS.cardBorder,
     borderRadius: 14,
-    paddingHorizontal: 14,
+    paddingHorizontal: 12,
     paddingVertical: 12,
   },
   searchInput: {
