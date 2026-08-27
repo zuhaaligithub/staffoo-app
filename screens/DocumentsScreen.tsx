@@ -378,6 +378,68 @@ export default function DocumentsScreen({ navigation }: Props) {
   const [uploadingWorkRights, setUploadingWorkRights] = useState(false);
   const [workRightsError, setWorkRightsError] = useState("");
 
+  const SHARED_DOC_MATCHERS = [
+    (key: string) => key.includes("public liability"),
+    (key: string) =>
+      key.includes("security") &&
+      (key.includes("membership") || key.includes("member")),
+    (key: string) => key.includes("asic"),
+  ];
+
+  const normalizeDocKey = (name?: string) =>
+    (name || "").toLowerCase().trim().replace(/\s+/g, " ");
+
+  const isSharedDocumentType = (name?: string): boolean => {
+    const key = normalizeDocKey(name);
+    return SHARED_DOC_MATCHERS.some((fn) => fn(key));
+  };
+
+  /** Same shared type, any category, with a real file */
+  const findSharedUploadedDoc = (
+    docs: Document[],
+    docName?: string,
+    excludeCategory?: string | null,
+  ): Document | undefined => {
+    if (!isSharedDocumentType(docName)) return undefined;
+    const key = normalizeDocKey(docName);
+
+    return docs.find((other) => {
+      if (excludeCategory && other.document_category === excludeCategory) {
+        return false;
+      }
+      if (!other.file || !String(other.file).trim()) return false;
+      const otherKey = normalizeDocKey(other.document_name);
+      if (otherKey === key) return true;
+      return SHARED_DOC_MATCHERS.some((fn) => fn(key) && fn(otherKey));
+    });
+  };
+
+  /** Fill empty state docs from an already-uploaded shared copy */
+  const withInheritedSharedFiles = (
+    stateDocs: Document[],
+    allDocs: Document[],
+    stateCategory: string | null,
+  ): Document[] =>
+    stateDocs.map((doc) => {
+      if (doc.file && String(doc.file).trim()) return doc;
+
+      const shared = findSharedUploadedDoc(
+        allDocs,
+        doc.document_name,
+        stateCategory,
+      );
+      if (!shared) return doc;
+
+      return {
+        ...doc,
+        file: shared.file,
+        document_no: doc.document_no || shared.document_no,
+        document_expiry: doc.document_expiry || shared.document_expiry,
+        working_rights: doc.working_rights || shared.working_rights,
+        _inheritedFrom: shared.document_category,
+      } as Document & { _inheritedFrom?: string };
+    });
+
   const isVisaDocType = (opts: {
     label?: string | null;
     value?: string | null;
@@ -425,8 +487,15 @@ export default function DocumentsScreen({ navigation }: Props) {
   const displayedDocuments = useMemo(() => {
     if (!isContractor) return uploadedDocuments;
     if (!selectedStateCategory) return uploadedDocuments;
-    return uploadedDocuments.filter(
+
+    const stateDocs = uploadedDocuments.filter(
       (d) => d.document_category === selectedStateCategory,
+    );
+
+    return withInheritedSharedFiles(
+      stateDocs,
+      uploadedDocuments,
+      selectedStateCategory,
     );
   }, [isContractor, uploadedDocuments, selectedStateCategory]);
 
@@ -447,16 +516,35 @@ export default function DocumentsScreen({ navigation }: Props) {
 
   const haveAllRequiredDocs =
     Array.isArray(allRequiredStateDocuments) &&
-    allRequiredStateDocuments.every(
-      (d) => !!(d.file && String(d.file).trim().length > 0),
-    );
+    allRequiredStateDocuments.every((d) => {
+      if (d.file && String(d.file).trim().length > 0) return true;
+      // Shared type already uploaded under another state/category counts
+      return !!findSharedUploadedDoc(
+        uploadedDocuments,
+        d.document_name,
+        d.document_category,
+      );
+    });
 
   const everyAllowedStateHasDocs = useMemo(() => {
     if (!isContractor) return true;
     if (contractorStateTabs.length === 0) return true;
-    return contractorStateTabs.every((tab) =>
-      uploadedDocuments.some((d) => d.document_category === tab.category),
-    );
+
+    return contractorStateTabs.every((tab) => {
+      const tabDocs = uploadedDocuments.filter(
+        (d) => d.document_category === tab.category,
+      );
+      if (tabDocs.length === 0) return false;
+
+      return tabDocs.every((d) => {
+        if (d.file && String(d.file).trim().length > 0) return true;
+        return !!findSharedUploadedDoc(
+          uploadedDocuments,
+          d.document_name,
+          tab.category,
+        );
+      });
+    });
   }, [isContractor, contractorStateTabs, uploadedDocuments]);
 
   const isProfileComplete = haveAllRequiredDocs && everyAllowedStateHasDocs;
@@ -1571,9 +1659,14 @@ export default function DocumentsScreen({ navigation }: Props) {
             );
             const tabComplete =
               tabDocs.length > 0 &&
-              tabDocs.every(
-                (d) => !!(d.file && String(d.file).trim().length > 0),
-              );
+              tabDocs.every((d) => {
+                if (d.file && String(d.file).trim().length > 0) return true;
+                return !!findSharedUploadedDoc(
+                  uploadedDocuments,
+                  d.document_name,
+                  tab.category,
+                );
+              });
             return (
               <TouchableOpacity
                 key={tab.category}
@@ -2137,7 +2230,7 @@ const styles = StyleSheet.create({
     borderTopColor: THEME.border,
   },
   proceedHintText: {
-    color: THEME.textMuted,
+    color: "#d1cdcd",
     fontSize: 11,
     textAlign: "center",
     marginBottom: 8,

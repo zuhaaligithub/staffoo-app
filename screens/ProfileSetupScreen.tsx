@@ -372,7 +372,6 @@ export default function ProfileSetupScreen({ navigation }: Props) {
       originCountry: originCountry.trim(),
     });
 
-  
   useEffect(() => {
     if (!fetching && initialSnapshotRef.current === null) {
       requestAnimationFrame(() => {
@@ -435,7 +434,6 @@ export default function ProfileSetupScreen({ navigation }: Props) {
     imageFile,
     fetching,
   ]);
-
 
   const toggleState = (state: string) => {
     setSelectedStates((prev) =>
@@ -584,10 +582,10 @@ export default function ProfileSetupScreen({ navigation }: Props) {
           setAbn(formatABN(profile?.contractor?.abn ?? ""));
 
           setSecurityLicenseNo(
-    profile?.contractor?.security_license_no ??
-      profile?.security_license_no ??
-      "",
-  );
+            profile?.contractor?.security_license_no ??
+              profile?.security_license_no ??
+              "",
+          );
 
           // 1. Check for documents array in response
           const documents = profile?.documents || [];
@@ -1188,7 +1186,6 @@ export default function ProfileSetupScreen({ navigation }: Props) {
     setCoordinates(null);
   };
 
- 
   const scrollToAddressField = () => {
     requestAnimationFrame(() => {
       scrollRef.current?.scrollToFocusedInput?.(addressInputRef.current);
@@ -1406,26 +1403,26 @@ export default function ProfileSetupScreen({ navigation }: Props) {
               maxLength={14}
             />
             <View style={styles.field}>
-      <Text style={styles.label}>Security Master License</Text>
-      <LinearGradient
-        colors={["#171d30", "#171d30"]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={styles.inputContainer}
-      >
-        <FileText size={20} color="#fff" style={styles.inputIcon} />
-        <TextInput
-          style={styles.input}
-          value={securityLicenseNo}
-          onChangeText={setSecurityLicenseNo}
-          placeholder="Enter Security Master License"
-          placeholderTextColor="rgba(255,255,255,0.6)"
-          autoCapitalize="characters"
-        />
-      </LinearGradient>
-    </View>
+              <Text style={styles.label}>Security Master License</Text>
+              <LinearGradient
+                colors={["#171d30", "#171d30"]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.inputContainer}
+              >
+                <FileText size={20} color="#fff" style={styles.inputIcon} />
+                <TextInput
+                  style={styles.input}
+                  value={securityLicenseNo}
+                  onChangeText={setSecurityLicenseNo}
+                  placeholder="Enter Security Master License"
+                  placeholderTextColor="rgba(255,255,255,0.6)"
+                  autoCapitalize="characters"
+                />
+              </LinearGradient>
+            </View>
             <View style={styles.field}>
-              <Text style={styles.label}>Operating States</Text>
+              <Text style={styles.label}>Select States</Text>
 
               <TouchableOpacity
                 onPress={() => setShowStatesModal(true)}

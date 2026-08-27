@@ -46,6 +46,42 @@ import { useStaffShiftsController } from "./shifts/useStaffShiftsController";
 type Props = { navigation: any; route: any };
 
 export default function AcceptedJobsScreen({ navigation, route }: Props) {
+
+  const formatHoursLabel = (hours: number | string | null | undefined): string => {
+  const n = typeof hours === "string" ? parseFloat(hours) : Number(hours);
+  if (!n || isNaN(n) || n <= 0) return "—";
+
+  const totalMinutes = Math.round(n * 60);
+  const h = Math.floor(totalMinutes / 60);
+  const m = totalMinutes % 60;
+
+  if (h === 0) return `${m} minute${m === 1 ? "" : "s"}`;
+  if (m === 0) return `${h}h`;
+  return `${h}h ${m} minute${m === 1 ? "" : "s"}`;
+};
+
+/** Prefer API hours; otherwise derive from start/end (handles overnight). */
+const getJobHoursLabel = (job: any): string => {
+  if (!job) return "—";
+
+  const apiHours = job?.hours ?? job?.total_hours ?? job?.job_hours;
+  if (apiHours != null && apiHours !== "" && !isNaN(Number(apiHours))) {
+    return formatHoursLabel(apiHours);
+  }
+
+  const startRaw = job?.start || job?.start_time;
+  const endRaw = job?.end || job?.end_time;
+  if (!startRaw || !endRaw) return "—";
+
+  const start = new Date(startRaw);
+  const end = new Date(endRaw);
+  if (isNaN(start.getTime()) || isNaN(end.getTime())) return "—";
+
+  let diffMs = end.getTime() - start.getTime();
+  if (diffMs < 0) diffMs += 24 * 60 * 60 * 1000; // overnight
+
+  return formatHoursLabel(diffMs / (1000 * 60 * 60));
+};
   const insets = useSafeAreaInsets();
   const {
     screenMode,
@@ -267,14 +303,13 @@ export default function AcceptedJobsScreen({ navigation, route }: Props) {
               </Text>
             </View>
           </View>
-          <View style={styles.infoRow}>
-            <Clock size={16} color={COLORS.primary} />
-
-            <View style={{ flex: 1 }}>
-              <Text style={assignStyles.infoLabel}>Total Hours</Text>
-              <Text style={styles.infoText}>{jobData?.hours ?? "—"}</Text>
-            </View>
-          </View>
+        <View style={styles.infoRow}>
+  <Clock size={16} color={COLORS.primary} />
+  <View style={{ flex: 1 }}>
+    <Text style={assignStyles.infoLabel}>Total Hours</Text>
+    <Text style={styles.infoText}>{getJobHoursLabel(jobData)}</Text>
+  </View>
+</View>
 
           {/* ── Required Documents ── */}
           {(notifHasWorkingWithChildren || notifHasWhiteCard) && (

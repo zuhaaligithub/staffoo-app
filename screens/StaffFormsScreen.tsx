@@ -13,9 +13,7 @@ import {
   Modal,
   Platform,
   Animated,
- 
   Linking,
-  
 } from "react-native";
 
 import RNFS from "react-native-fs";
@@ -237,7 +235,6 @@ const StaffFormsScreen = ({ navigation }: any) => {
     }, 400);
   };
 
-
   useEffect(() => {
     const loadAllFormData = async () => {
       if (userId && activeStaffTab) {
@@ -388,7 +385,7 @@ const StaffFormsScreen = ({ navigation }: any) => {
         security_license:
           !!(data.security_license_checkbox || data.security_license_no) ||
           prev.security_license,
-      
+
         medicare_or_utility: prev.medicare_or_utility,
       }));
     } catch (error) {
@@ -748,7 +745,6 @@ const StaffFormsScreen = ({ navigation }: any) => {
     }
   };
 
-
   const generateTfnPdf = async (data: Record<string, any>): Promise<string> => {
     const formatAUDate = (dateStr?: string): string => {
       if (!dateStr) return "__/__/____";
@@ -786,12 +782,12 @@ const StaffFormsScreen = ({ navigation }: any) => {
 <style>
   @page { margin: 0; size: A4; }
   body { margin: 0; padding: 0; font-family: Helvetica, Arial, sans-serif; color: #222; background: #fff; -webkit-print-color-adjust: exact !important; }
-  .header { background-color: #06264d !important; color: #ffffff !important; text-align: center; padding: 22px 20px 18px; }
+  .header { background-color: #0A7C6E !important; color: #ffffff !important; text-align: center; padding: 22px 20px 18px; }
   .header-title { font-size: 30px; font-weight: bold; }
   .header-sub { font-size: 11px; }
   .content { padding: 25px 30px; }
-  .title { color: #1d4ed8; font-size: 24px; font-weight: bold; margin-bottom: 8px; }
-  .title-line { height: 3px; background: #2563eb; margin-bottom: 20px; }
+  .title { color: #0A7C6E; font-size: 24px; font-weight: bold; margin-bottom: 8px; }
+  .title-line { height: 3px; background: #0A7C6E; margin-bottom: 20px; }
   .form-box { border: 1px solid #d5d5d5; }
   .section { border-bottom: 1px solid #ddd; padding: 14px 16px; }
   .label { font-size: 11px; font-weight: bold; margin-bottom: 6px; color: #333; }
@@ -920,14 +916,14 @@ const StaffFormsScreen = ({ navigation }: any) => {
 <style>
   @page { size: A4; margin: 0; }
   html, body { margin: 0; padding: 0; font-family: Helvetica, Arial, sans-serif; background: #fff; -webkit-print-color-adjust: exact !important; }
-  .header { background-color: #06264d !important; color: #ffffff !important; text-align: center; padding: 22px 20px 18px; }
+  .header { background-color: #0A7C6E !important; color: #ffffff !important; text-align: center; padding: 22px 20px 18px; }
   body { margin: 0; padding: 0; font-family: Helvetica, Arial, sans-serif; color: #222; background: #fff; }
   .page { width: 100%; padding: 0; }
   .header-title { font-size: 30px; font-weight: bold; letter-spacing: 1px; margin-bottom: 5px; }
   .header-sub { font-size: 11px; opacity: 0.95; }
   .content { padding: 22px 28px 30px; }
-  .title { color: #2563eb; font-size: 17px; font-weight: bold; margin-bottom: 6px; }
-  .title-line { height: 2px; background: #3b82f6; margin-bottom: 12px; }
+  .title { color: #0A7C6E; font-size: 17px; font-weight: bold; margin-bottom: 6px; }
+  .title-line { height: 2px; background: #0A7C6E; margin-bottom: 12px; }
   .form-box { border: 1px solid #d7d7d7; }
   .section { border-bottom: 1px solid #dcdcdc; padding: 10px 12px; }
   .label { font-size: 10px; font-weight: bold; margin-bottom: 5px; color: #222; }
@@ -1077,13 +1073,13 @@ const StaffFormsScreen = ({ navigation }: any) => {
   @page { size: A4; margin: 0; }
   html, body { margin: 0; padding: 0; background: #fff; font-family: Helvetica, Arial, sans-serif; -webkit-print-color-adjust: exact !important; }
   body { margin: 0; padding: 0; color: #222; }
-  .header { background-color: #06264d !important; color: #ffffff !important; text-align: center; padding: 22px 20px 18px; display: flex; justify-content: space-between; align-items: center; }
+  .header { background-color: #0A7C6E !important; color: #ffffff !important; text-align: center; padding: 22px 20px 18px; display: flex; justify-content: space-between; align-items: center; }
   .header-left { font-size: 24px; font-weight: bold; }
   .header-right { text-align: right; font-size: 8px; line-height: 1.4; }
   .content { padding: 10px 18px 14px; }
-  .title { text-align: center; color: #1d4ed8; font-size: 16px; font-weight: bold; margin-bottom: 8px; }
-  .notice { border: 1px dashed #2563eb; background: #eef4ff; color: #1e3a8a; font-size: 8px; text-align: center; padding: 5px; margin-bottom: 10px; font-weight: bold; }
-  .section-title { background: #f1f5ff; color: #1d4ed8; font-size: 10px; font-weight: bold; padding: 4px 6px; margin-top: 8px; border-left: 3px solid #2563eb; }
+  .title { text-align: center; color: #0A7C6E; font-size: 16px; font-weight: bold; margin-bottom: 8px; }
+  .notice { border: 1px dashed #0A7C6E; background: #eef4ff; color: #0A7C6E; font-size: 8px; text-align: center; padding: 5px; margin-bottom: 10px; font-weight: bold; }
+  .section-title { background: #f1f5ff; color: #0A7C6E; font-size: 10px; font-weight: bold; padding: 4px 6px; margin-top: 8px; border-left: 3px solid #0A7C6E; }
   .row { display: flex; gap: 10px; margin-top: 4px; }
   .field { flex: 1; }
   .field-label { font-size: 8px; font-weight: bold; margin-bottom: 2px; color: #333; }
@@ -1342,7 +1338,6 @@ const StaffFormsScreen = ({ navigation }: any) => {
     }
   };
 
-  
   const openPdf = async (url?: string) => {
     if (!url) return;
     try {
@@ -1431,9 +1426,7 @@ const StaffFormsScreen = ({ navigation }: any) => {
           setDateTfnBackend(formData.signed_date);
           setDateTfn(formatDateToDDMMYYYY(formData.signed_date));
         }
-      }
-
-      else if (activeStaffTab === "super") {
+      } else if (activeStaffTab === "super") {
         if (formData.full_name) setSuperFullName(formData.full_name);
         setSuperEmployeeNumber(formData.employee_number || "");
         setFundChoice(formData.fund_choice || "employer");
@@ -1449,9 +1442,7 @@ const StaffFormsScreen = ({ navigation }: any) => {
           setDateSuperBackend(formData.signed_date);
           setDateSuper(formatDateToDDMMYYYY(formData.signed_date));
         }
-      }
-
-      else if (activeStaffTab === "onboarding") {
+      } else if (activeStaffTab === "onboarding") {
         setOnboardTfn(formData.tfn || "");
         setOnboardSuperFundName(formData.super_fund || "");
         setOnboardSuperUsi(formData.super_usi || "");
@@ -1811,7 +1802,6 @@ const StaffFormsScreen = ({ navigation }: any) => {
     return false;
   };
 
-
   if (fetching) {
     return (
       <SafeAreaView style={s.container}>
@@ -2137,7 +2127,7 @@ const StaffFormsScreen = ({ navigation }: any) => {
                     justifyContent: "center",
                     alignItems: "center",
                     backgroundColor: superConfirmation
-                      ? "#2563EB"
+                      ? "#0A7C6E"
                       : "transparent",
                   }}
                 >
@@ -2878,7 +2868,6 @@ const DocUploadField = ({
   </View>
 );
 
-
 const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#030508", paddingTop: 25 },
   fieldWrapper: { marginBottom: 16 },
@@ -3044,7 +3033,7 @@ const s = StyleSheet.create({
     alignItems: "center",
     marginTop: 20,
   },
-  saveBtnText: { color: '#fff', fontSize: 15, fontWeight: "700" },
+  saveBtnText: { color: "#fff", fontSize: 15, fontWeight: "700" },
   downloadBtn: {
     flexDirection: "row",
     backgroundColor: "#fff",
@@ -3118,13 +3107,12 @@ const s = StyleSheet.create({
     backgroundColor: CARD_BG,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
-     borderBottomLeftRadius: 20,
+    borderBottomLeftRadius: 20,
     borderBottomRightRadius: 20,
     padding: 12,
-    borderWidth:2,
-     borderColor: "#748397",
+    borderWidth: 2,
+    borderColor: "#748397",
     paddingBottom: 30,
-   
   },
   modalHandle: {
     width: 40,
@@ -3146,7 +3134,7 @@ const s = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     paddingVertical: 12,
-     paddingHorizontal:15,
+    paddingHorizontal: 15,
     borderBottomWidth: 1,
     borderBottomColor: "rgba(255,255,255,0.05)",
     backgroundColor: "transparent",
@@ -3181,7 +3169,7 @@ const s = StyleSheet.create({
     elevation: 8,
   },
   tabLabel: { fontSize: 10, fontWeight: "700", color: "#94A3B8", marginTop: 4 },
-  tabLabelActive: { color: '#fff', fontWeight: "700" },
+  tabLabelActive: { color: "#fff", fontWeight: "700" },
   docUploadRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -3198,7 +3186,7 @@ const s = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  docPickBtnText: { color: '#fff', fontSize: 13, fontWeight: "700" },
+  docPickBtnText: { color: "#fff", fontSize: 13, fontWeight: "700" },
   docFileName: { flex: 1, color: "#fff", fontSize: 12, paddingHorizontal: 10 },
   docClearBtn: { padding: 10 },
   docViewBtn: {

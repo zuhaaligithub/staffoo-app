@@ -1,19 +1,4 @@
-/**
- * Shift price-breakdown calculator
- *
- * Day-type rules (based on the calendar date the hour falls on)
- * -------------------------------------------------------------
- * weekday  : Monday – Thursday  (getDay 1-4)
- * fri      : Friday             (getDay 5)
- * sat      : Saturday           (getDay 6)
- * sun      : Sunday             (getDay 0)
- *
- * Each day type has separate rates for day (06:00–18:00) and night (18:00–06:00).
- * The shift is split at midnight, 06:00, and 18:00 so each segment is billed
- * at the correct day-type + slot rate.
- */
 
-// ─── Types & Interfaces ─────────────────────────────────────────────────────
 
 export type DayType = 'weekday' | 'fri' | 'sat' | 'sun';
 export type Slot = 'day' | 'night';

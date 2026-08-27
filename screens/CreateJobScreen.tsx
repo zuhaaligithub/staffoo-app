@@ -1,5 +1,3 @@
-
-
 import React, {
   useState,
   useMemo,
@@ -197,7 +195,6 @@ const datesBetween = (from: Date, to: Date): Date[] => {
   return dates;
 };
 
-
 const combineDateAndTime = (anchorDate: Date, timePicker: Date): Date => {
   const anchor =
     anchorDate instanceof Date && !isNaN(anchorDate.getTime())
@@ -276,7 +273,6 @@ const splitShift = (
   return result;
 };
 
-
 const makeDefaultShift = (anchorDate?: Date): Shift => {
   try {
     const base =
@@ -315,7 +311,6 @@ const makeDefaultShift = (anchorDate?: Date): Shift => {
     };
   }
 };
-
 
 const makeDaySchedule = (date: Date): DaySchedule => ({
   date: date || new Date(),
@@ -412,14 +407,18 @@ export default function CreateJobScreen() {
     description: "",
   });
 
-  const [autocompleteQuery, setAutocompleteQuery] = useState("");
-  const [suggestions, setSuggestions] = useState<PlacePrediction[]>([]);
-  const [loadingSuggestions, setLoadingSuggestions] = useState(false);
-  const [locationStateCode, setLocationStateCode] = useState<string>("");
   const [stateMatch, setStateMatch] = useState<boolean | null>(null);
   const [userAllowedStates, setUserAllowedStates] = useState<string[]>([]);
   const [calculatingQuote, setCalculatingQuote] = useState(false);
   const canSplitShifts = () => stateMatch !== false;
+
+  const [autocompleteQuery, setAutocompleteQuery] = useState("");
+  const [suggestions, setSuggestions] = useState<PlacePrediction[]>([]);
+  const [loadingSuggestions, setLoadingSuggestions] = useState(false);
+  // After picking a suggestion we write the full address into autocompleteQuery.
+  // This ref skips the next Places fetch so the suggestion list does not reopen.
+  const suppressAutocompleteRef = useRef(false);
+  const [locationStateCode, setLocationStateCode] = useState<string>("");
 
   const [scheduleMode, setScheduleMode] = useState<ScheduleMode>("single");
   const [multiDayMode, setMultiDayMode] = useState<MultiDayMode>("individual");
@@ -751,6 +750,14 @@ export default function CreateJobScreen() {
   );
 
   useEffect(() => {
+    // Skip one cycle after a suggestion is chosen (query was set programmatically)
+    if (suppressAutocompleteRef.current) {
+      suppressAutocompleteRef.current = false;
+      setSuggestions([]);
+      setLoadingSuggestions(false);
+      return;
+    }
+
     if (autocompleteQuery.length < 3) {
       setSuggestions([]);
       return;
@@ -763,8 +770,8 @@ export default function CreateJobScreen() {
         const url =
           `https://maps.googleapis.com/maps/api/place/autocomplete/json` +
           `?input=${encodeURIComponent(autocompleteQuery)}` +
-          `&types=address` + 
-          `&components=country:au` + 
+          `&types=address` +
+          `&components=country:au` +
           `&language=en` +
           `&key=${GOOGLE_PLACES_KEY}`;
 
@@ -789,12 +796,16 @@ export default function CreateJobScreen() {
   }, [autocompleteQuery]);
 
   const selectSuggestion = async (prediction: PlacePrediction) => {
-    setAutocompleteQuery("");
+    // Close list immediately
     setSuggestions([]);
+    setLoadingSuggestions(false);
     setErrors((prev) => ({ ...prev, location: undefined }));
 
+    // Show chosen text right away without reopening suggestions
+    suppressAutocompleteRef.current = true;
+    setAutocompleteQuery(prediction.description);
+
     try {
-      // Request address_components so we can extract the state
       const url = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${prediction.place_id}&fields=geometry,address_components,formatted_address&key=${GOOGLE_PLACES_KEY}`;
 
       const res = await fetch(url);
@@ -804,7 +815,10 @@ export default function CreateJobScreen() {
         const { lat, lng } = json.result.geometry.location;
         const address = json.result.formatted_address || prediction.description;
 
-        // Extract Australian state code (administrative_area_level_1)
+        // Update to formatted address — suppress so list stays closed
+        suppressAutocompleteRef.current = true;
+        setAutocompleteQuery(address);
+
         let stateCode = "";
         const components = json.result.address_components || [];
 
@@ -813,8 +827,7 @@ export default function CreateJobScreen() {
         );
 
         if (stateComponent) {
-          // Google usually returns "VIC", "QLD", "NSW", etc.
-          stateCode = stateComponent.short_name.toLowerCase(); // → "vic", "qld", ...
+          stateCode = stateComponent.short_name.toLowerCase();
         }
 
         setLocationStateCode(stateCode);
@@ -826,7 +839,6 @@ export default function CreateJobScreen() {
           lng,
         }));
 
-        // Animate map
         if (mapReady && mapRef.current) {
           mapRef.current.animateToRegion(
             {
@@ -839,7 +851,6 @@ export default function CreateJobScreen() {
           );
         }
 
-        // ── Call your check-state API ──────────────────────────────
         if (stateCode) {
           await callCheckState(stateCode);
         } else {
@@ -879,7 +890,6 @@ export default function CreateJobScreen() {
       setUserAllowedStates([]);
     }
   };
-
 
   useEffect(() => {
     if (scheduleMode !== "range" || multiDayMode !== "range") return;
@@ -1527,7 +1537,6 @@ export default function CreateJobScreen() {
     }
   };
 
-
   const validateAndNext = async () => {
     const newErrors: FormErrors = {};
 
@@ -1557,7 +1566,6 @@ export default function CreateJobScreen() {
         : multiDayMode === "individual"
         ? individualSchedules
         : rangeSchedules;
-
 
     if (canSplitShifts()) {
       let hasInvalidShift = false;
@@ -1634,7 +1642,6 @@ export default function CreateJobScreen() {
       return;
     }
 
-   
     const pad2 = (n: number) => String(n).padStart(2, "0");
     const formatApiDateTime = (d: Date) =>
       `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())} ${pad2(
@@ -1720,6 +1727,17 @@ export default function CreateJobScreen() {
       setCalculatingQuote(false);
     }
   };
+
+// e.g. 5.75 (22:15 → 04:00) → "5h 45 minutes"
+const formatManHoursLabel = (hours: number): string => {
+  if (!hours || hours <= 0) return "0h";
+  const totalMinutes = Math.round(hours * 60);
+  const h = Math.floor(totalMinutes / 60);
+  const m = totalMinutes % 60;
+  if (h === 0) return `${m} minute${m === 1 ? "" : "s"}`;
+  if (m === 0) return `${h}h`;
+  return `${h}h ${m} minute${m === 1 ? "" : "s"}`;
+};
 
   useEffect(() => {
     if (!form.category) return;
@@ -1919,11 +1937,26 @@ export default function CreateJobScreen() {
                 style={styles.searchBarInput}
                 placeholder="Search job site address..."
                 placeholderTextColor={TEXT_MUTED}
-                value={autocompleteQuery || form.location}
-                onChangeText={setAutocompleteQuery}
+                value={autocompleteQuery}
+                onChangeText={(text) => {
+                  setAutocompleteQuery(text);
+                  // Editing / clearing via keyboard — drop previous selection
+                  // so the value doesn't snap back to form.location
+                  if (form.location) {
+                    setForm((prev) => ({
+                      ...prev,
+                      location: "",
+                      lat: DEFAULT_LOCATION.lat,
+                      lng: DEFAULT_LOCATION.lng,
+                    }));
+                    setLocationStateCode("");
+                    setStateMatch(null);
+                    setUserAllowedStates([]);
+                  }
+                }}
               />
 
-              {(form.location || autocompleteQuery) && (
+              {!!autocompleteQuery && (
                 <TouchableOpacity
                   onPress={() => {
                     setAutocompleteQuery("");
@@ -1957,7 +1990,7 @@ export default function CreateJobScreen() {
               <TouchableOpacity
                 key={item.place_id}
                 style={styles.suggestionRow}
-                onPress={() => selectSuggestion(item)}
+                onPressIn={() => selectSuggestion(item)} // Changed from onPress to onPressIn
               >
                 <MapPin
                   size={16}
@@ -1969,7 +2002,6 @@ export default function CreateJobScreen() {
                 </Text>
               </TouchableOpacity>
             ))}
-
             <View style={styles.mapFrame}>
               <MapView
                 ref={mapRef}
@@ -2253,17 +2285,21 @@ export default function CreateJobScreen() {
           </ScheduleErrorBoundary>
 
           {/* Hours Summary */}
-          <View style={styles.quotationSummaryCard}>
-            <View
-              style={{ flexDirection: "row", justifyContent: "space-between" }}
-            >
-              <Text style={{ color: TEXT_MUTED }}>Calculated Hours</Text>
-              <Text style={{ color: "#FFF", fontWeight: "700" }}>
-                {totalManHours} Hours
-              </Text>
+          <View style={styles.calculatedcard}>
+            <View style={styles.quotationSummaryCard}>
+              <View
+                style={{
+                  flexDirection: "row",
+                  justifyContent: "space-between",
+                }}
+              >
+                <Text style={{ color: TEXT_MUTED }}>Calculated Hours</Text>
+                <Text style={{ color: "#FFF", fontWeight: "700" }}>
+                  {formatManHoursLabel(totalManHours)}
+                </Text>
+              </View>
             </View>
           </View>
-
           {/* Category */}
           <View style={styles.sectionCard}>
             <Text style={styles.inputLabel}>Job Category *</Text>
@@ -2775,6 +2811,14 @@ const styles = StyleSheet.create({
   },
   backButton: { padding: 4 },
   headerTitle: { color: "#FFF", fontSize: 18, fontWeight: "700" },
+  calculatedcard: {
+    borderRadius: 16,
+    padding: 18,
+    marginBottom: 16,
+    paddingBottom: 0,
+    borderWidth: 1,
+    borderColor: BORDER_COLOR,
+  },
   container: { flex: 1, padding: 16 },
   sectionCard: {
     borderRadius: 16,

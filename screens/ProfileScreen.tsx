@@ -534,7 +534,6 @@ export default function ProfileScreen({ navigation }: Props) {
       },
     ];
 
-
     const parseStatesAllowed = (raw: unknown): string[] => {
       if (!raw) return [];
       if (Array.isArray(raw))
@@ -624,11 +623,11 @@ export default function ProfileScreen({ navigation }: Props) {
 
       filtered = allSections.filter((s) => staffTabs.includes(s.title));
     } else if (type === "contractor") {
-   
       const contractorOrder = [
         "Personal Information",
         "Documents",
         "My Rates",
+         "Privacy Policy",
         "Staff Management",
         "Job History",
         "Timesheet",
@@ -1032,8 +1031,6 @@ export default function ProfileScreen({ navigation }: Props) {
                   </Text>
                 </View>
               </View>
-
-            
             </View>
           </View>
         </View>

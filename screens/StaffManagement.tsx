@@ -1,5 +1,3 @@
-
-
 import React, {
   useEffect,
   useState,
@@ -216,7 +214,7 @@ interface StaffDocument {
 interface AddStaffForm {
   name: string;
   email: string;
-  password: string;
+  // password: string;
   phone: string;
   security_license_no: string;
   gender: string;
@@ -234,7 +232,7 @@ interface EditStaffForm {
   security_license_no: string;
   gender: string;
   address: string;
-  password?: string;
+  // password?: string;
   city?: string;
   state?: string;
   country?: string;
@@ -244,7 +242,7 @@ interface EditStaffForm {
 const EMPTY_ADD_FORM: AddStaffForm = {
   name: "",
   email: "",
-  password: "",
+  // password: "",
   phone: "",
   security_license_no: "",
   gender: "",
@@ -262,7 +260,7 @@ const EMPTY_EDIT_FORM: EditStaffForm = {
   security_license_no: "",
   gender: "",
   address: "",
-  password: undefined,
+  // password: undefined,
   city: undefined,
   state: undefined,
   country: undefined,
@@ -470,7 +468,6 @@ export default function StaffManagement({ navigation }: Props) {
   const [editPredictions, setEditPredictions] = useState<any[]>([]);
   const [showEditSuggestions, setShowEditSuggestions] = useState(false);
 
-
   const [activeModalTab, setActiveModalTab] = useState<
     "personal" | "documents" | "onboarding"
   >("personal");
@@ -660,8 +657,8 @@ export default function StaffManagement({ navigation }: Props) {
     )
       e.email = "Invalid email";
 
-    if (!addForm.password.trim()) e.password = "Password is required";
-    else if (addForm.password.length < 8) e.password = "Min 8 characters";
+    // if (!addForm.password.trim()) e.password = "Password is required";
+    // else if (addForm.password.length < 8) e.password = "Min 8 characters";
 
     if (!addForm.phone.trim()) e.phone = "Phone is required";
     else if (!ausPhoneRegex.test(addForm.phone.replace(/[\s()+-]/g, "")))
@@ -708,7 +705,7 @@ export default function StaffManagement({ navigation }: Props) {
       const payload: any = {
         name: addForm.name,
         email: addForm.email,
-        password: addForm.password,
+        // password: addForm.password,
         phone: addForm.phone,
         security_license_no: addForm.security_license_no,
         gender: addForm.gender,
@@ -770,7 +767,6 @@ export default function StaffManagement({ navigation }: Props) {
       setAddLoading(false);
     }
   };
-
 
   const closeAddModal = () => {
     setShowAddModal(false);
@@ -837,7 +833,7 @@ export default function StaffManagement({ navigation }: Props) {
       security_license_no: raw.staff?.security_license_no || "",
       gender: normalizeGender(raw.staff?.gender || raw.gender),
       address: raw.address || "",
-      password: undefined,
+      // password: undefined,
       city: raw.city || "",
       state: raw.state || "",
       country: raw.country || "",
@@ -848,7 +844,6 @@ export default function StaffManagement({ navigation }: Props) {
     setEditErrors({});
     setShowEditModal(true);
   };
-
 
   const updateStaffAndProceed = async () => {
     if (!editingStaffId || !validateEdit()) return;
@@ -869,7 +864,7 @@ export default function StaffManagement({ navigation }: Props) {
       if (editForm.state) payload.state = editForm.state;
       if (editForm.country) payload.country = editForm.country;
       if (editForm.coordinates) payload.coordinates = editForm.coordinates;
-      if (editForm.password?.trim()) payload.password = editForm.password;
+      // if (editForm.password?.trim()) payload.password = editForm.password;
       await axios.put(
         `${BASE_URL}/admin/update-staff/${editingStaffId}`,
         payload,
@@ -902,7 +897,6 @@ export default function StaffManagement({ navigation }: Props) {
       setEditLoading(false);
     }
   };
-
 
   const closeEditModal = () => {
     setShowEditModal(false);
@@ -1002,24 +996,25 @@ export default function StaffManagement({ navigation }: Props) {
     return result;
   }, [staffDocuments, DYNAMIC_DOC_TYPES, currentStaffUserId]);
 
+  const allDocumentsFilled = useMemo(() => {
+    if (!mergedDocList || mergedDocList.length === 0) return false;
 
-const allDocumentsFilled = useMemo(() => {
-  if (!mergedDocList || mergedDocList.length === 0) return false;
+    const securityDocs = mergedDocList.filter((doc: any) => {
+      const name = (doc.document_name || doc.document_type || "")
+        .toLowerCase()
+        .replace(/[\s_]+/g, " ")
+        .trim();
+      return (
+        name.includes("security license") || name.includes("security licence")
+      );
+    });
 
-  const securityDocs = mergedDocList.filter((doc: any) => {
-    const name = (doc.document_name || doc.document_type || "")
-      .toLowerCase()
-      .replace(/[\s_]+/g, " ")
-      .trim();
-    return name.includes("security license") || name.includes("security licence");
-  });
+    if (securityDocs.length === 0) return false;
 
-  if (securityDocs.length === 0) return false;
-
-  return securityDocs.every(
-    (doc: any) => !!(doc.file && String(doc.file).trim().length > 0),
-  );
-}, [mergedDocList]);
+    return securityDocs.every(
+      (doc: any) => !!(doc.file && String(doc.file).trim().length > 0),
+    );
+  }, [mergedDocList]);
 
   const openFile = async (file?: string | null) => {
     const url = getFileUrl(file);
@@ -1056,7 +1051,6 @@ const allDocumentsFilled = useMemo(() => {
     setIsVerified(false);
   };
 
- 
   const closeDocModal = () => {
     setDocModalVisible(false);
     resetDocForm();
@@ -1641,7 +1635,6 @@ const allDocumentsFilled = useMemo(() => {
         </Text>
       ) : (
         <>
-        
           {mergedDocList.map((doc, index) => {
             const docTypeDef = doc._reqDef || {
               label: doc.document_name,
@@ -1707,7 +1700,7 @@ const allDocumentsFilled = useMemo(() => {
           />
           {errors.email && <Text style={styles.errorText}>{errors.email}</Text>}
 
-          {isAdd && (
+          {/* {isAdd && (
             <>
               <FormField
                 placeholder="Password *"
@@ -1729,7 +1722,7 @@ const allDocumentsFilled = useMemo(() => {
               onChangeText={(t) => setForm((p: any) => ({ ...p, password: t }))}
               secureTextEntry
             />
-          )}
+          )} */}
           <FormField
             placeholder="Phone *"
             value={form.phone}
@@ -1865,7 +1858,6 @@ const allDocumentsFilled = useMemo(() => {
       </KeyboardAvoidingView>
     );
   };
-
 
   const renderDocOverlay = () => {
     if (!docModalVisible) return null;
@@ -2042,7 +2034,6 @@ const allDocumentsFilled = useMemo(() => {
           )}
         </TouchableOpacity>
 
-      
         <Modal
           visible={showInlineCalendar && !isExpiryLocked}
           transparent
@@ -2146,7 +2137,6 @@ const allDocumentsFilled = useMemo(() => {
 
   const renderItem = ({ item }: { item: StaffMember }) => (
     <View style={styles.card}>
-
       <View style={styles.ribbonWrap} pointerEvents="none">
         <View
           style={[
@@ -2272,7 +2262,6 @@ const allDocumentsFilled = useMemo(() => {
         />
       )}
 
-  
       <Modal
         visible={showAddModal}
         transparent
@@ -2373,7 +2362,6 @@ const allDocumentsFilled = useMemo(() => {
           </View>
         </View>
       </Modal>
-
 
       <Modal
         visible={showEditModal}
@@ -2930,7 +2918,7 @@ const docStyles = StyleSheet.create({
     borderTopRightRadius: 24,
     maxHeight: "94%",
   },
- 
+
   docOverlay: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: "#0D1421",
@@ -3081,7 +3069,6 @@ const docStyles = StyleSheet.create({
   },
   saveButtonText: { color: "#fff", fontSize: 15, fontWeight: "bold" },
 
-
   calendarModalOverlay: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.55)",
@@ -3157,7 +3144,6 @@ const docStyles = StyleSheet.create({
     marginHorizontal: 4,
     overflow: "hidden",
   },
-
 
   cardInnerContainer: {
     padding: 16,
