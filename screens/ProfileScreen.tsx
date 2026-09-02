@@ -98,8 +98,13 @@ export default function ProfileScreen({ navigation }: Props) {
   const subscriptionChangeHandlerRef = useRef<
     ((event: any) => Promise<void>) | null
   >(null);
+  const [logoutModalVisible, setLogoutModalVisible] = useState(false);
+  const [lockedModalVisible, setLockedModalVisible] = useState(false);
+  const [lockedModalTitle, setLockedModalTitle] = useState("Section Locked");
+  const [lockedModalMessage, setLockedModalMessage] = useState("");
   const hasLoadedOnceRef = useRef(false);
   const hasShownChargeRatePopupRef = useRef(false);
+  const hasClosedChargeRatePopupRef = useRef(false);
   const [imageFile, setImageFile] = useState<any>(null);
   const GOOGLE_API_KEY = "AIzaSyCS-DB39Kk-Z25C5GWymVGshXIALbjXPGY";
   const getInitials = (name: string): string => {
@@ -163,8 +168,10 @@ export default function ProfileScreen({ navigation }: Props) {
               hasLoadedOnceRef.current = true;
             }
           }
+
           console.log("🔹 getUserProfile called with ID:", uid);
           const profileResponse = await getUserProfile(uid);
+
           if (profileResponse?.success && profileResponse?.data && mounted) {
             const freshData = profileResponse.data;
             applyProfileData(freshData);
@@ -173,22 +180,22 @@ export default function ProfileScreen({ navigation }: Props) {
             const isInactive =
               freshData?.is_active === false || freshData?.is_active === 0;
 
+            // ── Check AsyncStorage to see if it was already shown/closed before ──
+            const hasSeenPopup = await AsyncStorage.getItem(
+              `@popup_shown_${uid}`,
+            );
+
             const shouldShowChargeRatePopup =
               freshData?.user_type === "contractor" &&
               isInactive &&
-              !hasShownChargeRatePopupRef.current;
-
-            console.log("Charge rate popup check:", {
-              userType: freshData?.user_type,
-              is_active: freshData?.is_active,
-              alreadyShown: hasShownChargeRatePopupRef.current,
-              shouldShow: shouldShowChargeRatePopup,
-            });
+              hasSeenPopup !== "true"; // Only true if it hasn't been flagged in storage
 
             if (mounted && shouldShowChargeRatePopup) {
-              hasShownChargeRatePopupRef.current = true;
+              // Immediately flag in AsyncStorage so it never triggers again
+              await AsyncStorage.setItem(`@popup_shown_${uid}`, "true");
               setChargeRatePopupVisible(true);
             }
+
             if (isFirstLoad) {
               updateCoordinatesWithGoogle(uid);
             }
@@ -564,20 +571,25 @@ export default function ProfileScreen({ navigation }: Props) {
       nt: "nt_document",
     };
 
-    const hasCompletedStateDocuments = () => {
+    const hasCompletedStateDocuments = (): boolean => {
       if (!user) return false;
       const allowed = parseStatesAllowed(user?.states_allowed);
       if (!allowed || allowed.length === 0) return false;
+
       const docs: any[] = Array.isArray(user.documents) ? user.documents : [];
+
       for (const code of allowed) {
         const category = STATE_TO_CATEGORY[code];
-        if (!category) return false; // unknown state → treat as incomplete
+        if (!category) return false;
+
         const docsForCategory = docs.filter(
           (d) =>
             String(d.document_category || "").toLowerCase() ===
             String(category).toLowerCase(),
         );
+
         if (docsForCategory.length === 0) return false;
+
         const everyHasFile = docsForCategory.every(
           (d) => !!(d.file && String(d.file).trim().length > 0),
         );
@@ -586,24 +598,60 @@ export default function ProfileScreen({ navigation }: Props) {
       return true;
     };
 
-    const isLocked = (title: string) => {
-      if (isActive) return false; // fully active → nothing locked
-      if (type === "contractor") {
-        if (["Job History", "Staff Management", "Timesheet"].includes(title)) {
-          return true;
+    // ── Progressive unlock helpers ──
+    const hasCompletedPersonalInfo = (): boolean => {
+      if (!user) return false;
+
+      // Basic fields that already exist at registration
+      const hasName = !!(user.name && String(user.name).trim());
+      const hasPhone = !!(user.phone && String(user.phone).trim());
+      const hasEmail = !!(user.email && String(user.email).trim());
+
+      // Fields that are only filled when the user actually saves ProfileSetup
+      const hasAddress = !!(user.address && String(user.address).trim());
+      const hasCity = !!(user.city && String(user.city).trim());
+
+      // Optional: require address if your ProfileSetup forces it
+      // const hasAddress = !!(user.address && String(user.address).trim());
+
+      return hasName && hasPhone && hasEmail && hasAddress && hasCity;
+    };
+
+    const isLocked = (title: string): boolean => {
+      // Fully active → nothing locked
+      if (isActive) return false;
+
+      // Always allow these
+      if (title === "Personal Information" || title === "Log Out") {
+        return false;
+      }
+
+      // Staff: never lock Documents or Verification Forms
+      if (type === "staff") {
+        if (title === "Documents" || title === "Verification Forms") {
+          return false;
         }
+        // Everything else for staff stays locked until account is active
+        return true;
+      }
+
+      // Documents unlocks only after ProfileSetup is saved (contractors / others)
+      if (title === "Documents") {
+        return !hasCompletedPersonalInfo();
+      }
+
+      if (type === "contractor") {
         if (title === "My Rates") {
           return !hasCompletedStateDocuments();
         }
+        // Staff Management, Job History, Timesheet stay locked
+        return true;
       }
-      if (type === "staff") {
-        if (["Induction", "Job History", "Timesheet"].includes(title)) {
-          return true;
-        }
-      }
-      return false;
+
+      return true;
     };
 
+    // ── Filter sections by user type ──
     let filtered: typeof allSections = [];
 
     if (type === "staff") {
@@ -627,7 +675,6 @@ export default function ProfileScreen({ navigation }: Props) {
         "Personal Information",
         "Documents",
         "My Rates",
-         "Privacy Policy",
         "Staff Management",
         "Job History",
         "Timesheet",
@@ -649,6 +696,7 @@ export default function ProfileScreen({ navigation }: Props) {
     } else {
       filtered = allSections;
     }
+
     return filtered.map((s) => ({
       ...s,
       locked: isLocked(s.title),
@@ -657,65 +705,77 @@ export default function ProfileScreen({ navigation }: Props) {
 
   const isProfileComplete = hasCompletedStateDocuments();
 
-  const handleSectionPress = (route: string, locked?: boolean) => {
+  const handleSectionPress = (
+    route: string,
+    locked?: boolean,
+    title?: string,
+  ) => {
     if (locked) {
-      Alert.alert(
-        "Account Not Active",
-        "This section is locked until your account is activated or required documents are completed.",
-        [{ text: "OK" }],
-      );
+      let message =
+        "This section is locked until your account is activated or required steps are completed.";
+
+      if (title === "Documents") {
+        message =
+          "Please complete and save your Personal Information first to unlock Documents.";
+      } else if (title === "My Rates") {
+        message =
+          "Please upload the required documents for your licensed states to unlock My Rates.";
+      }
+
+      setLockedModalTitle("Section Locked");
+      setLockedModalMessage(message);
+      setLockedModalVisible(true);
       return;
     }
+
     if (route === "Logout") {
-      Alert.alert("log out", "Are you sure you want to log out?", [
-        { text: "cancel", style: "cancel" },
-        {
-          text: "log out",
-          style: "destructive",
-          onPress: async () => {
-            try {
-              const token = await AsyncStorage.getItem("@auth_token");
-              if (token) await logoutUser();
-
-              await AsyncStorage.multiRemove([
-                "@user_id",
-                "@auth_token",
-                "user",
-                "profileImage",
-              ]);
-
-              Toast.show({
-                type: "success",
-                text1: "Logged out successfully",
-              });
-
-              navigation.reset({
-                index: 0,
-                routes: [{ name: "Login" }],
-              });
-            } catch {
-              await AsyncStorage.multiRemove([
-                "@user_id",
-                "@auth_token",
-                "user",
-                "profileImage",
-              ]);
-
-              navigation.reset({
-                index: 0,
-                routes: [{ name: "Login" }],
-              });
-            }
-          },
-        },
-      ]);
+      setLogoutModalVisible(true); // ← open custom modal
       return;
     }
+
     if (route === "DeleteProfile") {
       navigation.navigate("DeleteProfileVerification");
       return;
     }
+
     navigation.navigate(route);
+  };
+
+  const performLogout = async () => {
+    setLogoutModalVisible(false);
+    try {
+      const token = await AsyncStorage.getItem("@auth_token");
+      if (token) await logoutUser();
+
+      await AsyncStorage.multiRemove([
+        "@user_id",
+        "@auth_token",
+        "user",
+        "profileImage",
+      ]);
+
+      Toast.show({
+        type: "success",
+        text1: "Logged out successfully",
+      });
+
+      navigation.reset({
+        index: 0,
+        routes: [{ name: "Login" }],
+      });
+    } catch {
+      await AsyncStorage.multiRemove([
+        "@user_id",
+        "@auth_token",
+        "user",
+        "profileImage",
+      ]);
+
+      navigation.reset({
+        index: 0,
+        routes: [{ name: "Login" }],
+      });
+    }
   };
 
   const getFormattedLocation = (data: any) => {
@@ -901,7 +961,9 @@ export default function ProfileScreen({ navigation }: Props) {
           {sections.map((section, index) => (
             <TouchableOpacity
               key={index}
-              onPress={() => handleSectionPress(section.route, section.locked)}
+              onPress={() =>
+                handleSectionPress(section.route, section.locked, section.title)
+              }
               activeOpacity={0.75}
               style={styles.cardWrapper}
             >
@@ -948,7 +1010,10 @@ export default function ProfileScreen({ navigation }: Props) {
         visible={chargeRatePopupVisible}
         transparent
         animationType="fade"
-        onRequestClose={() => setChargeRatePopupVisible(false)}
+        onRequestClose={() => {
+          hasClosedChargeRatePopupRef.current = true; // Mark as closed
+          setChargeRatePopupVisible(false);
+        }}
       >
         <View style={styles.chargeModalOverlay}>
           <View style={styles.reqModalCard}>
@@ -958,7 +1023,10 @@ export default function ProfileScreen({ navigation }: Props) {
                 Complete Your Profile Requirements
               </Text>
               <TouchableOpacity
-                onPress={() => setChargeRatePopupVisible(false)}
+                onPress={() => {
+                  hasClosedChargeRatePopupRef.current = true; // Mark as closed
+                  setChargeRatePopupVisible(false);
+                }}
                 style={styles.chargeModalCloseBtn}
                 hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
               >
@@ -1031,6 +1099,115 @@ export default function ProfileScreen({ navigation }: Props) {
                   </Text>
                 </View>
               </View>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* ── Beautiful Locked Section Modal ── */}
+      {/* ── Locked Section Modal (teal theme) ── */}
+      <Modal
+        visible={lockedModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setLockedModalVisible(false)}
+      >
+        <View style={styles.lockedModalOverlay}>
+          <View style={styles.lockedModalCard}>
+            {/* Top accent – primary teal */}
+            <View
+              style={[
+                styles.lockedModalAccent,
+                { backgroundColor: COLORS.primary },
+              ]}
+            />
+
+            {/* Icon */}
+            <View style={styles.lockedModalIconWrap}>
+              <View
+                style={[
+                  styles.lockedModalIconCircle,
+                  { backgroundColor: "rgba(0,169,157,0.12)" },
+                ]}
+              >
+                <Lock size={28} color={COLORS.primary} />
+              </View>
+            </View>
+
+            {/* Title */}
+            <Text style={styles.lockedModalTitle}>{lockedModalTitle}</Text>
+
+            {/* Message */}
+            <Text style={styles.lockedModalMessage}>{lockedModalMessage}</Text>
+
+            {/* Button */}
+            <TouchableOpacity
+              activeOpacity={0.85}
+              style={[
+                styles.lockedModalBtn,
+                { backgroundColor: COLORS.primary },
+              ]}
+              onPress={() => setLockedModalVisible(false)}
+            >
+              <Text style={[styles.lockedModalBtnText, { color: "#03211E" }]}>
+                Got it
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+      {/* ── Beautiful Logout Confirmation Modal ── */}
+      {/* ── Logout Confirmation Modal (red) ── */}
+      <Modal
+        visible={logoutModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setLogoutModalVisible(false)}
+      >
+        <View style={styles.lockedModalOverlay}>
+          <View style={styles.lockedModalCard}>
+            {/* Top accent – danger red */}
+            <View
+              style={[styles.lockedModalAccent, { backgroundColor: "#EF4444" }]}
+            />
+
+            {/* Icon */}
+            <View style={styles.lockedModalIconWrap}>
+              <View
+                style={[
+                  styles.lockedModalIconCircle,
+                  { backgroundColor: "#FEE2E2" },
+                ]}
+              >
+                <LogOut size={28} color="#EF4444" />
+              </View>
+            </View>
+
+            {/* Title */}
+            <Text style={styles.lockedModalTitle}>Log Out</Text>
+
+            {/* Message */}
+            <Text style={styles.lockedModalMessage}>
+              Are you sure you want to log out of your account?
+            </Text>
+
+            {/* Buttons */}
+            <View style={styles.logoutBtnRow}>
+              <TouchableOpacity
+                activeOpacity={0.85}
+                style={styles.logoutCancelBtn}
+                onPress={() => setLogoutModalVisible(false)}
+              >
+                <Text style={styles.logoutCancelText}>Cancel</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                activeOpacity={0.85}
+                style={styles.logoutConfirmBtn}
+                onPress={performLogout}
+              >
+                <Text style={styles.logoutConfirmText}>Log Out</Text>
+              </TouchableOpacity>
             </View>
           </View>
         </View>
@@ -1635,5 +1812,103 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: "#475569",
     lineHeight: 18,
+  },
+
+  // ── Shared modal base ──
+  lockedModalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.6)",
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 24,
+  },
+  lockedModalCard: {
+    width: "100%",
+    maxWidth: 340,
+    backgroundColor: "#fff",
+    borderRadius: 20,
+    overflow: "hidden",
+    paddingBottom: 24,
+    elevation: 14,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.25,
+    shadowRadius: 20,
+  },
+  lockedModalAccent: {
+    height: 5,
+    // color set inline
+  },
+  lockedModalIconWrap: {
+    alignItems: "center",
+    marginTop: 28,
+    marginBottom: 12,
+  },
+  lockedModalIconCircle: {
+    width: 68,
+    height: 68,
+    borderRadius: 34,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  lockedModalTitle: {
+    fontSize: 20,
+    fontWeight: "700",
+    color: "#111827",
+    textAlign: "center",
+    marginBottom: 10,
+    paddingHorizontal: 24,
+  },
+  lockedModalMessage: {
+    fontSize: 15,
+    lineHeight: 22,
+    color: "#6B7280",
+    textAlign: "center",
+    paddingHorizontal: 24,
+    marginBottom: 24,
+  },
+  lockedModalBtn: {
+    marginHorizontal: 24,
+    paddingVertical: 14,
+    borderRadius: 14,
+    alignItems: "center",
+  },
+  lockedModalBtnText: {
+    fontSize: 16,
+    fontWeight: "700",
+    letterSpacing: 0.3,
+  },
+
+  // ── Logout specific (red) ──
+  logoutBtnRow: {
+    flexDirection: "row",
+    marginHorizontal: 24,
+    gap: 12,
+  },
+  logoutCancelBtn: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 14,
+    borderWidth: 1.5,
+    borderColor: "#E5E7EB",
+    alignItems: "center",
+    backgroundColor: "#F9FAFB",
+  },
+  logoutCancelText: {
+    color: "#374151",
+    fontSize: 15,
+    fontWeight: "600",
+  },
+  logoutConfirmBtn: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 14,
+    backgroundColor: "#EF4444",
+    alignItems: "center",
+  },
+  logoutConfirmText: {
+    color: "#fff",
+    fontSize: 15,
+    fontWeight: "700",
   },
 });

@@ -33,6 +33,8 @@ import {
   BellRing,
   X,
   Bell,
+  MapPin,
+  Timer,
 } from "lucide-react-native";
 import BrandLoader from "./BrandLoader";
 
@@ -41,9 +43,11 @@ const { width } = Dimensions.get("window");
 const COLORS = {
   background: "#030508",
   surface: "#07111A",
+  primaryBorder: "rgba(0,169,157,0.25)",
   card: "#0D1421",
   cardBorder: "rgba(98, 97, 97, 0.83)",
   primary: "#00A99D",
+  primaryGlow: "rgba(0,169,157,0.25)",
   text: "#FFFFFF",
   textSecondary: "#94A3B8",
   textMuted: "#4A6080",
@@ -77,6 +81,32 @@ const getExpiryStatus = (
   if (diffDays < 0) return "expired";
   if (diffDays <= 30) return "expiring_soon";
   return "ok";
+};
+
+/**
+ * Resolves the status label + style key for a job card.
+ * For customer users, a job that has been accepted by a Resource Partner
+ * but is still awaiting payment shows a dedicated "waiting for payment"
+ * label (rendered in red) instead of the raw "pending" status (yellow).
+ */
+const getJobStatusInfo = (
+  job: any,
+  type: "customer" | "contractor" | "staff",
+): { label: string; key: string } => {
+  const status = job?.job_status?.toLowerCase() || "pending";
+  const isAccepted =
+    job?.accepted_by !== null &&
+    job?.accepted_by !== undefined &&
+    job?.accepted_by !== "";
+
+  if (type === "customer" && isAccepted && job?.payment_status === "pending") {
+    return {
+      label: "Job assigned – waiting for payment",
+      key: "waiting_payment",
+    };
+  }
+
+  return { label: status, key: status };
 };
 
 export default function HomeScreen({ navigation }: any) {
@@ -384,6 +414,22 @@ export default function HomeScreen({ navigation }: any) {
     loadProfileAndLocation();
   }, []);
 
+  const formatShiftDate = (dateString?: string) => {
+    if (!dateString) return "--/--/----";
+
+    const date = new Date(dateString.replace(" ", "T"));
+
+    if (Number.isNaN(date.getTime())) {
+      return "--/--/----";
+    }
+
+    const day = String(date.getDate()).padStart(2, "0");
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const year = date.getFullYear();
+
+    return `${day}/${month}/${year}`;
+  };
+
   useEffect(() => {
     if (!user) return;
     fetchDashboardStats(userType, user);
@@ -391,6 +437,11 @@ export default function HomeScreen({ navigation }: any) {
 
   const getStatusStyle = (status: string) => {
     switch (status?.toLowerCase()) {
+      case "waiting_payment":
+        return {
+          backgroundColor: "#FEE2E2",
+          color: "#DC2626",
+        };
       case "pending":
         return {
           backgroundColor: "#FEF3C7",
@@ -683,14 +734,8 @@ export default function HomeScreen({ navigation }: any) {
                 </Text>
               ) : (
                 sites.map((job: any) => {
-                  const status = job.job_status?.toLowerCase();
-                  const shiftDate = job.start
-                    ? new Date(job.start).toLocaleDateString("en-GB", {
-                        day: "2-digit",
-                        month: "short",
-                        year: "numeric",
-                      })
-                    : "--";
+                  const statusInfo = getJobStatusInfo(job, userType);
+                  const shiftDate = formatShiftDate(job.start);
                   const startTime =
                     job.start?.split(" ")[1]?.slice(0, 5) || "--:--";
                   const endTime =
@@ -705,48 +750,100 @@ export default function HomeScreen({ navigation }: any) {
                       style={styles.siteCard}
                     >
                       <View style={styles.siteCardInner}>
-                        <Text style={styles.siteName}>
-                          {job.site?.site_name || "Unnamed Site"}
-                        </Text>
-                        <Text style={styles.siteAddress}>
-                          {job.site?.address || "No address available"}
-                        </Text>
-                        <Text style={styles.totalHours}>
-                          Total Hours: {job.hours || 0}
-                        </Text>
-
-                        <View style={styles.shiftRow}>
-                          <View>
-                            <Text style={styles.shiftDate}>{shiftDate}</Text>
-                            <Text style={styles.shiftTime}>
-                              {startTime} - {endTime}
-                            </Text>
-                          </View>
+                        {/* Site name + status */}
+                        <View style={styles.siteNameRow}>
                           <Text
-                            style={styles.guardName}
-                            numberOfLines={2}
+                            style={styles.siteName}
+                            numberOfLines={1}
                             ellipsizeMode="tail"
                           >
-                            {job.guards?.name
-                              ? capitalizeWords(job.guards.name)
-                              : "Unassigned"}
+                            {job.site?.site_name || "Unnamed Site"}
                           </Text>
+
                           <View
                             style={[
                               styles.statusBadge,
-                              getStatusStyle(status || "pending"),
+                              getStatusStyle(statusInfo.key),
                             ]}
                           >
                             <Text
                               style={[
                                 styles.statusText,
                                 {
-                                  color: getStatusStyle(status || "pending")
-                                    .color,
+                                  color: getStatusStyle(statusInfo.key).color,
                                 },
                               ]}
                             >
-                              {status || "pending"}
+                              {statusInfo.label}
+                            </Text>
+                          </View>
+                        </View>
+
+                        {/* Address */}
+                        <View style={styles.addressRow}>
+                          <MapPin size={13} color={COLORS.textSecondary} />
+
+                          <Text
+                            style={styles.siteAddress}
+                            numberOfLines={2}
+                            ellipsizeMode="tail"
+                          >
+                            {job.site?.address || "No address available"}
+                          </Text>
+                        </View>
+
+                        {/* Date + Time + Hours */}
+                        <View style={styles.metaChipsRow}>
+                          {/* Date */}
+                          <View style={styles.metaChip}>
+                            <CalendarDays size={12} color={COLORS.primary} />
+
+                            <Text style={styles.metaChipText}>{shiftDate}</Text>
+                          </View>
+
+                          {/* Time */}
+                          <View style={styles.metaChip}>
+                            <Clock size={12} color={COLORS.primary} />
+
+                            <Text style={styles.metaChipText}>
+                              {startTime} - {endTime}
+                            </Text>
+                          </View>
+
+                          {/* Hours */}
+                          <View style={styles.metaChip}>
+                            <Timer size={12} color={COLORS.primary} />
+
+                            <Text style={styles.metaChipText}>
+                              {job.hours || 0} hours
+                            </Text>
+                          </View>
+                        </View>
+                      </View>
+
+                      {/* Divider */}
+                      <View style={styles.cardDivider} />
+
+                      {/* Assigned Guard */}
+                      <View style={styles.cardBottom}>
+                        <View style={styles.guardWrap}>
+                          <View style={styles.guardAvatar}>
+                            <Text style={styles.guardAvatarText}>
+                              {getInitials(job.guards?.name || "Unassigned")}
+                            </Text>
+                          </View>
+
+                          <View style={styles.guardInfo}>
+                            <Text style={styles.guardLabel}>Assigned to</Text>
+
+                            <Text
+                              style={styles.guardName}
+                              numberOfLines={1}
+                              ellipsizeMode="tail"
+                            >
+                              {job.guards?.name
+                                ? capitalizeWords(job.guards.name)
+                                : "Unassigned"}
                             </Text>
                           </View>
                         </View>
@@ -919,7 +1016,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     marginBottom: 6,
-    marginRight:10
+    marginRight: 10,
   },
   statLabel: { fontSize: 12, color: COLORS.textSecondary },
   statValue: { fontSize: 18, fontWeight: "700", color: COLORS.text },
@@ -932,7 +1029,6 @@ const styles = StyleSheet.create({
     borderColor: COLORS.cardBorder,
     padding: 12,
     marginTop: 5,
-  
   },
   docsRowAlert: { borderColor: COLORS.warning },
   docsRowLabel: { fontSize: 13, fontWeight: "600", color: COLORS.text },
@@ -946,12 +1042,13 @@ const styles = StyleSheet.create({
   sectionTitle: { fontSize: 16, fontWeight: "700", color: COLORS.text },
   seeAll: { fontSize: 13, color: COLORS.primary, fontWeight: "600" },
   shiftsWrapper: {
-    backgroundColor: '#111111',
+    backgroundColor: "#111111",
     borderRadius: 14,
     borderWidth: 1,
     borderColor: COLORS.cardBorder,
     maxHeight: 320, // Default for staff/contractor
   },
+
   shiftsWrapperCustomer: {
     maxHeight: 520, // Increased height specifically for customers
   },
@@ -961,15 +1058,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
     padding: 20,
   },
-  siteCard: {
-    borderRadius: 10,
-    marginBottom: 10,
-    borderWidth: 1,
-    borderColor: COLORS.cardBorder,
-  },
-  siteCardInner: { padding: 12 },
-  siteName: { fontSize: 15, fontWeight: "700", color: COLORS.text },
-  siteAddress: { fontSize: 12, color: COLORS.textSecondary, marginTop: 2 },
+
   totalHours: {
     fontSize: 12,
     fontWeight: "600",
@@ -984,9 +1073,7 @@ const styles = StyleSheet.create({
   },
   shiftDate: { fontSize: 12, color: COLORS.text },
   shiftTime: { fontSize: 11, color: COLORS.textSecondary },
-  guardName: { fontSize: 12, color: COLORS.text, maxWidth: 100 },
-  statusBadge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 },
-  statusText: { fontSize: 11, fontWeight: "700", textTransform: "capitalize" },
+
   loadingContainer: {
     flex: 1,
     justifyContent: "center",
@@ -1051,4 +1138,159 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.primary,
   },
   btnPrimaryText: { color: "#fff", fontWeight: "700" },
+
+  viewBtn: {
+    backgroundColor: COLORS.primary,
+    paddingHorizontal: 18,
+    paddingVertical: 9,
+    borderRadius: 10,
+  },
+  viewBtnText: {
+    color: "#fff",
+    fontSize: 12,
+    fontWeight: "700",
+  },
+
+  siteCard: {
+    borderRadius: 14,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: COLORS.cardBorder,
+    overflow: "hidden",
+  },
+
+  siteCardInner: {
+    padding: 14,
+  },
+
+  siteNameRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    width: "100%",
+    marginBottom: 10,
+  },
+
+  siteName: {
+    flex: 1,
+    fontSize: 15,
+    fontWeight: "700",
+    color: COLORS.text,
+    marginRight: 10,
+  },
+
+  statusBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+    borderRadius: 8,
+    flexShrink: 0,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  statusText: {
+    fontSize: 9,
+    fontWeight: "700",
+    textTransform: "capitalize",
+  },
+
+  addressRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    marginBottom: 12,
+  },
+
+  siteAddress: {
+    flex: 1,
+    fontSize: 11,
+    color: COLORS.textSecondary,
+    marginLeft: 2,
+    lineHeight: 10,
+  },
+
+  /* Date + Time + Hours */
+  metaChipsRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    width: "100%",
+    // marginTop: 2,
+    marginBottom: 2,
+  },
+
+  metaChip: {
+    flex: 1,
+    minHeight: 32,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: COLORS.primaryGlow,
+    borderWidth: 1,
+    borderColor: COLORS.primaryBorder,
+    borderRadius: 8,
+    paddingHorizontal: 6,
+    paddingVertical: 6,
+    marginHorizontal: 3,
+  },
+
+  metaChipText: {
+    fontSize: 10,
+    fontWeight: "600",
+    color: COLORS.text,
+    marginLeft: 5,
+  },
+
+  cardDivider: {
+    height: 1,
+    backgroundColor: COLORS.cardBorder,
+    marginHorizontal: 14,
+  },
+
+  cardBottom: {
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+  },
+
+  guardWrap: {
+    flexDirection: "row",
+    alignItems: "center",
+    width: "100%",
+  },
+
+  guardAvatar: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: COLORS.primaryGlow,
+    borderWidth: 1,
+    borderColor: COLORS.primaryBorder,
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 10,
+  },
+
+  guardAvatarText: {
+    color: COLORS.primary,
+    fontSize: 12,
+    fontWeight: "700",
+  },
+
+  guardInfo: {
+    flex: 1,
+    paddingLeft: 2,
+  },
+
+  guardLabel: {
+    fontSize: 10,
+    color: COLORS.textMuted,
+    fontWeight: "600",
+    marginBottom: 2,
+  },
+
+  guardName: {
+    fontSize: 13,
+    color: COLORS.text,
+    fontWeight: "600",
+    flexShrink: 1,
+  },
 });

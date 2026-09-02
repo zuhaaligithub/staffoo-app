@@ -453,27 +453,44 @@ export function useStaffShiftsController(
     fetchProfile();
   }, []);
 
-  useEffect(() => {
-    if (userType !== "contractor" || !userId) return;
-    let cancelled = false;
-    const loadStaff = async () => {
-      setLoadingContractorStaff(true);
-      try {
-        const res = await getContractorStaff(userId);
-        if (cancelled) return;
-        setContractorStaffList(res?.guards?.length ? res.guards : []);
-      } catch (err) {
-        console.error("[Contractor Staff Load Error]:", err);
-        if (!cancelled) setContractorStaffList([]);
-      } finally {
-        if (!cancelled) setLoadingContractorStaff(false);
-      }
-    };
-    loadStaff();
-    return () => {
-      cancelled = true;
-    };
-  }, [userType, userId]);
+  useFocusEffect(
+    useCallback(() => {
+      const loadContractorStaff = async () => {
+        try {
+          const userJson = await AsyncStorage.getItem("user");
+          if (!userJson) return;
+
+          const currentUser = JSON.parse(userJson);
+          const currentUserId = Number(currentUser?.id);
+          const currentUserType = (currentUser?.user_type || "")
+            .trim()
+            .toLowerCase();
+
+          if (currentUserType !== "contractor" || !currentUserId) {
+            return;
+          }
+
+          console.log(
+            "[StaffShifts] Calling getContractorStaff immediately:",
+            currentUserId,
+          );
+
+          setLoadingContractorStaff(true);
+
+          const res = await getContractorStaff(currentUserId);
+
+          setContractorStaffList(res?.guards?.length ? res.guards : []);
+        } catch (error) {
+          console.error("[Contractor Staff Load Error]:", error);
+          setContractorStaffList([]);
+        } finally {
+          setLoadingContractorStaff(false);
+        }
+      };
+
+      loadContractorStaff();
+    }, []),
+  );
 
   const mapAvailableJob = (job: any): AvailableJob => {
     let formattedDate = "TBD";
@@ -1049,255 +1066,6 @@ export function useStaffShiftsController(
     return !!assignedGuardId;
   };
 
-  // const renderShiftCard = (shift: any, index: number, isToday = false) => {
-  //   const isConfirmed = shift.job_status?.toLowerCase() === "confirmed";
-  //   const signinStatus = Number(shift.signin_status ?? 0);
-  //   let onPress = () =>
-  //     Toast.show({ type: "info", text1: "Action not available" });
-  //   let showButton = false;
-  //   let buttonText = "";
-  //   let buttonVariant: "signIn" | "ongoing" | "upcoming" = "upcoming";
-  //   let disabled = false;
-
-  //   if (isToday && isConfirmed && signinStatus === 0 && userType == "staff") {
-  //     showButton = true;
-  //     buttonText = "Sign In";
-  //     buttonVariant = "signIn";
-
-  //     // Profile is active → never disable the button & never show docs toast
-  //     const isProfileActive =
-  //       user?.is_active === true ||
-  //       user?.is_active === 1 ||
-  //       user?.is_active === "1";
-
-  //     const guardUserId = shift.guard?.user_id ?? shift.user_id;
-  //     const isUserAdmin = Number(guardUserId) === 1;
-
-  //     let hasMissingDocs = false;
-  //     if (!isUserAdmin && Number(shift.is_document) === 1) {
-  //       hasMissingDocs =
-  //         !userDocuments ||
-  //         userDocuments.length === 0 ||
-  //         userDocuments.some((doc: any) => !doc.file || !doc.document_no);
-  //     }
-
-  //     // Only disable + show error toast when profile is NOT active AND docs are missing
-  //     if (!isProfileActive && hasMissingDocs) {
-  //       disabled = true;
-  //       onPress = () =>
-  //         Toast.show({
-  //           type: "error",
-  //           text1: "Incomplete Profile",
-  //           text2: "Please add your documents first then you can sign-in",
-  //           position: "top",
-  //         });
-  //     } else {
-  //       // is_active === true  →  button enabled, no toast, just navigate
-  //       disabled = false;
-  //       onPress = () => navigation.navigate("SignIn", { shift });
-  //     }
-  //   } else if (isToday && isConfirmed && signinStatus === 1) {
-  //     showButton = true;
-  //     buttonText = "Ongoing";
-  //     buttonVariant = "ongoing";
-  //     onPress = () => navigation.navigate("Ongoing", { currentShift: shift });
-  //   } else if (!isToday) {
-  //     showButton = true;
-  //     buttonText = "Upcoming";
-  //     buttonVariant = "upcoming";
-  //     disabled = true;
-  //   }
-
-  //   const actionBtnStyle =
-  //     buttonVariant === "signIn"
-  //       ? styles.signInButton
-  //       : buttonVariant === "ongoing"
-  //       ? styles.ongoingButton
-  //       : styles.viewButton;
-  //   const actionTextColor =
-  //     buttonVariant === "signIn"
-  //       ? "#92400e"
-  //       : buttonVariant === "ongoing"
-  //       ? COLORS.success
-  //       : COLORS.textMuted;
-
-  //   const sectionKey = isToday ? "today" : "week";
-  //   const shiftKey = String(shift.id ?? `${sectionKey}-${index}`);
-  //   const uniqueCardKey = `${sectionKey}-${shiftKey}`;
-  //   const localAssignment = shiftStaffAssignments[shiftKey];
-  //   const assignedGuardId =
-  //     localAssignment?.id ?? shift.guard?.id ?? shift.guard_id ?? null;
-  //   const assignedStaffName =
-  //     localAssignment?.name || shift.guard?.name || null;
-  //   const isAssigned = !!assignedGuardId;
-  //   const hideAssignForContractor = computeHideAssignDropdown(shift);
-  //   const shiftStatusLabel = shift.job_status
-  //     ? shift.job_status.charAt(0).toUpperCase() + shift.job_status.slice(1)
-  //     : null;
-
-  //   return (
-  //     <View key={uniqueCardKey} style={styles.shiftCard}>
-  //       {userType === "contractor" && shiftStatusLabel ? (
-  //         <View
-  //           style={{
-  //             flexDirection: "row",
-  //             justifyContent: "flex-end",
-  //             marginBottom: 6,
-  //           }}
-  //         >
-  //           <View
-  //             style={[
-  //               cardStyles.statusBadge,
-  //               isConfirmed && {
-  //                 backgroundColor: "#DCFCE7",
-  //                 borderColor: "#86EFAC",
-  //               },
-  //             ]}
-  //           >
-  //             <Text
-  //               style={[
-  //                 cardStyles.statusBadgeText,
-  //                 isConfirmed && {
-  //                   color: "#16A34A",
-  //                 },
-  //               ]}
-  //             >
-  //               {shiftStatusLabel}
-  //             </Text>
-  //           </View>
-  //         </View>
-  //       ) : null}
-
-  //       <View style={styles.rowBetween}>
-  //         <View style={styles.rowItem}>
-  //           <View style={styles.iconBgGrey}>
-  //             <CalendarDays size={14} color={COLORS.primary} />
-  //           </View>
-  //           <Text style={styles.rowText}>
-  //             {formatDate(shift.start) ||
-  //               `${String(shift.job_start_day || "—").padStart(
-  //                 2,
-  //                 "0",
-  //               )}/${String(shift.job_start_month || "—").padStart(2, "0")}/${
-  //                 shift.job_start_year || "—"
-  //               }`}
-  //           </Text>
-  //         </View>
-  //         <View style={styles.rowItem}>
-  //           <View style={styles.iconBgGrey}>
-  //             <Clock size={14} color={COLORS.primary} />
-  //           </View>
-  //           <Text style={styles.rowText}>
-  //             {formatTime(shift.start)} – {formatTime(shift.end)}
-  //           </Text>
-  //         </View>
-  //       </View>
-  //       <View style={styles.rowItem}>
-  //         <View style={styles.iconBgGrey}>
-  //           <MapPin size={14} color={COLORS.primary} />
-  //         </View>
-  //         <View style={styles.addressContainer}>
-  //           <Text style={styles.addressText} numberOfLines={3}>
-  //             {shift.site?.address || "No address available"}
-  //           </Text>
-  //         </View>
-  //       </View>
-
-  //       <View
-  //         style={{
-  //           flexDirection: "row",
-  //           justifyContent: "space-between",
-  //           alignItems: "flex-start",
-  //         }}
-  //       >
-  //         {/* Description */}
-  //         <View style={{ flex: 0.72 }}>
-  //           <View style={styles.rowItem}>
-  //             <View style={styles.iconBgGrey}>
-  //               <FileText size={14} color={COLORS.primary} />
-  //             </View>
-
-  //             <Text style={styles.documentText}>
-  //               {shift.description || "No site description"}
-  //             </Text>
-  //           </View>
-  //         </View>
-
-  //         {showButton && (
-  //           <TouchableOpacity
-  //             activeOpacity={0.8}
-  //             onPress={onPress}
-  //             disabled={disabled}
-  //             style={[
-  //               styles.actionButton,
-  //               actionBtnStyle,
-  //               {
-  //                 width: 100,
-  //                 alignSelf: "flex-start",
-  //                 marginLeft: 10,
-  //               },
-  //               disabled && { opacity: 0.5 },
-  //             ]}
-  //           >
-  //             <Text
-  //               style={[styles.actionButtonText, { color: actionTextColor }]}
-  //             >
-  //               {buttonText}
-  //             </Text>
-  //           </TouchableOpacity>
-  //         )}
-  //       </View>
-
-  //       {userType === "contractor" && !hideAssignForContractor && (
-  //         <View style={styles.contractorAssignSection}>
-  //           <Text style={styles.assignLabel}>Assign to Staff Member</Text>
-  //           <TouchableOpacity
-  //             style={[
-  //               styles.customDropdown,
-  //               isAssigned && styles.customDropdownAssigned,
-  //             ]}
-  //             activeOpacity={isAssigned ? 1 : 0.8}
-  //             disabled={isAssigned}
-  //             onPress={() => {
-  //               if (isAssigned) return;
-  //               setAssignTargetShift(shift);
-  //               setShowAssignStaffModal(true);
-  //             }}
-  //           >
-  //             <View style={styles.dropdownContent}>
-  //               <UserCheck
-  //                 size={16}
-  //                 color={isAssigned ? COLORS.success : COLORS.textMuted}
-  //               />
-  //               <Text
-  //                 style={[
-  //                   styles.dropdownText,
-  //                   isAssigned && {
-  //                     color: COLORS.success,
-  //                     fontWeight: "700",
-  //                   },
-  //                 ]}
-  //                 numberOfLines={1}
-  //               >
-  //                 {capitalizeWords(assignedStaffName) || "Select staff member"}
-  //               </Text>
-  //             </View>
-  //             {isAssigned ? (
-  //               <View style={styles.assignedBadge}>
-  //                 <Text style={styles.assignedBadgeText}>ASSIGNED</Text>
-  //               </View>
-  //             ) : (
-  //               <View style={styles.iconRight}>
-  //                 <ChevronDown size={16} color={COLORS.textMuted} />
-  //               </View>
-  //             )}
-  //           </TouchableOpacity>
-  //         </View>
-  //       )}
-  //     </View>
-  //   );
-  // };
-
   const renderShiftCard = (shift: any, index: number, isToday = false) => {
     const isConfirmed = shift.job_status?.toLowerCase() === "confirmed";
     const signinStatus = Number(shift.signin_status ?? 0);
@@ -1392,7 +1160,7 @@ export function useStaffShiftsController(
     let shiftStatusLabel: string | null = null;
     if (statusRaw) {
       if (invoiceVal === 0 && statusRaw === "pending" && durationHrs < 12) {
-        shiftStatusLabel = "Job Assigned — Waiting for Payment";
+        shiftStatusLabel = "Job Assigned — Payment Pending";
       } else {
         shiftStatusLabel =
           statusRaw.charAt(0).toUpperCase() + statusRaw.slice(1);

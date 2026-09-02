@@ -1,3 +1,5 @@
+
+
 import React, { useState, useEffect, useMemo } from "react";
 import {
   View,
@@ -28,6 +30,8 @@ import {
   Pencil,
   CalendarDays,
   ChevronRight,
+  AlertTriangle,
+  AlertCircle,
 } from "lucide-react-native";
 import Toast from "react-native-toast-message";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -343,7 +347,9 @@ export default function DocumentsScreen({ navigation }: Props) {
   const [fileError, setFileError] = useState("");
   const [docNumberError, setDocNumberError] = useState("");
   const [expiryError, setExpiryError] = useState("");
-
+  const [incompleteModalVisible, setIncompleteModalVisible] = useState(false);
+  // Shown at the top of the list when user taps Next while docs are incomplete
+  const [showIncompleteTopBanner, setShowIncompleteTopBanner] = useState(false);
   const [selectedDocType, setSelectedDocType] = useState<{
     label: string;
     value: string;
@@ -448,8 +454,37 @@ export default function DocumentsScreen({ navigation }: Props) {
     return name === "visa" || name.includes("visa");
   };
 
+  /** "Security Master License" — verification is only enabled for contractors */
+  const isSecurityMasterLicenseDocType = (opts: {
+    label?: string | null;
+    value?: string | null;
+  }): boolean => {
+    const name = (opts.label || opts.value || "").toLowerCase().trim();
+    return (
+      name === "security master license" ||
+      name.includes("security master license")
+    );
+  };
+
+  const isContractor =
+    (userProfile?.user_type || "").toLowerCase().trim() === "contractor";
+
+  /**
+   * A document type requires the "Verify" flow when:
+   *  - it's in the always-verifiable list (visa, security license), OR
+   *  - it's "Security Master License" AND the current user is a contractor
+   */
+  const docTypeNeedsVerification = (
+    docType: { label?: string | null; value?: string | null } | null,
+  ): boolean => {
+    if (!docType) return false;
+    if (isVerifiableDocType(docType)) return true;
+    if (isContractor && isSecurityMasterLicenseDocType(docType)) return true;
+    return false;
+  };
+
   const needsVerification = selectedDocType
-    ? isVerifiableDocType(selectedDocType)
+    ? docTypeNeedsVerification(selectedDocType)
     : false;
 
   const isVisaSelected = selectedDocType
@@ -457,8 +492,6 @@ export default function DocumentsScreen({ navigation }: Props) {
     : false;
 
   const isExpiryLocked = needsVerification;
-  const isContractor =
-    (userProfile?.user_type || "").toLowerCase().trim() === "contractor";
 
   const contractorStateTabs = useMemo((): StateTab[] => {
     if (!isContractor) return [];
@@ -488,14 +521,8 @@ export default function DocumentsScreen({ navigation }: Props) {
     if (!isContractor) return uploadedDocuments;
     if (!selectedStateCategory) return uploadedDocuments;
 
-    const stateDocs = uploadedDocuments.filter(
+    return uploadedDocuments.filter(
       (d) => d.document_category === selectedStateCategory,
-    );
-
-    return withInheritedSharedFiles(
-      stateDocs,
-      uploadedDocuments,
-      selectedStateCategory,
     );
   }, [isContractor, uploadedDocuments, selectedStateCategory]);
 
@@ -516,15 +543,10 @@ export default function DocumentsScreen({ navigation }: Props) {
 
   const haveAllRequiredDocs =
     Array.isArray(allRequiredStateDocuments) &&
-    allRequiredStateDocuments.every((d) => {
-      if (d.file && String(d.file).trim().length > 0) return true;
-      // Shared type already uploaded under another state/category counts
-      return !!findSharedUploadedDoc(
-        uploadedDocuments,
-        d.document_name,
-        d.document_category,
-      );
-    });
+    allRequiredStateDocuments.length > 0 &&
+    allRequiredStateDocuments.every(
+      (d) => !!(d.file && String(d.file).trim().length > 0),
+    );
 
   const everyAllowedStateHasDocs = useMemo(() => {
     if (!isContractor) return true;
@@ -548,25 +570,71 @@ export default function DocumentsScreen({ navigation }: Props) {
   }, [isContractor, contractorStateTabs, uploadedDocuments]);
 
   const isProfileComplete = haveAllRequiredDocs && everyAllowedStateHasDocs;
+
+  /** Specific missing documents, grouped by state (raw names; display later) */
+  const missingDocumentsByState = useMemo(() => {
+    type MissingGroup = { stateLabel: string; items: string[] };
+    const groups: MissingGroup[] = [];
+
+    // Missing only if this document's own file is empty/null
+    const isDocMissing = (d: Document) =>
+      !(d.file && String(d.file).trim().length > 0);
+
+    if (isContractor && contractorStateTabs.length > 0) {
+      contractorStateTabs.forEach((tab) => {
+        const tabDocs = uploadedDocuments.filter(
+          (d) => d.document_category === tab.category,
+        );
+        const missing = tabDocs
+          .filter((d) => isDocMissing(d))
+          .map((d) => d.document_name || "Unknown document");
+
+        if (tabDocs.length === 0) {
+          groups.push({
+            stateLabel: tab.label,
+            items: ["No documents assigned for this state yet"],
+          });
+        } else if (missing.length > 0) {
+          groups.push({ stateLabel: tab.label, items: missing });
+        }
+      });
+    } else {
+      const missing = uploadedDocuments
+        .filter((d) => isDocMissing(d))
+        .map((d) => d.document_name || "Unknown document");
+      if (missing.length > 0) {
+        groups.push({ stateLabel: "Required documents", items: missing });
+      }
+    }
+
+    return groups;
+  }, [isContractor, contractorStateTabs, uploadedDocuments]);
+
+  const totalMissingCount = missingDocumentsByState.reduce(
+    (sum, g) => sum + g.items.length,
+    0,
+  );
+
   const handleProceedRates = () => {
     if (!isProfileComplete) {
-      Toast.show({
-        type: "error",
-        text1: "Please complete all documents first",
-        text2:
-          isContractor && contractorStateTabs.length > 1
-            ? "Documents for every state you're assigned to must be uploaded."
-            : undefined,
-        position: "bottom",
-      });
+      // Show top banner asking user to complete required documents
+      setShowIncompleteTopBanner(true);
       return;
     }
+    setShowIncompleteTopBanner(false);
     navigation.navigate("ContractorRates");
   };
 
   useEffect(() => {
     loadData();
   }, []);
+
+  // Hide top incomplete banner once all required docs are filled
+  useEffect(() => {
+    if (isProfileComplete) {
+      setShowIncompleteTopBanner(false);
+    }
+  }, [isProfileComplete]);
 
   const isBridgingVisaStaff = (): boolean => {
     const staffDocType =
@@ -736,6 +804,8 @@ export default function DocumentsScreen({ navigation }: Props) {
     setVerifying(false);
     setIsVerified(false);
     setIsEditing(false);
+
+    // ── Add these lines to hide the work rights section on reset ──
     setShowWorkDocument(false);
     setWorkEntitlement(null);
     setWorkRightsFile(null);
@@ -808,7 +878,7 @@ export default function DocumentsScreen({ navigation }: Props) {
       setWorkRightsFilePath(item.working_rights);
     }
 
-    if (isVerifiableDocType(docType)) {
+    if (docTypeNeedsVerification(docType)) {
       if (isVisaDocType(docType)) {
         const passportDoc = getPassportDocument();
         const hasPassportNumber = !!passportDoc?.document_no;
@@ -987,6 +1057,10 @@ export default function DocumentsScreen({ navigation }: Props) {
       .trim();
 
     const isVisa = docNameLower.includes("visa");
+    // Covers both "Security License" and "Security Master License"
+    // (Security Master License verification is only ever surfaced to
+    // contractors — see docTypeNeedsVerification — but the API call
+    // itself is identical to the regular Security License flow).
     const isSecurityLicense = docNameLower.includes("security");
 
     try {
@@ -1163,6 +1237,7 @@ export default function DocumentsScreen({ navigation }: Props) {
         const shouldShowWorkDoc =
           data?.show_document === true || data?.data?.show_document === true;
 
+        // This ensures it only shows after a successful verification check requires it
         setShowWorkDocument(!!shouldShowWorkDoc);
 
         const entitlement =
@@ -1248,6 +1323,26 @@ export default function DocumentsScreen({ navigation }: Props) {
       setVerifying(false);
     }
   };
+
+  const isSelectedStateComplete = useMemo(() => {
+    if (!isContractor || !selectedStateCategory) return true;
+
+    const tabDocs = uploadedDocuments.filter(
+      (d) => d.document_category === selectedStateCategory,
+    );
+
+    if (tabDocs.length === 0) return false;
+
+    return tabDocs.every((d) => {
+      if (d.file && String(d.file).trim().length > 0) return true;
+      // also count shared documents as complete
+      return !!findSharedUploadedDoc(
+        uploadedDocuments,
+        d.document_name,
+        selectedStateCategory,
+      );
+    });
+  }, [isContractor, selectedStateCategory, uploadedDocuments]);
 
   const handleExpiryDateChange = (event: any, date?: Date) => {
     if (Platform.OS === "android") setShowExpiryPicker(false);
@@ -1586,57 +1681,76 @@ export default function DocumentsScreen({ navigation }: Props) {
     );
   };
 
-  const renderEmptyCard = (item: Document) => (
-    <LinearGradient
-      colors={["#171d30", "#0f1322"]}
-      style={[
-        styles.cardGradientWrapper,
-        {
-          borderStyle: "dashed",
-          borderWidth: 1,
-          borderColor: "rgba(255,255,255,0.08)",
-        },
-      ]}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 1 }}
-    >
-      <View style={styles.cardInnerContainer}>
-        <View style={styles.cardTopRow}>
-          <View
-            style={[
-              styles.docIconBox,
-              { backgroundColor: "rgba(255,255,255,0.03)" },
-            ]}
-          >
-            <FileText size={22} color={THEME.textMuted} />
-          </View>
-          <View style={{ flex: 1, marginHorizontal: 12 }}>
-            <Text style={[styles.cardDocName, { color: THEME.textMuted }]}>
-              {getDisplayName(item.document_name)}
-            </Text>
-            <Text style={{ color: "#aaa", fontSize: 11, marginTop: 2 }}>
-              Add Required Document
-            </Text>
-          </View>
-        </View>
+  const renderEmptyCard = (item: Document) => {
+    // Empty / missing document card — no yellow dashed highlight.
+    // Add Document button uses a red border so missing items stand out.
+    const openAdd = () =>
+      handleOpenAddModal({
+        label: item.document_name,
+        value: item.document_name,
+        category: item.document_category || item.document_type,
+      });
 
-        <TouchableOpacity
-          style={styles.addCardButton}
-          onPress={() =>
-            handleOpenAddModal({
-              label: item.document_name,
-              value: item.document_name,
-              category: item.document_category || item.document_type,
-            })
-          }
-          activeOpacity={0.8}
-        >
-          <PlusCircle size={16} color={THEME.teal} style={{ marginRight: 6 }} />
-          <Text style={styles.addCardButtonText}>ADD DOCUMENT</Text>
-        </TouchableOpacity>
-      </View>
-    </LinearGradient>
-  );
+    return (
+      <LinearGradient
+        colors={["#171d30", "#0f1322"]}
+        style={[
+          styles.cardGradientWrapper,
+          {
+            borderStyle: "dashed",
+            borderWidth: 1,
+            borderColor: "rgba(255,255,255,0.08)",
+          },
+        ]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+      >
+        <View style={styles.cardInnerContainer}>
+          <View style={styles.cardTopRow}>
+            <View
+              style={[
+                styles.docIconBox,
+                { backgroundColor: "rgba(255,255,255,0.03)" },
+              ]}
+            >
+              <FileText size={22} color={THEME.textMuted} />
+            </View>
+            <View style={{ flex: 1, marginHorizontal: 12 }}>
+              <View style={styles.emptyCardTitleRow}>
+                <Text
+                  style={[
+                    styles.cardDocName,
+                    { color: THEME.textMuted, flex: 1 },
+                  ]}
+                >
+                  {getDisplayName(item.document_name)}
+                </Text>
+                {isContractor && (
+                  <View style={styles.requiredBadge}>
+                    <Text style={styles.requiredBadgeText}>REQUIRED</Text>
+                  </View>
+                )}
+              </View>
+              <Text style={{ color: "#aaa", fontSize: 11, marginTop: 2 }}>
+                Add Required Document
+              </Text>
+            </View>
+          </View>
+
+          <TouchableOpacity
+            style={[styles.addCardButton, styles.addCardButtonMissing]}
+            onPress={openAdd}
+            activeOpacity={0.8}
+          >
+            <PlusCircle size={16} color="#ff6b6b" style={{ marginRight: 6 }} />
+            <Text style={[styles.addCardButtonText, { color: "#ff6b6b" }]}>
+              ADD DOCUMENT
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </LinearGradient>
+    );
+  };
 
   const renderItem = ({ item }: { item: Document }) => {
     const isFilled = !!(item.file && item.file.trim().length > 0);
@@ -1645,6 +1759,28 @@ export default function DocumentsScreen({ navigation }: Props) {
 
   const renderStateTabs = () => {
     if (!isContractor || contractorStateTabs.length === 0) return null;
+
+    // Sort: incomplete tabs first, complete tabs last
+    const sortedTabs = [...contractorStateTabs].sort((a, b) => {
+      const aDocs = uploadedDocuments.filter(
+        (d) => d.document_category === a.category,
+      );
+      const aComplete =
+        aDocs.length > 0 &&
+        aDocs.every((d) => !!(d.file && String(d.file).trim().length > 0));
+
+      const bDocs = uploadedDocuments.filter(
+        (d) => d.document_category === b.category,
+      );
+      const bComplete =
+        bDocs.length > 0 &&
+        bDocs.every((d) => !!(d.file && String(d.file).trim().length > 0));
+
+      // Incomplete (false) comes before complete (true)
+      if (aComplete === bComplete) return 0;
+      return aComplete ? 1 : -1;
+    });
+
     return (
       <View style={styles.tabBarWrapper}>
         <ScrollView
@@ -1652,21 +1788,18 @@ export default function DocumentsScreen({ navigation }: Props) {
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.tabBarContent}
         >
-          {contractorStateTabs.map((tab) => {
+          {sortedTabs.map((tab) => {
             const isActive = tab.category === selectedStateCategory;
             const tabDocs = uploadedDocuments.filter(
               (d) => d.document_category === tab.category,
             );
+            // Complete only when every doc for this state has its own file
             const tabComplete =
               tabDocs.length > 0 &&
-              tabDocs.every((d) => {
-                if (d.file && String(d.file).trim().length > 0) return true;
-                return !!findSharedUploadedDoc(
-                  uploadedDocuments,
-                  d.document_name,
-                  tab.category,
-                );
-              });
+              tabDocs.every(
+                (d) => !!(d.file && String(d.file).trim().length > 0),
+              );
+
             return (
               <TouchableOpacity
                 key={tab.category}
@@ -1727,49 +1860,116 @@ export default function DocumentsScreen({ navigation }: Props) {
             keyExtractor={(item) => item.id.toString()}
             renderItem={renderItem}
             contentContainerStyle={styles.listContent}
+            ListHeaderComponent={
+              showIncompleteTopBanner && !isProfileComplete ? (
+                <View style={styles.incompleteTopBanner}>
+                  <AlertCircle
+                    size={18}
+                    color="#ff6b6b"
+                    style={{ marginRight: 10, marginTop: 2 }}
+                  />
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.incompleteTopBannerTitle}>
+                      Please complete all required documents
+                    </Text>
+                    <Text style={styles.incompleteTopBannerText}>
+                      Upload the missing documents below before proceeding to
+                      Rates.
+                    </Text>
+                  </View>
+                  <TouchableOpacity
+                    onPress={() => setShowIncompleteTopBanner(false)}
+                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                  >
+                    <X size={18} color="#ff6b6b" />
+                  </TouchableOpacity>
+                </View>
+              ) : null
+            }
             ListEmptyComponent={
               <Text style={styles.emptyText}>No documents found</Text>
             }
           />
 
-          {/* ── Contractor flow: Profile → Documents → My Rates ──────────── */}
-          {isContractor && (
+          {isContractor && uploadedDocuments.length > 0 && (
             <View style={styles.bottomActionWrap}>
-              {!isProfileComplete && contractorStateTabs.length > 1 && (
-                <Text style={styles.proceedHintText}>
-                  Complete documents for every state (
-                  {contractorStateTabs.map((t) => t.label).join(", ")}) to
-                  unlock rates.
-                </Text>
-              )}
               <TouchableOpacity
-                style={[
-                  styles.proceedRatesButton,
-                  !isProfileComplete && styles.disabledBtn,
-                  {
-                    backgroundColor: isProfileComplete
-                      ? "#0A7C6E"
-                      : "rgba(255,255,255,0.04)",
-                  },
-                ]}
+                style={styles.proceedRatesButton}
                 onPress={handleProceedRates}
                 activeOpacity={0.85}
-                disabled={!isProfileComplete}
               >
-                <Text
-                  style={[
-                    styles.proceedRatesButtonText,
-                    !isProfileComplete && { color: THEME.textMuted },
-                  ]}
-                >
-                  Proceed to My Rates
-                </Text>
+                <Text style={styles.proceedRatesButtonText}>NEXT</Text>
                 <ChevronRight size={18} color="#ffffff" />
               </TouchableOpacity>
             </View>
           )}
         </>
       )}
+
+      <Modal
+        animationType="fade"
+        transparent
+        visible={incompleteModalVisible}
+        onRequestClose={() => setIncompleteModalVisible(false)}
+      >
+        <View style={styles.incompleteModalOverlay}>
+          <View style={styles.incompleteModalCard}>
+            <View style={styles.incompleteModalHeader}>
+              <AlertCircle size={22} color="#F5A623" />
+              <Text style={styles.incompleteModalTitle}>
+                Incomplete information
+              </Text>
+              <TouchableOpacity
+                onPress={() => setIncompleteModalVisible(false)}
+                hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+              >
+                <X size={22} color="#fff" />
+              </TouchableOpacity>
+            </View>
+
+            <Text style={styles.incompleteModalSubtitle}>
+              The following information is incomplete. Please complete the
+              required documents before proceeding.
+            </Text>
+
+            <ScrollView
+              style={styles.incompleteModalScroll}
+              showsVerticalScrollIndicator={false}
+            >
+              {missingDocumentsByState.map((group) => (
+                <View key={group.stateLabel} style={styles.incompleteGroup}>
+                  <Text style={styles.incompleteGroupTitle}>
+                    {group.stateLabel}
+                  </Text>
+                  {group.items.map((name, idx) => (
+                    <View
+                      key={`${group.stateLabel}-${name}-${idx}`}
+                      style={styles.incompleteItemRow}
+                    >
+                      <View style={styles.incompleteItemDot} />
+                      <Text style={styles.incompleteItemText}>
+                        {name === "No documents assigned for this state yet"
+                          ? name
+                          : getDisplayName(name)}
+                      </Text>
+                    </View>
+                  ))}
+                </View>
+              ))}
+            </ScrollView>
+
+            {/* <TouchableOpacity
+              style={styles.incompleteModalBtn}
+              onPress={() => setIncompleteModalVisible(false)}
+              activeOpacity={0.85}
+            >
+              <Text style={styles.incompleteModalBtnText}>
+                OK — I will complete these
+              </Text>
+            </TouchableOpacity> */}
+          </View>
+        </View>
+      </Modal>
 
       <Modal
         animationType="slide"
@@ -2073,7 +2273,7 @@ export default function DocumentsScreen({ navigation }: Props) {
                 </View>
               )}
 
-              {(showWorkDocument || isBridgingVisaDocument()) && (
+              {showWorkDocument && (
                 <View style={styles.workRightsSection}>
                   <View style={styles.sectionHeader}>
                     <FileText
@@ -2085,11 +2285,7 @@ export default function DocumentsScreen({ navigation }: Props) {
                       Work Rights Document
                     </Text>
                   </View>
-
-                  {/* Preview Component */}
                   {renderWorkRightsPreview()}
-
-                  {/* Upload Button */}
                   <TouchableOpacity
                     style={[
                       styles.uploadBtn,
@@ -2110,7 +2306,6 @@ export default function DocumentsScreen({ navigation }: Props) {
                         : "UPLOAD WORK RIGHTS DOCUMENT"}
                     </Text>
                   </TouchableOpacity>
-
                   {!!workRightsError && (
                     <Text style={styles.errorText}>{workRightsError}</Text>
                   )}
@@ -2324,7 +2519,35 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "rgba(137,231,208,0.2)",
   },
+  // Red border for missing / empty document cards
+  addCardButtonMissing: {
+    backgroundColor: "rgba(255,107,107,0.08)",
+    borderColor: "#ff6b6b",
+  },
   addCardButtonText: { color: THEME.teal, fontSize: 12, fontWeight: "bold" },
+
+  // Top banner shown after tapping Next while docs are incomplete
+  incompleteTopBanner: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    backgroundColor: "rgba(255,107,107,0.12)",
+    borderWidth: 1,
+    borderColor: "rgba(255,107,107,0.45)",
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 16,
+  },
+  incompleteTopBannerTitle: {
+    color: "#ff6b6b",
+    fontSize: 14,
+    fontWeight: "800",
+    marginBottom: 4,
+  },
+  incompleteTopBannerText: {
+    color: "rgba(255,255,255,0.75)",
+    fontSize: 13,
+    lineHeight: 19,
+  },
 
   // ── Badges ──
   badge: { paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 },
@@ -2639,5 +2862,171 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(137,231,208,0.08)",
     borderWidth: 1,
     borderColor: "rgba(137,231,208,0.25)",
+  },
+
+  emptyCardTitleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+
+  incompleteBanner: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    backgroundColor: "rgba(245,166,35,0.1)",
+    borderWidth: 1,
+    borderColor: "rgba(245,166,35,0.4)",
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 16,
+  },
+  incompleteBannerTitle: {
+    color: "#F5A623",
+    fontSize: 14,
+    fontWeight: "800",
+    marginBottom: 4,
+  },
+  incompleteBannerText: {
+    color: "rgba(255,255,255,0.75)",
+    fontSize: 13,
+    lineHeight: 19,
+  },
+  incompleteModalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.75)",
+    justifyContent: "center",
+    paddingHorizontal: 24,
+  },
+  incompleteModalCard: {
+    backgroundColor: THEME.cardBg,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "rgba(245,166,35,0.35)",
+    maxHeight: "78%",
+    overflow: "hidden",
+  },
+  incompleteModalHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 8,
+    gap: 10,
+  },
+  incompleteModalTitle: {
+    flex: 1,
+    color: "#fff",
+    fontSize: 17,
+    fontWeight: "800",
+  },
+  incompleteModalSubtitle: {
+    color: "rgba(255,255,255,0.7)",
+    fontSize: 13,
+    lineHeight: 19,
+    paddingHorizontal: 16,
+    marginBottom: 12,
+  },
+  incompleteModalScroll: {
+    paddingHorizontal: 16,
+    maxHeight: 320,
+  },
+  incompleteGroup: {
+    marginBottom: 14,
+    backgroundColor: "rgba(255,255,255,0.03)",
+    borderRadius: 10,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: THEME.border,
+  },
+  incompleteGroupTitle: {
+    color: THEME.teal,
+    fontSize: 13,
+    fontWeight: "800",
+    marginBottom: 8,
+  },
+  incompleteItemRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    marginBottom: 6,
+  },
+  incompleteItemDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: "#F5A623",
+    marginTop: 6,
+    marginRight: 10,
+  },
+  incompleteItemText: {
+    flex: 1,
+    color: "#fff",
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  incompleteModalBtn: {
+    margin: 16,
+    height: 48,
+    borderRadius: 10,
+    backgroundColor: "rgba(245,166,35,0.2)",
+    borderWidth: 1,
+    borderColor: "rgba(245,166,35,0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  incompleteModalBtnText: {
+    color: "#F5A623",
+    fontSize: 14,
+    fontWeight: "800",
+  },
+
+  emptyCardHighlight: {
+    borderStyle: "dashed",
+    borderWidth: 1.5,
+    borderColor: "#F5A623",
+  },
+
+  emptyDocIconBox: {
+    backgroundColor: "rgba(255,255,255,0.06)",
+  },
+
+  requiredBadge: {
+    backgroundColor: "rgba(255,255,255,0.06)",
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: THEME.border,
+  },
+
+  requiredBadgeText: {
+    color: "#fff",
+    fontSize: 10,
+    fontWeight: "800",
+    letterSpacing: 0.4,
+  },
+
+  emptyCardHint: {
+    color: THEME.textMuted,
+    fontSize: 12,
+    marginTop: 4,
+    fontWeight: "500",
+  },
+
+  addCardButtonHighlight: {
+    height: 42,
+    backgroundColor: "rgba(255,255,255,0.05)",
+    borderRadius: 8,
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    marginTop: 14,
+    borderWidth: 1,
+    borderColor: THEME.border,
+  },
+
+  addCardButtonTextHighlight: {
+    color: "#fff",
+    fontSize: 12,
+    fontWeight: "800",
   },
 });

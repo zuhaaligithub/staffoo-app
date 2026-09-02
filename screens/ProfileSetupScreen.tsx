@@ -780,6 +780,13 @@ export default function ProfileSetupScreen({ navigation }: Props) {
         Toast.show({ type: "error", text1: "Company Name is required" });
         return false;
       }
+      if (!selectedStates || selectedStates.length === 0) {
+        Toast.show({
+          type: "error",
+          text1: "Please select at least one state",
+        });
+        return false;
+      }
 
       const acnDigits = acn.replace(/\D/g, "");
       if (acnDigits.length > 0 && acnDigits.length !== 9) {
@@ -1422,7 +1429,9 @@ export default function ProfileSetupScreen({ navigation }: Props) {
               </LinearGradient>
             </View>
             <View style={styles.field}>
-              <Text style={styles.label}>Select States</Text>
+              <Text style={styles.label}>
+                Select States <Text style={styles.required}>*</Text>
+              </Text>
 
               <TouchableOpacity
                 onPress={() => setShowStatesModal(true)}

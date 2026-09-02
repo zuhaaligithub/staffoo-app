@@ -113,6 +113,7 @@ interface Shift {
   isAsap?: boolean;
   inPaysheet?: number;
   paymentStatus?: string;
+  acceptedBy?: string | number | null;
   shiftPayable?: string;
   createdAt?: string;
   customer?: Customer;
@@ -138,6 +139,8 @@ const STORAGE_KEYS = {
   rangeEnd: "@weekly_roster_range_end",
   searchText: "@weekly_roster_search_text",
 };
+
+const NOTIFIED_PAYMENT_KEY = "@weekly_roster_notified_payment_jobs";
 
 const loadPersistedRange = async (): Promise<{
   start: Date;
@@ -170,6 +173,64 @@ const getInitials = (name?: string): string => {
   return parts[0][0].toUpperCase() + parts[parts.length - 1][0].toUpperCase();
 };
 
+const getDisplayTag = (
+  jobStatus: string | null | undefined,
+  acceptedBy: any,
+  paymentStatus: string | null | undefined,
+  currentUserType: string | null,
+): string => {
+  const status = String(jobStatus || "")
+    .toLowerCase()
+    .trim();
+  const pay = String(paymentStatus || "")
+    .toLowerCase()
+    .trim();
+
+  const hasAccepted =
+    acceptedBy !== null && acceptedBy !== undefined && acceptedBy !== "";
+
+  // Accepted job + payment is not required
+  if (hasAccepted && pay === "not_required") {
+    return "Job assigned – waiting for payment";
+  }
+
+  // Pending job that has been accepted
+  if (status === "pending" && hasAccepted) {
+    return "Job assigned – waiting for payment";
+  }
+
+  // Pending job without acceptance
+  if (status === "pending") {
+    return "Pending";
+  }
+
+  // Confirmed statuses
+  if (
+    status === "confirmed" ||
+    status === "accepted" ||
+    status === "assigned"
+  ) {
+    return "Confirmed";
+  }
+
+  // Completed statuses
+  if (status === "completed" || status === "complete") {
+    return "Completed";
+  }
+
+  // Fallback
+  if (!jobStatus) {
+    return "—";
+  }
+
+  return String(jobStatus)
+    .toLowerCase()
+    .replace(/[_-]+/g, " ")
+    .split(/\s+/)
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(" ");
+};
+
 export default function WeeklyRosterScreen({ navigation }: any) {
   const [refreshing, setRefreshing] = useState(false);
   const [shifts, setShifts] = useState<Shift[]>([]);
@@ -187,6 +248,9 @@ export default function WeeklyRosterScreen({ navigation }: any) {
   const [staffList, setStaffList] = useState<{ id: number; name: string }[]>(
     [],
   );
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [paymentModalJob, setPaymentModalJob] = useState<any>(null);
+  const [pendingPaymentJobs, setPendingPaymentJobs] = useState<any[]>([]);
   const [searchText, setSearchText] = useState("");
   const [selectedStaffId, setSelectedStaffId] = useState<number | null>(null);
   const [loadingStaff, setLoadingStaff] = useState(false);
@@ -320,6 +384,68 @@ export default function WeeklyRosterScreen({ navigation }: any) {
     });
   }, [searchText, shifts]);
 
+  const notifyPaymentPending = async (jobs: any[]) => {
+    try {
+      const qualifyingJobs = (jobs || []).filter(
+        (job) =>
+          job &&
+          job.accepted_by !== null &&
+          job.accepted_by !== undefined &&
+          job.accepted_by !== "" &&
+          (job.payment_status === "pending" ||
+            job.payment_status === "not_required"),
+      );
+
+      if (qualifyingJobs.length === 0) return;
+
+      const notifiedStr = await AsyncStorage.getItem(NOTIFIED_PAYMENT_KEY);
+      const notifiedIds: number[] = notifiedStr ? JSON.parse(notifiedStr) : [];
+
+      const newlyAccepted = qualifyingJobs.filter(
+        (job) => !notifiedIds.includes(job.id),
+      );
+
+      if (newlyAccepted.length === 0) return;
+
+      setPendingPaymentJobs(newlyAccepted);
+      setPaymentModalJob(newlyAccepted[0]);
+      setShowPaymentModal(true);
+    } catch (e) {
+      // Silently ignore so roster still loads
+    }
+  };
+
+  const handlePaymentModalClose = async () => {
+    if (!paymentModalJob) {
+      setShowPaymentModal(false);
+      return;
+    }
+
+    try {
+      const notifiedStr = await AsyncStorage.getItem(NOTIFIED_PAYMENT_KEY);
+      const notifiedIds: number[] = notifiedStr ? JSON.parse(notifiedStr) : [];
+      const updatedIds = [...notifiedIds, paymentModalJob.id];
+      await AsyncStorage.setItem(
+        NOTIFIED_PAYMENT_KEY,
+        JSON.stringify(updatedIds),
+      );
+    } catch (e) {
+      // ignore
+    }
+
+    const remaining = pendingPaymentJobs.filter(
+      (j) => j.id !== paymentModalJob.id,
+    );
+    setPendingPaymentJobs(remaining);
+
+    if (remaining.length > 0) {
+      setPaymentModalJob(remaining[0]);
+    } else {
+      setPaymentModalJob(null);
+      setShowPaymentModal(false);
+    }
+  };
+
   const generateShiftPDF = async (shift: Shift) => {
     if (generatingPDF) return;
     setGeneratingPDF(true);
@@ -446,7 +572,7 @@ export default function WeeklyRosterScreen({ navigation }: any) {
         ).getTime(),
     );
 
-  const mapJobToShift = (job: any): Shift => {
+  const mapJobToShift = (job: any, currentUserType: string | null): Shift => {
     const startDate = new Date(job.start);
     const endDate = new Date(job.end);
 
@@ -516,12 +642,12 @@ export default function WeeklyRosterScreen({ navigation }: any) {
         hour12: false,
       }),
 
-      tag:
-        job.job_status === "confirmed"
-          ? "Confirmed"
-          : job.job_status === "pending"
-          ? "Pending"
-          : "Completed",
+      tag: getDisplayTag(
+        job.job_status,
+        job.accepted_by,
+        job.payment_status,
+        currentUserType,
+      ),
 
       jobStatus: job.job_status,
       hours: Number(job.hours || 0),
@@ -531,6 +657,7 @@ export default function WeeklyRosterScreen({ navigation }: any) {
       isAsap: job.asap === 1,
       inPaysheet: job.in_paysheet,
       paymentStatus: job.payment_status,
+      acceptedBy: job.accepted_by,
       shiftPayable: job.shift_payable,
       createdAt: job.created_at,
 
@@ -578,7 +705,13 @@ export default function WeeklyRosterScreen({ navigation }: any) {
         ? res.data.data
         : [];
 
-      const newShifts: Shift[] = jobsData.map(mapJobToShift);
+      if (pageNum === 1 && loggedInUser?.user_type === "customer") {
+        notifyPaymentPending(jobsData);
+      }
+
+      const newShifts: Shift[] = jobsData.map((job) =>
+        mapJobToShift(job, loggedInUser?.user_type || null),
+      );
 
       setShifts((prev) => {
         const combined = pageNum === 1 ? newShifts : [...prev, ...newShifts];
@@ -774,30 +907,41 @@ export default function WeeklyRosterScreen({ navigation }: any) {
     };
   };
 
-  const getStatusPill = (status: string) => {
-    switch (status.toLowerCase()) {
+  const getStatusPill = (statusOrTag: string) => {
+    const s = (statusOrTag || "").toLowerCase();
+
+    // Red for the new waiting-for-payment state
+    if (
+      s === "job assigned – waiting for payment" ||
+      s.includes("waiting for payment")
+    ) {
+      return {
+        bg: "#EF444433", // light red
+        text: "#EF4444",
+        solid: "#EF4444",
+      };
+    }
+
+    switch (s) {
       case "pending":
         return {
-          bg: "#F59E0B33", // light orange
+          bg: "#F59E0B33",
           text: "#F59E0B",
           solid: "#F59E0B",
         };
-
       case "confirmed":
         return {
-          bg: "#10B98133", // light green
+          bg: "#10B98133",
           text: "#10B981",
           solid: "#10B981",
         };
-
       case "completed":
       case "complete":
         return {
-          bg: "#3B82F633", // light blue
+          bg: "#3B82F633",
           text: "#3B82F6",
           solid: "#3B82F6",
         };
-
       default:
         return {
           bg: "#6B728033",
@@ -1016,7 +1160,7 @@ export default function WeeklyRosterScreen({ navigation }: any) {
         ) : (
           <View style={styles.cardList}>
             {filteredShifts.map((shift) => {
-              const pill = getStatusPill(shift.jobStatus);
+              const pill = getStatusPill(shift.tag || shift.jobStatus);
               const isCompleted = shift.jobStatus === "completed";
               const isRpAssignment = showAssignedByForShift(shift);
 
@@ -1339,7 +1483,12 @@ export default function WeeklyRosterScreen({ navigation }: any) {
                   >
                     <DetailRow
                       label="Status"
-                      value={toTitleCase(selectedShift.tag)}
+                      value={
+                        selectedShift.tag ===
+                        "Job assigned – waiting for payment"
+                          ? selectedShift.tag
+                          : toTitleCase(selectedShift.tag)
+                      }
                     />
 
                     {userType === "staff" &&
@@ -1410,6 +1559,148 @@ export default function WeeklyRosterScreen({ navigation }: any) {
                 </TouchableOpacity>
               </ScrollView>
             )}
+          </View>
+        </View>
+      </Modal>
+
+      {/* ── Beautiful Job Accepted – Payment Required Modal ── */}
+      <Modal
+        visible={showPaymentModal}
+        transparent
+        animationType="fade"
+        onRequestClose={handlePaymentModalClose}
+      >
+        <View
+          style={{
+            flex: 1,
+            backgroundColor: "rgba(0,0,0,0.6)",
+            justifyContent: "center",
+            alignItems: "center",
+            paddingHorizontal: 24,
+          }}
+        >
+          <View
+            style={{
+              width: "100%",
+              maxWidth: 340,
+              backgroundColor: "#fff",
+              borderRadius: 20,
+              overflow: "hidden",
+              elevation: 14,
+              shadowColor: "#000",
+              shadowOffset: { width: 0, height: 10 },
+              shadowOpacity: 0.3,
+              shadowRadius: 20,
+            }}
+          >
+            {/* Red top accent */}
+            <View style={{ height: 6, backgroundColor: "#EF4444" }} />
+
+            {/* Icon */}
+            <View
+              style={{ alignItems: "center", marginTop: 28, marginBottom: 6 }}
+            >
+              <View
+                style={{
+                  width: 76,
+                  height: 76,
+                  borderRadius: 38,
+                  backgroundColor: "#FEE2E2",
+                  justifyContent: "center",
+                  alignItems: "center",
+                }}
+              >
+                <Text style={{ fontSize: 34 }}>💳</Text>
+              </View>
+            </View>
+
+            {/* Title + message */}
+            <View style={{ paddingHorizontal: 24, paddingBottom: 4 }}>
+              <Text
+                style={{
+                  fontSize: 21,
+                  fontWeight: "700",
+                  color: "#111827",
+                  textAlign: "center",
+                  marginBottom: 10,
+                }}
+              >
+                Job Accepted
+              </Text>
+              <Text
+                style={{
+                  fontSize: 15,
+                  lineHeight: 22,
+                  color: "#6B7280",
+                  textAlign: "center",
+                }}
+              >
+                Your job has been accepted by the Resource Partner. Please
+                process the payment.
+              </Text>
+            </View>
+
+            {/* Site name (if available) */}
+            {paymentModalJob?.site?.site_name ? (
+              <View
+                style={{
+                  marginHorizontal: 24,
+                  marginTop: 16,
+                  paddingVertical: 12,
+                  paddingHorizontal: 14,
+                  backgroundColor: "#F9FAFB",
+                  borderRadius: 12,
+                  borderWidth: 1,
+                  borderColor: "#E5E7EB",
+                }}
+              >
+                <Text
+                  style={{
+                    fontSize: 11,
+                    color: "#9CA3AF",
+                    marginBottom: 3,
+                    fontWeight: "500",
+                  }}
+                >
+                  SITE
+                </Text>
+                <Text
+                  style={{
+                    fontSize: 14,
+                    fontWeight: "600",
+                    color: "#374151",
+                  }}
+                  numberOfLines={2}
+                >
+                  {paymentModalJob.site.site_name}
+                </Text>
+              </View>
+            ) : null}
+
+            {/* Button */}
+            <View style={{ padding: 24, paddingTop: 22 }}>
+              <TouchableOpacity
+                activeOpacity={0.85}
+                onPress={handlePaymentModalClose}
+                style={{
+                  backgroundColor: "#EF4444",
+                  paddingVertical: 15,
+                  borderRadius: 14,
+                  alignItems: "center",
+                }}
+              >
+                <Text
+                  style={{
+                    color: "#fff",
+                    fontSize: 16,
+                    fontWeight: "700",
+                    letterSpacing: 0.3,
+                  }}
+                >
+                  Got it
+                </Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
       </Modal>

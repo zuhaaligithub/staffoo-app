@@ -6,12 +6,11 @@ import {
   Text,
   TouchableOpacity,
   StyleSheet,
-  Alert,
   ActivityIndicator,
   Animated,
   Platform,
-  Easing,
   Keyboard,
+  Modal,
 } from "react-native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -72,6 +71,12 @@ function CustomTabBar({
   const opacity = React.useRef(new Animated.Value(1)).current;
   const [hidden, setHidden] = useState(false);
 
+  // Custom locked modal state
+  const [lockedModalVisible, setLockedModalVisible] = useState(false);
+  const [lockedModalTitle, setLockedModalTitle] =
+    useState("Account Not Active");
+  const [lockedModalMessage, setLockedModalMessage] = useState("");
+
   // Keyboard handling
   useEffect(() => {
     const showEvent =
@@ -128,11 +133,11 @@ function CustomTabBar({
 
   const handlePress = (routeName: string, isFocused: boolean) => {
     if (!canAccess(routeName)) {
-      Alert.alert(
-        "Account Not Active",
-        "Your account must be active to access this section.",
-        [{ text: "OK" }],
+      setLockedModalTitle("Account Not Active");
+      setLockedModalMessage(
+        "Your account must be active to access this section. Please complete your profile and required documents first.",
       );
+      setLockedModalVisible(true);
       return;
     }
     if (!isFocused) navigation.navigate(routeName);
@@ -188,79 +193,139 @@ function CustomTabBar({
       ? staffooStaffTabs
       : userType === "staff"
       ? contractorGuardTabs
-      : customerTabs; 
+      : customerTabs;
 
   const currentRouteName = state.routes[state.index]?.name;
 
   return (
-    <Animated.View
-      pointerEvents={hidden ? "none" : "auto"}
-      style={[
-        styles.wrapper,
-        { paddingBottom: insets.bottom, opacity, transform: [{ translateY }] },
-      ]}
-    >
-      <View style={styles.bottomTab}>
-        {visibleTabs.map((tab: any) => {
-          const isFocused = currentRouteName === tab.name;
-          const accessible = canAccess(tab.name);
-          const iconColor =
-            !accessible && tab.name !== "Profile"
-              ? "#cbd5e1"
-              : isFocused
-              ? "#0A7C6E"
-              : "#64748b";
+    <>
+      <Animated.View
+        pointerEvents={hidden ? "none" : "auto"}
+        style={[
+          styles.wrapper,
+          {
+            paddingBottom: insets.bottom,
+            opacity,
+            transform: [{ translateY }],
+          },
+        ]}
+      >
+        <View style={styles.bottomTab}>
+          {visibleTabs.map((tab: any) => {
+            const isFocused = currentRouteName === tab.name;
+            const accessible = canAccess(tab.name);
+            const iconColor =
+              !accessible && tab.name !== "Profile"
+                ? "#cbd5e1"
+                : isFocused
+                ? "#0A7C6E"
+                : "#64748b";
 
-          if (tab.isAdd) {
+            if (tab.isAdd) {
+              return (
+                <View key={tab.name} style={styles.addButtonContainer}>
+                  <TouchableOpacity
+                    style={styles.floatingAddButton}
+                    onPress={() => handlePress(tab.name, isFocused)}
+                    activeOpacity={0.9}
+                  >
+                    <View style={styles.floatingInner}>
+                      <Plus size={32} color="#fff" strokeWidth={2.8} />
+                    </View>
+                  </TouchableOpacity>
+                </View>
+              );
+            }
+
             return (
-              <View key={tab.name} style={styles.addButtonContainer}>
-                <TouchableOpacity
-                  style={styles.floatingAddButton}
-                  onPress={() => handlePress(tab.name, isFocused)}
-                  activeOpacity={0.9}
+              <TouchableOpacity
+                key={tab.name}
+                style={styles.tabItem}
+                onPress={() => handlePress(tab.name, isFocused)}
+              >
+                <View
+                  style={[
+                    styles.iconWrapper,
+                    isFocused && styles.activeIconWrapper,
+                  ]}
                 >
-                  <View style={styles.floatingInner}>
-                    <Plus size={32} color="#fff" strokeWidth={2.8} />
-                  </View>
-                </TouchableOpacity>
-              </View>
-            );
-          }
+                  <tab.Icon size={20} color={iconColor} />
 
-          return (
-            <TouchableOpacity
-              key={tab.name}
-              style={styles.tabItem}
-              onPress={() => handlePress(tab.name, isFocused)}
-            >
+                  {tab.badge > 0 && (
+                    <View style={styles.badge}>
+                      <Text style={styles.badgeText}>
+                        {tab.badge > 99 ? "99+" : tab.badge}
+                      </Text>
+                    </View>
+                  )}
+
+                  {!accessible && tab.name !== "Profile" && (
+                    <Lock size={11} color="#ef4444" style={styles.lockIcon} />
+                  )}
+                </View>
+                <Text
+                  style={[styles.tabLabel, isFocused && styles.activeLabel]}
+                >
+                  {tab.label}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+      </Animated.View>
+
+      {/* Custom Account Not Active Modal */}
+      <Modal
+        visible={lockedModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setLockedModalVisible(false)}
+      >
+        <View style={styles.lockedModalOverlay}>
+          <View style={styles.lockedModalCard}>
+            {/* Top accent – primary teal */}
+            <View
+              style={[
+                styles.lockedModalAccent,
+                { backgroundColor: COLORS.primary },
+              ]}
+            />
+
+            {/* Icon */}
+            <View style={styles.lockedModalIconWrap}>
               <View
                 style={[
-                  styles.iconWrapper,
-                  isFocused && styles.activeIconWrapper,
+                  styles.lockedModalIconCircle,
+                  { backgroundColor: "rgba(0,169,157,0.12)" },
                 ]}
               >
-                <tab.Icon size={20} color={iconColor} />
-
-                {tab.badge > 0 && (
-                  <View style={styles.badge}>
-                    <Text style={styles.badgeText}>
-                      {tab.badge > 99 ? "99+" : tab.badge}
-                    </Text>
-                  </View>
-                )}
-
-                {!accessible && tab.name !== "Profile" && (
-                  <Lock size={11} color="#ef4444" style={styles.lockIcon} />
-                )}
+                <Lock size={28} color={COLORS.primary} />
               </View>
-              <Text style={[styles.tabLabel, isFocused && styles.activeLabel]}>
-                {tab.label}
+            </View>
+
+            {/* Title */}
+            <Text style={styles.lockedModalTitle}>{lockedModalTitle}</Text>
+
+            {/* Message */}
+            <Text style={styles.lockedModalMessage}>{lockedModalMessage}</Text>
+
+            {/* Button */}
+            <TouchableOpacity
+              activeOpacity={0.85}
+              style={[
+                styles.lockedModalBtn,
+                { backgroundColor: COLORS.primary },
+              ]}
+              onPress={() => setLockedModalVisible(false)}
+            >
+              <Text style={[styles.lockedModalBtnText, { color: "#03211E" }]}>
+                Got it
               </Text>
             </TouchableOpacity>
-          );
-        })}
-      </View>
-    </Animated.View>
+          </View>
+        </View>
+      </Modal>
+    </>
   );
 }
 
@@ -306,7 +371,6 @@ export default function MainTabs() {
         await AsyncStorage.setItem("user", JSON.stringify(response.data));
         setUserData(response.data);
       } else if (showLoader) {
-        // Fresh fetch failed on initial load — fall back to cache
         const cached = await AsyncStorage.getItem("user");
         if (cached) setUserData(JSON.parse(cached));
       }
@@ -353,8 +417,7 @@ export default function MainTabs() {
   const isFullyAccessible = userType === "customer" ? true : isActive;
 
   const initialTab =
-    route.params?.screen || // respect deep-link / navigation param if present
-    (isFullyAccessible ? "Home" : "Profile"); // inactive → Profile
+    route.params?.screen || (isFullyAccessible ? "Home" : "Profile");
 
   return (
     <Tab.Navigator
@@ -394,7 +457,6 @@ export default function MainTabs() {
     </Tab.Navigator>
   );
 }
-
 
 const styles = StyleSheet.create({
   iconWrapper: {
@@ -527,5 +589,69 @@ const styles = StyleSheet.create({
     elevation: 4,
     borderWidth: 4,
     borderColor: "#fff",
+  },
+
+  // Custom Account Not Active Modal
+  lockedModalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.6)",
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 24,
+  },
+  lockedModalCard: {
+    width: "100%",
+    maxWidth: 340,
+    backgroundColor: "#fff",
+    borderRadius: 20,
+    overflow: "hidden",
+    paddingBottom: 24,
+    elevation: 14,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.25,
+    shadowRadius: 20,
+  },
+  lockedModalAccent: {
+    height: 5,
+  },
+  lockedModalIconWrap: {
+    alignItems: "center",
+    marginTop: 28,
+    marginBottom: 12,
+  },
+  lockedModalIconCircle: {
+    width: 68,
+    height: 68,
+    borderRadius: 34,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  lockedModalTitle: {
+    fontSize: 20,
+    fontWeight: "700",
+    color: "#111827",
+    textAlign: "center",
+    marginBottom: 10,
+    paddingHorizontal: 24,
+  },
+  lockedModalMessage: {
+    fontSize: 15,
+    lineHeight: 22,
+    color: "#6B7280",
+    textAlign: "center",
+    paddingHorizontal: 24,
+    marginBottom: 24,
+  },
+  lockedModalBtn: {
+    marginHorizontal: 24,
+    paddingVertical: 14,
+    borderRadius: 14,
+    alignItems: "center",
+  },
+  lockedModalBtnText: {
+    fontSize: 16,
+    fontWeight: "700",
+    letterSpacing: 0.3,
   },
 });
