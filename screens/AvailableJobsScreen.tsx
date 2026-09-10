@@ -45,41 +45,43 @@ import { useStaffShiftsController } from "./shifts/useStaffShiftsController";
 type Props = { navigation: any; route: any };
 
 export default function AvailableJobsScreen({ navigation, route }: Props) {
-    const formatHoursLabel = (hours: number | string | null | undefined): string => {
-  const n = typeof hours === "string" ? parseFloat(hours) : Number(hours);
-  if (!n || isNaN(n) || n <= 0) return "—";
+  const formatHoursLabel = (
+    hours: number | string | null | undefined,
+  ): string => {
+    const n = typeof hours === "string" ? parseFloat(hours) : Number(hours);
+    if (!n || isNaN(n) || n <= 0) return "—";
 
-  const totalMinutes = Math.round(n * 60);
-  const h = Math.floor(totalMinutes / 60);
-  const m = totalMinutes % 60;
+    const totalMinutes = Math.round(n * 60);
+    const h = Math.floor(totalMinutes / 60);
+    const m = totalMinutes % 60;
 
-  if (h === 0) return `${m} minute${m === 1 ? "" : "s"}`;
-  if (m === 0) return `${h}h`;
-  return `${h}h ${m} minute${m === 1 ? "" : "s"}`;
-};
+    if (h === 0) return `${m} minute${m === 1 ? "" : "s"}`;
+    if (m === 0) return `${h}h`;
+    return `${h}h ${m} minute${m === 1 ? "" : "s"}`;
+  };
 
-/** Prefer API hours; otherwise derive from start/end (handles overnight). */
-const getJobHoursLabel = (job: any): string => {
-  if (!job) return "—";
+  /** Prefer API hours; otherwise derive from start/end (handles overnight). */
+  const getJobHoursLabel = (job: any): string => {
+    if (!job) return "—";
 
-  const apiHours = job?.hours ?? job?.total_hours ?? job?.job_hours;
-  if (apiHours != null && apiHours !== "" && !isNaN(Number(apiHours))) {
-    return formatHoursLabel(apiHours);
-  }
+    const apiHours = job?.hours ?? job?.total_hours ?? job?.job_hours;
+    if (apiHours != null && apiHours !== "" && !isNaN(Number(apiHours))) {
+      return formatHoursLabel(apiHours);
+    }
 
-  const startRaw = job?.start || job?.start_time;
-  const endRaw = job?.end || job?.end_time;
-  if (!startRaw || !endRaw) return "—";
+    const startRaw = job?.start || job?.start_time;
+    const endRaw = job?.end || job?.end_time;
+    if (!startRaw || !endRaw) return "—";
 
-  const start = new Date(startRaw);
-  const end = new Date(endRaw);
-  if (isNaN(start.getTime()) || isNaN(end.getTime())) return "—";
+    const start = new Date(startRaw);
+    const end = new Date(endRaw);
+    if (isNaN(start.getTime()) || isNaN(end.getTime())) return "—";
 
-  let diffMs = end.getTime() - start.getTime();
-  if (diffMs < 0) diffMs += 24 * 60 * 60 * 1000; // overnight
+    let diffMs = end.getTime() - start.getTime();
+    if (diffMs < 0) diffMs += 24 * 60 * 60 * 1000; // overnight
 
-  return formatHoursLabel(diffMs / (1000 * 60 * 60));
-};
+    return formatHoursLabel(diffMs / (1000 * 60 * 60));
+  };
   const insets = useSafeAreaInsets();
   const {
     screenMode,
@@ -215,7 +217,6 @@ const getJobHoursLabel = (job: any): string => {
         {!notificationJob && <View style={styles.placeholder} />}
       </ScrollView> */}
 
-   
       <StaffAssignSheet
         visible={acceptSheetVisible}
         job={acceptSheetJob}
@@ -234,7 +235,6 @@ const getJobHoursLabel = (job: any): string => {
         requiredDocuments={acceptRequiredDocuments}
       />
 
-    
       <BottomSheet
         ref={bottomSheetRef}
         index={-1}
@@ -319,39 +319,62 @@ const getJobHoursLabel = (job: any): string => {
           </View> */}
 
           <View style={styles.infoRow}>
-  <Clock size={16} color={COLORS.primary} />
-  <View style={{ flex: 1 }}>
-    <Text style={assignStyles.infoLabel}>Total Hours</Text>
-    <Text style={styles.infoText}>{getJobHoursLabel(jobData)}</Text>
-  </View>
-</View>
+            <Clock size={16} color={COLORS.primary} />
+            <View style={{ flex: 1 }}>
+              <Text style={assignStyles.infoLabel}>Total Hours</Text>
+              <Text style={styles.infoText}>{getJobHoursLabel(jobData)}</Text>
+            </View>
+          </View>
 
           {/* ── Required Documents ── */}
-          {(notifHasWorkingWithChildren || notifHasWhiteCard) && (
+          {notifRequiredDocuments.length > 0 && (
             <View style={styles.documentsSection}>
               <Text style={styles.documentsSectionTitle}>
                 Required Documents
               </Text>
 
-              {notifHasWorkingWithChildren && (
-                <View style={styles.documentRow}>
-                  <Text style={styles.documentLabel}>
-                    Working with Children Check Required
-                  </Text>
-                  <Text style={styles.documentYes}>YES</Text>
-                </View>
-              )}
+              {notifRequiredDocuments.map((doc, index) => {
+                const labelMap: Record<string, string> = {
+                  working_with_children: "Working With Children Check Required",
+                  white_card: "White Card Required",
+                  security_license: "Security Licence Required",
+                  first_aid: "First Aid Certificate Required",
+                  first_aid_certificate: "First Aid Certificate Required",
+                  rsa_certificate: "RSA Certificate Required",
+                  ras_certificate: "RAS Certificate Required",
+                  control_room_certificate: "Control Room Certificate Required",
+                  msic_card: "MSIC Card Required",
+                  police_check: "Police Check Required",
+                  cpr: "CPR Certificate Required",
+                  cpr_certificate: "CPR Certificate Required",
+                  vaccination: "Vaccination Certificate Required",
+                  vaccination_certificate: "Vaccination Certificate Required",
+                };
 
-              {notifHasWhiteCard && (
-                <View style={[styles.documentRow, { borderBottomWidth: 0 }]}>
-                  <Text style={styles.documentLabel}>White Card Required</Text>
-                  <Text style={styles.documentYes}>YES</Text>
-                </View>
-              )}
+                const label =
+                  labelMap[doc] ||
+                  doc
+                    .replace(/_/g, " ")
+                    .replace(/\b\w/g, (c) => c.toUpperCase()) + " Required";
+
+                return (
+                  <View
+                    key={doc}
+                    style={[
+                      styles.documentRow,
+                      index === notifRequiredDocuments.length - 1 && {
+                        borderBottomWidth: 0,
+                      },
+                    ]}
+                  >
+                    <Text style={styles.documentLabel}>{label}</Text>
+                    <Text style={styles.documentYes}>YES</Text>
+                  </View>
+                );
+              })}
             </View>
           )}
 
-   
           {userType === "contractor" && !notifHideAssignForContractor && (
             <View style={{ marginVertical: 5 }}>
               <Text style={styles.assignLabel}>

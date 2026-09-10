@@ -305,9 +305,13 @@ export const StaffAssignSheet = ({
                     working_with_children:
                       "Working With Children Check Required",
                     white_card: "White Card Required",
-                    security_license: "Security Licence",
-                    first_aid: "First Aid Certificate",
-                    rsa_certificate: "RSA Certificate",
+                    rsa_certificate: "RSA Certificate Required",
+                    msic_card: "MSIC Card Required",
+                    control_room_certificate:
+                      "Control Room Certificate Required",
+                    ras_certificate: "RAS Certificate Required",
+                    security_license: "Security Licence Required",
+                    first_aid: "First Aid Certificate Required",
                   };
 
                   return (

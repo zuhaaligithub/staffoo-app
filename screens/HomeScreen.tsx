@@ -83,32 +83,56 @@ const getExpiryStatus = (
   return "ok";
 };
 
-/**
- * Resolves the status label + style key for a job card.
- * For customer users, a job that has been accepted by a Resource Partner
- * but is still awaiting payment shows a dedicated "waiting for payment"
- * label (rendered in red) instead of the raw "pending" status (yellow).
- */
 const getJobStatusInfo = (
   job: any,
   type: "customer" | "contractor" | "staff",
 ): { label: string; key: string } => {
-  const status = job?.job_status?.toLowerCase() || "pending";
+  const status = (job?.job_status || "pending").toLowerCase().trim();
+  const paymentStatus = (job?.payment_status || "").toLowerCase().trim();
+  const contractorInvoice = Number(job?.contractor_invoice ?? 0);
+
   const isAccepted =
     job?.accepted_by !== null &&
     job?.accepted_by !== undefined &&
-    job?.accepted_by !== "";
+    job?.accepted_by !== "" &&
+    job?.accepted_by !== 0 &&
+    job?.accepted_by !== "0";
 
-  if (type === "customer" && isAccepted && job?.payment_status === "pending") {
+  // Same rule used on Applications / WeeklyRoster screen
+  // Customer + accepted by Resource Partner + not contractor invoice
+  // → show "Job assigned – waiting for payment"
+  if (
+    type === "customer" &&
+    isAccepted &&
+    contractorInvoice !== 1 &&
+    (status === "pending" ||
+      paymentStatus === "pending" ||
+      paymentStatus === "not_required")
+  ) {
     return {
       label: "Job assigned – waiting for payment",
       key: "waiting_payment",
     };
   }
 
-  return { label: status, key: status };
-};
+  // Contractor side (softer label)
+  if (
+    type === "contractor" &&
+    isAccepted &&
+    contractorInvoice !== 1 &&
+    (status === "pending" || paymentStatus === "pending")
+  ) {
+    return {
+      label: "Job Assigned – Payment Pending",
+      key: "waiting_payment",
+    };
+  }
 
+  return {
+    label: status,
+    key: status,
+  };
+};
 export default function HomeScreen({ navigation }: any) {
   const [sites, setSites] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -435,35 +459,35 @@ export default function HomeScreen({ navigation }: any) {
     fetchDashboardStats(userType, user);
   }, [user, userType]);
 
-  const getStatusStyle = (status: string) => {
-    switch (status?.toLowerCase()) {
-      case "waiting_payment":
-        return {
-          backgroundColor: "#FEE2E2",
-          color: "#DC2626",
-        };
-      case "pending":
-        return {
-          backgroundColor: "#FEF3C7",
-          color: "#D97706",
-        };
-      case "confirmed":
-        return {
-          backgroundColor: "#DCFCE7",
-          color: "#16A34A",
-        };
-      case "completed":
-        return {
-          backgroundColor: "#DBEAFE",
-          color: "#2563EB",
-        };
-      default:
-        return {
-          backgroundColor: "#E5E7EB",
-          color: "#64748B",
-        };
-    }
-  };
+ const getStatusStyle = (status: string) => {
+  switch (status?.toLowerCase()) {
+    case "waiting_payment":
+      return {
+        backgroundColor: "#FEE2E2",
+        color: "#DC2626",
+      };
+    case "pending":
+      return {
+        backgroundColor: "#FEF3C7",
+        color: "#D97706",
+      };
+    case "confirmed":
+      return {
+        backgroundColor: "#DCFCE7",
+        color: "#16A34A",
+      };
+    case "completed":
+      return {
+        backgroundColor: "#DBEAFE",
+        color: "#2563EB",
+      };
+    default:
+      return {
+        backgroundColor: "#E5E7EB",
+        color: "#64748B",
+      };
+  }
+};
 
   const thisWeekHours = calculateTotalHours(sites);
   const upcomingShiftsCount = sites.length;

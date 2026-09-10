@@ -29,6 +29,7 @@ import {
   DollarSign,
   X,
   Lock,
+  Headphones,
 } from "lucide-react-native";
 import DeviceInfo from "react-native-device-info";
 import Geolocation from "@react-native-community/geolocation";
@@ -485,6 +486,12 @@ export default function ProfileScreen({ navigation }: Props) {
         route: "Policies",
       },
       {
+        title: "Support",
+        icon: <Headphones size={20} color="#38BDF8" />,
+        iconBg: "rgba(56,189,248,0.15)",
+        route: "Support",
+      },
+      {
         title: "Induction",
         icon: <BookOpen size={20} color="#63B6DD" />,
         iconBg: "rgba(99,182,221,0.15)",
@@ -515,7 +522,7 @@ export default function ProfileScreen({ navigation }: Props) {
         route: "JobPayment",
       },
       {
-        title: "Bank Details",
+        title: "Manage Cards",
         icon: <CreditCard size={20} color="#A78BFA" />,
         iconBg: "rgba(167,139,250,0.15)",
         route: "PaymentMethod",
@@ -598,53 +605,138 @@ export default function ProfileScreen({ navigation }: Props) {
       return true;
     };
 
-    // ── Progressive unlock helpers ──
     const hasCompletedPersonalInfo = (): boolean => {
       if (!user) return false;
 
-      // Basic fields that already exist at registration
+      const type = (user.user_type || "").toLowerCase().trim();
+      const staff = user.staff || {};
+
+      // ── Common fields ──
       const hasName = !!(user.name && String(user.name).trim());
-      const hasPhone = !!(user.phone && String(user.phone).trim());
+      const hasPhone = !!(user.phone || staff.phone);
       const hasEmail = !!(user.email && String(user.email).trim());
-
-      // Fields that are only filled when the user actually saves ProfileSetup
       const hasAddress = !!(user.address && String(user.address).trim());
+      const hasState = !!(user.state && String(user.state).trim());
+
+      if (type === "staff") {
+        // Country of birth
+        const hasCountryOfBirth = !!(
+          staff.origin_country || user.origin_country
+        );
+
+        // Gender
+        const hasGender = !!(staff.gender || user.gender);
+
+        // Date of birth
+        const hasDob = !!(
+          staff.date_of_birth ||
+          staff.dob ||
+          user.date_of_birth
+        );
+
+        // Security licence number  ← correct key from your payload
+        const hasSecurityLicense = !!(
+          staff.security_license_no ||
+          staff.security_license_number ||
+          staff.license_number ||
+          user.security_license_no
+        );
+
+        // Visa  ← correct key from your payload
+        const hasVisa = !!(
+          staff.staff_document_type ||
+          staff.visa ||
+          staff.visa_type ||
+          user.staff_document_type
+        );
+
+        const isComplete =
+          hasName &&
+          hasPhone &&
+          hasEmail &&
+          hasAddress &&
+          hasState &&
+          hasCountryOfBirth &&
+          hasGender &&
+          hasDob &&
+          hasSecurityLicense &&
+          hasVisa;
+
+        // Keep this log until everything is green
+        if (!isComplete) {
+          console.log("🔒 Missing fields for unlock:", {
+            hasName,
+            hasPhone,
+            hasEmail,
+            hasAddress,
+            hasState,
+            hasCountryOfBirth,
+            hasGender,
+            hasDob,
+            hasSecurityLicense,
+            hasVisa,
+            staffKeys: Object.keys(staff),
+          });
+        }
+
+        return isComplete;
+      }
+
+      // Contractor / customer
       const hasCity = !!(user.city && String(user.city).trim());
-
-      // Optional: require address if your ProfileSetup forces it
-      // const hasAddress = !!(user.address && String(user.address).trim());
-
       return hasName && hasPhone && hasEmail && hasAddress && hasCity;
     };
 
+    const hasCompletedStaffDocuments = (): boolean => {
+      if (!user) return false;
+      if ((user.user_type || "").toLowerCase().trim() !== "staff") return true;
+
+      const docs: any[] = Array.isArray(user.documents) ? user.documents : [];
+      if (docs.length === 0) return false;
+
+      const visaType =
+        user?.staff?.staff_document_type || user?.staff_document_type || null;
+
+      // Prefer docs matching current visa category
+      const relevant = visaType
+        ? docs.filter(
+            (d) =>
+              String(d.document_category || "").toLowerCase() ===
+              String(visaType).toLowerCase(),
+          )
+        : docs;
+
+      if (relevant.length === 0) return false;
+
+      // Every listed doc must have a file
+      return relevant.every(
+        (d) => !!(d.file && String(d.file).trim().length > 0),
+      );
+    };
     const isLocked = (title: string): boolean => {
-      // Fully active → nothing locked
       if (isActive) return false;
 
-      // Always allow these
       if (title === "Personal Information" || title === "Log Out") {
         return false;
       }
 
-      // Staff: never lock Documents or Verification Forms
-      if (type === "staff") {
-        if (title === "Documents" || title === "Verification Forms") {
-          return false;
-        }
-        // Everything else for staff stays locked until account is active
-        return true;
-      }
-
-      // Documents unlocks only after ProfileSetup is saved (contractors / others)
       if (title === "Documents") {
         return !hasCompletedPersonalInfo();
+      }
+
+      // Verification Forms → only when document points ≥ 100
+      if (title === "Verification Forms") {
+        return !hasCompletedPersonalInfo() || !hasEnoughDocumentPoints();
+      }
+
+      if (type === "staff") {
+        return true;
       }
 
       if (type === "contractor") {
         if (title === "My Rates") {
           return !hasCompletedStateDocuments();
         }
-        // Staff Management, Job History, Timesheet stay locked
         return true;
       }
 
@@ -660,7 +752,9 @@ export default function ProfileScreen({ navigation }: Props) {
         "Documents",
         "Timesheet",
         "Privacy Policy",
+
         "Job History",
+        "Support",
         "Log Out",
       ];
 
@@ -675,6 +769,8 @@ export default function ProfileScreen({ navigation }: Props) {
         "Personal Information",
         "Documents",
         "My Rates",
+        "Privacy Policy",
+        "Support",
         "Staff Management",
         "Job History",
         "Timesheet",
@@ -689,7 +785,9 @@ export default function ProfileScreen({ navigation }: Props) {
         [
           "Personal Information",
           "Payment History",
-          "Bank Details",
+          "Manage Cards",
+          "Privacy Policy",
+          "Support",
           "Log Out",
         ].includes(s.title),
       );
@@ -717,6 +815,17 @@ export default function ProfileScreen({ navigation }: Props) {
       if (title === "Documents") {
         message =
           "Please complete and save your Personal Information first to unlock Documents.";
+      } else if (title === "Verification Forms") {
+        const pts = getStaffDocumentPoints(user);
+        const hasExpired = (user?.documents || []).some(
+          (d: any) =>
+            !!(d.file && String(d.file).trim()) &&
+            isDocumentExpired(d.document_expiry),
+        );
+
+        message = hasExpired
+          ? `Some documents have expired. Please update them in Documents. Current valid points: ${pts}/100.`
+          : `Upload enough required documents to reach 100 points before Verification Forms. Current: ${pts}/100.`;
       } else if (title === "My Rates") {
         message =
           "Please upload the required documents for your licensed states to unlock My Rates.";
@@ -739,6 +848,73 @@ export default function ProfileScreen({ navigation }: Props) {
     }
 
     navigation.navigate(route);
+  };
+
+  const DOCUMENT_POINTS: Record<string, number> = {
+    passport: 70,
+    citizen_ship: 70,
+    citizenship: 70,
+    medicare: 25,
+    birth_certificate: 25,
+    security_license: 40,
+    driver_license_front: 70,
+    driver_license_back: 0,
+    working_with_children: 0,
+    first_aid: 0,
+    cpr: 0,
+    visa: 0,
+    rsa: 0,
+  };
+
+  /** Normalize "Passport" / "Driver License Front" → "passport" / "driver_license_front" */
+  const normalizeDocKey = (name: string): string =>
+    String(name || "")
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9]+/g, "_")
+      .replace(/^_|_$/g, "");
+
+  /** Returns true when the document has a past expiry date */
+  const isDocumentExpired = (expiry?: string | null): boolean => {
+    if (!expiry || !String(expiry).trim()) return false;
+    const d = new Date(expiry);
+    if (Number.isNaN(d.getTime())) return false;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return d < today;
+  };
+
+  const getStaffDocumentPoints = (userData: any): number => {
+    const docs: any[] = Array.isArray(userData?.documents)
+      ? userData.documents
+      : [];
+
+    let total = 0;
+    const counted = new Set<string>();
+
+    for (const d of docs) {
+      const hasFile = !!(d.file && String(d.file).trim().length > 0);
+      if (!hasFile) continue;
+
+      // NEW: skip expired documents
+      if (isDocumentExpired(d.document_expiry)) continue;
+
+      const key = normalizeDocKey(d.document_name || d.document_type || "");
+      if (!key || counted.has(key)) continue;
+
+      const points = DOCUMENT_POINTS[key] ?? 0;
+      if (points > 0) {
+        total += points;
+        counted.add(key);
+      }
+    }
+
+    return total;
+  };
+
+  const hasEnoughDocumentPoints = (): boolean => {
+    if (!user) return false;
+    return getStaffDocumentPoints(user) >= 100;
   };
 
   const performLogout = async () => {
@@ -1149,7 +1325,7 @@ export default function ProfileScreen({ navigation }: Props) {
               ]}
               onPress={() => setLockedModalVisible(false)}
             >
-              <Text style={[styles.lockedModalBtnText, { color: "#03211E" }]}>
+              <Text style={[styles.lockedModalBtnText, { color: "#fff" }]}>
                 Got it
               </Text>
             </TouchableOpacity>

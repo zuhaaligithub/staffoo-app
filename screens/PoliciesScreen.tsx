@@ -1,62 +1,92 @@
-import React, { useState, useCallback } from "react";
+
+import React, { useCallback, useState } from "react";
 import {
-  View,
-  StyleSheet,
-  TouchableOpacity,
-  Text,
-  Platform,
   ActivityIndicator,
   Alert,
+  Platform,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import Pdf from "react-native-pdf";
-import { useNavigation, useFocusEffect } from "@react-navigation/native";
+import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import { ArrowLeft, Check } from "lucide-react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { BASE_URL } from "../services/authApi";
 
+type UserType = "staff" | "contractor" | "customer";
+
+const VALID_USER_TYPES: UserType[] = ["staff", "contractor", "customer"];
+
+
+const IOS_PDF_ASSETS: Record<UserType, any> = {
+  staff: require("../assets/staff_policy.pdf"),
+  contractor: require("../assets/contractor_policy.pdf"),
+  customer: require("../assets/customer_policy.pdf"),
+};
+
+
+const ANDROID_ASSET_FILENAMES: Record<UserType, string> = {
+  staff: "staff_policy.pdf",
+  contractor: "contractor_policy.pdf",
+  customer: "customer_policy.pdf",
+};
+
+function resolveUserType(raw: string | null): UserType {
+  const normalized = (raw || "").toLowerCase();
+  return (VALID_USER_TYPES as string[]).includes(normalized)
+    ? (normalized as UserType)
+    : "customer";
+}
+
+function getPdfSourceForUserType(userType: UserType) {
+  if (Platform.OS === "android") {
+    return { uri: `bundle-assets://${ANDROID_ASSET_FILENAMES[userType]}` };
+  }
+  return IOS_PDF_ASSETS[userType];
+}
+
 export default function PoliciesScreen() {
   const navigation = useNavigation();
 
-  const source =
-    Platform.OS === "android"
-      ? { uri: "bundle-assets://policies.pdf" }
-      : require("../assets/policies.pdf");
-
+  const [userType, setUserType] = useState<UserType>("customer");
   const [isAccepted, setIsAccepted] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const [isCheckboxDisabled, setIsCheckboxDisabled] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [pdfError, setPdfError] = useState<string | null>(null);
 
-  // Get user-specific key
-  const getPolicyKey = async () => {
-    const uid = await AsyncStorage.getItem("@user_id");
-    return uid ? `@policy_accepted_${uid}` : "@policy_accepted";
-  };
+  const getPolicyKey = (uid: string | null) =>
+    uid ? `@policy_accepted_${uid}` : "@policy_accepted";
 
-  // Load status - User Specific
   useFocusEffect(
     useCallback(() => {
+      let isActive = true;
+
       const loadPolicyStatus = async () => {
         setIsLoading(true);
+        setPdfError(null);
+
         try {
-          const policyKey = await getPolicyKey();
+          const storedUserType = await AsyncStorage.getItem("@user_type");
+          const resolvedUserType = resolveUserType(storedUserType);
+          if (isActive) setUserType(resolvedUserType);
+
+          const uid = await AsyncStorage.getItem("@user_id");
+          const policyKey = getPolicyKey(uid);
           const locallyAccepted = await AsyncStorage.getItem(policyKey);
 
           if (locallyAccepted === "true") {
-            setIsAccepted(true);
-            setIsCheckboxDisabled(true);
-            setIsLoading(false);
+            if (isActive) {
+              setIsAccepted(true);
+              setIsCheckboxDisabled(true);
+            }
             return;
           }
 
-          // Call API only if not accepted locally
-          const uid = await AsyncStorage.getItem("@user_id");
           const token = await AsyncStorage.getItem("@auth_token");
-
-          if (!uid || !token) {
-            setIsLoading(false);
-            return;
-          }
+          if (!uid || !token) return;
 
           const response = await fetch(`${BASE_URL}/staff-profile/${uid}`, {
             method: "GET",
@@ -67,10 +97,6 @@ export default function PoliciesScreen() {
           });
 
           const data = await response.json();
-
-          console.log("Staff Profile URL:", `${BASE_URL}/staff-profile/${uid}`);
-          console.log("Staff Profile Status:", response.status);
-          console.log("Staff Profile Response:", data);
 
           if (!response.ok) {
             throw new Error(
@@ -83,15 +109,10 @@ export default function PoliciesScreen() {
             data?.success === true &&
             Number(data?.data?.is_policy_accepted) === 1;
 
-          setIsAccepted(isPolicyAccepted);
-          setIsCheckboxDisabled(isPolicyAccepted);
-
-          if (isPolicyAccepted) {
-            await AsyncStorage.setItem(policyKey, "true");
+          if (isActive) {
+            setIsAccepted(isPolicyAccepted);
+            setIsCheckboxDisabled(isPolicyAccepted);
           }
-
-          setIsAccepted(isPolicyAccepted);
-          setIsCheckboxDisabled(isPolicyAccepted);
 
           if (isPolicyAccepted) {
             await AsyncStorage.setItem(policyKey, "true");
@@ -99,11 +120,15 @@ export default function PoliciesScreen() {
         } catch (error) {
           console.log("Failed to load policy status:", error);
         } finally {
-          setIsLoading(false);
+          if (isActive) setIsLoading(false);
         }
       };
 
       loadPolicyStatus();
+
+      return () => {
+        isActive = false;
+      };
     }, []),
   );
 
@@ -120,19 +145,25 @@ export default function PoliciesScreen() {
 
       if (!uid) throw new Error("User session not found");
 
+      const payload = {
+        is_policy_accepted: newValue ? "yes" : "no",
+      };
+
+      console.log("Policy API Payload:", payload);
+
       const response = await fetch(`${BASE_URL}/accept-policy/${uid}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ is_policy_accepted: newValue ? "yes" : "no" }),
+        body: JSON.stringify(payload),
       });
-
       const responseData = await response.json();
 
-      if (!response.ok)
+      if (!response.ok) {
         throw new Error(responseData?.message || "Request failed");
+      }
 
       Alert.alert(
         "Success",
@@ -141,12 +172,12 @@ export default function PoliciesScreen() {
 
       if (newValue) {
         setIsCheckboxDisabled(true);
-        const policyKey = await getPolicyKey();
+        const policyKey = getPolicyKey(uid);
         await AsyncStorage.setItem(policyKey, "true");
       }
     } catch (error) {
       console.log("Error:", error);
-      setIsAccepted(!newValue); // revert
+      setIsAccepted(!newValue); // revert on failure
       Alert.alert("Error", "Failed to update policy preference.");
     } finally {
       setIsUpdating(false);
@@ -171,12 +202,34 @@ export default function PoliciesScreen() {
 
       <View style={styles.policyBox}>
         <View style={styles.pdfWrapper}>
-          <Pdf
-            source={source}
-            style={styles.pdf}
-            trustAllCerts={false}
-            onError={(error) => console.log("PDF Error:", error)}
-          />
+          {isLoading ? (
+            <ActivityIndicator
+              style={{ flex: 1 }}
+              size="large"
+              color="#1A8754"
+            />
+          ) : pdfError ? (
+            <View style={styles.errorBox}>
+              <Text style={styles.errorText}>{pdfError}</Text>
+            </View>
+          ) : (
+            <Pdf
+              key={userType}
+              source={getPdfSourceForUserType(userType)}
+              style={styles.pdf}
+              onLoadComplete={(numberOfPages) => {
+                console.log(
+                  `Loaded ${userType} policy, pages: ${numberOfPages}`,
+                );
+              }}
+              onError={(error) => {
+                console.log("PDF Error:", error);
+                setPdfError(
+                  "Unable to load the policy document. Please try again later.",
+                );
+              }}
+            />
+          )}
         </View>
 
         <View style={styles.boxFooter}>
@@ -249,8 +302,15 @@ const styles = StyleSheet.create({
     shadowRadius: 10,
     elevation: 3,
   },
-  pdfWrapper: { flex: 1 },
-  pdf: { flex: 1, width: "100%" },
+  pdfWrapper: { flex: 1, width: "100%", height: "100%" },
+  pdf: { flex: 1, width: "100%", height: "100%" },
+  errorBox: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 20,
+  },
+  errorText: { color: "#B91C1C", textAlign: "center", fontSize: 14 },
   boxFooter: {
     padding: 16,
     backgroundColor: "#fff",
@@ -281,3 +341,31 @@ const styles = StyleSheet.create({
   disabledText: { color: "#9CA3AF" },
   loader: { marginLeft: 10 },
 });
+
+/**
+ * SETUP NOTES — required for the fix to work, not optional:
+ *
+ * 1. metro.config.js — tell Metro to treat .pdf as a binary asset:
+ *
+ *    const { getDefaultConfig } = require("metro-config");
+ *    module.exports = (async () => {
+ *      const config = await getDefaultConfig();
+ *      config.resolver.assetExts.push("pdf");
+ *      return config;
+ *    })();
+ *
+ * 2. Android — after step 1, a release/debug build will automatically
+ *    copy files required via require("../assets/xxx.pdf") into the APK's
+ *    assets folder, which is what "bundle-assets://xxx.pdf" reads from.
+ *    Clean + rebuild (not just reload) after changing metro.config.js:
+ *      cd android && ./gradlew clean && cd ..
+ *
+ * 3. iOS — Xcode does NOT auto-copy require()'d non-image files. Open
+ *    ios/YourApp.xcworkspace, drag staff_policy.pdf / contractor_policy.pdf
+ *    / customer_policy.pdf into the project navigator, and make sure they're
+ *    checked under Target > Build Phases > Copy Bundle Resources.
+ *
+ * 4. @user_type must already be saved to AsyncStorage at login (as
+ *    "staff" | "contractor" | "customer", case-insensitive) for this
+ *    screen to pick the right document.
+ */

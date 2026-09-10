@@ -97,9 +97,7 @@ const ALLOWED_DOC_NAMES: string[] = [
   "visa",
   "driver license front",
   "driver license back",
-
   "security license",
-
   "working with children",
   "working with children check",
   "wwcc",
@@ -118,6 +116,14 @@ const ALLOWED_DOC_NAMES: string[] = [
   "birth certificate",
   "white card",
   "police check",
+
+  // ← ADD THESE
+  "msic card",
+  "msic_card",
+  "control room certificate",
+  "control_room_certificate",
+  "ras certificate",
+  "ras_certificate",
 ];
 
 const DOCUMENT_DISPLAY_NAME: Record<string, string> = {
@@ -125,9 +131,7 @@ const DOCUMENT_DISPLAY_NAME: Record<string, string> = {
   visa: "Visa",
   "driver license front": "Driver Licence (Front)",
   "driver license back": "Driver Licence (Back)",
-
   "security license": "Security Licence",
-
   "working with children": "Working With Children Check (WWCC)",
   "working with children check": "Working With Children Check (WWCC)",
   wwcc: "Working With Children Check (WWCC)",
@@ -146,15 +150,41 @@ const DOCUMENT_DISPLAY_NAME: Record<string, string> = {
   "birth certificate": "Birth Certificate",
   "white card": "White Card",
   "police check": "Police Check",
+  "control room": "Control Room Certificate",
+  control_room: "Control Room Certificate",
+  "control room ": "Control Room Certificate", // because of the space left after remove
+
+  ras: "RAS Certificate",
+  "ras ": "RAS Certificate",
+  "msic card": "MSIC Card",
+  msic: "MSIC Card",
 };
 
 const getDisplayName = (docName?: string): string => {
   if (!docName) return "Unknown Document";
-  let key = docName.toLowerCase().trim();
+
+  let key = docName
+    .toLowerCase()
+    .trim()
+    .replace(/[\s_]+/g, " "); // normalize underscores & multiple spaces
+
+  // Special cases
   key = key.replace(/check \(wwcc\)/i, "working with children");
-  key = key.replace(/certificate/i, "").trim();
-  key = key.replace(/\s+/g, " ");
-  return DOCUMENT_DISPLAY_NAME[key] || docName;
+  key = key.replace(/working with children check/i, "working with children");
+
+  // Try exact match first
+  if (DOCUMENT_DISPLAY_NAME[key]) {
+    return DOCUMENT_DISPLAY_NAME[key];
+  }
+
+  // Fallback: try without the word "certificate"
+  const keyWithoutCert = key.replace(/\s*certificate\s*/i, " ").trim();
+  if (DOCUMENT_DISPLAY_NAME[keyWithoutCert]) {
+    return DOCUMENT_DISPLAY_NAME[keyWithoutCert];
+  }
+
+  // Final fallback
+  return docName.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()); // "Control Room Certificate"
 };
 
 const isAllowedDocument = (docName?: string): boolean => {
@@ -570,7 +600,7 @@ export default function StaffManagement({ navigation }: Props) {
     try {
       const url = `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${encodeURIComponent(
         text,
-      )}&components=country:au&types=address&language=en&key=${GOOGLE_API_KEY}`;
+      )}&components=country:au&language=en&key=${GOOGLE_API_KEY}`;
 
       const res = await fetch(url);
       const json = await res.json();
@@ -1133,8 +1163,147 @@ export default function StaffManagement({ navigation }: Props) {
     }
   };
 
+  // const handleVerifyDocument = async () => {
+  //   if (!selectedDocType) {
+  //     Toast.show({
+  //       type: "error",
+  //       text1: "Please select document type",
+  //       position: "top",
+  //     });
+  //     return;
+  //   }
+  //   if (!documentNumber.trim()) {
+  //     setDocNumberError("Please enter document number");
+  //     return;
+  //   }
+
+  //   const userState = editForm.state || addForm.state;
+
+  //   if (!userState) {
+  //     Toast.show({
+  //       type: "error",
+  //       text1: "State is required",
+  //       text2: "Please add your State in Profile first",
+  //       position: "top",
+  //     });
+  //     return;
+  //   }
+
+  //   try {
+  //     setVerifying(true);
+  //     setExpiryError("");
+  //     const token = await AsyncStorage.getItem("@auth_token");
+  //     const docNameLower = (
+  //       selectedDocType.label ||
+  //       selectedDocType.value ||
+  //       ""
+  //     )
+  //       .toLowerCase()
+  //       .trim();
+  //     const isVisa = docNameLower.includes("visa");
+
+  //     let response;
+  //     if (isVisa) {
+  //       response = await axios.post(
+  //         `${BASE_URL}/admin/visa-check`,
+  //         { passport: documentNumber.trim() },
+  //         {
+  //           headers: {
+  //             Authorization: `Bearer ${token}`,
+  //             "Content-Type": "application/json",
+  //           },
+  //         },
+  //       );
+  //     } else {
+  //       const verificationPayload = {
+  //         document_type: selectedDocType.label,
+  //         license_number: documentNumber.trim(),
+  //         state: userState,
+  //       };
+
+  //       response = await axios.post(
+  //         `${Api_Url}/documents-online-verification-staffoo`,
+  //         verificationPayload,
+  //         {
+  //           headers: {
+  //             Authorization: `Bearer ${token}`,
+  //             "Content-Type": "application/json",
+  //           },
+  //         },
+  //       );
+  //     }
+
+  //     const data = response?.data;
+  //     if (data?.success === false) {
+  //       setIsVerified(false);
+  //       setExpirationDate(null);
+  //       Toast.show({
+  //         type: "error",
+  //         text1: data?.message || "Verification failed",
+  //         position: "top",
+  //       });
+  //       return;
+  //     }
+
+  //     const expiryRaw =
+  //       data?.expiry ||
+  //       data?.expiry_date ||
+  //       data?.document_expiry ||
+  //       data?.data?.expiry ||
+  //       data?.data?.expiry_date ||
+  //       data?.data?.document_expiry;
+
+  //     if (expiryRaw) {
+  //       const dateObj = parseApiExpiryDate(expiryRaw);
+  //       if (dateObj) {
+  //         setExpirationDate(dateObj);
+  //         setCurrentCalendarMonth(dateObj);
+  //         setIsVerified(true);
+  //         setShowInlineCalendar(false);
+  //         Toast.show({
+  //           type: "success",
+  //           text1: data?.message || "Document verified",
+  //           position: "top",
+  //         });
+  //         return;
+  //       }
+  //     }
+
+  //     setIsVerified(false);
+  //     setExpirationDate(null);
+  //     setExpiryError("Could not parse expiry date from verification");
+  //     Toast.show({
+  //       type: "error",
+  //       text1: "Verification failed to parse expiry",
+  //       position: "top",
+  //     });
+  //   } catch (error: any) {
+  //     setIsVerified(false);
+  //     setExpirationDate(null);
+  //     Toast.show({
+  //       type: "error",
+  //       text1:
+  //         error?.response?.data?.message ||
+  //         error?.message ||
+  //         "Verification failed",
+  //       position: "top",
+  //     });
+  //   } finally {
+  //     setVerifying(false);
+  //   }
+  // };
+
   const handleVerifyDocument = async () => {
+    console.log("========== DOCUMENT VERIFICATION START ==========");
+
+    console.log("Selected document type:", selectedDocType);
+    console.log("Document number:", documentNumber);
+    console.log("Edit form state:", editForm.state);
+    console.log("Add form state:", addForm.state);
+
     if (!selectedDocType) {
+      console.log("❌ No document type selected");
+
       Toast.show({
         type: "error",
         text1: "Please select document type",
@@ -1142,14 +1311,21 @@ export default function StaffManagement({ navigation }: Props) {
       });
       return;
     }
+
     if (!documentNumber.trim()) {
+      console.log("❌ Document number is empty");
+
       setDocNumberError("Please enter document number");
       return;
     }
 
     const userState = editForm.state || addForm.state;
 
+    console.log("User state:", userState);
+
     if (!userState) {
+      console.log("❌ State is missing");
+
       Toast.show({
         type: "error",
         text1: "State is required",
@@ -1162,7 +1338,11 @@ export default function StaffManagement({ navigation }: Props) {
     try {
       setVerifying(true);
       setExpiryError("");
+
       const token = await AsyncStorage.getItem("@auth_token");
+
+      console.log("Auth token exists:", !!token);
+
       const docNameLower = (
         selectedDocType.label ||
         selectedDocType.value ||
@@ -1170,13 +1350,26 @@ export default function StaffManagement({ navigation }: Props) {
       )
         .toLowerCase()
         .trim();
+
       const isVisa = docNameLower.includes("visa");
 
+      console.log("Document name:", docNameLower);
+      console.log("Is Visa:", isVisa);
+
       let response;
+
       if (isVisa) {
+        const visaPayload = {
+          passport: documentNumber.trim(),
+        };
+
+        console.log("========== VISA VERIFICATION ==========");
+        console.log("API URL:", `${BASE_URL}/admin/visa-check`);
+        console.log("Request payload:", visaPayload);
+
         response = await axios.post(
           `${BASE_URL}/admin/visa-check`,
-          { passport: documentNumber.trim() },
+          visaPayload,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -1191,6 +1384,14 @@ export default function StaffManagement({ navigation }: Props) {
           state: userState,
         };
 
+        console.log("========== DOCUMENT VERIFICATION ==========");
+        console.log(
+          "API URL:",
+          `${Api_Url}/documents-online-verification-staffoo`,
+        );
+
+        console.log("Request payload:", verificationPayload);
+
         response = await axios.post(
           `${Api_Url}/documents-online-verification-staffoo`,
           verificationPayload,
@@ -1203,15 +1404,28 @@ export default function StaffManagement({ navigation }: Props) {
         );
       }
 
+      console.log("========== API RESPONSE ==========");
+      console.log("Status:", response?.status);
+      console.log("Response data:", response?.data);
+
       const data = response?.data;
+
+      console.log("Success value:", data?.success);
+      console.log("Message:", data?.message);
+
       if (data?.success === false) {
+        console.log("❌ Verification failed from API");
+        console.log("Failure response:", data);
+
         setIsVerified(false);
         setExpirationDate(null);
+
         Toast.show({
           type: "error",
           text1: data?.message || "Verification failed",
           position: "top",
         });
+
         return;
       }
 
@@ -1223,33 +1437,62 @@ export default function StaffManagement({ navigation }: Props) {
         data?.data?.expiry_date ||
         data?.data?.document_expiry;
 
+      console.log("========== EXPIRY ==========");
+      console.log("Expiry raw value:", expiryRaw);
+      console.log("Expiry raw type:", typeof expiryRaw);
+
       if (expiryRaw) {
         const dateObj = parseApiExpiryDate(expiryRaw);
+
+        console.log("Parsed expiry date:", dateObj);
+
         if (dateObj) {
+          console.log("✅ Document verified successfully");
+          console.log("Final expiry date:", dateObj);
+
           setExpirationDate(dateObj);
           setCurrentCalendarMonth(dateObj);
           setIsVerified(true);
           setShowInlineCalendar(false);
+
           Toast.show({
             type: "success",
             text1: data?.message || "Document verified",
             position: "top",
           });
+
+          console.log("========== DOCUMENT VERIFICATION SUCCESS ==========");
+
           return;
         }
+
+        console.log("❌ Could not parse expiry date");
+      } else {
+        console.log("❌ No expiry field found in API response");
+        console.log("Available response keys:", Object.keys(data || {}));
       }
 
       setIsVerified(false);
       setExpirationDate(null);
       setExpiryError("Could not parse expiry date from verification");
+
       Toast.show({
         type: "error",
         text1: "Verification failed to parse expiry",
         position: "top",
       });
     } catch (error: any) {
+      console.log("========== DOCUMENT VERIFICATION ERROR ==========");
+
+      console.log("Error:", error);
+      console.log("Error message:", error?.message);
+      console.log("HTTP status:", error?.response?.status);
+      console.log("API error response:", error?.response?.data);
+      console.log("API error message:", error?.response?.data?.message);
+
       setIsVerified(false);
       setExpirationDate(null);
+
       Toast.show({
         type: "error",
         text1:
@@ -1260,6 +1503,8 @@ export default function StaffManagement({ navigation }: Props) {
       });
     } finally {
       setVerifying(false);
+
+      console.log("========== DOCUMENT VERIFICATION END ==========");
     }
   };
 
@@ -2651,6 +2896,7 @@ const styles = StyleSheet.create({
   // Inner container handling correct iOS padding
   cardInnerContainer: {
     padding: 16,
+    backgroundColor:'#101b27',
     width: "100%",
   },
 
@@ -2680,49 +2926,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   actionText: { color: COLORS.text, fontWeight: "600", marginLeft: 6 },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.75)",
-    justifyContent: "flex-end",
-  },
-  modalCard: {
-    width: "100%",
-    maxHeight: "92%",
-    backgroundColor: COLORS.card,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    borderWidth: 1,
-    borderColor: COLORS.cardBorder,
-    overflow: "hidden",
-    flex: 1,
-  },
-  modalHeaderRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.cardBorder,
-  },
-  headerTabs: { flexDirection: "row", flex: 1, gap: 8 },
-  tab: {
-    paddingVertical: 8,
-    paddingHorizontal: 11,
-    borderRadius: 20,
-    backgroundColor: "rgba(255,255,255,0.06)",
-  },
-  tabActive: { backgroundColor: COLORS.primary },
-  tabText: { fontSize: 13, color: COLORS.textMuted, fontWeight: "600" },
-  tabTextActive: { color: "#fff" },
-  closeBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: "rgba(255,255,255,0.06)",
-    justifyContent: "center",
-    alignItems: "center",
-    marginLeft: 8,
-  },
+ 
+
+ 
   modalBody: { padding: 16, gap: 12 },
   input: {
     backgroundColor: "#1E2D3D",
@@ -2810,14 +3016,7 @@ const styles = StyleSheet.create({
   },
   genderOptionText: { color: COLORS.textSecondary },
   genderOptionTextActive: { color: "#fff", fontWeight: "600" },
-  footer: {
-    flexDirection: "row",
-    justifyContent: "flex-end",
-    padding: 16,
-    borderTopWidth: 1,
-    borderTopColor: COLORS.cardBorder,
-    gap: 10,
-  },
+
   cancelButton: {
     backgroundColor: COLORS.surface,
     paddingHorizontal: 24,
@@ -2835,6 +3034,75 @@ const styles = StyleSheet.create({
   },
   saveText: { color: COLORS.text, fontWeight: "700" },
   buttonDisabled: { opacity: 0.6 },
+
+
+
+  modalOverlay: {
+  flex: 1,
+  backgroundColor: "rgba(0,0,0,0.75)",
+  justifyContent: "flex-end",
+},
+modalCard: {
+  width: "100%",
+  maxHeight: "92%",
+  backgroundColor: "#000000",       // body black
+  borderTopLeftRadius: 24,
+  borderTopRightRadius: 24,
+  borderWidth: 1,
+  borderColor: COLORS.cardBorder,
+  overflow: "hidden",
+  flex: 1,
+},
+modalHeaderRow: {
+  flexDirection: "row",
+  alignItems: "center",
+  paddingHorizontal: 12,
+  paddingVertical: 10,
+  borderBottomWidth: 1,
+  borderBottomColor: "rgba(255,255,255,0.15)",
+  backgroundColor: "#1E2D3D",       // top row blue
+},
+headerTabs: {
+  flexDirection: "row",
+  flex: 1,
+  gap: 8,
+},
+tab: {
+  paddingVertical: 8,
+  paddingHorizontal: 11,
+  borderRadius: 20,
+  backgroundColor: "rgba(255,255,255,0.15)",
+},
+tabActive: {
+  backgroundColor: "#fff",
+},
+tabText: {
+  fontSize: 13,
+  color: "rgba(255,255,255,0.7)",
+  fontWeight: "600",
+},
+tabTextActive: {
+  color: "#1E3A8A",                 // blue text on white active tab
+  fontWeight: "700",
+},
+closeBtn: {
+  width: 32,
+  height: 32,
+  borderRadius: 16,
+  backgroundColor: "rgba(255,255,255,0.15)",
+  justifyContent: "center",
+  alignItems: "center",
+  marginLeft: 8,
+},
+footer: {
+  flexDirection: "row",
+  justifyContent: "flex-end",
+  padding: 16,
+  borderTopWidth: 1,
+  borderTopColor: "rgba(255,255,255,0.1)",
+  gap: 10,
+  backgroundColor: "#000000",       // keep footer black too
+},
 });
 
 const docStyles = StyleSheet.create({

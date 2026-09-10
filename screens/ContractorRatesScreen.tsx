@@ -47,9 +47,6 @@ import axios from "axios";
 import { BASE_URL } from "../services/authApi";
 import Toast from "react-native-toast-message";
 
-// =========================================================
-// Theme — dark
-// =========================================================
 const COLORS = {
   background: "#030508",
   surface: "#07111A",
@@ -138,8 +135,6 @@ const emptyRateForm = (): RateFormShape => ({
   reg_pub: "",
 });
 
-// Map a raw def_* rate record (active rate OR a past request) into the
-// editable form shape used by the request modal.
 const mapRecordToRateForm = (record: any): RateFormShape => ({
   metro_mon_fri_day: String(record?.def_metro_mon_to_fri_day_rate ?? ""),
   reg_mon_fri_day: String(record?.def_reg_mon_to_fri_day_rate ?? ""),
@@ -204,6 +199,7 @@ export default function ContractorRatesScreen() {
   const [userId, setUserId] = useState<number | string | null>(null);
   const [authToken, setAuthToken] = useState<string | null>(null);
   const [finishedThisSession, setFinishedThisSession] = useState(false);
+  const finishedHydratedRef = useRef(false);
 
   // ----- Top tabs (Active Rates / Request History) -----
   const [topTab, setTopTab] = useState<TopTab>("active");
@@ -366,16 +362,15 @@ export default function ContractorRatesScreen() {
 
   useEffect(() => {
     (async () => {
-      // Load the finish flag from storage on mount
       const finishedFlag = await AsyncStorage.getItem(
         "@contractor_rates_finished",
       );
       if (finishedFlag === "true") {
         setFinishedThisSession(true);
       }
+      finishedHydratedRef.current = true; // ← allow future persists
 
       const res = await fetchRates();
-      // Load history right away too, so Active Rates can show Draft/Pending badges
       if (res) {
         fetchHistory(res.uid, res.token);
       } else {
@@ -392,8 +387,8 @@ export default function ContractorRatesScreen() {
     }
   };
 
-  // Persist the finish flag to storage
   useEffect(() => {
+    if (!finishedHydratedRef.current) return; // don't overwrite on first paint
     AsyncStorage.setItem(
       "@contractor_rates_finished",
       finishedThisSession ? "true" : "false",
@@ -586,6 +581,15 @@ export default function ContractorRatesScreen() {
     [allowedCodesForBadge.join(","), ratesList, historyList],
   );
 
+  const missingStates = useMemo(
+    () =>
+      allowedCodesForBadge.filter((c) => getStateRateStatus(c) === "missing"),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [allowedCodesForBadge.join(","), ratesList, historyList],
+  );
+
+  const hasMissingRates = missingStates.length > 0;
+
   // Badge meta for every status including Active (green tick)
   const STATUS_BADGE_META: Record<
     StateRateStatus,
@@ -628,23 +632,26 @@ export default function ContractorRatesScreen() {
     sortedStateTabs.join(","),
   ]);
 
-  // Build a stateRates map covering the given codes, pre-filled from the
-  // best available source: active rate > draft/pending request > empty.
   const buildInitialRatesForCodes = (
     codes: string[],
   ): Record<string, RateFormShape> => {
     const initial: Record<string, RateFormShape> = {};
     codes.forEach((code) => {
+      // 1) Prefer active/approved rate
       const active = getActiveRateForState(code);
       if (active) {
         initial[code] = mapRecordToRateForm(active);
         return;
       }
+
+      // 2) Otherwise use the latest history item (including rejected)
       const latest = getLatestHistoryForState(code);
-      if (latest && String(latest.status || "").toLowerCase() !== "rejected") {
+      if (latest) {
         initial[code] = mapRecordToRateForm(latest);
         return;
       }
+
+      // 3) Truly missing → empty
       initial[code] = emptyRateForm();
     });
     return initial;
@@ -757,9 +764,10 @@ export default function ContractorRatesScreen() {
   const openResubmitModal = (item: any) => {
     const code = String(item?.state || "").toLowerCase();
     if (!code) return;
-    openSingleStateModal(code, true);
-  };
 
+    // Prefill with the rejected request's rates (do NOT clear)
+    openSingleStateModal(code, false);
+  };
   // Opens modal in submit-only mode (only shows Save & Submit, no draft option)
   const openSubmitModal = (item: any) => {
     const code = String(item?.state || "").toLowerCase();
@@ -1038,7 +1046,6 @@ export default function ContractorRatesScreen() {
     const ratesFullyComplete =
       hasAllowedStates && hasRateRecords && allStatesComplete;
 
-    // If rates are no longer complete, user must have made changes — reset the finished flag
     if (!ratesFullyComplete) {
       setFinishedThisSession(false);
       setShowFinishCTA(false);
@@ -1047,7 +1054,6 @@ export default function ContractorRatesScreen() {
       return;
     }
 
-    // If the user already clicked Finish this session, don't show the button again
     if (finishedThisSession) {
       setShowFinishCTA(false);
       wasCompleteRef.current = true;
@@ -1081,10 +1087,8 @@ export default function ContractorRatesScreen() {
     finishedThisSession,
   ]);
 
-  // Navigates back to Profile. Sets a flag so the Finish button won't
-  // reappear until rates change again.
   const handleFinishPress = () => {
-    setFinishedThisSession(true);
+    setFinishedThisSession(true); // triggers persist after hydration
     setShowFinishCTA(false);
     navigation.dispatch(
       CommonActions.navigate({
@@ -1415,8 +1419,9 @@ export default function ContractorRatesScreen() {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <StatusBar barStyle="light-content" backgroundColor={COLORS.heroBg2} />
+      <StatusBar barStyle="light-content" backgroundColor={COLORS.background} />
 
+      {/* ───────────────── Header ───────────────── */}
       <LinearGradient
         colors={[COLORS.heroBg1, COLORS.heroBg2]}
         start={{ x: 0, y: 0 }}
@@ -1432,7 +1437,6 @@ export default function ContractorRatesScreen() {
             >
               <ChevronLeft size={16} color="#fff" />
             </TouchableOpacity>
-
             <Text style={styles.headerTitle}>My Charge Rates</Text>
           </View>
 
@@ -1441,7 +1445,6 @@ export default function ContractorRatesScreen() {
             regional rates.
           </Text>
 
-          {/* Segmented tabs live in the hero, top-right, per the reference design */}
           <View style={styles.topTabsRow}>
             <TouchableOpacity
               style={[
@@ -1496,272 +1499,512 @@ export default function ContractorRatesScreen() {
         </View>
       </LinearGradient>
 
-      {/* State tab bar — every state assigned to this contractor, so the
-          Active Rates tab always shows one state at a time (matching the
-          reference design). Selecting a tab never opens a modal by
-          itself; it just swaps which card is shown below.
-          Gated on !historyLoading to avoid a Missing → Draft flicker. */}
-      {!loading &&
-        !historyLoading &&
-        topTab === "active" &&
-        allowedCodesForBadge.length > 0 && (
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            style={styles.stateChipsRow}
-            contentContainerStyle={{ paddingHorizontal: 16, gap: 10 }}
-          >
-            {sortedStateTabs.map((code) => {
-              const status = getStateRateStatus(code);
-              const isSelected = code === selectedStateTab;
-              const meta = STATUS_BADGE_META[status];
-              const isActiveStatus = status === "active";
-              return (
-                <View key={code} style={styles.stateChipWrapper}>
-                  <TouchableOpacity
-                    style={[
-                      styles.stateChip,
-                      isSelected && styles.stateChipSelected,
-                    ]}
-                    activeOpacity={0.85}
-                    onPress={() => setSelectedStateTab(code)}
-                  >
-                    <MapPin
-                      size={13}
-                      color={isSelected ? COLORS.primary : COLORS.textSecondary}
-                    />
-                    <Text
-                      style={[
-                        styles.stateChipText,
-                        isSelected && styles.stateChipTextSelected,
-                      ]}
-                    >
-                      {getStateLabel(code)}
-                    </Text>
-                  </TouchableOpacity>
-                  {meta && (
-                    <View
-                      style={[
-                        styles.stateChipBadgeAbsolute,
-                        {
-                          backgroundColor: meta.bg,
-                          flexDirection: "row",
-                          alignItems: "center",
-                        },
-                      ]}
-                    >
-                      {isActiveStatus ? (
-                        <CheckCircle2
-                          size={10}
-                          color="#fff"
-                          style={{ marginRight: 3 }}
-                        />
-                      ) : null}
-                      <Text style={styles.stateChipBadgeText}>
-                        {meta.label}
-                      </Text>
-                    </View>
-                  )}
-                </View>
-              );
-            })}
-          </ScrollView>
-        )}
-
-      {!loading && !historyLoading && showFinishCTA && topTab === "active" && (
-        <View style={styles.completionBanner}>
-          <View style={styles.completionBannerLeft}>
-            <CheckCircle2 size={18} color={COLORS.success} />
-            <Text style={styles.completionBannerText}>
-              All required charge rates are set. Click Finish to activate your
-              profile.
-            </Text>
-          </View>
-          <TouchableOpacity
-            style={styles.finishBtn}
-            onPress={handleFinishPress}
-            activeOpacity={0.85}
-          >
-            <Text style={styles.finishBtnText}>Finish</Text>
-          </TouchableOpacity>
+      {/* ───────────────── Body ───────────────── */}
+      {loading || historyLoading ? (
+        <View style={styles.center}>
+          <ActivityIndicator size="large" color={COLORS.primary} />
+          <Text style={styles.loadingText}>Loading rates...</Text>
         </View>
-      )}
-
-      {topTab === "active" ? (
-        // Wait for BOTH rates and history so status (Draft / Missing / etc.) is correct
-        loading || historyLoading ? (
-          <View style={styles.center}>
-            <ActivityIndicator size="large" color={COLORS.primary} />
-            <Text style={styles.loadingText}>Loading rates…</Text>
-          </View>
-        ) : allowedCodesForBadge.length === 0 ? (
-          <ScrollView
-            contentContainerStyle={styles.emptyStateContainer}
-            refreshControl={refreshControl}
-          >
-            <View style={styles.emptyStateCard}>
-              <View style={styles.emptyIconWrap}>
-                <FolderOpen size={40} color={COLORS.textMuted} />
-              </View>
-              <Text style={styles.emptyTitle}>No State Assigned</Text>
-              <Text style={styles.emptyDescription}>
-                You don't have a state assigned yet. Contact your admin so they
-                can assign one before you request rates.
-              </Text>
-            </View>
-          </ScrollView>
-        ) : (
-          <ScrollView
-            style={styles.scroll}
-            contentContainerStyle={{ paddingTop: 12, paddingBottom: 40 }}
-            refreshControl={refreshControl}
-          >
-            {renderSelectedStateCard()}
-          </ScrollView>
-        )
       ) : (
-        // ===================== ARCHIVED HISTORY TAB =====================
-        <View style={{ flex: 1 }}>
-          {historyLoading ? (
-            <View style={styles.center}>
-              <ActivityIndicator size="large" color={COLORS.primary} />
-              <Text style={styles.loadingText}>Loading requests…</Text>
-            </View>
-          ) : historyList.length === 0 ? (
-            <ScrollView
-              contentContainerStyle={styles.emptyStateContainer}
-              refreshControl={refreshControl}
+        <>
+          {/* Missing rates alert */}
+          {hasMissingRates && topTab === "active" && (
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "flex-start",
+                marginHorizontal: 16,
+                marginTop: 14,
+                backgroundColor: COLORS.dangerBg,
+                borderWidth: 1,
+                borderColor: COLORS.dangerBorder,
+                borderRadius: 14,
+                paddingVertical: 12,
+                paddingHorizontal: 14,
+                gap: 10,
+              }}
             >
-              <View style={styles.emptyStateCard}>
-                <View style={styles.emptyIconWrap}>
-                  <HistoryIcon size={34} color={COLORS.textMuted} />
-                </View>
-                <Text style={styles.emptyTitle}>No Requests Yet</Text>
-                <Text style={styles.emptyDescription}>
-                  Your rate update requests will appear here once you submit
-                  one.
+              <AlertCircle
+                size={18}
+                color={COLORS.danger}
+                style={{ marginTop: 1 }}
+              />
+              <View style={{ flex: 1 }}>
+                <Text
+                  style={{
+                    fontSize: 13,
+                    fontWeight: "700",
+                    color: COLORS.text,
+                    marginBottom: 2,
+                  }}
+                >
+                  {missingStates.length === 1
+                    ? "1 state has no rates"
+                    : `${missingStates.length} states have no rates`}
+                </Text>
+                <Text
+                  style={{
+                    fontSize: 12,
+                    color: COLORS.textSecondary,
+                    lineHeight: 17,
+                  }}
+                >
+                  {missingStates.map((c) => getStateLabel(c)).join(", ")} —
+                  please fill the rates for{" "}
+                  {missingStates.length === 1 ? "this state" : "these states"}.
                 </Text>
               </View>
-            </ScrollView>
-          ) : (
+            </View>
+          )}
+
+          {/* State chips */}
+          {topTab === "active" && allowedCodesForBadge.length > 0 && (
             <ScrollView
-              style={styles.scroll}
-              contentContainerStyle={{ paddingTop: 12, paddingBottom: 40 }}
-              refreshControl={refreshControl}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={styles.stateChipsRow}
+              contentContainerStyle={{ paddingHorizontal: 16, gap: 10 }}
             >
-              {historyList.map((item, idx) => {
-                const stateCode = String(item.state || "").toLowerCase();
-                const submitted =
-                  item.created_at ||
-                  item.submitted_at ||
-                  item.date ||
-                  item.updated_at;
-                const note = item.notes ?? item.admin_note ?? item.admin_notes;
-                const status = getDisplayStatus(item);
-                const pill = statusPillColors(status);
-                const StatusIcon = statusIcon(status);
-                const isRejected = status === "rejected";
-                const isDraft = status === "draft";
-                const isPending = status === "pending";
-
+              {sortedStateTabs.map((code) => {
+                const status = getStateRateStatus(code);
+                const isSelected = code === selectedStateTab;
+                const meta = STATUS_BADGE_META[status];
+                const isActiveStatus = status === "active";
                 return (
-                  <View
-                    key={String(item.id ?? `${stateCode}-${idx}`)}
-                    style={styles.historyRowCard}
-                  >
-                    <View style={styles.historyRowTop}>
-                      <View style={{ flex: 1 }}>
-                        <Text style={styles.historyRowState}>
-                          {getStateLabel(stateCode)}
-                        </Text>
-                        <Text style={styles.historyRowDate}>
-                          {isDraft ? "Saved" : "Submitted"}{" "}
-                          {formatDate(submitted)}
-                        </Text>
-                      </View>
-
-                      <View
+                  <View key={code} style={styles.stateChipWrapper}>
+                    <TouchableOpacity
+                      style={[
+                        styles.stateChip,
+                        isSelected && styles.stateChipSelected,
+                      ]}
+                      activeOpacity={0.85}
+                      onPress={() => setSelectedStateTab(code)}
+                    >
+                      <MapPin
+                        size={13}
+                        color={
+                          isSelected ? COLORS.primary : COLORS.textSecondary
+                        }
+                      />
+                      <Text
                         style={[
-                          styles.stateStatusPill,
-                          styles.stateStatusPillRow,
-                          { backgroundColor: pill.bg },
+                          styles.stateChipText,
+                          isSelected && styles.stateChipTextSelected,
                         ]}
                       >
-                        <StatusIcon size={11} color={pill.color} />
-                        <Text
-                          style={[
-                            styles.stateStatusPillText,
-                            { color: pill.color, marginLeft: 4 },
-                          ]}
-                        >
-                          {statusLabel(status)}
+                        {getStateLabel(code)}
+                      </Text>
+                    </TouchableOpacity>
+                    {meta && (
+                      <View
+                        style={[
+                          styles.stateChipBadgeAbsolute,
+                          {
+                            backgroundColor: meta.bg,
+                            flexDirection: "row",
+                            alignItems: "center",
+                          },
+                        ]}
+                      >
+                        {isActiveStatus ? (
+                          <CheckCircle2
+                            size={10}
+                            color="#fff"
+                            style={{ marginRight: 3 }}
+                          />
+                        ) : null}
+                        <Text style={styles.stateChipBadgeText}>
+                          {meta.label}
                         </Text>
                       </View>
-                    </View>
-
-                    {note ? (
-                      <Text style={styles.historyRowNote} numberOfLines={2}>
-                        {note}
-                      </Text>
-                    ) : null}
-
-                    <View style={styles.historyRowActions}>
-                      <TouchableOpacity
-                        style={styles.historyViewBtn}
-                        onPress={() => openViewModal(item)}
-                        activeOpacity={0.85}
-                      >
-                        <Eye
-                          size={13}
-                          color={COLORS.primary}
-                          style={{ marginRight: 6 }}
-                        />
-                        <Text style={styles.historyViewBtnText}>View</Text>
-                      </TouchableOpacity>
-
-                      {/* Agr status pending ha to submit button show na ho archived history me */}
-                      {/* Agr status draft me hai to continue draft ki jagah submit button dikhao */}
-                      {isDraft && (
-                        <TouchableOpacity
-                          style={styles.historyEditBtn}
-                          onPress={() => openSubmitModal(item)}
-                          activeOpacity={0.85}
-                        >
-                          <Send
-                            size={13}
-                            color="#fff"
-                            style={{ marginRight: 6 }}
-                          />
-                          <Text style={styles.historyEditBtnText}>Submit</Text>
-                        </TouchableOpacity>
-                      )}
-
-                      {isRejected && (
-                        <TouchableOpacity
-                          style={styles.historyResubmitBtn}
-                          onPress={() => openResubmitModal(item)}
-                          activeOpacity={0.85}
-                        >
-                          <RotateCcw
-                            size={13}
-                            color="#fff"
-                            style={{ marginRight: 6 }}
-                          />
-                          <Text style={styles.historyResubmitBtnText}>
-                            Resubmit
-                          </Text>
-                        </TouchableOpacity>
-                      )}
-                    </View>
+                    )}
                   </View>
                 );
               })}
             </ScrollView>
           )}
-        </View>
+
+          {/* Finish CTA */}
+          {showFinishCTA && topTab === "active" && (
+            <View style={styles.completionBanner}>
+              <View style={styles.completionBannerLeft}>
+                <CheckCircle2 size={18} color={COLORS.success} />
+                <Text style={styles.completionBannerText}>
+                  All required charge rates are set. Click Finish to activate
+                  your profile.
+                </Text>
+              </View>
+              <TouchableOpacity
+                style={styles.finishBtn}
+                onPress={handleFinishPress}
+                activeOpacity={0.85}
+              >
+                <Text style={styles.finishBtnText}>Finish</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+
+          {/* Main scroll content */}
+          <ScrollView
+            style={styles.scroll}
+            contentContainerStyle={{ paddingBottom: 40 }}
+            showsVerticalScrollIndicator={false}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={onRefresh}
+                tintColor={COLORS.primary}
+                colors={[COLORS.primary]}
+              />
+            }
+          >
+            {/* ══════════ Active Rates tab ══════════ */}
+            {topTab === "active" && (
+              <>
+                {allowedCodesForBadge.length === 0 ? (
+                  <View style={styles.emptyStateCardInline}>
+                    <View style={styles.emptyIconWrap}>
+                      <FolderOpen size={28} color={COLORS.textMuted} />
+                    </View>
+                    <Text style={styles.emptyTitle}>No states assigned</Text>
+                    <Text style={styles.emptyDescription}>
+                      Contact your admin to assign a state before requesting
+                      rates.
+                    </Text>
+                  </View>
+                ) : selectedStateTab ? (
+                  (() => {
+                    const status = getStateRateStatus(selectedStateTab);
+                    const activeRate = getActiveRateForState(selectedStateTab);
+                    const latest = getLatestHistoryForState(selectedStateTab);
+                    const rows =
+                      status === "active" && activeRate
+                        ? buildRowsForRate(activeRate)
+                        : latest
+                        ? buildRowsForRate(latest)
+                        : [];
+
+                    if (status === "missing") {
+                      return (
+                        <View style={styles.emptyStateCardInline}>
+                          <View style={styles.emptyIconWrap}>
+                            <FolderOpen size={28} color={COLORS.textMuted} />
+                          </View>
+                          <Text style={styles.emptyTitle}>No rates yet</Text>
+                          <Text style={styles.emptyDescription}>
+                            {getStateLabel(selectedStateTab)} has no charge
+                            rates. Please add them to continue.
+                          </Text>
+                          <TouchableOpacity
+                            style={styles.emptyRequestButton}
+                            onPress={() =>
+                              openSingleStateModal(selectedStateTab, true)
+                            }
+                            activeOpacity={0.85}
+                          >
+                            <Send
+                              size={15}
+                              color="#fff"
+                              style={{ marginRight: 8 }}
+                            />
+                            <Text style={styles.emptyRequestButtonText}>
+                              Add Rates
+                            </Text>
+                          </TouchableOpacity>
+                        </View>
+                      );
+                    }
+
+                    return (
+                      <View style={styles.tableCard}>
+                        <View style={styles.tableHeader}>
+                          <View style={styles.tableHeaderLeft}>
+                            <View style={styles.clockIcon}>
+                              <Clock size={18} color={COLORS.primary} />
+                            </View>
+                            <View style={{ flex: 1 }}>
+                              <Text style={styles.tableTitle}>
+                                {getStateLabel(selectedStateTab)}
+                              </Text>
+                              <Text style={styles.tableSub}>
+                                {status === "active"
+                                  ? "Approved charge rates"
+                                  : status === "draft"
+                                  ? "Draft — not yet submitted"
+                                  : status === "pending"
+                                  ? "Pending admin review"
+                                  : "Rejected — please resubmit"}
+                              </Text>
+                            </View>
+                            <View
+                              style={[
+                                styles.stateStatusPill,
+                                {
+                                  backgroundColor:
+                                    STATUS_BADGE_META[status]?.bg ||
+                                    COLORS.textMuted,
+                                },
+                              ]}
+                            >
+                              <Text
+                                style={[
+                                  styles.stateStatusPillText,
+                                  { color: "#fff" },
+                                ]}
+                              >
+                                {STATUS_BADGE_META[status]?.label || status}
+                              </Text>
+                            </View>
+                          </View>
+                        </View>
+
+                        <View style={styles.colHeader}>
+                          <Text style={[styles.colHeaderText, { flex: 1.4 }]}>
+                            TIME SLOT
+                          </Text>
+                          <Text
+                            style={[
+                              styles.colHeaderText,
+                              { width: 90, textAlign: "right" },
+                            ]}
+                          >
+                            METRO
+                          </Text>
+                          <Text
+                            style={[
+                              styles.colHeaderText,
+                              { width: 90, textAlign: "right" },
+                            ]}
+                          >
+                            REGIONAL
+                          </Text>
+                        </View>
+
+                        {rows.map((row, idx) => (
+                          <View
+                            key={`${row.label}-${idx}`}
+                            style={[
+                              styles.rateRow,
+                              idx % 2 === 1 && styles.rateRowAlt,
+                            ]}
+                          >
+                            <View style={{ flex: 1.4 }}>
+                              <Text style={styles.rateLabel}>{row.label}</Text>
+                              <Text style={styles.rateTime}>{row.time}</Text>
+                            </View>
+                            <Text style={[styles.rateValue, { width: 90 }]}>
+                              {formatMoney(row.metro)}
+                            </Text>
+                            <Text style={[styles.rateValue, { width: 90 }]}>
+                              {formatMoney(row.regional)}
+                            </Text>
+                          </View>
+                        ))}
+
+                        {status === "active" && (
+                          <TouchableOpacity
+                            style={styles.updateRatesBtn}
+                            onPress={() =>
+                              openSingleStateModal(selectedStateTab, false)
+                            }
+                            activeOpacity={0.85}
+                          >
+                            <Pencil
+                              size={15}
+                              color="#fff"
+                              style={{ marginRight: 8 }}
+                            />
+                            <Text style={styles.updateRatesBtnText}>
+                              Update Rates
+                            </Text>
+                          </TouchableOpacity>
+                        )}
+
+                        {status === "draft" && latest && (
+                          <View style={styles.stateCardActionRow}>
+                            <TouchableOpacity
+                              style={styles.stateCardActionBtn}
+                              onPress={() => openSubmitModal(latest)}
+                              activeOpacity={0.85}
+                            >
+                              <Send
+                                size={15}
+                                color="#fff"
+                                style={{ marginRight: 8 }}
+                              />
+                              <Text style={styles.stateCardActionBtnText}>
+                                Continue & Submit
+                              </Text>
+                            </TouchableOpacity>
+                          </View>
+                        )}
+
+                        {status === "rejected" && latest && (
+                          <View style={styles.stateCardActionRow}>
+                            <TouchableOpacity
+                              style={styles.stateCardActionBtn}
+                              onPress={() => openResubmitModal(latest)}
+                              activeOpacity={0.85}
+                            >
+                              <RotateCcw
+                                size={15}
+                                color="#fff"
+                                style={{ marginRight: 8 }}
+                              />
+                              <Text style={styles.stateCardActionBtnText}>
+                                Resubmit
+                              </Text>
+                            </TouchableOpacity>
+                          </View>
+                        )}
+
+                        {status === "pending" && (
+                          <View style={styles.stateCardPendingNote}>
+                            <Clock
+                              size={16}
+                              color={COLORS.warning}
+                              style={{ marginRight: 8 }}
+                            />
+                            <Text style={styles.stateCardPendingNoteText}>
+                              Your rate request is under review by the admin
+                              team.
+                            </Text>
+                          </View>
+                        )}
+                      </View>
+                    );
+                  })()
+                ) : null}
+              </>
+            )}
+
+            {/* ══════════ History tab ══════════ */}
+            {topTab === "history" && (
+              <>
+                {historyList.length === 0 ? (
+                  <View style={styles.emptyStateCardInline}>
+                    <View style={styles.emptyIconWrap}>
+                      <HistoryIcon size={28} color={COLORS.textMuted} />
+                    </View>
+                    <Text style={styles.emptyTitle}>No history yet</Text>
+                    <Text style={styles.emptyDescription}>
+                      Rate requests you submit will appear here.
+                    </Text>
+                  </View>
+                ) : (
+                  historyList.map((item, index) => {
+                    const status = getDisplayStatus(item);
+                    const pill = statusPillColors(status);
+                    const Icon = statusIcon(status);
+                    return (
+                      <View
+                        key={item.id || `${item.state}-${index}`}
+                        style={styles.historyRowCard}
+                      >
+                        <View style={styles.historyRowTop}>
+                          <View style={{ flex: 1 }}>
+                            <Text style={styles.historyRowState}>
+                              {getStateLabel(String(item.state || ""))}
+                            </Text>
+                            <Text style={styles.historyRowDate}>
+                              {formatDate(
+                                item.created_at ||
+                                  item.submitted_at ||
+                                  item.date,
+                              )}
+                            </Text>
+                          </View>
+                          <View
+                            style={[
+                              styles.stateStatusPill,
+                              { backgroundColor: pill.bg },
+                            ]}
+                          >
+                            <View style={styles.stateStatusPillRow}>
+                              <Icon
+                                size={12}
+                                color={pill.color}
+                                style={{ marginRight: 4 }}
+                              />
+                              <Text
+                                style={[
+                                  styles.stateStatusPillText,
+                                  { color: pill.color },
+                                ]}
+                              >
+                                {statusLabel(status)}
+                              </Text>
+                            </View>
+                          </View>
+                        </View>
+
+                        {(item.notes ||
+                          item.admin_note ||
+                          item.admin_notes) && (
+                          <Text style={styles.historyRowNote} numberOfLines={2}>
+                            {item.notes || item.admin_note || item.admin_notes}
+                          </Text>
+                        )}
+
+                        <View style={styles.historyRowActions}>
+                          <TouchableOpacity
+                            style={styles.historyViewBtn}
+                            onPress={() => openViewModal(item)}
+                            activeOpacity={0.85}
+                          >
+                            <Eye
+                              size={13}
+                              color={COLORS.primary}
+                              style={{ marginRight: 6 }}
+                            />
+                            <Text style={styles.historyViewBtnText}>View</Text>
+                          </TouchableOpacity>
+
+                          {status === "rejected" && (
+                            <TouchableOpacity
+                              style={styles.historyResubmitBtn}
+                              onPress={() => openResubmitModal(item)}
+                              activeOpacity={0.85}
+                            >
+                              <RotateCcw
+                                size={13}
+                                color="#fff"
+                                style={{ marginRight: 6 }}
+                              />
+                              <Text style={styles.historyResubmitBtnText}>
+                                Resubmit
+                              </Text>
+                            </TouchableOpacity>
+                          )}
+
+                          {status === "draft" && (
+                            <TouchableOpacity
+                              style={styles.historyEditBtn}
+                              onPress={() => openSubmitModal(item)}
+                              activeOpacity={0.85}
+                            >
+                              <Send
+                                size={13}
+                                color="#fff"
+                                style={{ marginRight: 6 }}
+                              />
+                              <Text style={styles.historyEditBtnText}>
+                                Submit
+                              </Text>
+                            </TouchableOpacity>
+                          )}
+                        </View>
+                      </View>
+                    );
+                  })
+                )}
+              </>
+            )}
+          </ScrollView>
+        </>
       )}
 
-      {/* ===================== Request Rate Update Modal (wizard) ===================== */}
+      {/* ───────────────── Request / Update Rates Modal ───────────────── */}
       <Modal
         visible={modalVisible}
         animationType="slide"
@@ -1772,56 +2015,45 @@ export default function ContractorRatesScreen() {
           <View style={styles.modalOverlay}>
             <View style={styles.modalContent}>
               <LinearGradient
-                colors={[COLORS.heroBg1, COLORS.heroBg2]}
+                colors={[COLORS.heroBg1, COLORS.primary]}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
                 style={styles.modalHeader}
               >
-                <View style={{ flex: 1, paddingRight: 12 }}>
+                <View style={{ flex: 1 }}>
                   <Text style={styles.modalTitle}>
                     {modalMode === "draft"
                       ? "Continue Draft"
                       : modalMode === "update"
                       ? "Update Rates"
-                      : "Request Rate Update"}
+                      : "Request Charge Rates"}
                   </Text>
                   <Text style={styles.modalSubtitle}>
-                    {modalMode === "draft"
-                      ? "Edit your draft and submit for admin review."
-                      : modalMode === "update"
-                      ? "Update your charge rates anytime."
-                      : "Submit your proposed charge rates for admin review & approval."}
+                    Step {wizardIndex + 1} of {wizardStates.length || 1}
                   </Text>
                 </View>
                 <TouchableOpacity
                   onPress={handleCloseModal}
                   style={styles.closeBtn}
                 >
-                  <X size={20} color="#fff" />
+                  <X size={18} color="#fff" />
                 </TouchableOpacity>
               </LinearGradient>
 
               <ScrollView
                 style={styles.modalScroll}
-                contentContainerStyle={{ paddingBottom: 20 }}
+                keyboardShouldPersistTaps="handled"
                 showsVerticalScrollIndicator={false}
               >
-                {/* Step indicator / state segments */}
                 <View style={styles.stateSelectCard}>
                   <View style={styles.stateSelectHeader}>
                     <View style={styles.stateSelectHeaderLeft}>
-                      <MapPin size={16} color={COLORS.primary} />
-                      <Text style={styles.stateSelectTitle}>
-                        {wizardStates.length > 1
-                          ? `Select State to Enter Rates (${wizardIndex + 1}/${
-                              wizardStates.length
-                            })`
-                          : "Enter Rates"}
-                      </Text>
+                      <MapPin size={14} color={COLORS.primary} />
+                      <Text style={styles.stateSelectTitle}>SELECT STATE</Text>
                     </View>
                   </View>
 
-                  {wizardStates.length > 1 && (
+                  {wizardStates.length > 0 && (
                     <View style={styles.stateSegmentRow}>
                       {wizardStates.map((code, i) => {
                         const isActive = i === wizardIndex;
@@ -1868,7 +2100,6 @@ export default function ContractorRatesScreen() {
                   </Text>
                 </View>
 
-                {/* Rate Input Blocks */}
                 {activeWizardState ? (
                   <View style={styles.formRatesContainer}>
                     <RateInputCard
@@ -1922,7 +2153,6 @@ export default function ContractorRatesScreen() {
                   </View>
                 ) : null}
 
-                {/* Notes — shown once the user has reached the final state */}
                 {isLastWizardState && (
                   <View style={styles.formSection}>
                     <Text style={styles.formSectionTitle}>
@@ -1941,7 +2171,6 @@ export default function ContractorRatesScreen() {
                 )}
               </ScrollView>
 
-              {/* Modal Footer */}
               <View style={styles.modalFooter}>
                 <View style={styles.modalFooterNoteRow}>
                   <Shield
@@ -1956,7 +2185,6 @@ export default function ContractorRatesScreen() {
 
                 {isLastWizardState ? (
                   <View style={styles.modalFooterButtonsRow}>
-                    {/* Show Save & Exit when adding missing rates (!isSubmitMode) */}
                     {!isSubmitMode && (
                       <TouchableOpacity
                         style={styles.saveExitBtn}
@@ -2041,7 +2269,7 @@ export default function ContractorRatesScreen() {
         </KeyboardAvoidingBase>
       </Modal>
 
-      {/* ===================== View request modal ===================== */}
+      {/* ───────────────── View Request Modal ───────────────── */}
       <Modal
         visible={viewModalVisible}
         animationType="fade"

@@ -333,7 +333,7 @@ export default function StaffInductionScreen({
                   user?.customer?.name ||
                   "User",
               )}{" "}
-              👋
+              
             </Text>
 
             <Text style={styles.staffName}>Staff Induction Program</Text>
@@ -370,7 +370,7 @@ export default function StaffInductionScreen({
             <View style={styles.heroTop}>
               <View style={styles.heroIcon}>
                 <Award
-                  size={40}
+                  size={30}
                   color={recentDone ? "#22c55e" : COLORS.primary}
                 />
               </View>
@@ -428,7 +428,7 @@ export default function StaffInductionScreen({
               </TouchableOpacity>
             ) : (
               <View style={styles.completedHeroBadge}>
-                <CheckCircle size={18} color="#22c55e" />
+                <CheckCircle size={16} color="#22c55e" />
 
                 <Text style={styles.completedHeroText}>
                   Completed Successfully
@@ -772,7 +772,7 @@ const styles = StyleSheet.create({
     borderRadius: 28,
     padding: 10,
     // marginBottom: 26,
-    marginTop: 10,
+    marginTop: 7,
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.08)",
 
@@ -788,8 +788,8 @@ const styles = StyleSheet.create({
   },
 
   heroIcon: {
-    width: 52,
-    height: 52,
+    width: 42,
+    height: 42,
     borderRadius: 17,
 
     justifyContent: "center",
@@ -809,15 +809,15 @@ const styles = StyleSheet.create({
 
   heroTitle: {
     color: "#fff",
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: "800",
-    marginTop: 4,
+    marginTop: 2,
   },
 
   heroDate: {
     color: "#94A3B8",
     marginTop: 2,
-    fontSize: 12,
+    fontSize: 11,
   },
 
   heroDivider: {
@@ -837,7 +837,7 @@ const styles = StyleSheet.create({
   },
 
   heroStatValue: {
-    fontSize: 16,
+    fontSize: 12,
     color: "#fff",
     fontWeight: "800",
   },
@@ -845,17 +845,18 @@ const styles = StyleSheet.create({
   heroStatLabel: {
     marginTop: 2,
     color: "#94A3B8",
+    fontSize: 11,
   },
 
   heroButton: {
     backgroundColor: COLORS.primary,
     borderRadius: 18,
 
-    paddingVertical: 12,
+    paddingVertical: 10,
 
     alignItems: "center",
 
-    marginTop: 15,
+    marginTop: 12,
   },
 
   heroButtonText: {
@@ -865,7 +866,7 @@ const styles = StyleSheet.create({
   },
 
   completedHeroBadge: {
-    marginTop: 14,
+    marginTop: 10,
 
     flexDirection: "row",
     alignItems: "center",
@@ -875,7 +876,7 @@ const styles = StyleSheet.create({
 
     borderRadius: 18,
 
-    paddingVertical: 14,
+    paddingVertical: 10,
   },
 
   completedHeroText: {
@@ -886,7 +887,7 @@ const styles = StyleSheet.create({
   inductionCard: {
     backgroundColor: "#101827",
     borderRadius: 22,
-    padding: 15,
+    padding: 12,
     marginBottom: 14,
 
     borderWidth: 1,
@@ -970,8 +971,8 @@ const styles = StyleSheet.create({
   actionButton: {
     backgroundColor: COLORS.primary,
     paddingHorizontal: 18,
-    paddingVertical: 8,
-    borderRadius: 8,
+    paddingVertical: 6,
+    borderRadius: 9,
   },
 
   reviewButton: {

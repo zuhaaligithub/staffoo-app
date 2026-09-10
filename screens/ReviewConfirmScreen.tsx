@@ -313,6 +313,26 @@
 //   };
 // }
 
+// const COLORS = {
+//   background: "#030508",
+//   surface: "#07111A",
+//   card: "#0D1421",
+//   cardBorder: "rgba(98, 97, 97, 0.83)",
+//   primary: "#00A99D",
+//   primaryGlow: "rgba(0,169,157,0.25)",
+//   primaryBorder: "rgba(0,169,157,0.25)",
+//   text: "#FFFFFF",
+//   textSecondary: "#94A3B8",
+//   textMuted: "#4A6080",
+//   success: "#34C88A",
+//   danger: "#F87171",
+//   dangerBg: "rgba(248,88,88,0.12)",
+//   warning: "#F5A623",
+//   warningBg: "rgba(245,166,35,0.08)",
+//   heroBg1: "#0D1F2D",
+//   heroBg2: "#061014",
+// };
+
 // export default function ReviewConfirmScreen() {
 //   const navigation = useNavigation();
 //   const route = useRoute();
@@ -642,7 +662,6 @@
 //           }
 //         : {
 //             financials: {
-
 //               base_total_inc_gst: parseFloat(totalIncGST.toFixed(2)),
 //               discount_applied: selectedPlan === "full" ? discountAmount : 0,
 //               amount_to_charge_today: parseFloat(ctaAmount.toFixed(2)),
@@ -905,8 +924,69 @@
 //     }
 //     setConfirmModalVisible(true);
 //   };
+//   const CLIENT_TERMS_META = {
+//     title: "Customer / Client Terms of Service & Booking Agreement",
+//     version: "3.0 (2026 Legal Release)",
+//     operatedBy: "Capital Services Pty Ltd",
+//     abn: "48 613 317 838",
+//     registeredOffice: "21 Tanglewood Bvd, Truganina VIC 3029, Australia",
+//   };
+//   const CLIENT_TERMS_SECTIONS = [
+//     {
+//       number: "1",
+//       title: "Nature of Platform & Unrestricted Subcontracting Rights",
+//       body: `1.1 Technology Platform: Staffoo provides specialized Workforce Management (WFM) and Customer Relationship Management (CRM) technology enabling Clients to book, schedule, and coordinate security guarding, crowd control, and asset protection services.
 
-//   const PRIVACY_POLICY_TEXT = `Staffoo: Terms of Service & Privacy Policy\nEffective Date: March 14, 2026\n\nOperated by: Capital Services Pty Ltd\nABN: 48 613 317 838\nRegistered Office: 21 Tanglewood Bvd, Truganina VIC 3029, Australia\n\nPart 1: Privacy Policy\n1.1 Overview\nStaffoo (operated by Capital Services Pty Ltd) is committed to protecting the privacy of our customers, contractors, and staff in accordance with the Privacy Act 1988 (Cth) and the Australian Privacy Principles (APPs).\n\n1.2 Information Collection & GPS Tracking\nGPS Movement Tracking: Staffoo tracks the GPS location of all staff and contractors while "Clocked In". By using the app, workforce users consent to real-time location monitoring.\n\n1.3 Payment Security (Stripe)\nStaffoo does not store sensitive financial or credit card data. All transactions are processed via Stripe (PCI-DSS compliant).\n\nPart 2: Terms for Customers\n2.1 Booking and Payment Holds\nA payment hold will be placed upon job acceptance. Funds are captured upon shift completion.\n\n2.2 Cancellation & Refund Policy\nCancellations more than 24 hours before shift: full release. Within 1 hour: minimum 4-hour charge applies.\n\nPart 3: Workforce Compliance\nAll personnel must hold a current Security License for their State or Territory.\n\nPart 4: Code of Conduct\nArrive 10 minutes early. Wear specified attire. Zero tolerance for alcohol/substances. Protect all customer site data.\n\nPart 5: Contact\nAdmin Office: 21 Tanglewood Bvd, Truganina VIC 3029\nEmail: admin@staffoo.com.au | Phone: 1800782366`;
+// 1.2 Absolute Discretion to Fulfill via Resource Partners: The Client acknowledges and agrees that Capital Services Pty Ltd reserves the absolute right and discretion at all times to fulfill any booking requirement either directly or by engaging, assigning, or subcontracting the shift to an independent, licensed third-party security provider or staffing agency ("Resource Partner").
+
+// 1.3 Jurisdictional & Licence Capacity Disclaimer: The existence or holding of a Master Security Licence or Labour Hire Licence by Capital Services Pty Ltd in any specific State or Territory shall not obligate Capital Services Pty Ltd to act as the principal direct service provider. In all jurisdictions and under all operational circumstances:
+// • Capital Services Pty Ltd may assign bookings to an authorized, fully licensed Resource Partner.
+// • Where a booking is assigned to a Resource Partner, the legal obligation for on-site security execution sits with the Resource Partner, and Staffoo acts as the technology platform and billing agent.
+// • The Client shall not hold Capital Services Pty Ltd liable for exercising its commercial right to utilize Resource Partners to fulfill booking requests.`,
+//     },
+//     {
+//       number: "2",
+//       title: "Bookings, Payment Holds & Automatic Settlement",
+//       body: `2.1 Payment Authorization: Upon requesting shift or roster coverage, the Client authorizes Staffoo to place an authorization hold or pre-charge on their designated payment method (processed securely via Stripe) for the full estimated booking total.
+
+// 2.2 Escrow-Style Payment Release: Funds are held securely via the payment gateway upon shift completion. The Client is granted a twenty-four (24) hour review window post-shift to confirm digital timesheets or log an operational dispute via the Platform.
+
+// 2.3 Automatic Confirmation: If no dispute or confirmation is lodged within twenty-four (24) hours post-shift, the shift timesheet is deemed automatically approved, and funds will be permanently released to the fulfilling provider.
+
+// 2.4 Invoicing & Billing Agency: In instances where a Resource Partner fulfills the shift, invoices for the security guarding services are generated by or on behalf of the Resource Partner (under their Master Security Licence and ABN), with Staffoo acting as an authorized billing, collection, and technology intermediary agent.`,
+//     },
+//     {
+//       number: "3",
+//       title: "Client Workplace Health & Safety (WHS) Obligations",
+//       body: `3.1 Statutory Compliance: The Client must maintain a safe work environment compliant with all applicable Commonwealth, State, and Territory Workplace Health and Safety (WHS / OHS) legislation (including model WHS laws and the Occupational Health and Safety Act 2004 (Vic)).`,
+//     },
+//     {
+//       number: "4",
+//       title: "Cancellations, Shift Modifications & Disputes",
+//       body: `4.1 Minimum Notice Cancellation Fees: Cancellations made within the mandatory minimum notice window (as specified during the booking checkout flow) will attract a standardized cancellation fee to cover administrative overheads and guard mobilization costs.
+
+// 4.2 Dispute Resolution Protocol: Operational disputes regarding guard attendance or performance must be submitted via the Platform within 24 hours post-shift, supported by time-stamped evidence. Staffoo will mediate disputes in good faith utilizing automated GPS geofencing, clock-in timestamps, and platform audit logs.`,
+//     },
+//     {
+//       number: "5",
+//       title: "Non-Solicitation & Anti-Poaching",
+//       body: `5.1 Non-Circumvention Period: The Client agrees that during active platform usage and for a period of six (6) months following the completion of any booking, it will not directly or indirectly engage, employ, solicit, or contract with any Resource Partner or individual guard introduced to the Client via Staffoo, outside of the Platform.`,
+//     },
+//     {
+//       number: "6",
+//       title: "Limitation of Liability, Statutory Warranties & Indemnity",
+//       body: `6.1 Australian Consumer Law (ACL): Nothing in these Terms excludes, restricts, or modifies any statutory guarantee, right, or remedy implied by Schedule 2 of the Competition and Consumer Act 2010 (Cth) that cannot be lawfully excluded.
+
+// 6.2 Intermediary Liability Exclusion: To the maximum extent permitted by Australian law, where a booking is fulfilled by a Resource Partner, Staffoo excludes all liability for property damage, theft, personal injury, or indirect/consequential losses arising from the acts or omissions of the Resource Partner or its personnel.`,
+//     },
+//     {
+//       number: "7",
+//       title: "Governing Law & Jurisdiction",
+//       body: `7.1 Governing Law: These Terms are governed by and construed in accordance with the laws of the State of Victoria, Australia. The parties submit to the exclusive jurisdiction of the courts operating in Victoria.`,
+//     },
+//   ];
+
+//   const CLIENT_TERMS_INTRO = `These Customer Terms of Service ("Terms") govern the access to and use of the Staffoo web dashboard, mobile applications, and booking infrastructure (collectively, the "Platform"), operated by Capital Services Pty Ltd (ABN 48 613 317 838). By requesting, booking, or managing security personnel or workforce services through Staffoo, the user ("Client") agrees to be bound by these Terms.`;
 
 //   if (ratesLoading)
 //     return (
@@ -1070,9 +1150,9 @@
 //             <View style={styles.infoBox}>
 //               <Info size={16} color="#0A7C6E" style={{ marginTop: 1 }} />
 //               <Text style={styles.infoBoxText}>
-//                 No payment is collected now. Once you post this job, you'll be
-//                 asked to accept an estimated price range and it will always go
-//                 out as a broadcast job.
+//                 No payment is required at this stage. Once the estimated range
+//                 is accepted, the job will be broadcast. You will be notified
+//                 when payment is required.
 //               </Text>
 //             </View>
 
@@ -1096,9 +1176,6 @@
 //             <View style={styles.rateCard}>
 //               <View style={styles.rateMainHeader}>
 //                 <Text style={styles.rateMainTitle}>Quotation Breakdown</Text>
-//                 <Text style={styles.rateMainSubtitle}>
-//                   {totalBillableHours.toFixed(2)} Total Billable Hours
-//                 </Text>
 //               </View>
 
 //               {costBreakdown.breakdown.length === 0 ? (
@@ -1139,40 +1216,42 @@
 //                     </View>
 //                   ))}
 
-//                   <View style={styles.totalsBlock}>
-//                     <View style={[styles.totalLine, styles.totalLineNoBorder]}>
-//                       <Text style={styles.totalLabel}>Subtotal (Ex GST)</Text>
-//                       <Text style={styles.subtotalValue}>
+//                   {/* ── Receipt-style totals block (matches design mock) ────── */}
+//                   <View style={styles.receiptCard}>
+//                     <View style={styles.receiptRow}>
+//                       <Text style={styles.receiptLabel}>Subtotal</Text>
+//                       <Text style={styles.receiptValue}>
 //                         ${subtotal.toFixed(2)}
 //                       </Text>
 //                     </View>
 
 //                     {selectedPlan === "full" && discountAmount > 0 && (
 //                       <>
-//                         <View style={styles.totalLine}>
-//                           <Text style={styles.totalLabel}>
-//                             Pay In Full Discount (5%)
+//                         <View style={styles.receiptRow}>
+//                           <Text style={styles.receiptDiscountLabel}>
+//                             Discount (5%)
 //                           </Text>
-//                           <Text style={{ color: "#16A34A", fontWeight: "700" }}>
+//                           <Text style={styles.receiptDiscountValue}>
 //                             -${discountAmount.toFixed(2)}
 //                           </Text>
 //                         </View>
-//                         <View
-//                           style={[styles.totalLine, styles.totalLineNoBorder]}
-//                         >
-//                           <Text style={styles.totalLabel}>
-//                             Subtotal After Discount
+
+//                         <View style={styles.receiptDashedDivider} />
+
+//                         <View style={styles.receiptRow}>
+//                           <Text style={styles.receiptLabel}>
+//                             Discounted Subtotal
 //                           </Text>
-//                           <Text style={styles.subtotalValue}>
+//                           <Text style={styles.receiptValue}>
 //                             ${discountedSubtotal.toFixed(2)}
 //                           </Text>
 //                         </View>
 //                       </>
 //                     )}
 
-//                     <View style={styles.totalLine}>
-//                       <Text style={styles.totalLabel}>GST (10%)</Text>
-//                       <Text style={styles.gstValue}>
+//                     <View style={styles.receiptRow}>
+//                       <Text style={styles.receiptLabel}>GST</Text>
+//                       <Text style={styles.receiptValue}>
 //                         $
 //                         {selectedPlan === "full"
 //                           ? gst.toFixed(2)
@@ -1181,34 +1260,31 @@
 //                     </View>
 
 //                     {selectedPlan === "split" && (
-//                       <>
-//                         <View
-//                           style={[styles.totalLine, styles.totalLineNoBorder]}
-//                         >
-//                           <Text style={styles.quoteTotal}>Quote Total</Text>
-//                           <Text style={styles.quoteTotalvalue}>
-//                             ${splitTotalIncGST.toFixed(2)}
-//                           </Text>
-//                         </View>
-//                         <View style={styles.totalLine}>
-//                           <Text style={styles.totalLabel}>
-//                             Split Payment (50% now)
-//                           </Text>
-//                           <Text style={{ color: "#64748B", fontWeight: "600" }}>
-//                             ${splitUpfront.toFixed(2)}
-//                           </Text>
-//                         </View>
-//                       </>
+//                       <View style={styles.receiptRow}>
+//                         <Text style={styles.receiptLabel}>
+//                           Split Payment (50% now)
+//                         </Text>
+//                         <Text style={styles.receiptValue}>
+//                           ${splitUpfront.toFixed(2)}
+//                         </Text>
+//                       </View>
 //                     )}
 
-//                     <View style={styles.finalTotalLine}>
-//                       <Text style={styles.finalTotalLabel}>Amount Payable</Text>
-//                       <Text
-//                         style={[styles.finalTotalValue, { color: "#0A7C6E" }]}
-//                       >
-//                         {selectedPlan === "full"
-//                           ? `$${fullPayAmount.toFixed(2)}`
-//                           : `$${splitUpfront.toFixed(2)}`}
+//                     <View style={styles.receiptDashedDivider} />
+
+//                     <View style={styles.receiptRow}>
+//                       <Text style={styles.receiptTotalLabel}>Total</Text>
+//                       <Text style={styles.receiptTotalValue}>
+//                         ${totalIncGST.toFixed(2)}
+//                       </Text>
+//                     </View>
+
+//                     <View style={styles.receiptThickDivider} />
+
+//                     <View style={styles.receiptDueRow}>
+//                       <Text style={styles.receiptDueLabel}>Due</Text>
+//                       <Text style={styles.receiptDueValue}>
+//                         ${ctaAmount.toFixed(2)}
 //                       </Text>
 //                     </View>
 //                   </View>
@@ -1358,6 +1434,7 @@
 //         onRequestClose={() => setShowPolicyModal(false)}
 //       >
 //         <SafeAreaView style={styles.modalContainer}>
+//           {/* ── Header ── */}
 //           <View style={styles.modalHeader}>
 //             <View style={styles.headerLeft}>
 //               <Image
@@ -1372,44 +1449,81 @@
 //                 </Text>
 //               </View>
 //             </View>
+
 //             <TouchableOpacity
 //               onPress={() => setShowPolicyModal(false)}
 //               style={styles.closeBtn}
+//               activeOpacity={0.7}
 //             >
-//               <X size={18} color="#b72f0d" />
+//               <X size={18} color={COLORS.danger} />
 //             </TouchableOpacity>
 //           </View>
+
 //           <ScrollView
 //             style={styles.modalScroll}
 //             contentContainerStyle={styles.modalScrollContent}
+//             showsVerticalScrollIndicator={false}
 //           >
+//             {/* Meta card */}
 //             <View style={styles.highlightedInfo}>
-//               <Text style={styles.highlightText}>
-//                 Effective Date: March 14, 2026
-//               </Text>
-//               <Text style={styles.highlightText}>
-//                 Operated by: Capital Services Pty Ltd
-//               </Text>
-//               <Text style={styles.highlightText}>ABN: 48 613 317 838</Text>
-//               <Text style={styles.highlightText}>
-//                 Registered Office: 21 Tanglewood Bvd, Truganina VIC 3029,
-//                 Australia
-//               </Text>
+//               <Text style={styles.metaTitle}>{CLIENT_TERMS_META.title}</Text>
+
+//               <View style={styles.metaRow}>
+//                 <Text style={styles.metaLabel}>Version</Text>
+//                 <Text style={styles.metaValue}>
+//                   {CLIENT_TERMS_META.version}
+//                 </Text>
+//               </View>
+//               <View style={styles.metaRow}>
+//                 <Text style={styles.metaLabel}>Operated by</Text>
+//                 <Text style={styles.metaValue}>
+//                   {CLIENT_TERMS_META.operatedBy}
+//                 </Text>
+//               </View>
+//               <View style={styles.metaRow}>
+//                 <Text style={styles.metaLabel}>ABN</Text>
+//                 <Text style={styles.metaValue}>{CLIENT_TERMS_META.abn}</Text>
+//               </View>
+//               <View style={[styles.metaRow, { marginBottom: 0 }]}>
+//                 <Text style={styles.metaLabel}>Registered office</Text>
+//                 <Text style={styles.metaValue}>
+//                   {CLIENT_TERMS_META.registeredOffice}
+//                 </Text>
+//               </View>
 //             </View>
-//             <Text style={styles.policyBodyText}>{PRIVACY_POLICY_TEXT}</Text>
+
+//             {/* Intro */}
+//             <Text style={styles.policyBodyText}>{CLIENT_TERMS_INTRO}</Text>
+
+//             {/* Sections */}
+//             {CLIENT_TERMS_SECTIONS.map((section) => (
+//               <View key={section.number} style={styles.termsSection}>
+//                 <View style={styles.termsSectionHeader}>
+//                   <View style={styles.termsNumberBadge}>
+//                     <Text style={styles.termsNumberText}>{section.number}</Text>
+//                   </View>
+//                   <Text style={styles.termsSectionTitle}>{section.title}</Text>
+//                 </View>
+//                 <Text style={styles.termsSectionBody}>{section.body}</Text>
+//               </View>
+//             ))}
+
 //             <Text style={styles.lastUpdated}>
-//               Capital Services Pty Ltd • ABN 48 613 317 838
+//               {CLIENT_TERMS_META.operatedBy} • ABN {CLIENT_TERMS_META.abn}
 //             </Text>
 //           </ScrollView>
+
+//           {/* Footer */}
 //           <View style={styles.modalFooter}>
 //             <TouchableOpacity
 //               style={styles.acceptBtn}
+//               activeOpacity={0.85}
 //               onPress={() => {
 //                 setAcceptedPolicy(true);
 //                 setShowPolicyModal(false);
 //               }}
 //             >
-//               <Check size={22} color="#fff" style={{ marginRight: 10 }} />
+//               <Check size={20} color="#ffff" style={{ marginRight: 10 }} />
 //               <Text style={styles.acceptBtnText}>
 //                 I Accept the Terms & Privacy Policy
 //               </Text>
@@ -1439,7 +1553,7 @@
 //             </View>
 
 //             <Text style={styles.confirmModalSubtitle}>
-//               This job's final price will fall within the range below.
+//               This job's final price will fall within the estimated range below.
 //             </Text>
 
 //             <View style={styles.confirmPriceBox}>
@@ -1452,9 +1566,9 @@
 //             </View>
 
 //             <Text style={styles.confirmModalNote}>
-//               No payment is taken now. By accepting, this job will be broadcast
-//               to eligible staff and the final charge will fall within the
-//               estimated range above.
+//               No payment is required at this stage. Once the job is accepted,
+//               the final payment invoice will be emailed to you and published in
+//               the app, where you can complete the payment process.
 //             </Text>
 
 //             <View style={styles.confirmModalActions}>
@@ -1921,10 +2035,10 @@
 //   cardSectionHeader: {
 //     flexDirection: "row",
 //     alignItems: "center",
-//     marginBottom: 16,
+//     marginBottom: 5,
 //     gap: 10,
 //   },
-//   sectionTitle: { fontSize: 20, fontWeight: "800", color: "#fff" },
+//   sectionTitle: { fontSize: 17, fontWeight: "800", color: "#fff" },
 //   valueWrap: { flex: 2, alignItems: "flex-end" },
 //   detailRow: {
 //     flexDirection: "row",
@@ -1932,9 +2046,9 @@
 //     marginBottom: 12,
 //   },
 //   label: {
-//     color: "#89E7D0",
+//     color: "#dddd",
 //     fontWeight: "700",
-//     fontSize: 13,
+//     fontSize: 12,
 //     marginBottom: 6,
 //     width: 90,
 //   },
@@ -1974,7 +2088,6 @@
 //     fontSize: 18,
 //     fontWeight: "800",
 //     color: "#fff",
-//     marginBottom: 4,
 //   },
 //   rateMainSubtitle: { fontSize: 14, fontWeight: "600", color: "#76a4e0" },
 //   noDataText: {
@@ -2032,20 +2145,84 @@
 //     fontSize: 15,
 //     padding: 20,
 //   },
-//   totalLine: {
+
+//   // ── Receipt-style breakdown block (matches the design mock) ──────────────
+//   receiptCard: {
+//     backgroundColor: "#fff",
+//     borderRadius: 20,
+//     padding: 20,
+//     marginTop: 14,
+//   },
+//   receiptRow: {
 //     flexDirection: "row",
 //     justifyContent: "space-between",
-//     paddingVertical: 10,
-//     borderBottomWidth: 1,
-//     borderBottomColor: "#f1f5f9",
+//     alignItems: "center",
+//     paddingVertical: 8,
 //   },
-//   totalLineNoBorder: { borderBottomWidth: 0 },
-//   finalTotalLine: {
+//   receiptLabel: {
+//     fontSize: 15,
+//     fontWeight: "700",
+//     color: "#334155",
+//     fontFamily: courierFont,
+//   } as any,
+//   receiptValue: {
+//     fontSize: 15,
+//     fontWeight: "700",
+//     color: "#334155",
+//     fontFamily: courierFont,
+//   } as any,
+//   receiptDiscountLabel: {
+//     fontSize: 14,
+//     color: "#0A7C6E",
+//     fontFamily: courierFont,
+//   } as any,
+//   receiptDiscountValue: {
+//     fontSize: 14,
+//     fontWeight: "700",
+//     color: "#0A7C6E",
+//     fontFamily: courierFont,
+//   } as any,
+//   receiptDashedDivider: {
+//     borderBottomWidth: 1.5,
+//     borderStyle: "dashed",
+//     borderBottomColor: "#CBD5E1",
+//     marginVertical: 6,
+//   },
+//   receiptTotalLabel: {
+//     fontSize: 17,
+//     fontWeight: "800",
+//     color: "#0F172A",
+//     fontFamily: courierFont,
+//   } as any,
+//   receiptTotalValue: {
+//     fontSize: 17,
+//     fontWeight: "800",
+//     color: "#0F172A",
+//     fontFamily: courierFont,
+//   } as any,
+//   receiptThickDivider: {
+//     height: 2,
+//     backgroundColor: "#0F172A",
+//     marginVertical: 14,
+//   },
+//   receiptDueRow: {
 //     flexDirection: "row",
 //     justifyContent: "space-between",
-//     paddingTop: 16,
-//     paddingBottom: 8,
+//     alignItems: "center",
 //   },
+//   receiptDueLabel: {
+//     fontSize: 18,
+//     fontWeight: "800",
+//     color: "#0A7C6E",
+//     fontFamily: courierFont,
+//   } as any,
+//   receiptDueValue: {
+//     fontSize: 24,
+//     fontWeight: "900",
+//     color: "#0A7C6E",
+//     fontFamily: courierFont,
+//   } as any,
+
 //   paymentOptionsCard: {
 //     backgroundColor: "#030508",
 //     borderRadius: 24,
@@ -2140,32 +2317,7 @@
 //   policyText: { fontSize: 14, color: "#fff", flex: 1 },
 //   policyLink: { color: "#0A7C6E", fontWeight: "700" },
 //   noteText: { marginTop: 5, fontSize: 10, color: "#7c7a7a", lineHeight: 14 },
-//   modalContainer: { flex: 1, backgroundColor: "#f8fafc" },
-//   modalHeader: {
-//     backgroundColor: "#ffffff",
-//     paddingHorizontal: 20,
-//     paddingVertical: 18,
-//     flexDirection: "row",
-//     alignItems: "center",
-//     justifyContent: "space-between",
-//     borderBottomWidth: 1,
-//     borderBottomColor: "#e2e8f0",
-//   },
-//   headerLeft: { flexDirection: "row", alignItems: "center", gap: 14 },
-//   modalLogo: { width: 70, height: 30 },
-//   modalTitle: { fontSize: 14, fontWeight: "700", color: "#0f172a" },
-//   modalSubtitle: { fontSize: 10, color: "#64748b", marginTop: 2 },
-//   closeBtn: { padding: 5, borderRadius: 30, backgroundColor: "#f1f5f9" },
-//   modalScroll: { flex: 1 },
-//   modalScrollContent: { padding: 20, paddingBottom: 40 },
-//   highlightedInfo: {
-//     backgroundColor: "#e0f2fe",
-//     padding: 18,
-//     borderRadius: 16,
-//     marginBottom: 24,
-//     borderLeftWidth: 5,
-//     borderLeftColor: "#3b82f6",
-//   },
+
 //   highlightText: {
 //     fontSize: 15.5,
 //     color: "#1e40af",
@@ -2173,35 +2325,7 @@
 //     lineHeight: 24,
 //     marginBottom: 6,
 //   },
-//   policyBodyText: {
-//     fontSize: 16,
-//     color: "#1e2937",
-//     lineHeight: 26,
-//     letterSpacing: 0.15,
-//   },
-//   lastUpdated: {
-//     textAlign: "center",
-//     marginTop: 28,
-//     fontSize: 13.5,
-//     color: "#94a3b8",
-//     fontWeight: "500",
-//   },
-//   modalFooter: {
-//     paddingHorizontal: 20,
-//     paddingVertical: 20,
-//     backgroundColor: "#ffffff",
-//     borderTopWidth: 1,
-//     borderTopColor: "#e2e8f0",
-//   },
-//   acceptBtn: {
-//     backgroundColor: "#001F3F",
-//     paddingVertical: 18,
-//     borderRadius: 16,
-//     alignItems: "center",
-//     flexDirection: "row",
-//     justifyContent: "center",
-//   },
-//   acceptBtnText: { color: "#fff", fontSize: 17.5, fontWeight: "700" },
+
 //   errorText: { color: "#EF4444", fontSize: 12, marginTop: 4, marginLeft: 4 },
 //   rateSegmentCard: {
 //     backgroundColor: "rgba(255,255,255,0.06)",
@@ -2212,60 +2336,6 @@
 //     borderColor: "rgba(255,255,255,0.08)",
 //     width: "100%",
 //   },
-//   totalsBlock: {
-//     marginTop: 14,
-//     backgroundColor: "rgba(255,255,255,0.05)",
-//     borderRadius: 20,
-//     padding: 16,
-//     borderWidth: 1,
-//     borderColor: "rgba(255,255,255,0.08)",
-//   },
-//   totalLabel: {
-//     color: "#CBD5E1",
-//     fontSize: 14,
-//     fontFamily: courierFont,
-//     includeFontPadding: false,
-//   } as any,
-//   quoteTotal: {
-//     color: "#CBD5E1",
-//     fontSize: 14,
-//     fontWeight: "700",
-//     fontFamily: courierFont,
-//     includeFontPadding: false,
-//   } as any,
-//   quoteTotalvalue: {
-//     color: "#CBD5E1",
-//     fontSize: 14,
-//     fontWeight: "700",
-//     fontFamily: courierFont,
-//     includeFontPadding: false,
-//   } as any,
-//   subtotalValue: {
-//     color: "#fff",
-//     fontWeight: "700",
-//     fontFamily: courierFont,
-//     includeFontPadding: false,
-//   } as any,
-//   gstValue: {
-//     color: "#CBD5E1",
-//     fontWeight: "700",
-//     fontFamily: courierFont,
-//     includeFontPadding: false,
-//   } as any,
-//   finalTotalLabel: {
-//     color: "#89E7D0",
-//     fontSize: 17,
-//     fontWeight: "800",
-//     fontFamily: courierFont,
-//     includeFontPadding: false,
-//   } as any,
-//   finalTotalValue: {
-//     color: "#fff",
-//     fontSize: 20,
-//     fontWeight: "900",
-//     fontFamily: courierFont,
-//     includeFontPadding: false,
-//   } as any,
 //   planCard: {
 //     flex: 1,
 //     backgroundColor: "rgba(255,255,255,0.06)",
@@ -2458,6 +2528,188 @@
 //     color: "#fff",
 //     fontSize: 16,
 //     fontWeight: "700",
+//   },
+
+//   // ── Policy Modal (dark theme) ──────────────────────────────────────────────
+//   modalContainer: {
+//     flex: 1,
+//     backgroundColor: COLORS.background, // #030508
+//   },
+//   modalHeader: {
+//     backgroundColor: COLORS.surface, // #07111A
+//     paddingHorizontal: 20,
+//     paddingVertical: 16,
+//     flexDirection: "row",
+//     alignItems: "center",
+//     justifyContent: "space-between",
+//     borderBottomWidth: 1,
+//     borderBottomColor: "rgba(255,255,255,0.08)",
+//   },
+//   headerLeft: {
+//     flexDirection: "row",
+//     alignItems: "center",
+//     gap: 14,
+//   },
+//   modalLogo: {
+//     width: 70,
+//     height: 30,
+//   },
+//   modalTitle: {
+//     fontSize: 15,
+//     fontWeight: "700",
+//     color: COLORS.text,
+//   },
+//   modalSubtitle: {
+//     fontSize: 11,
+//     color: COLORS.textSecondary,
+//     marginTop: 2,
+//   },
+//   closeBtn: {
+//     width: 36,
+//     height: 36,
+//     borderRadius: 18,
+//     backgroundColor: COLORS.dangerBg,
+//     alignItems: "center",
+//     justifyContent: "center",
+//   },
+//   modalScroll: {
+//     flex: 1,
+//   },
+//   modalScrollContent: {
+//     padding: 20,
+//     paddingBottom: 40,
+//   },
+
+//   // Meta card
+//   highlightedInfo: {
+//     backgroundColor: COLORS.card, // #0D1421
+//     padding: 18,
+//     borderRadius: 16,
+//     marginBottom: 24,
+//     borderWidth: 1,
+//     borderColor: COLORS.primaryBorder,
+//     borderLeftWidth: 4,
+//     borderLeftColor: COLORS.primary,
+//   },
+//   metaTitle: {
+//     fontSize: 15,
+//     fontWeight: "800",
+//     color: COLORS.primary,
+//     marginBottom: 14,
+//     lineHeight: 22,
+//   },
+//   metaRow: {
+//     flexDirection: "row",
+//     justifyContent: "space-between",
+//     alignItems: "flex-start",
+//     marginBottom: 8,
+//     gap: 12,
+//   },
+//   metaLabel: {
+//     fontSize: 12,
+//     fontWeight: "700",
+//     color: COLORS.textSecondary,
+//     width: 110,
+//     textTransform: "uppercase",
+//     letterSpacing: 0.3,
+//   },
+//   metaValue: {
+//     flex: 1,
+//     fontSize: 14,
+//     fontWeight: "600",
+//     color: COLORS.text,
+//     textAlign: "right",
+//     lineHeight: 20,
+//   },
+
+//   // Body text
+//   policyBodyText: {
+//     fontSize: 14,
+//     color: "#ffff",
+//     lineHeight: 22,
+//     letterSpacing: 0.15,
+//     marginBottom: 8,
+//   },
+
+//   // Sections
+//   termsSection: {
+//     marginTop: 16,
+//     backgroundColor: COLORS.card,
+//     borderRadius: 14,
+//     borderWidth: 1,
+//     borderColor: "rgba(255,255,255,0.08)",
+//     overflow: "hidden",
+//   },
+//   termsSectionHeader: {
+//     flexDirection: "row",
+//     alignItems: "center",
+//     backgroundColor: "rgba(0,169,157,0.12)",
+//     paddingVertical: 12,
+//     paddingHorizontal: 14,
+//     gap: 12,
+//     borderBottomWidth: 1,
+//     borderBottomColor: COLORS.primaryBorder,
+//   },
+//   termsNumberBadge: {
+//     width: 28,
+//     height: 28,
+//     borderRadius: 8,
+//     backgroundColor: COLORS.primary,
+//     alignItems: "center",
+//     justifyContent: "center",
+//   },
+//   termsNumberText: {
+//     color: "#03211E",
+//     fontSize: 14,
+//     fontWeight: "800",
+//   },
+//   termsSectionTitle: {
+//     flex: 1,
+//     fontSize: 14,
+//     fontWeight: "800",
+//     color: COLORS.primary,
+//     lineHeight: 20,
+//   },
+//   termsSectionBody: {
+//     padding: 14,
+//     fontSize: 14,
+//     color: "#ffff",
+//     lineHeight: 22,
+//   },
+
+//   lastUpdated: {
+//     textAlign: "center",
+//     marginTop: 28,
+//     fontSize: 13,
+//     color: COLORS.textMuted,
+//     fontWeight: "500",
+//   },
+
+//   // Footer
+//   modalFooter: {
+//     paddingHorizontal: 20,
+//     paddingVertical: 18,
+//     backgroundColor: COLORS.surface,
+//     borderTopWidth: 1,
+//     borderTopColor: "rgba(255,255,255,0.08)",
+//   },
+//   acceptBtn: {
+//     backgroundColor: COLORS.primary,
+//     paddingVertical: 15,
+//     borderRadius: 14,
+//     alignItems: "center",
+//     flexDirection: "row",
+//     justifyContent: "center",
+//     shadowColor: COLORS.primary,
+//     shadowOffset: { width: 0, height: 6 },
+//     shadowOpacity: 0.35,
+//     shadowRadius: 12,
+//     elevation: 8,
+//   },
+//   acceptBtnText: {
+//     color: "#ffff",
+//     fontSize: 15,
+//     fontWeight: "800",
 //   },
 // });
 
@@ -2775,6 +3027,42 @@ function calcBreakdown(shiftsInput: any[], r: RatesConfig): CostBreakdown {
     totalShiftHours,
   };
 }
+
+// ─── Theme ─────────────────────────────────────────────────────────────────
+// Core dark-app theme (as supplied).
+const COLORS = {
+  background: "#030508",
+  surface: "#07111A",
+  card: "#0D1421",
+  cardBorder: "rgba(98, 97, 97, 0.83)",
+  primary: "#00A99D",
+  primaryGlow: "rgba(0,169,157,0.25)",
+  primaryBorder: "rgba(0,169,157,0.25)",
+  text: "#FFFFFF",
+  textSecondary: "#94A3B8",
+  textMuted: "#4A6080",
+  success: "#34C88A",
+  danger: "#F87171",
+  dangerBg: "rgba(248,88,88,0.12)",
+  warning: "#F5A623",
+  warningBg: "rgba(245,166,35,0.08)",
+  heroBg1: "#0D1F2D",
+  heroBg2: "#061014",
+};
+
+// A handful of light-surface companions used for the "paper" style cards
+// (receipts, estimate box, payment sheet) so those elements stay legible
+// and coherent with the primary teal accent instead of using random grays.
+const LIGHT = {
+  card: "#FFFFFF",
+  surface: "#F7FAFC",
+  surfaceAlt: "#EDF3F5",
+  border: "#E2E8F0",
+  text: "#0F172A",
+  textSecondary: "#5B6B7C",
+  textMuted: "#94A3B8",
+  warningBg: "#FDF1DC",
+};
 
 export default function ReviewConfirmScreen() {
   const navigation = useNavigation();
@@ -3367,13 +3655,74 @@ export default function ReviewConfirmScreen() {
     }
     setConfirmModalVisible(true);
   };
+  const CLIENT_TERMS_META = {
+    title: "Customer / Client Terms of Service & Booking Agreement",
+    version: "3.0 (2026 Legal Release)",
+    operatedBy: "Capital Services Pty Ltd",
+    abn: "48 613 317 838",
+    registeredOffice: "21 Tanglewood Bvd, Truganina VIC 3029, Australia",
+  };
+  const CLIENT_TERMS_SECTIONS = [
+    {
+      number: "1",
+      title: "Nature of Platform & Unrestricted Subcontracting Rights",
+      body: `1.1 Technology Platform: Staffoo provides specialized Workforce Management (WFM) and Customer Relationship Management (CRM) technology enabling Clients to book, schedule, and coordinate security guarding, crowd control, and asset protection services.
 
-  const PRIVACY_POLICY_TEXT = `Staffoo: Terms of Service & Privacy Policy\nEffective Date: March 14, 2026\n\nOperated by: Capital Services Pty Ltd\nABN: 48 613 317 838\nRegistered Office: 21 Tanglewood Bvd, Truganina VIC 3029, Australia\n\nPart 1: Privacy Policy\n1.1 Overview\nStaffoo (operated by Capital Services Pty Ltd) is committed to protecting the privacy of our customers, contractors, and staff in accordance with the Privacy Act 1988 (Cth) and the Australian Privacy Principles (APPs).\n\n1.2 Information Collection & GPS Tracking\nGPS Movement Tracking: Staffoo tracks the GPS location of all staff and contractors while "Clocked In". By using the app, workforce users consent to real-time location monitoring.\n\n1.3 Payment Security (Stripe)\nStaffoo does not store sensitive financial or credit card data. All transactions are processed via Stripe (PCI-DSS compliant).\n\nPart 2: Terms for Customers\n2.1 Booking and Payment Holds\nA payment hold will be placed upon job acceptance. Funds are captured upon shift completion.\n\n2.2 Cancellation & Refund Policy\nCancellations more than 24 hours before shift: full release. Within 1 hour: minimum 4-hour charge applies.\n\nPart 3: Workforce Compliance\nAll personnel must hold a current Security License for their State or Territory.\n\nPart 4: Code of Conduct\nArrive 10 minutes early. Wear specified attire. Zero tolerance for alcohol/substances. Protect all customer site data.\n\nPart 5: Contact\nAdmin Office: 21 Tanglewood Bvd, Truganina VIC 3029\nEmail: admin@staffoo.com.au | Phone: 1800782366`;
+1.2 Absolute Discretion to Fulfill via Resource Partners: The Client acknowledges and agrees that Capital Services Pty Ltd reserves the absolute right and discretion at all times to fulfill any booking requirement either directly or by engaging, assigning, or subcontracting the shift to an independent, licensed third-party security provider or staffing agency ("Resource Partner").
+
+1.3 Jurisdictional & Licence Capacity Disclaimer: The existence or holding of a Master Security Licence or Labour Hire Licence by Capital Services Pty Ltd in any specific State or Territory shall not obligate Capital Services Pty Ltd to act as the principal direct service provider. In all jurisdictions and under all operational circumstances:
+• Capital Services Pty Ltd may assign bookings to an authorized, fully licensed Resource Partner.
+• Where a booking is assigned to a Resource Partner, the legal obligation for on-site security execution sits with the Resource Partner, and Staffoo acts as the technology platform and billing agent.
+• The Client shall not hold Capital Services Pty Ltd liable for exercising its commercial right to utilize Resource Partners to fulfill booking requests.`,
+    },
+    {
+      number: "2",
+      title: "Bookings, Payment Holds & Automatic Settlement",
+      body: `2.1 Payment Authorization: Upon requesting shift or roster coverage, the Client authorizes Staffoo to place an authorization hold or pre-charge on their designated payment method (processed securely via Stripe) for the full estimated booking total.
+
+2.2 Escrow-Style Payment Release: Funds are held securely via the payment gateway upon shift completion. The Client is granted a twenty-four (24) hour review window post-shift to confirm digital timesheets or log an operational dispute via the Platform.
+
+2.3 Automatic Confirmation: If no dispute or confirmation is lodged within twenty-four (24) hours post-shift, the shift timesheet is deemed automatically approved, and funds will be permanently released to the fulfilling provider.
+
+2.4 Invoicing & Billing Agency: In instances where a Resource Partner fulfills the shift, invoices for the security guarding services are generated by or on behalf of the Resource Partner (under their Master Security Licence and ABN), with Staffoo acting as an authorized billing, collection, and technology intermediary agent.`,
+    },
+    {
+      number: "3",
+      title: "Client Workplace Health & Safety (WHS) Obligations",
+      body: `3.1 Statutory Compliance: The Client must maintain a safe work environment compliant with all applicable Commonwealth, State, and Territory Workplace Health and Safety (WHS / OHS) legislation (including model WHS laws and the Occupational Health and Safety Act 2004 (Vic)).`,
+    },
+    {
+      number: "4",
+      title: "Cancellations, Shift Modifications & Disputes",
+      body: `4.1 Minimum Notice Cancellation Fees: Cancellations made within the mandatory minimum notice window (as specified during the booking checkout flow) will attract a standardized cancellation fee to cover administrative overheads and guard mobilization costs.
+
+4.2 Dispute Resolution Protocol: Operational disputes regarding guard attendance or performance must be submitted via the Platform within 24 hours post-shift, supported by time-stamped evidence. Staffoo will mediate disputes in good faith utilizing automated GPS geofencing, clock-in timestamps, and platform audit logs.`,
+    },
+    {
+      number: "5",
+      title: "Non-Solicitation & Anti-Poaching",
+      body: `5.1 Non-Circumvention Period: The Client agrees that during active platform usage and for a period of six (6) months following the completion of any booking, it will not directly or indirectly engage, employ, solicit, or contract with any Resource Partner or individual guard introduced to the Client via Staffoo, outside of the Platform.`,
+    },
+    {
+      number: "6",
+      title: "Limitation of Liability, Statutory Warranties & Indemnity",
+      body: `6.1 Australian Consumer Law (ACL): Nothing in these Terms excludes, restricts, or modifies any statutory guarantee, right, or remedy implied by Schedule 2 of the Competition and Consumer Act 2010 (Cth) that cannot be lawfully excluded.
+
+6.2 Intermediary Liability Exclusion: To the maximum extent permitted by Australian law, where a booking is fulfilled by a Resource Partner, Staffoo excludes all liability for property damage, theft, personal injury, or indirect/consequential losses arising from the acts or omissions of the Resource Partner or its personnel.`,
+    },
+    {
+      number: "7",
+      title: "Governing Law & Jurisdiction",
+      body: `7.1 Governing Law: These Terms are governed by and construed in accordance with the laws of the State of Victoria, Australia. The parties submit to the exclusive jurisdiction of the courts operating in Victoria.`,
+    },
+  ];
+
+  const CLIENT_TERMS_INTRO = `These Customer Terms of Service ("Terms") govern the access to and use of the Staffoo web dashboard, mobile applications, and booking infrastructure (collectively, the "Platform"), operated by Capital Services Pty Ltd (ABN 48 613 317 838). By requesting, booking, or managing security personnel or workforce services through Staffoo, the user ("Client") agrees to be bound by these Terms.`;
 
   if (ratesLoading)
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#0A7C6E" />
+        <ActivityIndicator size="large" color={COLORS.primary} />
         <Text style={styles.loadingText}>Loading data…</Text>
       </View>
     );
@@ -3402,16 +3751,24 @@ export default function ReviewConfirmScreen() {
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={handleEditDetails}>
-          <ChevronLeft size={22} color="#fff" />
+        <TouchableOpacity
+          onPress={handleEditDetails}
+          style={styles.headerIconBtn}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+        >
+          <ChevronLeft size={22} color={COLORS.text} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Review & Confirm</Text>
-        <View style={{ width: 28 }} />
+        <View style={{ width: 36 }} />
       </View>
 
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
         <View style={styles.card}>
           <View style={styles.cardSectionHeader}>
+            <View style={styles.sectionAccentBar} />
             <Text style={styles.sectionTitle}>Job Details</Text>
           </View>
           {[
@@ -3428,7 +3785,7 @@ export default function ReviewConfirmScreen() {
             },
           ].map(({ label, value }) => (
             <View style={styles.detailRow} key={label}>
-              <Text style={styles.label}>{label}:</Text>
+              <Text style={styles.label}>{label}</Text>
               <View style={styles.inputCard}>
                 <Text style={styles.inputCardText}>{value}</Text>
               </View>
@@ -3436,27 +3793,15 @@ export default function ReviewConfirmScreen() {
           ))}
           {uploadedFileUrls.length > 0 && (
             <View style={styles.detailRow}>
-              <Text style={styles.label}>Attachments:</Text>
+              <Text style={styles.label}>Attachments</Text>
               <View style={styles.inputCard}>
                 {uploadedFileUrls.map((url, i) => (
                   <View
                     key={i}
-                    style={{
-                      flexDirection: "row",
-                      alignItems: "center",
-                      marginTop: i === 0 ? 0 : 6,
-                    }}
+                    style={[styles.attachmentRow, i === 0 && { marginTop: 0 }]}
                   >
-                    <Files size={18} color="#0A7C6E" />
-                    <Text
-                      style={{
-                        marginLeft: 8,
-                        color: "#0A7C6E",
-                        flexShrink: 1,
-                        fontSize: 14,
-                      }}
-                      numberOfLines={1}
-                    >
+                    <Files size={18} color={COLORS.primary} />
+                    <Text style={styles.attachmentText} numberOfLines={1}>
                       {uploadedFileNames[i] ||
                         url.split("/").pop() ||
                         `File ${i + 1}`}
@@ -3470,6 +3815,7 @@ export default function ReviewConfirmScreen() {
 
         <View style={styles.card}>
           <View style={styles.cardSectionHeader}>
+            <View style={styles.sectionAccentBar} />
             <Text style={styles.sectionTitle}>Schedule Summary</Text>
           </View>
           <View style={styles.scheduleContainer}>
@@ -3507,7 +3853,7 @@ export default function ReviewConfirmScreen() {
                       {isNextDay && <Text style={styles.nextDayTag}>+1d</Text>}
                     </View>
                     <View style={styles.guardsBadge}>
-                      <User size={14} color="#0A7C6E" />
+                      <User size={14} color={COLORS.primary} />
                       <Text style={styles.guardsCount}>
                         {shift.guardsCount || 1}
                       </Text>
@@ -3525,21 +3871,21 @@ export default function ReviewConfirmScreen() {
           /* UNMATCHED STATE FLOW: Estimate UI */
           <View style={styles.estimateCard}>
             <View style={styles.estimateHeaderRow}>
-              <CreditCard size={20} color="#0F172A" />
+              <CreditCard size={20} color={LIGHT.text} />
               <Text style={styles.estimateHeading}>Job Estimate</Text>
             </View>
 
             <View style={styles.infoBox}>
-              <Info size={16} color="#0A7C6E" style={{ marginTop: 1 }} />
+              <Info size={16} color={COLORS.primary} style={{ marginTop: 1 }} />
               <Text style={styles.infoBoxText}>
-                No payment is collected now. Once you post this job, you'll be
-                asked to accept an estimated price range and it will always go
-                out as a broadcast job.
+                No payment is required at this stage. Once the estimated range
+                is accepted, the job will be broadcast. You will be notified
+                when payment is required.
               </Text>
             </View>
 
             <View style={styles.priceRangeBox}>
-              <Scale size={40} color="#0A7C6E" />
+              <Scale size={40} color={COLORS.primary} />
               <Text style={styles.priceRangeTitle}>Estimated Price Range</Text>
               <Text style={styles.priceRangeSubtitle}>
                 {isSegmented
@@ -3557,10 +3903,8 @@ export default function ReviewConfirmScreen() {
             {/* ── Rate Breakdown ─────────────────────────────────────────────── */}
             <View style={styles.rateCard}>
               <View style={styles.rateMainHeader}>
+                <View style={styles.sectionAccentBar} />
                 <Text style={styles.rateMainTitle}>Quotation Breakdown</Text>
-                <Text style={styles.rateMainSubtitle}>
-                  {totalBillableHours.toFixed(2)} Total Billable Hours
-                </Text>
               </View>
 
               {costBreakdown.breakdown.length === 0 ? (
@@ -3601,7 +3945,7 @@ export default function ReviewConfirmScreen() {
                     </View>
                   ))}
 
-                  {/* ── Receipt-style totals block (matches design mock) ────── */}
+                  {/* ── Receipt-style totals block ─────────────────────────── */}
                   <View style={styles.receiptCard}>
                     <View style={styles.receiptRow}>
                       <Text style={styles.receiptLabel}>Subtotal</Text>
@@ -3667,7 +4011,7 @@ export default function ReviewConfirmScreen() {
                     <View style={styles.receiptThickDivider} />
 
                     <View style={styles.receiptDueRow}>
-                      <Text style={styles.receiptDueLabel}>Due</Text>
+                      <Text style={styles.receiptDueLabel}>Due Now</Text>
                       <Text style={styles.receiptDueValue}>
                         ${ctaAmount.toFixed(2)}
                       </Text>
@@ -3679,6 +4023,7 @@ export default function ReviewConfirmScreen() {
 
             <View style={styles.paymentOptionsCard}>
               <View style={styles.paymentOptionsHeader}>
+                <View style={styles.sectionAccentBar} />
                 <Text style={styles.paymentOptionsTitle}>Payment Options</Text>
               </View>
               <View style={styles.paymentOptionsRow}>
@@ -3694,7 +4039,7 @@ export default function ReviewConfirmScreen() {
                   >
                     {selectedPlan === plan && (
                       <View style={styles.planSelectedDot}>
-                        <Check size={10} color="#fff" />
+                        <Check size={10} color={COLORS.text} />
                       </View>
                     )}
                     <View style={styles.planTitleRow}>
@@ -3745,11 +4090,12 @@ export default function ReviewConfirmScreen() {
         <TouchableOpacity
           style={styles.policyContainer}
           onPress={() => setAcceptedPolicy(!acceptedPolicy)}
+          activeOpacity={0.85}
         >
           <View
             style={[styles.checkbox, acceptedPolicy && styles.checkboxChecked]}
           >
-            {acceptedPolicy && <Check size={16} color="#fff" />}
+            {acceptedPolicy && <Check size={16} color={COLORS.text} />}
           </View>
           <View style={{ flex: 1 }}>
             <Text style={styles.policyText}>
@@ -3767,7 +4113,7 @@ export default function ReviewConfirmScreen() {
             {!isStateNotMatched && (
               <Text style={styles.noteText}>
                 *Note: A 10% incidental authorisation hold may be applied by
-                stripe to cover potential unplanned overtime. The hold will be
+                Stripe to cover potential unplanned overtime. The hold will be
                 released after completion of the shift.
               </Text>
             )}
@@ -3782,8 +4128,9 @@ export default function ReviewConfirmScreen() {
             ]}
             onPress={openConfirmModalUnmatched}
             disabled={!acceptedPolicy || isSubmitting}
+            activeOpacity={0.9}
           >
-            <Send size={18} color="#fff" style={{ marginRight: 10 }} />
+            <Send size={18} color={COLORS.text} style={{ marginRight: 10 }} />
             <Text style={styles.reviewEstimateButtonText}>
               Review Estimate & Post
             </Text>
@@ -3796,8 +4143,9 @@ export default function ReviewConfirmScreen() {
             ]}
             onPress={openPaymentModal}
             disabled={!acceptedPolicy || isSubmitting}
+            activeOpacity={0.9}
           >
-            <Lock size={20} color="#fff" style={{ marginRight: 10 }} />
+            <Lock size={20} color={COLORS.text} style={{ marginRight: 10 }} />
             <Text style={styles.payNowText}>
               {selectedPlan === "full"
                 ? `Pay $${fullPayAmount.toFixed(2)} & Post Job`
@@ -3806,8 +4154,12 @@ export default function ReviewConfirmScreen() {
           </TouchableOpacity>
         )}
 
-        <TouchableOpacity style={styles.editButton} onPress={handleEditDetails}>
-          <ArrowLeft size={20} color="#0A7C6E" />
+        <TouchableOpacity
+          style={styles.editButton}
+          onPress={handleEditDetails}
+          activeOpacity={0.85}
+        >
+          <ArrowLeft size={20} color={COLORS.primary} />
           <Text style={styles.editButtonText}>Edit Details</Text>
         </TouchableOpacity>
       </ScrollView>
@@ -3819,6 +4171,7 @@ export default function ReviewConfirmScreen() {
         onRequestClose={() => setShowPolicyModal(false)}
       >
         <SafeAreaView style={styles.modalContainer}>
+          {/* ── Header ── */}
           <View style={styles.modalHeader}>
             <View style={styles.headerLeft}>
               <Image
@@ -3833,44 +4186,85 @@ export default function ReviewConfirmScreen() {
                 </Text>
               </View>
             </View>
+
             <TouchableOpacity
               onPress={() => setShowPolicyModal(false)}
               style={styles.closeBtn}
+              activeOpacity={0.7}
             >
-              <X size={18} color="#b72f0d" />
+              <X size={18} color={COLORS.danger} />
             </TouchableOpacity>
           </View>
+
           <ScrollView
             style={styles.modalScroll}
             contentContainerStyle={styles.modalScrollContent}
+            showsVerticalScrollIndicator={false}
           >
+            {/* Meta card */}
             <View style={styles.highlightedInfo}>
-              <Text style={styles.highlightText}>
-                Effective Date: March 14, 2026
-              </Text>
-              <Text style={styles.highlightText}>
-                Operated by: Capital Services Pty Ltd
-              </Text>
-              <Text style={styles.highlightText}>ABN: 48 613 317 838</Text>
-              <Text style={styles.highlightText}>
-                Registered Office: 21 Tanglewood Bvd, Truganina VIC 3029,
-                Australia
-              </Text>
+              <Text style={styles.metaTitle}>{CLIENT_TERMS_META.title}</Text>
+
+              <View style={styles.metaRow}>
+                <Text style={styles.metaLabel}>Version</Text>
+                <Text style={styles.metaValue}>
+                  {CLIENT_TERMS_META.version}
+                </Text>
+              </View>
+              <View style={styles.metaRow}>
+                <Text style={styles.metaLabel}>Operated by</Text>
+                <Text style={styles.metaValue}>
+                  {CLIENT_TERMS_META.operatedBy}
+                </Text>
+              </View>
+              <View style={styles.metaRow}>
+                <Text style={styles.metaLabel}>ABN</Text>
+                <Text style={styles.metaValue}>{CLIENT_TERMS_META.abn}</Text>
+              </View>
+              <View style={[styles.metaRow, { marginBottom: 0 }]}>
+                <Text style={styles.metaLabel}>Registered office</Text>
+                <Text style={styles.metaValue}>
+                  {CLIENT_TERMS_META.registeredOffice}
+                </Text>
+              </View>
             </View>
-            <Text style={styles.policyBodyText}>{PRIVACY_POLICY_TEXT}</Text>
+
+            {/* Intro */}
+            <Text style={styles.policyBodyText}>{CLIENT_TERMS_INTRO}</Text>
+
+            {/* Sections */}
+            {CLIENT_TERMS_SECTIONS.map((section) => (
+              <View key={section.number} style={styles.termsSection}>
+                <View style={styles.termsSectionHeader}>
+                  <View style={styles.termsNumberBadge}>
+                    <Text style={styles.termsNumberText}>{section.number}</Text>
+                  </View>
+                  <Text style={styles.termsSectionTitle}>{section.title}</Text>
+                </View>
+                <Text style={styles.termsSectionBody}>{section.body}</Text>
+              </View>
+            ))}
+
             <Text style={styles.lastUpdated}>
-              Capital Services Pty Ltd • ABN 48 613 317 838
+              {CLIENT_TERMS_META.operatedBy} • ABN {CLIENT_TERMS_META.abn}
             </Text>
           </ScrollView>
+
+          {/* Footer */}
           <View style={styles.modalFooter}>
             <TouchableOpacity
               style={styles.acceptBtn}
+              activeOpacity={0.85}
               onPress={() => {
                 setAcceptedPolicy(true);
                 setShowPolicyModal(false);
               }}
             >
-              <Check size={22} color="#fff" style={{ marginRight: 10 }} />
+              <Check
+                size={20}
+                color={COLORS.text}
+                style={{ marginRight: 10 }}
+              />
               <Text style={styles.acceptBtnText}>
                 I Accept the Terms & Privacy Policy
               </Text>
@@ -3895,12 +4289,12 @@ export default function ReviewConfirmScreen() {
                 onPress={() => !isSubmitting && setConfirmModalVisible(false)}
                 disabled={isSubmitting}
               >
-                <X size={20} color="#6B7280" />
+                <X size={20} color={LIGHT.textSecondary} />
               </TouchableOpacity>
             </View>
 
             <Text style={styles.confirmModalSubtitle}>
-              This job's final price will fall within the range below.
+              This job's final price will fall within the estimated range below.
             </Text>
 
             <View style={styles.confirmPriceBox}>
@@ -3913,9 +4307,9 @@ export default function ReviewConfirmScreen() {
             </View>
 
             <Text style={styles.confirmModalNote}>
-              No payment is taken now. By accepting, this job will be broadcast
-              to eligible staff and the final charge will fall within the
-              estimated range above.
+              No payment is required at this stage. Once the job is accepted,
+              the final payment invoice will be emailed to you and published in
+              the app, where you can complete the payment process.
             </Text>
 
             <View style={styles.confirmModalActions}>
@@ -3928,7 +4322,7 @@ export default function ReviewConfirmScreen() {
                 disabled={isSubmitting}
               >
                 {isSubmitting ? (
-                  <ActivityIndicator color="#fff" />
+                  <ActivityIndicator color={COLORS.text} />
                 ) : (
                   <Text style={styles.acceptPostBtnText}>
                     Accept Price & Post Job
@@ -3973,7 +4367,7 @@ export default function ReviewConfirmScreen() {
                   onPress={() => !processing && setPaymentModalVisible(false)}
                   disabled={processing}
                 >
-                  <X size={22} color="#6B7280" />
+                  <X size={22} color={LIGHT.textSecondary} />
                 </TouchableOpacity>
 
                 {/* Amount Bar */}
@@ -4102,9 +4496,9 @@ export default function ReviewConfirmScreen() {
                   autoCapitalize="words"
                   style={[
                     pmStyles.input,
-                    nameError ? { borderColor: "#EF4444" } : null,
+                    nameError ? { borderColor: COLORS.danger } : null,
                   ]}
-                  placeholderTextColor="#9CA3AF"
+                  placeholderTextColor={LIGHT.textMuted}
                 />
                 {nameError ? (
                   <Text style={pmStyles.fieldError}>{nameError}</Text>
@@ -4114,13 +4508,13 @@ export default function ReviewConfirmScreen() {
                   postalCodeEnabled={false}
                   placeholders={{ number: "Card number", cvc: "CVC" }}
                   cardStyle={{
-                    backgroundColor: "#FFFFFF",
-                    textColor: "#111827",
-                    borderColor: "#D1D5DB",
+                    backgroundColor: LIGHT.card,
+                    textColor: LIGHT.text,
+                    borderColor: LIGHT.border,
                     borderWidth: 1,
                     borderRadius: 10,
                     fontSize: 16,
-                    placeholderColor: "#9CA3AF",
+                    placeholderColor: LIGHT.textMuted,
                   }}
                   style={pmStyles.cardField}
                   onCardChange={handleCardChange}
@@ -4146,7 +4540,7 @@ export default function ReviewConfirmScreen() {
                     disabled={!isPaymentReady() || processing}
                   >
                     {processing ? (
-                      <ActivityIndicator color="#fff" />
+                      <ActivityIndicator color={COLORS.text} />
                     ) : (
                       <Text style={pmStyles.payBtnText}>
                         Pay $
@@ -4178,28 +4572,36 @@ export default function ReviewConfirmScreen() {
 // ─── Payment Modal Styles ─────────────────────────────────────────────────────
 const pmStyles = StyleSheet.create({
   container: {
-    backgroundColor: "#fff",
-    borderRadius: 20,
-    padding: 12,
+    backgroundColor: LIGHT.card,
+    borderRadius: 22,
+    padding: 14,
     position: "relative",
   },
   headerRow: {
     flexDirection: "row",
     alignItems: "flex-start",
-    marginBottom: 4,
+    justifyContent: "space-between",
+    marginBottom: 6,
+    paddingRight: 30,
   },
-  title: { fontSize: 16, fontWeight: "800", color: "#111827", marginBottom: 2 },
-  subtitle: { fontSize: 11, color: "#6B7280" },
+  title: {
+    fontSize: 17,
+    fontWeight: "800",
+    color: LIGHT.text,
+    marginBottom: 2,
+  },
+  subtitle: { fontSize: 12, color: LIGHT.textSecondary },
   securedBadge: {
     flexDirection: "row",
     alignItems: "center",
+    gap: 4,
     borderWidth: 1,
-    borderColor: "#E5E7EB",
+    borderColor: LIGHT.border,
     borderRadius: 20,
-    paddingHorizontal: 7,
+    paddingHorizontal: 8,
     paddingVertical: 5,
   },
-  securedText: { fontSize: 9, color: "#374151" },
+  securedText: { fontSize: 9, color: LIGHT.textSecondary },
   stripeBlue: { color: "#6366F1", fontWeight: "700" },
   closeBtn: {
     position: "absolute",
@@ -4207,22 +4609,22 @@ const pmStyles = StyleSheet.create({
     right: 0,
     padding: 14,
     zIndex: 10,
-    backgroundColor: "#fff",
+    backgroundColor: LIGHT.card,
     borderRadius: 20,
   },
   amountBar: {
-    backgroundColor: "#0A7C6E",
-    borderRadius: 12,
-    padding: 7,
+    backgroundColor: COLORS.primary,
+    borderRadius: 14,
+    padding: 12,
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginTop: 6,
-    marginBottom: 8,
+    marginTop: 8,
+    marginBottom: 10,
   },
   amountBarTitle: {
-    color: "#fff",
-    fontSize: 12,
+    color: COLORS.text,
+    fontSize: 13,
     fontWeight: "600",
     flex: 1,
     marginRight: 8,
@@ -4234,89 +4636,96 @@ const pmStyles = StyleSheet.create({
   savedCardsContent: {
     paddingBottom: 8,
   },
-  amountBarValue: { color: "#fff", fontSize: 15, fontWeight: "800" },
+  amountBarValue: { color: COLORS.text, fontSize: 16, fontWeight: "800" },
   sectionLabel: {
     fontSize: 14,
     fontWeight: "700",
-    color: "#111827",
-    marginBottom: 3,
+    color: LIGHT.text,
+    marginBottom: 6,
+    marginTop: 4,
   },
-  tabRow: { flexDirection: "row", gap: 10, marginBottom: 5 },
+  tabRow: { flexDirection: "row", gap: 10, marginBottom: 8 },
   tabBtn: {
     paddingVertical: 10,
     paddingHorizontal: 18,
     borderRadius: 10,
     borderWidth: 1.5,
   },
-  tabBtnActive: { backgroundColor: "#0A7C6E", borderColor: "#0A7C6E" },
-  tabBtnInactive: { backgroundColor: "#fff", borderColor: "#0A7C6E" },
+  tabBtnActive: {
+    backgroundColor: COLORS.primary,
+    borderColor: COLORS.primary,
+  },
+  tabBtnInactive: { backgroundColor: LIGHT.card, borderColor: COLORS.primary },
   tabLabel: { fontSize: 12, fontWeight: "700" },
-  tabLabelActive: { color: "#fff" },
-  tabLabelInactive: { color: "#0A7C6E" },
+  tabLabelActive: { color: COLORS.text },
+  tabLabelInactive: { color: COLORS.primary },
   savedCardsBox: {
     borderWidth: 1,
-    borderColor: "#E5E7EB",
+    borderColor: LIGHT.border,
     borderRadius: 12,
     padding: 8,
-    backgroundColor: "#F9FAFB",
+    backgroundColor: LIGHT.surface,
     marginBottom: 10,
   },
   savedCardRow: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#F3F4F6",
+    backgroundColor: LIGHT.surfaceAlt,
     borderRadius: 10,
-    padding: 5,
+    padding: 10,
     marginBottom: 8,
     borderWidth: 1.5,
-    borderColor: "#E5E7EB",
+    borderColor: LIGHT.border,
   },
-  savedCardRowSelected: { borderColor: "#0A7C6E", backgroundColor: "#fff" },
+  savedCardRowSelected: {
+    borderColor: COLORS.primary,
+    backgroundColor: LIGHT.card,
+  },
   radio: {
     width: 18,
     height: 18,
     borderRadius: 9,
     borderWidth: 2,
-    borderColor: "#9CA3AF",
+    borderColor: LIGHT.textMuted,
     marginRight: 12,
     justifyContent: "center",
     alignItems: "center",
   },
-  radioActive: { borderColor: "#0A7C6E" },
+  radioActive: { borderColor: COLORS.primary },
   radioDot: {
     width: 10,
     height: 10,
     borderRadius: 5,
-    backgroundColor: "#0A7C6E",
+    backgroundColor: COLORS.primary,
   },
-  cardName: { fontSize: 13, fontWeight: "700", color: "#111827" },
+  cardName: { fontSize: 13, fontWeight: "700", color: LIGHT.text },
   cardNumber: {
     fontSize: 14,
-    color: "#374151",
+    color: LIGHT.textSecondary,
     letterSpacing: 1,
     marginTop: 2,
   },
-  cardExpiry: { fontSize: 11, color: "#6B7280", marginTop: 2 },
+  cardExpiry: { fontSize: 11, color: LIGHT.textMuted, marginTop: 2 },
   noCardsText: {
     textAlign: "center",
-    color: "#9CA3AF",
+    color: LIGHT.textMuted,
     fontSize: 12,
     marginVertical: 14,
   },
   input: {
     borderWidth: 1,
-    borderColor: "#D1D5DB",
+    borderColor: LIGHT.border,
     borderRadius: 10,
-    padding: 10,
-    color: "#111827",
-    fontSize: 12,
-    backgroundColor: "#fff",
-    marginBottom: 5,
+    padding: 12,
+    color: LIGHT.text,
+    fontSize: 13,
+    backgroundColor: LIGHT.card,
+    marginBottom: 6,
   },
   cardField: { width: "100%", height: 45, marginBottom: 6 },
-  fieldError: { color: "#EF4444", fontSize: 12, marginBottom: 8 },
+  fieldError: { color: COLORS.danger, fontSize: 12, marginBottom: 8 },
   cardErrorText: {
-    color: "#EF4444",
+    color: COLORS.danger,
     fontSize: 13,
     textAlign: "center",
     marginBottom: 8,
@@ -4324,68 +4733,89 @@ const pmStyles = StyleSheet.create({
   poweredBy: {
     textAlign: "center",
     fontSize: 10,
-    color: "#9CA3AF",
+    color: LIGHT.textMuted,
     marginTop: 8,
     marginBottom: 12,
   },
   actionRow: { flexDirection: "row", gap: 10, alignItems: "center" },
   payBtn: {
     flex: 1,
-    backgroundColor: "#0A7C6E",
+    backgroundColor: COLORS.primary,
     borderRadius: 12,
     paddingVertical: 14,
     alignItems: "center",
     justifyContent: "center",
   },
-  payBtnDisabled: { backgroundColor: "#9CA3AF" },
-  payBtnText: { color: "#fff", fontSize: 16, fontWeight: "700" },
+  payBtnDisabled: { backgroundColor: LIGHT.textMuted },
+  payBtnText: { color: COLORS.text, fontSize: 16, fontWeight: "700" },
   cancelBtn: {
     borderWidth: 1.5,
-    borderColor: "#D1D5DB",
+    borderColor: LIGHT.border,
     borderRadius: 12,
     paddingVertical: 14,
     paddingHorizontal: 20,
     alignItems: "center",
   },
-  cancelBtnText: { color: "#374151", fontSize: 15, fontWeight: "600" },
+  cancelBtnText: {
+    color: LIGHT.textSecondary,
+    fontSize: 15,
+    fontWeight: "600",
+  },
 });
 
 // ─── Main Styles ──────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#030508", paddingTop: 55 },
+  container: { flex: 1, backgroundColor: COLORS.background, paddingTop: 55 },
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     marginHorizontal: 16,
+    marginBottom: 4,
+  },
+  headerIconBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 12,
+    backgroundColor: COLORS.card,
+    borderWidth: 1,
+    borderColor: COLORS.cardBorder,
+    alignItems: "center",
+    justifyContent: "center",
   },
   headerTitle: {
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: "800",
-    color: "#fff",
-    letterSpacing: 0.5,
+    color: COLORS.text,
+    letterSpacing: 0.3,
   },
   scrollContent: { padding: 16, paddingBottom: 100 },
   card: {
-    backgroundColor: "#030508",
-    borderRadius: 24,
+    backgroundColor: COLORS.card,
+    borderRadius: 20,
     padding: 18,
     marginBottom: 14,
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.12)",
+    borderColor: COLORS.cardBorder,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.25,
-    shadowRadius: 20,
-    elevation: 10,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.2,
+    shadowRadius: 16,
+    elevation: 6,
   },
   cardSectionHeader: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 16,
+    marginBottom: 14,
     gap: 10,
   },
-  sectionTitle: { fontSize: 20, fontWeight: "800", color: "#fff" },
+  sectionAccentBar: {
+    width: 4,
+    height: 16,
+    borderRadius: 2,
+    backgroundColor: COLORS.primary,
+  },
+  sectionTitle: { fontSize: 16, fontWeight: "800", color: COLORS.text },
   valueWrap: { flex: 2, alignItems: "flex-end" },
   detailRow: {
     flexDirection: "row",
@@ -4393,27 +4823,39 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   label: {
-    color: "#89E7D0",
+    color: COLORS.textSecondary,
     fontWeight: "700",
-    fontSize: 13,
-    marginBottom: 6,
+    fontSize: 12,
+    marginTop: 8,
     width: 90,
   },
   inputCard: {
     flex: 2,
-    backgroundColor: "#cdd4d8",
-    borderRadius: 7,
-    paddingVertical: 5,
-    paddingHorizontal: 10,
+    backgroundColor: LIGHT.surfaceAlt,
+    borderRadius: 10,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
   },
-  inputCardText: { fontSize: 12, color: "#030303", fontWeight: "700" },
+  inputCardText: { fontSize: 13, color: LIGHT.text, fontWeight: "600" },
+  attachmentRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 6,
+  },
+  attachmentText: {
+    marginLeft: 8,
+    color: COLORS.primary,
+    flexShrink: 1,
+    fontSize: 13,
+    fontWeight: "600",
+  },
   rateCard: {
-    backgroundColor: "#030508",
-    borderRadius: 24,
+    backgroundColor: COLORS.card,
+    borderRadius: 20,
     padding: 18,
-    marginBottom: 18,
+    marginBottom: 16,
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.12)",
+    borderColor: COLORS.cardBorder,
   },
   rowItem: {
     flexDirection: "row",
@@ -4423,81 +4865,93 @@ const styles = StyleSheet.create({
     width: "100%",
     gap: 12,
   },
-  rowLabel: { fontSize: 11, color: "#94A3B8", fontWeight: "600", flex: 1 },
-  rowValue: {
-    fontSize: 12,
-    color: "#fff",
+  rowLabel: {
+    fontSize: 11,
+    color: COLORS.textSecondary,
     fontWeight: "600",
+    flex: 1,
+  },
+  rowValue: {
+    fontSize: 13,
+    color: COLORS.text,
+    fontWeight: "700",
     textAlign: "right",
   },
-  rateMainHeader: { marginBottom: 5, paddingBottom: 7 },
-  rateMainTitle: {
-    fontSize: 18,
-    fontWeight: "800",
-    color: "#fff",
-    marginBottom: 4,
+  rateMainHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    marginBottom: 14,
   },
-  rateMainSubtitle: { fontSize: 14, fontWeight: "600", color: "#76a4e0" },
+  rateMainTitle: {
+    fontSize: 17,
+    fontWeight: "800",
+    color: COLORS.text,
+  },
+  rateMainSubtitle: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: COLORS.textSecondary,
+  },
   noDataText: {
     textAlign: "center",
     paddingVertical: 30,
-    fontSize: 15,
-    color: "#6b7280",
+    fontSize: 14,
+    color: COLORS.textSecondary,
     fontStyle: "italic",
   },
   scheduleContainer: { gap: 10 },
   shiftChip: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#e4f1f9",
-    borderRadius: 30,
-    padding: 5,
+    backgroundColor: LIGHT.surfaceAlt,
+    borderRadius: 26,
+    padding: 6,
     borderWidth: 1,
-    borderColor: "#E2E8F0",
-    marginLeft: 10,
-    paddingLeft: 20,
+    borderColor: LIGHT.border,
+    paddingLeft: 16,
     paddingRight: 10,
   },
-  shiftDate: { fontSize: 12, fontWeight: "700", color: "#1E2937", width: 85 },
+  shiftDate: { fontSize: 12, fontWeight: "700", color: LIGHT.text, width: 78 },
   timeContainer: {
     flex: 1,
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
   },
-  timeText: { fontSize: 12, fontWeight: "700", color: "#0F172A" },
-  arrow: { fontSize: 16, color: "#64748B", fontWeight: "500" },
+  timeText: { fontSize: 12, fontWeight: "700", color: LIGHT.text },
+  arrow: { fontSize: 16, color: LIGHT.textSecondary, fontWeight: "500" },
   nextDayTag: {
     fontSize: 11,
-    color: "#F59E0B",
-    backgroundColor: "#FEF3C7",
+    color: "#B45309",
+    backgroundColor: LIGHT.warningBg,
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 4,
-    fontWeight: "600",
+    fontWeight: "700",
     marginLeft: 4,
   },
   guardsBadge: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#EEF4FF",
+    backgroundColor: COLORS.primaryGlow,
     paddingHorizontal: 8,
     paddingVertical: 5,
     borderRadius: 14,
     gap: 4,
   },
-  guardsCount: { fontSize: 12, fontWeight: "800", color: "#0A7C6E" },
+  guardsCount: { fontSize: 12, fontWeight: "800", color: COLORS.primary },
   noShiftsText: {
     textAlign: "center",
-    color: "#94A3B8",
-    fontSize: 15,
+    color: COLORS.textSecondary,
+    fontSize: 14,
     padding: 20,
   },
 
-  // ── Receipt-style breakdown block (matches the design mock) ──────────────
+  // ── Receipt-style breakdown block ─────────────────────────────────────────
   receiptCard: {
-    backgroundColor: "#fff",
-    borderRadius: 20,
+    backgroundColor: LIGHT.card,
+    borderRadius: 18,
     padding: 20,
     marginTop: 14,
   },
@@ -4510,47 +4964,47 @@ const styles = StyleSheet.create({
   receiptLabel: {
     fontSize: 15,
     fontWeight: "700",
-    color: "#334155",
+    color: LIGHT.textSecondary,
     fontFamily: courierFont,
   } as any,
   receiptValue: {
     fontSize: 15,
     fontWeight: "700",
-    color: "#334155",
+    color: LIGHT.text,
     fontFamily: courierFont,
   } as any,
   receiptDiscountLabel: {
     fontSize: 14,
-    color: "#0A7C6E",
+    color: COLORS.primary,
     fontFamily: courierFont,
   } as any,
   receiptDiscountValue: {
     fontSize: 14,
     fontWeight: "700",
-    color: "#0A7C6E",
+    color: COLORS.primary,
     fontFamily: courierFont,
   } as any,
   receiptDashedDivider: {
     borderBottomWidth: 1.5,
     borderStyle: "dashed",
-    borderBottomColor: "#CBD5E1",
+    borderBottomColor: LIGHT.border,
     marginVertical: 6,
   },
   receiptTotalLabel: {
     fontSize: 17,
     fontWeight: "800",
-    color: "#0F172A",
+    color: LIGHT.text,
     fontFamily: courierFont,
   } as any,
   receiptTotalValue: {
     fontSize: 17,
     fontWeight: "800",
-    color: "#0F172A",
+    color: LIGHT.text,
     fontFamily: courierFont,
   } as any,
   receiptThickDivider: {
     height: 2,
-    backgroundColor: "#0F172A",
+    backgroundColor: LIGHT.text,
     marginVertical: 14,
   },
   receiptDueRow: {
@@ -4561,23 +5015,23 @@ const styles = StyleSheet.create({
   receiptDueLabel: {
     fontSize: 18,
     fontWeight: "800",
-    color: "#0A7C6E",
+    color: COLORS.primary,
     fontFamily: courierFont,
   } as any,
   receiptDueValue: {
     fontSize: 24,
     fontWeight: "900",
-    color: "#0A7C6E",
+    color: COLORS.primary,
     fontFamily: courierFont,
   } as any,
 
   paymentOptionsCard: {
-    backgroundColor: "#030508",
-    borderRadius: 24,
+    backgroundColor: COLORS.card,
+    borderRadius: 20,
     padding: 18,
-    marginBottom: 18,
+    marginBottom: 16,
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.10)",
+    borderColor: COLORS.cardBorder,
   },
   paymentOptionsHeader: {
     flexDirection: "row",
@@ -4585,7 +5039,7 @@ const styles = StyleSheet.create({
     gap: 10,
     marginBottom: 16,
   },
-  paymentOptionsTitle: { fontSize: 20, fontWeight: "700", color: "#fff" },
+  paymentOptionsTitle: { fontSize: 18, fontWeight: "800", color: COLORS.text },
   paymentOptionsRow: { flexDirection: "row", gap: 10 },
   planSelectedDot: {
     position: "absolute",
@@ -4594,7 +5048,7 @@ const styles = StyleSheet.create({
     width: 20,
     height: 20,
     borderRadius: 10,
-    backgroundColor: "#0A7C6E",
+    backgroundColor: COLORS.primary,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -4605,132 +5059,89 @@ const styles = StyleSheet.create({
     gap: 6,
     marginBottom: 8,
   },
-  planNameSelected: { color: "#0A7C6E" },
+  planNameSelected: { color: COLORS.primary },
   saveBadge: {
-    backgroundColor: "#16a34a",
+    backgroundColor: COLORS.success,
     paddingHorizontal: 7,
     paddingVertical: 3,
     borderRadius: 20,
   },
-  saveBadgeText: { fontSize: 11, color: "#fff", fontWeight: "700" },
+  saveBadgeText: { fontSize: 11, color: COLORS.text, fontWeight: "700" },
   planAmountRow: {
     flexDirection: "row",
     alignItems: "baseline",
     marginTop: "auto" as any,
   },
-  planAmountLabel: { fontSize: 13, color: "#9ca3af" },
-  disabledButton: { opacity: 0.55 },
+  planAmountLabel: { fontSize: 13, color: COLORS.textSecondary },
+  disabledButton: { opacity: 0.5 },
   payNowButton: {
-    backgroundColor: "#0047FF",
-    borderRadius: 20,
-    paddingVertical: 14,
-    marginBottom: 20,
+    backgroundColor: COLORS.primary,
+    borderRadius: 18,
+    paddingVertical: 16,
+    marginBottom: 16,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    shadowColor: "#0047FF",
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.5,
-    shadowRadius: 20,
-    elevation: 12,
+    shadowColor: COLORS.primary,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.4,
+    shadowRadius: 16,
+    elevation: 10,
   },
-  payNowText: { color: "#fff", fontSize: 18, fontWeight: "800" },
+  payNowText: { color: COLORS.text, fontSize: 17, fontWeight: "800" },
   loadingContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#030508",
+    backgroundColor: COLORS.background,
   },
-  loadingText: { marginTop: 16, fontSize: 16, color: "#94A3B8" },
+  loadingText: { marginTop: 16, fontSize: 15, color: COLORS.textSecondary },
   errorContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
     padding: 40,
-    backgroundColor: "#030508",
+    backgroundColor: COLORS.background,
   },
   backButton: {
-    backgroundColor: "#0A7C6E",
+    backgroundColor: COLORS.primary,
     paddingVertical: 14,
     paddingHorizontal: 32,
     borderRadius: 12,
   },
-  backButtonText: { color: "white", fontSize: 16, fontWeight: "600" },
+  backButtonText: { color: COLORS.text, fontSize: 16, fontWeight: "700" },
   modalOverlay: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.55)",
+    backgroundColor: "rgba(0,0,0,0.6)",
     justifyContent: "center",
     padding: 16,
   },
-  policyText: { fontSize: 14, color: "#fff", flex: 1 },
-  policyLink: { color: "#0A7C6E", fontWeight: "700" },
-  noteText: { marginTop: 5, fontSize: 10, color: "#7c7a7a", lineHeight: 14 },
-  modalContainer: { flex: 1, backgroundColor: "#f8fafc" },
-  modalHeader: {
-    backgroundColor: "#ffffff",
-    paddingHorizontal: 20,
-    paddingVertical: 18,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    borderBottomWidth: 1,
-    borderBottomColor: "#e2e8f0",
+  policyText: { fontSize: 14, color: COLORS.text, flex: 1, lineHeight: 20 },
+  policyLink: { color: COLORS.primary, fontWeight: "700" },
+  noteText: {
+    marginTop: 6,
+    fontSize: 11,
+    color: COLORS.textSecondary,
+    lineHeight: 16,
   },
-  headerLeft: { flexDirection: "row", alignItems: "center", gap: 14 },
-  modalLogo: { width: 70, height: 30 },
-  modalTitle: { fontSize: 14, fontWeight: "700", color: "#0f172a" },
-  modalSubtitle: { fontSize: 10, color: "#64748b", marginTop: 2 },
-  closeBtn: { padding: 5, borderRadius: 30, backgroundColor: "#f1f5f9" },
-  modalScroll: { flex: 1 },
-  modalScrollContent: { padding: 20, paddingBottom: 40 },
-  highlightedInfo: {
-    backgroundColor: "#e0f2fe",
-    padding: 18,
-    borderRadius: 16,
-    marginBottom: 24,
-    borderLeftWidth: 5,
-    borderLeftColor: "#3b82f6",
-  },
+
   highlightText: {
     fontSize: 15.5,
-    color: "#1e40af",
+    color: COLORS.primary,
     fontWeight: "600",
     lineHeight: 24,
     marginBottom: 6,
   },
-  policyBodyText: {
-    fontSize: 16,
-    color: "#1e2937",
-    lineHeight: 26,
-    letterSpacing: 0.15,
+
+  errorText: {
+    color: COLORS.danger,
+    fontSize: 13,
+    marginTop: 4,
+    marginLeft: 4,
   },
-  lastUpdated: {
-    textAlign: "center",
-    marginTop: 28,
-    fontSize: 13.5,
-    color: "#94a3b8",
-    fontWeight: "500",
-  },
-  modalFooter: {
-    paddingHorizontal: 20,
-    paddingVertical: 20,
-    backgroundColor: "#ffffff",
-    borderTopWidth: 1,
-    borderTopColor: "#e2e8f0",
-  },
-  acceptBtn: {
-    backgroundColor: "#0A7C6E",
-    paddingVertical: 18,
-    borderRadius: 16,
-    alignItems: "center",
-    flexDirection: "row",
-    justifyContent: "center",
-  },
-  acceptBtnText: { color: "#fff", fontSize: 17.5, fontWeight: "700" },
-  errorText: { color: "#EF4444", fontSize: 12, marginTop: 4, marginLeft: 4 },
   rateSegmentCard: {
-    backgroundColor: "rgba(255,255,255,0.06)",
-    borderRadius: 18,
+    backgroundColor: "rgba(255,255,255,0.05)",
+    borderRadius: 16,
     padding: 15,
     marginBottom: 12,
     borderWidth: 1,
@@ -4739,69 +5150,71 @@ const styles = StyleSheet.create({
   },
   planCard: {
     flex: 1,
-    backgroundColor: "rgba(255,255,255,0.06)",
-    borderRadius: 22,
+    backgroundColor: "rgba(255,255,255,0.05)",
+    borderRadius: 20,
     padding: 16,
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.08)",
     minHeight: 180,
   },
   planCardSelected: {
-    borderColor: "#89E7D0",
-    backgroundColor: "rgba(137,231,208,0.08)",
+    borderColor: COLORS.primary,
+    backgroundColor: COLORS.primaryGlow,
   },
-  planName: { color: "#fff", fontSize: 16, fontWeight: "800" },
-  planDesc: { color: "#CBD5E1", fontSize: 12, lineHeight: 18 },
-  planAmount: { color: "#89E7D0", fontSize: 20, fontWeight: "900" },
-  planAmountSelected: { color: "#89E7D0" },
+  planName: { color: COLORS.text, fontSize: 15, fontWeight: "800" },
+  planDesc: { color: COLORS.textSecondary, fontSize: 12, lineHeight: 18 },
+  planAmount: { color: COLORS.primary, fontSize: 20, fontWeight: "900" },
+  planAmountSelected: { color: COLORS.primary },
   policyContainer: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#030508",
+    backgroundColor: COLORS.card,
     padding: 16,
-    borderRadius: 18,
+    borderRadius: 16,
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.08)",
-    marginBottom: 18,
+    borderColor: COLORS.cardBorder,
+    marginBottom: 16,
   },
   checkbox: {
     width: 24,
     height: 24,
     borderRadius: 8,
     borderWidth: 2,
-    borderColor: "#89E7D0",
+    borderColor: COLORS.primary,
     justifyContent: "center",
     alignItems: "center",
     marginRight: 12,
   },
-  checkboxChecked: { backgroundColor: "#0A7C6E" },
+  checkboxChecked: { backgroundColor: COLORS.primary },
   editButton: {
     borderWidth: 1.5,
-    borderColor: "#89E7D0",
-    borderRadius: 18,
+    borderColor: COLORS.primary,
+    borderRadius: 16,
     paddingVertical: 16,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "rgba(255,255,255,0.05)",
+    backgroundColor: COLORS.primaryGlow,
+    gap: 8,
   },
-  editButtonText: { color: "#89E7D0", fontWeight: "700", fontSize: 16 },
+  editButtonText: { color: COLORS.primary, fontWeight: "700", fontSize: 15 },
   detailsRow: {
     flexDirection: "row",
     justifyContent: "space-between",
-    paddingTop: 8,
+    paddingTop: 10,
+    marginTop: 4,
     borderTopWidth: 1,
     borderTopColor: "rgba(255,255,255,0.08)",
   },
   detailColumn: { flex: 1 },
-  detailValue: { fontSize: 16, color: "#fff", fontWeight: "600" },
-  detailValueBold: { fontSize: 16, color: "#fff", fontWeight: "700" },
+  detailValue: { fontSize: 15, color: COLORS.text, fontWeight: "600" },
+  detailValueBold: { fontSize: 15, color: COLORS.primary, fontWeight: "800" },
 
   // Estimate UI Styles (Unmatched State)
   estimateCard: {
-    backgroundColor: "#fff",
+    backgroundColor: LIGHT.card,
     borderRadius: 18,
-    padding: 16,
+    padding: 18,
     marginBottom: 16,
   },
   estimateHeaderRow: {
@@ -4813,11 +5226,11 @@ const styles = StyleSheet.create({
   estimateHeading: {
     fontSize: 18,
     fontWeight: "800",
-    color: "#0F172A",
+    color: LIGHT.text,
   },
   infoBox: {
     flexDirection: "row",
-    backgroundColor: "#E6F4F1",
+    backgroundColor: COLORS.primaryGlow,
     padding: 12,
     borderRadius: 12,
     gap: 8,
@@ -4825,52 +5238,58 @@ const styles = StyleSheet.create({
   },
   infoBoxText: {
     fontSize: 12,
-    color: "#0A7C6E",
+    color: "#046358",
     flex: 1,
     lineHeight: 18,
   },
   priceRangeBox: {
     alignItems: "center",
-    backgroundColor: "#F8FAFC",
-    padding: 18,
+    backgroundColor: LIGHT.surface,
+    padding: 20,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: "#E2E8F0",
+    borderColor: LIGHT.border,
   },
   priceRangeTitle: {
     fontSize: 16,
     fontWeight: "700",
-    color: "#0F172A",
+    color: LIGHT.text,
     marginTop: 8,
   },
   priceRangeSubtitle: {
     fontSize: 12,
-    color: "#64748B",
+    color: LIGHT.textSecondary,
     textAlign: "center",
     marginTop: 4,
     marginBottom: 12,
+    lineHeight: 17,
   },
   priceRangeValue: {
-    fontSize: 22,
+    fontSize: 24,
     fontWeight: "800",
-    color: "#0A7C6E",
+    color: COLORS.primary,
   },
   reviewEstimateButton: {
-    backgroundColor: "#0047FF",
-    borderRadius: 20,
-    paddingVertical: 14,
-    marginBottom: 20,
+    backgroundColor: COLORS.primary,
+    borderRadius: 18,
+    paddingVertical: 16,
+    marginBottom: 16,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
+    shadowColor: COLORS.primary,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.4,
+    shadowRadius: 16,
+    elevation: 10,
   },
   reviewEstimateButtonText: {
-    color: "#fff",
-    fontSize: 18,
+    color: COLORS.text,
+    fontSize: 17,
     fontWeight: "800",
   },
   confirmModalCard: {
-    backgroundColor: "#fff",
+    backgroundColor: LIGHT.card,
     borderRadius: 20,
     padding: 20,
   },
@@ -4883,15 +5302,16 @@ const styles = StyleSheet.create({
   confirmModalTitle: {
     fontSize: 18,
     fontWeight: "800",
-    color: "#111827",
+    color: LIGHT.text,
   },
   confirmModalSubtitle: {
     fontSize: 13,
-    color: "#6B7280",
+    color: LIGHT.textSecondary,
     marginBottom: 16,
+    lineHeight: 18,
   },
   confirmPriceBox: {
-    backgroundColor: "#F3F4F6",
+    backgroundColor: LIGHT.surfaceAlt,
     borderRadius: 12,
     padding: 16,
     alignItems: "center",
@@ -4899,19 +5319,19 @@ const styles = StyleSheet.create({
   },
   confirmPriceCategory: {
     fontSize: 12,
-    color: "#6B7280",
+    color: LIGHT.textSecondary,
     textTransform: "uppercase",
     fontWeight: "700",
   },
   confirmPriceValue: {
     fontSize: 22,
     fontWeight: "800",
-    color: "#0A7C6E",
+    color: COLORS.primary,
     marginTop: 4,
   },
   confirmModalNote: {
     fontSize: 12,
-    color: "#6B7280",
+    color: LIGHT.textSecondary,
     lineHeight: 18,
     marginBottom: 20,
   },
@@ -4920,14 +5340,196 @@ const styles = StyleSheet.create({
   },
   acceptPostBtn: {
     flex: 1,
-    backgroundColor: "#0A7C6E",
+    backgroundColor: COLORS.primary,
     borderRadius: 12,
     paddingVertical: 14,
     alignItems: "center",
   },
   acceptPostBtnText: {
-    color: "#fff",
+    color: COLORS.text,
     fontSize: 16,
     fontWeight: "700",
+  },
+
+  // ── Policy Modal (dark theme) ──────────────────────────────────────────────
+  modalContainer: {
+    flex: 1,
+    backgroundColor: COLORS.background,
+  },
+  modalHeader: {
+    backgroundColor: COLORS.surface,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    borderBottomWidth: 1,
+    borderBottomColor: "rgba(255,255,255,0.08)",
+  },
+  headerLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 14,
+  },
+  modalLogo: {
+    width: 70,
+    height: 30,
+  },
+  modalTitle: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: COLORS.text,
+  },
+  modalSubtitle: {
+    fontSize: 11,
+    color: COLORS.textSecondary,
+    marginTop: 2,
+  },
+  closeBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: COLORS.dangerBg,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  modalScroll: {
+    flex: 1,
+  },
+  modalScrollContent: {
+    padding: 20,
+    paddingBottom: 40,
+  },
+
+  // Meta card
+  highlightedInfo: {
+    backgroundColor: COLORS.card,
+    padding: 18,
+    borderRadius: 16,
+    marginBottom: 24,
+    borderWidth: 1,
+    borderColor: COLORS.primaryBorder,
+    borderLeftWidth: 4,
+    borderLeftColor: COLORS.primary,
+  },
+  metaTitle: {
+    fontSize: 15,
+    fontWeight: "800",
+    color: COLORS.primary,
+    marginBottom: 14,
+    lineHeight: 22,
+  },
+  metaRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    marginBottom: 8,
+    gap: 12,
+  },
+  metaLabel: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: COLORS.textSecondary,
+    width: 110,
+    textTransform: "uppercase",
+    letterSpacing: 0.3,
+  },
+  metaValue: {
+    flex: 1,
+    fontSize: 14,
+    fontWeight: "600",
+    color: COLORS.text,
+    textAlign: "right",
+    lineHeight: 20,
+  },
+
+  // Body text
+  policyBodyText: {
+    fontSize: 14,
+    color: COLORS.text,
+    lineHeight: 22,
+    letterSpacing: 0.15,
+    marginBottom: 8,
+  },
+
+  // Sections
+  termsSection: {
+    marginTop: 16,
+    backgroundColor: COLORS.card,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.08)",
+    overflow: "hidden",
+  },
+  termsSectionHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: COLORS.primaryGlow,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    gap: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.primaryBorder,
+  },
+  termsNumberBadge: {
+    width: 28,
+    height: 28,
+    borderRadius: 8,
+    backgroundColor: COLORS.primary,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  termsNumberText: {
+    color: "#03211E",
+    fontSize: 14,
+    fontWeight: "800",
+  },
+  termsSectionTitle: {
+    flex: 1,
+    fontSize: 14,
+    fontWeight: "800",
+    color: COLORS.primary,
+    lineHeight: 20,
+  },
+  termsSectionBody: {
+    padding: 14,
+    fontSize: 14,
+    color: COLORS.text,
+    lineHeight: 22,
+  },
+
+  lastUpdated: {
+    textAlign: "center",
+    marginTop: 28,
+    fontSize: 13,
+    color: COLORS.textMuted,
+    fontWeight: "500",
+  },
+
+  // Footer
+  modalFooter: {
+    paddingHorizontal: 20,
+    paddingVertical: 18,
+    backgroundColor: COLORS.surface,
+    borderTopWidth: 1,
+    borderTopColor: "rgba(255,255,255,0.08)",
+  },
+  acceptBtn: {
+    backgroundColor: COLORS.primary,
+    paddingVertical: 15,
+    borderRadius: 14,
+    alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "center",
+    shadowColor: COLORS.primary,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.35,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  acceptBtnText: {
+    color: COLORS.text,
+    fontSize: 15,
+    fontWeight: "800",
   },
 });

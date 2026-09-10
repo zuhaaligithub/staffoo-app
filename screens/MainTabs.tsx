@@ -318,7 +318,7 @@ function CustomTabBar({
               ]}
               onPress={() => setLockedModalVisible(false)}
             >
-              <Text style={[styles.lockedModalBtnText, { color: "#03211E" }]}>
+              <Text style={[styles.lockedModalBtnText, { color: "#fff" }]}>
                 Got it
               </Text>
             </TouchableOpacity>

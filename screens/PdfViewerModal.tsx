@@ -76,15 +76,14 @@ export default function PdfViewerModal({
         )}
 
         <Pdf
-          source={{ uri: src, cache: true }}
+          source={{ uri: src, cache: false }}
           style={styles.pdf}
           onLoadComplete={() => setLoading(false)}
-          onError={async (error) => {
+          onError={(error) => {
             console.log("PDF Error:", error);
-            // fallback: try to open with external app/browser
-            await openExternally(uri);
-            // close modal after attempting external open
-            onClose();
+            // Keep the native error callback synchronous; handle fallback
+            // separately so a rejected open promise cannot go unhandled.
+            void openExternally(uri).finally(onClose);
           }}
         />
       </SafeAreaView>

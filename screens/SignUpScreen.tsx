@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useMemo } from "react";
 import {
   View,
   Text,
@@ -40,7 +40,6 @@ import LinearGradient from "react-native-linear-gradient";
 
 const LOGO = require("../assets/staffoo.png");
 
-
 const COLORS = {
   background: "#030508",
   surface: "#07111A",
@@ -67,63 +66,260 @@ const COLORS = {
   border: "rgba(255,255,255,0.08)",
 };
 
-const PRIVACY_POLICY_TEXT = `Staffoo: Terms of Service & Privacy Policy
-Effective Date: March 14, 2026
+/* ------------------------------------------------------------------ */
+/*  Legal documents — one per account type                             */
+/* ------------------------------------------------------------------ */
 
-Operated by: Capital Services Pty Ltd
-ABN: 48 613 317 838
-Registered Office: 21 Tanglewood Bvd, Truganina VIC 3029, Australia
+// Shown when Account Type = "Client" (customer)
+const CLIENT_TERMS_TEXT = `STAFFOO PLATFORM
+CUSTOMER / CLIENT TERMS OF SERVICE & BOOKING AGREEMENT
 
-Part 1: Privacy Policy
-1.1 Overview
-Staffoo (operated by Capital Services Pty Ltd) is committed to protecting the privacy of our customers, contractors, and staff in accordance with the Privacy Act 1988 (Cth) and the Australian Privacy Principles (APPs).
+Operated by: Capital Services Pty Ltd (ABN 48 613 317 838)
+Version: 3.0 (2026 Legal Release)
 
-1.2 Information Collection & GPS Tracking
-Customer Data: We collect business details, site addresses, contact information, and service requirements.
-Workforce Data: We collect identity documents, ABNs, State-specific Security Licences, and certifications.
-GPS Movement Tracking: To ensure site security, lone-worker safety, and proof-of-attendance, Staffoo tracks the GPS location of all staff and contractors. This tracking is active only while a user is "Clocked In" for a shift. By using the app, workforce users consent to real-time location monitoring for the duration of their work assignment.
+These Customer Terms of Service ("Terms") govern the access to and use of the Staffoo web dashboard, mobile applications, and booking infrastructure (collectively, the "Platform"), operated by Capital Services Pty Ltd (ABN 48 613 317 838). By requesting, booking, or managing security personnel or workforce services through Staffoo, the user ("Client") agrees to be bound by these Terms.
 
-1.3 Payment Security (Stripe)
-Staffoo does not store sensitive financial or credit card data. All transactions are processed via Stripe, a secure third-party gateway. Stripe handles all data in compliance with PCI-DSS standards.
+1. NATURE OF PLATFORM & UNRESTRICTED SUBCONTRACTING RIGHTS
 
-Part 2: Terms for Customers
-2.1 Booking and Payment Holds
-Authorization: Upon job acceptance by a staff member or contractor, a payment hold (pre-authorization) will be placed on the customer’s nominated card via Stripe.
-Amount: The hold will be equal to the total value specified in the approved quotation or invoice.
-Final Charge: Funds are captured upon shift completion or as determined by the cancellation policy.
+1.1 Technology Platform: Staffoo provides specialized Workforce Management (WFM) and Customer Relationship Management (CRM) technology enabling Clients to book, schedule, and coordinate security guarding, crowd control, and asset protection services.
 
-2.2 Cancellation & Refund Policy
-Standard Cancellation: Cancellations made more than 24 hours before the shift start time are eligible for a full release of the payment hold.
-The "1-Hour Rule": In accordance with Australian security industry standards, if a customer cancels a job within one (1) hour of the scheduled start time, a minimum charge of four (4) hours will be deducted from the held funds to compensate the assigned personnel.
+1.2 Absolute Discretion to Fulfill via Resource Partners: The Client acknowledges and agrees that Capital Services Pty Ltd reserves the absolute right and discretion at all times to fulfill any booking requirement either directly or by engaging, assigning, or subcontracting the shift to an independent, licensed third-party security provider or staffing agency ("Resource Partner").
 
-Part 3: Workforce Compliance (Staff & Contractors)
-3.1 National Licensing & Credentials
-Valid Credentials: All personnel must hold a current and valid Security Licence for the specific State or Territory in which they are performing services.
-ABN Requirements: Independent contractors must maintain a valid ABN and hold any required Business or Master Licensing relevant to their jurisdiction.
-Updates: It is the individual’s responsibility to ensure licences and First Aid certifications are kept up to date within the Staffoo app.
+1.3 Jurisdictional & Licence Capacity Disclaimer: The existence or holding of a Master Security Licence or Labour Hire Licence by Capital Services Pty Ltd in any specific State or Territory shall not obligate Capital Services Pty Ltd to act as the principal direct service provider. In all jurisdictions and under all operational circumstances:
+• Capital Services Pty Ltd may assign bookings to an authorized, fully licensed Resource Partner.
+• Where a booking is assigned to a Resource Partner, the legal obligation for on-site security execution sits with the Resource Partner, and Staffoo acts as the technology platform and billing agent.
+• The Client shall not hold Capital Services Pty Ltd liable for exercising its commercial right to utilize Resource Partners to fulfill booking requests.
 
-3.2 Safety and Reporting
-Personnel must comply with the Work Health and Safety (WHS) laws applicable to their location. Any incidents or hazards must be logged immediately via the Staffoo app for client transparency.
+2. BOOKINGS, PAYMENT HOLDS & AUTOMATIC SETTLEMENT
 
-Part 4: Code of Conduct
-Reliability: Arrive at least 10 minutes prior to shift start. Repeat lateness or "no-shows" will result in removal from the platform.
-Professionalism: High-visibility vests or specified corporate attire must be worn at all times while on duty.
-GPS Integrity: Personnel must ensure location services are enabled during shifts. Any attempt to spoof or block GPS location will result in immediate termination of the assignment.
-Sobriety: A zero-tolerance policy applies to alcohol or illegal substances.
-Confidentiality: Personnel must protect all customer site data, access codes, and internal floor plans.
+2.1 Payment Authorization: Upon requesting shift or roster coverage, the Client authorizes Staffoo to place an authorization hold or pre-charge on their designated payment method (processed securely via Stripe) for the full estimated booking total.
 
-Part 5: Contact Information
-For support or administrative inquiries, please contact Capital Services Pty Ltd:
-Admin Office: 21 Tanglewood Bvd, Truganina VIC 3029
-Email: [admin@staffoo.com.au]
-Phone: [1800782366]`;
+2.2 Escrow-Style Payment Release: Funds are held securely via the payment gateway upon shift completion. The Client is granted a twenty-four (24) hour review window post-shift to confirm digital timesheets or log an operational dispute via the Platform.
+
+2.3 Automatic Confirmation: If no dispute or confirmation is lodged within twenty-four (24) hours post-shift, the shift timesheet is deemed automatically approved, and funds will be permanently released to the fulfilling provider.
+
+2.4 Invoicing & Billing Agency: In instances where a Resource Partner fulfills the shift, invoices for the security guarding services are generated by or on behalf of the Resource Partner (under their Master Security Licence and ABN), with Staffoo acting as an authorized billing, collection, and technology intermediary agent.
+
+3. CLIENT WORKPLACE HEALTH & SAFETY (WHS) OBLIGATIONS
+
+3.1 Statutory Compliance: The Client must maintain a safe work environment compliant with all applicable Commonwealth, State, and Territory Workplace Health and Safety (WHS / OHS) legislation (including model WHS laws and the Occupational Health and Safety Act 2004 (Vic)).
+
+4. CANCELLATIONS, SHIFT MODIFICATIONS & DISPUTES
+
+4.1 Minimum Notice Cancellation Fees: Cancellations made within the mandatory minimum notice window (as specified during the booking checkout flow) will attract a standardized cancellation fee to cover administrative overheads and guard mobilization costs.
+
+4.2 Dispute Resolution Protocol: Operational disputes regarding guard attendance or performance must be submitted via the Platform within 24 hours post-shift, supported by time-stamped evidence. Staffoo will mediate disputes in good faith utilizing automated GPS geofencing, clock-in timestamps, and platform audit logs.
+
+5. NON-SOLICITATION & ANTI-POACHING
+
+5.1 Non-Circumvention Period: The Client agrees that during active platform usage and for a period of six (6) months following the completion of any booking, it will not directly or indirectly engage, employ, solicit, or contract with any Resource Partner or individual guard introduced to the Client via Staffoo, outside of the Platform.
+
+6. LIMITATION OF LIABILITY, STATUTORY WARRANTIES & INDEMNITY
+
+6.1 Australian Consumer Law (ACL): Nothing in these Terms excludes, restricts, or modifies any statutory guarantee, right, or remedy implied by Schedule 2 of the Competition and Consumer Act 2010 (Cth) that cannot be lawfully excluded.
+
+6.2 Intermediary Liability Exclusion: To the maximum extent permitted by Australian law, where a booking is fulfilled by a Resource Partner, Staffoo excludes all liability for property damage, theft, personal injury, or indirect/consequential losses arising from the acts or omissions of the Resource Partner or its personnel.
+
+7. GOVERNING LAW & JURISDICTION
+
+7.1 Governing Law: These Terms are governed by and construed in accordance with the laws of the State of Victoria, Australia. The parties submit to the exclusive jurisdiction of the courts operating in Victoria.
+
+Staffoo Customer Terms of Service • Capital Services Pty Ltd (ABN 48 613 317 838) • End of Document`;
+
+// Shown when Account Type = "Staff"
+const STAFF_TERMS_TEXT = `STAFFOO PLATFORM
+APP USER TERMS & CONDITIONS (INTERNAL & EXTERNAL STAFF)
+
+Operated by: Capital Services Pty Ltd (ABN 48 613 317 838)
+Version: 3.1 (2026 Legal Release)
+
+1. ACCOUNT SECURITY & VERIFICATION
+
+1.1 Intended Use: The Staffoo mobile application is intended for use by individual security guards and workforce personnel ("Users").
+
+1.2 Credential Integrity: Users are required to log into their own individual account using their assigned credentials; sharing logins, passwords, or devices with any other individual is strictly prohibited and constitutes a major security breach.
+
+1.3 Statutory Licensing: Users must upload genuine, accurate, and unexpired licensing (e.g., State Security Licence, First Aid, RSA) and identity documents. Falsifying credentials is a breach of these terms, a violation of state security industry laws, and will result in immediate termination of access and mandatory reporting to state police or regulatory bodies.
+
+2. EMPLOYMENT STATUS
+
+2.1 Independence: Accessing the Staffoo app does not create an employment or contractor relationship between the User and Capital Services Pty Ltd, unless the User is operating in a jurisdiction where Capital Services Pty Ltd acts as the licensed Principal Contractor and has executed a direct employment contract with the User.
+
+2.2 Resource Partner Engagement: In all other instances, the User is employed or engaged exclusively by their respective Resource Partner, who remains solely responsible for payroll, entitlements, and workers' compensation under the Fair Work Act 2009.
+
+3. OPERATIONAL STANDARDS & UNIFORMS
+
+3.1 Mandatory Uniform Code: Unless explicitly instructed otherwise by a specific client site brief, Users must adhere to the standard security uniform code (black and white). This includes a clean white or black collared security shirt, black trousers, and enclosed black safety footwear. High-visibility (hi-vis) vests must be worn where mandated by site safety protocols.
+
+3.2 Professionalism: Users must use the platform and conduct themselves on-site responsibly, professionally, and in full compliance with the private security code of conduct applicable in their state.
+
+4. GEOFENCING, LOCATION DATA & TIMESHEETS
+
+4.1 Location Tracking & Consent: The Staffoo platform utilizes location-based services to verify site attendance and ensure workplace safety. By clocking into a shift, the User explicitly consents to the app capturing GPS location coordinates during active shift hours.
+
+4.2 Device Tampering: Users must not use GPS-spoofing software, VPNs, jailbroken devices, or location-masking tools to falsify their geographical data.
+
+4.3 Timesheet Accuracy: Shift timesheets must accurately reflect the exact hours physically worked on-site. Deliberate time-theft or manipulation of the check-in/check-out system will result in permanent removal from the Staffoo network and forfeiture of disputed payments.
+
+5. PROHIBITED CONDUCT, PERFORMANCE & APP TERMINATION
+
+5.1 Unlawful Acts: Staffoo strictly prohibits any unlawful acts, including harassing or stalking other users, hacking or interfering with the app's infrastructure, infecting the app with viruses, or circumventing the platform's computer security systems. Users must not impersonate any person or misrepresent their association with any security firm or client site.
+
+5.2 Immediate Termination for Non-Compliance: Staffoo reserves the right to suspend or permanently terminate a User's access to the application and network without notice. Immediate closure of app usage will apply in the event of:
+• Verified client complaints regarding the User's conduct, professionalism, or standard of service.
+• Failure to follow proper site instructions, Standard Operating Procedures (SOPs), or Workplace Health and Safety (WHS) guidelines.
+• Negligent performance of duties, abandoning a security post, or arriving on-site out of uniform.
+
+Staffoo App User Terms & Conditions • Capital Services Pty Ltd (ABN 48 613 317 838) • End of Document`;
+
+// Shown when Account Type = "Resource Partner" (contractor)
+const RESOURCE_PARTNER_TERMS_TEXT = `STAFFOO PLATFORM
+RESOURCE PARTNER & SUBCONTRACTOR AGREEMENT
+
+Operated by: Capital Services Pty Ltd (ABN 48 613 317 838)
+Version: 3.0 (2026 Legal Release)
+
+This Resource Partner & Subcontractor Agreement ("Agreement") governs the commercial and operational relationship between Capital Services Pty Ltd (ABN 48 613 317 838, trading as "Staffoo") and independent licensed security providers, vendors, and staffing agencies ("Resource Partner") accepting shift allocations and providing security personnel through the Staffoo platform.
+
+1. LICENSING, STATUTORY WARRANTIES & COMPLIANCE
+
+1.1 Corporate Licensing & Registration: The Resource Partner warrants that it holds and maintains at all times all necessary Master Security Licences, Labour Hire Licences (where mandated by state legislation, including Victoria, Queensland, and South Australia), and corporate registrations required to legally supply security personnel in all operating jurisdictions.
+
+1.2 Personnel Qualifications & VEVO Verification: The Resource Partner warrants that all guards assigned to Staffoo shifts possess valid, current individual security licences, valid First Aid/CPR certifications, Responsible Service of Alcohol (RSA, where applicable), and legal Australian working rights verified via VEVO.
+
+2. OPERATIONAL STANDARDS, UNIFORMS & SHIFT PUNCTUALITY
+
+2.1 Standard Uniform & Presentation Requirements: The Resource Partner must ensure that all deployed personnel arrive on site wearing a neat, professional standard black security uniform (black trousers, black collared security shirt or blazer, and clean black safety footwear). Personnel must wear a high-visibility (hi-vis) safety vest where required by site safety protocols, client briefs, or WHS laws.
+
+2.2 Mandatory 15-Minute Early Arrival: To ensure proper site handover, safety briefings, and timely clock-in, the Resource Partner must ensure that all personnel arrive on site at least fifteen (15) minutes prior to the scheduled shift start time.
+
+2.3 App Usage & Attendance Logging: All time, attendance, site check-ins, break logging, and duress checks must be completed exclusively through the Staffoo mobile application. Unauthorized sub-subcontracting or secondary outsourcing of assigned shifts is strictly prohibited.
+
+3. EMPLOYMENT OBLIGATIONS, FAIR WORK & WHS COMPLIANCE
+
+3.1 Direct Employment Relationship: The Resource Partner acknowledges that it is the sole employer or principal contractor of all personnel deployed. No employment, agency, or joint-venture relationship exists between Staffoo and the Resource Partner's personnel.
+
+3.2 Modern Award & Fatigue Management: The Resource Partner warrants strict compliance with the Security Services Industry Award 2020 [MA000016], the Fair Work Act 2009 (Cth), Superannuation Guarantee laws, and state Workers' Compensation laws. This includes paying mandatory minimum hourly rates, penalty rates, and enforcing fatigue limits (including mandatory minimum 8-to-10 hour breaks between shifts).
+
+4. CLIENT DEDUCTIONS, NEGLIGENCE LIABILITY & FINANCIAL SET-OFF
+
+4.1 Liability for Negligence & Client Deductions: If a Client reduces, deducts, or refuses payment for shift hours due to late arrival, abandonment, uniform non-compliance, misconduct, breach of site instructions, or negligence by the Resource Partner or its personnel, the Resource Partner shall be held fully responsible for all resulting financial losses, damages, and administrative costs suffered by Staffoo.
+
+4.2 Right of Recovery & Set-Off: The Resource Partner expressly authorizes Staffoo to deduct, withhold, or set off the amount of any client payment deductions or loss claims directly from current or future funds held in the Resource Partner's Stripe account or pending payout ledger.
+
+5. PLATFORM FEES, AUTOMATED DEDUCTIONS & INSURANCE
+
+5.1 Platform Service Fee: In consideration for access to the Staffoo marketplace, WFM tools, and automated billing engine, the Resource Partner agrees to pay Staffoo the agreed Platform Service Fee per shift.
+
+5.2 Automated Stripe Payout Deductions: The Resource Partner authorizes Staffoo and its payment gateway provider (Stripe) to automatically deduct the Platform Service Fee from captured client funds upon job completion before remitting the net balance to the Resource Partner's bank account.
+
+6. MANDATORY INSURANCE REQUIREMENTS
+
+6.1 Required Policies: The Resource Partner must maintain at all times:
+• Public & Products Liability Insurance: Minimum coverage of $10,000,000 per claim (or $20,000,000 where specified by site brief).
+• Workers' Compensation Insurance: Statutory coverage for all employees in accordance with relevant state laws.
+
+7. GOVERNING LAW
+
+This Agreement is governed by the laws of the State of Victoria, Australia. Both parties submit to the exclusive jurisdiction of the courts operating in Victoria.
+
+Staffoo Resource Partner & Subcontractor Agreement • Capital Services Pty Ltd (ABN 48 613 317 838) • End of Document`;
+
+/* ------------------------------------------------------------------ */
+/*  Per-account-type document config                                  */
+/* ------------------------------------------------------------------ */
+
+type UserType = "staff" | "customer" | "contractor";
+
+const POLICY_CONFIG: Record<
+  UserType,
+  {
+    linkLabel: string;
+    modalTitle: string;
+    modalSubtitle: string;
+    versionLine: string;
+    body: string;
+    acceptLabel: string;
+  }
+> = {
+  customer: {
+    linkLabel: "Client Terms & Conditions",
+    modalTitle: "Client Terms of Service",
+    modalSubtitle: "Customer / Client Booking Agreement",
+    versionLine: "Version: 3.0 (2026 Legal Release)",
+    body: CLIENT_TERMS_TEXT,
+    acceptLabel: "I Accept the Client Terms of Service",
+  },
+  staff: {
+    linkLabel: "Staff Terms & Conditions",
+    modalTitle: "Staff Terms & Conditions",
+    modalSubtitle: "Internal & External Staff",
+    versionLine: "Version: 3.1 (2026 Legal Release)",
+    body: STAFF_TERMS_TEXT,
+    acceptLabel: "I Accept the Staff Terms & Conditions",
+  },
+  contractor: {
+    linkLabel: "Resource Partner Terms & Conditions",
+    modalTitle: "Resource Partner Agreement",
+    modalSubtitle: "Resource Partner & Subcontractor Agreement",
+    versionLine: "Version: 3.0 (2026 Legal Release)",
+    body: RESOURCE_PARTNER_TERMS_TEXT,
+    acceptLabel: "I Accept the Resource Partner Agreement",
+  },
+};
+
+type ParsedSection = {
+  number: string;
+  title: string;
+  body: string;
+};
+
+/** Splits a legal document into numbered sections for highlighted rendering */
+const parseLegalSections = (raw: string): ParsedSection[] => {
+  // Match lines that start with "1." / "1.1" / "2." etc.
+  const sectionRegex =
+    /(?:^|\n)(\d+(?:\.\d+)*)\.\s+([A-Z][A-Z0-9 &\/,–\-\(\)]+)(?=\n|$)/g;
+
+  const matches: { index: number; number: string; title: string }[] = [];
+  let m: RegExpExecArray | null;
+
+  while ((m = sectionRegex.exec(raw)) !== null) {
+    matches.push({
+      index: m.index + (m[0].startsWith("\n") ? 1 : 0),
+      number: m[1],
+      title: m[2].trim(),
+    });
+  }
+
+  if (matches.length === 0) {
+    // Fallback – treat whole text as one block
+    return [{ number: "", title: "", body: raw.trim() }];
+  }
+
+  const sections: ParsedSection[] = [];
+
+  for (let i = 0; i < matches.length; i++) {
+    const current = matches[i];
+    const next = matches[i + 1];
+
+    const start =
+      current.index + current.number.length + 2 + current.title.length;
+    const end = next ? next.index : raw.length;
+
+    const body = raw.slice(start, end).trim();
+
+    sections.push({
+      number: current.number,
+      title: current.title,
+      body,
+    });
+  }
+
+  return sections;
+};
 
 export default function SignUpScreen({ navigation }: { navigation: any }) {
-
-
-  const [userType, setUserType] = useState<
-    "staff" | "customer" | "contractor" | null
-  >(null);
+  const [userType, setUserType] = useState<UserType | null>(null);
   const [acceptedPolicy, setAcceptedPolicy] = useState(false);
   const [showPolicyModal, setShowPolicyModal] = useState(false);
   const fadeAnim = useRef(new Animated.Value(1)).current;
@@ -147,6 +343,11 @@ export default function SignUpScreen({ navigation }: { navigation: any }) {
   const [confirmFocused, setConfirmFocused] = useState(false);
   const [phoneFocused, setPhoneFocused] = useState(false);
 
+  // Active policy document for the currently selected account type.
+  // Falls back to the customer document only for label purposes before
+  // a type has been chosen (the checkbox/link are disabled until then).
+  const activePolicy = POLICY_CONFIG[userType ?? "customer"];
+
   useEffect(() => {
     if (Platform.OS === "android") {
       GoogleSignin.configure({
@@ -155,7 +356,10 @@ export default function SignUpScreen({ navigation }: { navigation: any }) {
       });
     }
   }, []);
-
+  const parsedSections = useMemo(
+    () => parseLegalSections(activePolicy.body),
+    [activePolicy.body],
+  );
   const validatePassword = (password: string) => {
     const passwordRegex = /^(?=.*[A-Za-z])(?=.*[\W_]).{8,}$/;
     if (!passwordRegex.test(password)) {
@@ -174,15 +378,13 @@ export default function SignUpScreen({ navigation }: { navigation: any }) {
 
   const passwordValidation = validatePassword(password);
 
-  const handleUserTypeChange = (
-    newType: "staff" | "customer" | "contractor",
-  ) => {
+  const handleUserTypeChange = (newType: UserType) => {
     if (newType === userType) return;
-
     setUserType(newType);
+    setAcceptedPolicy(false); // must re-accept the correct document
   };
 
-  const getDisplayName = (type: "staff" | "customer" | "contractor") => {
+  const getDisplayName = (type: UserType) => {
     if (type === "customer") return "Client";
     if (type === "staff") return "Staff";
     return "Resource Partner";
@@ -270,11 +472,7 @@ export default function SignUpScreen({ navigation }: { navigation: any }) {
     }
   };
 
-  const UserTypeOption = ({
-    type,
-  }: {
-    type: "staff" | "customer" | "contractor";
-  }) => {
+  const UserTypeOption = ({ type }: { type: UserType }) => {
     const isSelected = userType === type;
     const label = getDisplayName(type);
 
@@ -514,7 +712,7 @@ export default function SignUpScreen({ navigation }: { navigation: any }) {
 
             {/* Account Type */}
             <Text style={[styles.label, { fontSize: scale(12) }]}>
-              Account Type <Text style={{ color: "red" }}>*</Text>
+              Select Account Type <Text style={{ color: "red" }}>*</Text>
             </Text>
             <View style={styles.radioContainer}>
               <View style={styles.radioRow}>
@@ -524,33 +722,37 @@ export default function SignUpScreen({ navigation }: { navigation: any }) {
               </View>
             </View>
 
-            {/* Privacy Policy */}
-            <TouchableOpacity
-              style={styles.policyContainer}
-              onPress={() => setAcceptedPolicy(!acceptedPolicy)}
-              activeOpacity={0.85}
-            >
-              <View
-                style={[
-                  styles.checkbox,
-                  acceptedPolicy && styles.checkboxChecked,
-                ]}
+            {userType && (
+              <TouchableOpacity
+                style={styles.policyContainer}
+                onPress={() => {
+                  setAcceptedPolicy(!acceptedPolicy);
+                }}
+                activeOpacity={0.85}
               >
-                {acceptedPolicy && <Check size={16} color="#fff" />}
-              </View>
-              <Text style={styles.policyText}>
-                I accept the{" "}
-                <Text
-                  style={styles.policyLink}
-                  onPress={(e) => {
-                    e.stopPropagation();
-                    setShowPolicyModal(true);
-                  }}
+                <View
+                  style={[
+                    styles.checkbox,
+                    acceptedPolicy && styles.checkboxChecked,
+                  ]}
                 >
-                  Privacy Policy & Terms
+                  {acceptedPolicy && <Check size={16} color="#fff" />}
+                </View>
+
+                <Text style={styles.policyText}>
+                  I accept and acknowledge the{" "}
+                  <Text
+                    style={styles.policyLink}
+                    onPress={(e) => {
+                      e.stopPropagation?.();
+                      setShowPolicyModal(true);
+                    }}
+                  >
+                    {activePolicy.linkLabel}
+                  </Text>
                 </Text>
-              </Text>
-            </TouchableOpacity>
+              </TouchableOpacity>
+            )}
 
             <TouchableOpacity
               style={[
@@ -585,7 +787,7 @@ export default function SignUpScreen({ navigation }: { navigation: any }) {
         </ScrollView>
       </KeyboardAvoidingView>
 
-      {/* Privacy Policy Modal — unchanged */}
+      {/* Legal Document Modal */}
       <Modal
         visible={showPolicyModal}
         animationType="slide"
@@ -593,6 +795,7 @@ export default function SignUpScreen({ navigation }: { navigation: any }) {
         onRequestClose={() => setShowPolicyModal(false)}
       >
         <SafeAreaView style={styles.modalContainer}>
+          {/* ── Header ── */}
           <View style={styles.modalHeader}>
             <View style={styles.headerLeft}>
               <Image
@@ -600,10 +803,12 @@ export default function SignUpScreen({ navigation }: { navigation: any }) {
                 style={styles.modalLogo}
                 resizeMode="contain"
               />
-              <View>
-                <Text style={styles.modalTitle}>Privacy Policy & Terms</Text>
-                <Text style={styles.modalSubtitle}>
-                  Staffoo • Legal Documents
+              <View style={{ flex: 1 }}>
+                <Text style={styles.modalTitle} numberOfLines={1}>
+                  {activePolicy.modalTitle}
+                </Text>
+                <Text style={styles.modalSubtitle} numberOfLines={1}>
+                  {activePolicy.modalSubtitle}
                 </Text>
               </View>
             </View>
@@ -611,49 +816,83 @@ export default function SignUpScreen({ navigation }: { navigation: any }) {
             <TouchableOpacity
               onPress={() => setShowPolicyModal(false)}
               style={styles.closeBtn}
+              activeOpacity={0.7}
             >
-              <X size={18} color={COLORS.primary} />
+              <X size={18} color={COLORS.danger} />
             </TouchableOpacity>
           </View>
 
           <ScrollView
             style={styles.modalScroll}
             contentContainerStyle={styles.modalScrollContent}
+            showsVerticalScrollIndicator={false}
           >
-            <View style={styles.policyCard}>
-              <View style={styles.highlightedInfo}>
-                <Text style={styles.highlightText}>
-                  Effective Date: March 14, 2026
-                </Text>
-                <Text style={styles.highlightText}>
-                  Operated by: Capital Services Pty Ltd
-                </Text>
-                <Text style={styles.highlightText}>ABN: 48 613 317 838</Text>
-                <Text style={styles.highlightText}>
-                  Registered Office: 21 Tanglewood Bvd, Truganina VIC 3029,
-                  Australia
-                </Text>
+            {/* ── Highlighted Meta Card ── */}
+            {/* ── Highlighted Meta Card ── */}
+            <View style={styles.metaCard}>
+              <View style={styles.metaBadge}>
+                <FileText size={14} color={COLORS.primary} />
+                <Text style={styles.metaBadgeText}>Legal Document</Text>
               </View>
 
-              <Text style={styles.policyBodyText}>{PRIVACY_POLICY_TEXT}</Text>
+              <Text style={styles.metaTitle}>{activePolicy.modalTitle}</Text>
+              <Text style={styles.metaVersion}>{activePolicy.versionLine}</Text>
+
+              <View style={styles.metaDivider} />
+
+              <View style={styles.metaRow}>
+                <Text style={styles.metaLabel}>Operated by</Text>
+                <Text style={styles.metaValue}>Capital Services Pty Ltd</Text>
+              </View>
+              <View style={styles.metaRow}>
+                <Text style={styles.metaLabel}>ABN</Text>
+                <Text style={styles.metaValue}>48 613 317 838</Text>
+              </View>
             </View>
 
-            <Text style={styles.lastUpdated}>
-              Capital Services Pty Ltd • ABN 48 613 317 838
-            </Text>
+            {/* ── Highlighted Sections ── */}
+            {parsedSections.map((section, idx) => (
+              <View
+                key={`${section.number}-${idx}`}
+                style={styles.termsSection}
+              >
+                {/* Heading row with number badge */}
+                {(section.number || section.title) && (
+                  <View style={styles.termsSectionHeader}>
+                    {!!section.number && (
+                      <View style={styles.termsNumberBadge}>
+                        <Text style={styles.termsNumberText}>
+                          {section.number}
+                        </Text>
+                      </View>
+                    )}
+                    <Text style={styles.termsSectionTitle}>
+                      {section.title || "Introduction"}
+                    </Text>
+                  </View>
+                )}
+
+                {/* Body */}
+                {!!section.body && (
+                  <Text style={styles.termsSectionBody}>{section.body}</Text>
+                )}
+              </View>
+            ))}
           </ScrollView>
 
+          {/* ── Footer ── */}
           <View style={styles.modalFooter}>
             <TouchableOpacity
               style={styles.acceptBtn}
+              activeOpacity={0.85}
               onPress={() => {
                 setAcceptedPolicy(true);
                 setShowPolicyModal(false);
               }}
             >
-              <Check size={22} color="#fff" style={{ marginRight: 10 }} />
+              <Check size={20} color="#fff" style={{ marginRight: 10 }} />
               <Text style={styles.acceptBtnText}>
-                I Accept the Terms & Privacy Policy
+                {activePolicy.acceptLabel}
               </Text>
             </TouchableOpacity>
           </View>
@@ -716,7 +955,6 @@ const styles = StyleSheet.create({
     position: "relative",
     overflow: "hidden",
   },
-
 
   orbTopRight: {
     position: "absolute",
@@ -893,7 +1131,7 @@ const styles = StyleSheet.create({
     fontWeight: "800",
   },
 
-  // ── Privacy policy row ──
+  // ── Legal document acceptance row ──
   policyContainer: {
     flexDirection: "row",
     alignItems: "center",
@@ -953,70 +1191,6 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
 
-  modalContainer: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-  },
-
-  modalHeader: {
-    backgroundColor: COLORS.surface2,
-    paddingHorizontal: 20,
-    paddingVertical: 18,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
-  },
-
-  headerLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 14,
-  },
-
-  modalLogo: {
-    width: 70,
-    height: 30,
-  },
-
-  modalTitle: {
-    fontSize: 15,
-    fontWeight: "700",
-    color: "#ffff",
-  },
-
-  modalSubtitle: {
-    fontSize: 11,
-    color: "#ffff",
-    marginTop: 2,
-  },
-
-  closeBtn: {
-    padding: 8,
-    borderRadius: 40,
-    backgroundColor: COLORS.card,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-  },
-
-  modalScroll: {
-    flex: 1,
-  },
-
-  modalScrollContent: {
-    padding: 20,
-    paddingBottom: 40,
-  },
-
-  policyCard: {
-    backgroundColor: COLORS.card,
-    borderRadius: 24,
-    padding: 20,
-    borderWidth: 1,
-    borderColor: COLORS.cardBorder,
-  },
-
   highlightedInfo: {
     backgroundColor: "rgba(137,231,208,0.12)",
     padding: 18,
@@ -1032,44 +1206,6 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     lineHeight: 24,
     marginBottom: 6,
-  },
-
-  policyBodyText: {
-    fontSize: 15.5,
-    color: "#fff",
-    lineHeight: 28,
-    letterSpacing: 0.15,
-  },
-
-  lastUpdated: {
-    textAlign: "center",
-    marginTop: 28,
-    fontSize: 13.5,
-    color: "#cccc",
-    fontWeight: "500",
-  },
-
-  modalFooter: {
-    paddingHorizontal: 20,
-    paddingVertical: 20,
-    backgroundColor: COLORS.surface2,
-    borderTopWidth: 1,
-    borderTopColor: COLORS.border,
-  },
-
-  acceptBtn: {
-    backgroundColor: COLORS.primary,
-    paddingVertical: 14,
-    borderRadius: 18,
-    alignItems: "center",
-    flexDirection: "row",
-    justifyContent: "center",
-  },
-
-  acceptBtnText: {
-    color: "#fff",
-    fontSize: 17,
-    fontWeight: "800",
   },
 
   // Email Verification Modal Styles
@@ -1162,5 +1298,251 @@ const styles = StyleSheet.create({
     color: "#475569",
     fontSize: 16,
     fontWeight: "600",
+  },
+  // ── Policy Modal ──────────────────────────────────────────────────────────
+  modalContainer: {
+    flex: 1,
+    backgroundColor: COLORS.background,
+  },
+
+  modalHeader: {
+    backgroundColor: COLORS.surface,
+    paddingHorizontal: 18,
+    paddingVertical: 14,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+  },
+
+  headerLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    flex: 1,
+    marginRight: 12,
+  },
+
+  modalLogo: {
+    width: 64,
+    height: 28,
+  },
+
+  modalTitle: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: COLORS.text,
+  },
+
+  modalSubtitle: {
+    fontSize: 11,
+    color: COLORS.textSecondary,
+    marginTop: 2,
+  },
+
+  closeBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "rgba(248,113,113,0.12)",
+    borderWidth: 1,
+    borderColor: "rgba(248,113,113,0.25)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  modalScroll: {
+    flex: 1,
+  },
+
+  modalScrollContent: {
+    padding: 18,
+    paddingBottom: 32,
+  },
+
+  // Highlighted meta card
+  metaCard: {
+    backgroundColor: COLORS.card,
+    borderRadius: 18,
+    padding: 18,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: COLORS.primaryGlow,
+    borderLeftWidth: 4,
+    borderLeftColor: COLORS.primary,
+  },
+
+  metaBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    alignSelf: "flex-start",
+    gap: 6,
+    backgroundColor: COLORS.primaryGlow,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 20,
+    marginBottom: 12,
+  },
+
+  metaBadgeText: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: COLORS.primary,
+    textTransform: "uppercase",
+    letterSpacing: 0.4,
+  },
+
+  metaTitle: {
+    fontSize: 16,
+    fontWeight: "800",
+    color: COLORS.text,
+    marginBottom: 4,
+    lineHeight: 22,
+  },
+
+  metaVersion: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: COLORS.primary,
+    marginBottom: 14,
+  },
+
+  metaDivider: {
+    height: 1,
+    backgroundColor: COLORS.border,
+    marginBottom: 14,
+  },
+
+  metaRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    marginBottom: 8,
+    gap: 12,
+  },
+
+  metaLabel: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: COLORS.textMuted,
+    width: 90,
+    textTransform: "uppercase",
+    letterSpacing: 0.3,
+  },
+
+  metaValue: {
+    flex: 1,
+    fontSize: 14,
+    fontWeight: "600",
+    color: COLORS.text,
+    textAlign: "right",
+    lineHeight: 20,
+  },
+
+  // Body card
+  policyCard: {
+    backgroundColor: COLORS.card,
+    borderRadius: 18,
+    padding: 18,
+    borderWidth: 1,
+    borderColor: COLORS.cardBorder,
+  },
+
+  policyBodyText: {
+    fontSize: 14,
+    color: COLORS.textSecondary,
+    lineHeight: 24,
+    letterSpacing: 0.15,
+  },
+
+  lastUpdated: {
+    textAlign: "center",
+    marginTop: 24,
+    fontSize: 12,
+    color: COLORS.textMuted,
+    fontWeight: "500",
+  },
+
+  // Footer
+  modalFooter: {
+    paddingHorizontal: 18,
+    paddingVertical: 16,
+    backgroundColor: COLORS.surface,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.border,
+  },
+
+  acceptBtn: {
+    backgroundColor: COLORS.primary,
+    paddingVertical: 15,
+    borderRadius: 14,
+    alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "center",
+    shadowColor: COLORS.primary,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.4,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+
+  acceptBtnText: {
+    color: "#fff",
+    fontSize: 15,
+    fontWeight: "800",
+  },
+  // Section cards
+  termsSection: {
+    marginBottom: 14,
+    backgroundColor: COLORS.card,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: COLORS.cardBorder,
+    overflow: "hidden",
+  },
+
+  termsSectionHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "rgba(0,169,157,0.12)",
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    gap: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.primaryGlow,
+  },
+
+  termsNumberBadge: {
+    minWidth: 32,
+    height: 28,
+    paddingHorizontal: 6,
+    borderRadius: 8,
+    backgroundColor: COLORS.primary,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  termsNumberText: {
+    color: "#03211E",
+    fontSize: 13,
+    fontWeight: "800",
+  },
+
+  termsSectionTitle: {
+    flex: 1,
+    fontSize: 13,
+    fontWeight: "800",
+    color: COLORS.primary,
+    lineHeight: 18,
+    textTransform: "uppercase",
+    letterSpacing: 0.3,
+  },
+
+  termsSectionBody: {
+    padding: 14,
+    fontSize: 14,
+    color: COLORS.textSecondary,
+    lineHeight: 22,
   },
 });

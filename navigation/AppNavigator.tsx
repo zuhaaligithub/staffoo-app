@@ -3,8 +3,7 @@ import React, { useState, useEffect } from "react";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-// Auth / Onboarding screens
-import OnboardingScreen from "../screens/OnboardingScreen";
+
 import LoginScreen from "../screens/LoginScreen";
 import SignUpScreen from "../screens/SignUpScreen";
 import ForgotPasswordScreen from "../screens/ForgotPasswordScreen";
@@ -42,11 +41,11 @@ import CoverJobsScreen from "../screens/CoverJobsScreen";
 import MainTabs from "../screens/MainTabs";
 import TimesheetScreen from "../screens/Timesheetscreen";
 import ContractorRatesScreen from "../screens/ContractorRatesScreen";
+import SupportScreen from "../screens/SupportScreen";
 
 // ─── Route param types ───────────────────────────────────────────────────────
 export type RootStackParamList = {
-  // Auth flow
-  Onboarding: undefined;
+
   Login: undefined;
   SignUp: undefined;
   ForgotPassword: undefined;
@@ -54,6 +53,7 @@ export type RootStackParamList = {
 
   // Stack screens pushed on top of tabs
   Policies: undefined;
+  Support: undefined;
   Filter: undefined;
   ProfileSetup: undefined;
   LeaveManagement: undefined;
@@ -115,22 +115,18 @@ export default function AppNavigator() {
   useEffect(() => {
     const bootstrapAsync = async () => {
       try {
-        const [hasSeenOnboarding, authToken] = await Promise.all([
-          AsyncStorage.getItem("hasSeenOnboarding"),
-          AsyncStorage.getItem("@auth_token"),
-        ]);
+        const authToken = await AsyncStorage.getItem("@auth_token");
 
         if (authToken) {
           // Authenticated → go straight into the tabbed layout
           setInitialRoute("MainTabs");
-        } else if (hasSeenOnboarding === "true") {
-          setInitialRoute("Login");
         } else {
-          setInitialRoute("Onboarding");
+          // Not authenticated → go straight to Login
+          setInitialRoute("Login");
         }
       } catch (e) {
         console.error("[BOOTSTRAP ERROR]", e);
-        setInitialRoute("Onboarding");
+        setInitialRoute("Login");
       } finally {
         setIsLoading(false);
       }
@@ -148,8 +144,7 @@ export default function AppNavigator() {
       initialRouteName={initialRoute!}
       screenOptions={{ headerShown: false, animation: "slide_from_right" }}
     >
-      {/* ── Auth ── */}
-      <Stack.Screen name="Onboarding" component={OnboardingScreen} />
+   
       <Stack.Screen name="Login" component={LoginScreen} />
       <Stack.Screen name="SignUp" component={SignUpScreen} />
       <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
@@ -185,6 +180,7 @@ export default function AppNavigator() {
       <Stack.Screen name="Induction" component={StaffInduction} />
       <Stack.Screen name="StaffForms" component={StaffFormsScreen} />
       <Stack.Screen name="Policies" component={PoliciesScreen} />
+      <Stack.Screen name="Support" component={SupportScreen} />
       <Stack.Screen name="Test" component={TestScreen} />
       <Stack.Screen name="StaffManagement" component={StaffManagement} />
       <Stack.Screen name="CoverJobs" component={CoverJobsScreen} />

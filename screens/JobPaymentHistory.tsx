@@ -255,7 +255,7 @@ export default function JobPaymentHistory({ navigation }: Props) {
     }
   }, [userId]);
 
-  const handleViewInvoice = (item: Transaction) => {
+  const handleViewInvoice = async (item: Transaction) => {
     if (!item?.invoice_filename) {
       Alert.alert("No Invoice", "Invoice not available.");
       return;
@@ -263,11 +263,21 @@ export default function JobPaymentHistory({ navigation }: Props) {
 
     const pdfUrl = `${BASE_URL}/storage/invoices/${item.invoice_filename}`;
 
-    Linking.openURL(pdfUrl).catch(() => {
-      Alert.alert("Cannot Open", "Please check your internet connection.");
-    });
-  };
+    const viewUrl = `https://docs.google.com/gview?embedded=true&url=${encodeURIComponent(
+      pdfUrl,
+    )}`;
 
+    try {
+      const canOpen = await Linking.canOpenURL(viewUrl);
+      if (canOpen) {
+        await Linking.openURL(viewUrl);
+      } else {
+        Alert.alert("Cannot Open", "No browser available.");
+      }
+    } catch (err) {
+      Alert.alert("Cannot Open", "Please check your internet connection.");
+    }
+  };
   const handleDownloadInvoice = async (item: Transaction) => {
     if (!item.invoice_filename) {
       Alert.alert("No Invoice", "Invoice not available for this transaction.");
@@ -545,11 +555,13 @@ export default function JobPaymentHistory({ navigation }: Props) {
     }
   };
 
-  // ── Render Card ────────────────────────────────────────────────────────────
   const renderItem = ({ item }: { item: Transaction }) => {
     const statusMeta = getStatusMeta(item.status);
-    const shortId = item.payment_intent_id;
+    const shortId = item.invoice_filename
+      ? item.invoice_filename.replace(/\.pdf$/i, "")
+      : "N/A";
     const isDownloading = downloadingId === item.id;
+    const hasInvoice = !!item.invoice_filename;
 
     return (
       <View style={styles.card}>
@@ -586,25 +598,51 @@ export default function JobPaymentHistory({ navigation }: Props) {
           </View>
         </View>
 
-        <View style={styles.actionRow}>
-          <TouchableOpacity
-            style={[styles.actionBtn, styles.actionBtnPrimary]}
-            onPress={() => handleViewInvoice(item)}
-            activeOpacity={0.75}
-          >
-            <Eye size={14} color="#fff" />
-            <Text style={styles.actionBtnPrimaryText}>View</Text>
-          </TouchableOpacity>
+        {/* Actions */}
+        {hasInvoice ? (
+          <View style={styles.actionRow}>
+            {/* VIEW */}
+            <TouchableOpacity
+              style={[styles.actionBtn, styles.actionBtnPrimary]}
+              onPress={() => handleViewInvoice(item)}
+              activeOpacity={0.75}
+            >
+              <Eye size={14} color="#fff" />
+              <Text style={styles.actionBtnPrimaryText}>View</Text>
+            </TouchableOpacity>
 
-          <TouchableOpacity
-            style={[styles.actionBtn, styles.actionBtnOutline]}
-            onPress={() => handleOpenShare(item)}
-            activeOpacity={0.75}
-          >
-            <Share2 size={14} color={COLORS.primary} />
-            <Text style={styles.actionBtnOutlineText}>Share</Text>
-          </TouchableOpacity>
-        </View>
+            {/* DOWNLOAD */}
+            <TouchableOpacity
+              style={[styles.actionBtn, styles.actionBtnDownload]}
+              onPress={() => handleDownloadInvoice(item)}
+              activeOpacity={0.75}
+              disabled={isDownloading}
+            >
+              {isDownloading ? (
+                <ActivityIndicator size="small" color={COLORS.downloadColor} />
+              ) : (
+                <>
+                  <Download size={14} color={COLORS.downloadColor} />
+                  <Text style={styles.actionBtnDownloadText}>Download</Text>
+                </>
+              )}
+            </TouchableOpacity>
+
+            {/* SHARE */}
+            <TouchableOpacity
+              style={[styles.actionBtn, styles.actionBtnOutline]}
+              onPress={() => handleOpenShare(item)}
+              activeOpacity={0.75}
+            >
+              <Share2 size={14} color={COLORS.primary} />
+              <Text style={styles.actionBtnOutlineText}>Share</Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <View style={styles.noDocsRow}>
+            <Text style={styles.noDocsText}>No documents</Text>
+          </View>
+        )}
       </View>
     );
   };
@@ -1485,5 +1523,16 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontWeight: "700",
     fontSize: 16,
+  },
+  noDocsRow: {
+    paddingVertical: 14,
+    alignItems: "center",
+    borderTopWidth: 1,
+    borderTopColor: COLORS.border,
+  },
+  noDocsText: {
+    fontSize: 13,
+    color: COLORS.textMuted,
+    fontWeight: "500",
   },
 });

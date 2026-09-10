@@ -345,10 +345,26 @@ const StaffAssignSheet = ({
                     working_with_children:
                       "Working With Children Check Required",
                     white_card: "White Card Required",
-                    security_license: "Security Licence",
-                    first_aid: "First Aid Certificate",
-                    rsa_certificate: "RSA Certificate",
+                    security_license: "Security Licence Required",
+                    first_aid: "First Aid Certificate Required",
+                    first_aid_certificate: "First Aid Certificate Required",
+                    rsa_certificate: "RSA Certificate Required",
+                    ras_certificate: "RAS Certificate Required",
+                    control_room_certificate:
+                      "Control Room Certificate Required",
+                    msic_card: "MSIC Card Required",
+                    police_check: "Police Check Required",
+                    cpr: "CPR Certificate Required",
+                    cpr_certificate: "CPR Certificate Required",
+                    vaccination: "Vaccination Certificate Required",
+                    vaccination_certificate: "Vaccination Certificate Required",
                   };
+
+                  const label =
+                    labelMap[doc] ||
+                    doc
+                      .replace(/_/g, " ")
+                      .replace(/\b\w/g, (c) => c.toUpperCase()) + " Required";
 
                   return (
                     <View
@@ -360,13 +376,7 @@ const StaffAssignSheet = ({
                         },
                       ]}
                     >
-                      <Text style={styles.documentLabel}>
-                        {labelMap[doc] ||
-                          doc
-                            .replace(/_/g, " ")
-                            .replace(/\b\w/g, (c) => c.toUpperCase())}
-                      </Text>
-
+                      <Text style={styles.documentLabel}>{label}</Text>
                       <Text style={styles.documentYes}>YES</Text>
                     </View>
                   );
