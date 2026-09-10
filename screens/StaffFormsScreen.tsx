@@ -3651,19 +3651,18 @@ const StaffFormsScreen = ({ navigation }: any) => {
     "tfn" | "super" | "onboard" | null
   >(null);
 
-  // ── Step-flow state: tracks whether each tab has been successfully saved,
-  // and whether the whole profile has been finalised via the Finish button.
+  // ── Step-flow state: tracks whether each tab has been successfully saved.
+  // Flow order is Onboarding → TFN → Superannuation. Saving a tab unlocks
+  // the next one and, for Onboarding/TFN, auto-navigates there.
   const [tfnSaved, setTfnSaved] = useState(false);
   const [superSaved, setSuperSaved] = useState(false);
   const [onboardingSaved, setOnboardingSaved] = useState(false);
-  const [profileFinished, setProfileFinished] = useState(false);
-  const [finishing, setFinishing] = useState(false);
 
   // ── Dirty-tracking: baseline snapshot of each tab's fields, captured
   // right after that tab finishes loading (from server) or right after a
   // successful save. If the live fields drift from the baseline while the
   // tab is marked "saved", we flip it back to unsaved so the Save button
-  // reappears instead of "Next" / "Finish".
+  // reappears instead of "Next".
   const tfnSnapshotRef = useRef<string | null>(null);
   const superSnapshotRef = useRef<string | null>(null);
   const onboardSnapshotRef = useRef<string | null>(null);
@@ -3776,15 +3775,6 @@ const StaffFormsScreen = ({ navigation }: any) => {
         const parsed = JSON.parse(storedUser);
         setUserId(parsed.id);
         await getStaffInfo(parsed.id);
-
-        try {
-          const finishedFlag = await AsyncStorage.getItem(
-            `profile_finished_${parsed.id}`,
-          );
-          setProfileFinished(finishedFlag === "true");
-        } catch (e) {
-          console.log("Finished flag load error:", e);
-        }
       } catch (e) {
         console.log("Profile load error:", e);
       }
@@ -4040,18 +4030,10 @@ const StaffFormsScreen = ({ navigation }: any) => {
     }
   };
 
-  // Central place to move between tabs. Enforces the Superannuation lock
-  // (needs a successfully saved TFN Declaration first) and drives the
-  // tab-switch animation for both the tab bar and the "Next" buttons.
-  const goToTab = (tab: StaffTab) => {
-    if (tab === "super" && !tfnSaved) {
-      Toast.show({
-        type: "error",
-        text1: "Please save the TFN Declaration first",
-        position: "bottom",
-      });
-      return;
-    }
+  // Programmatic tab change used right after a successful save. It bypasses
+  // the lock checks below since the flow requirement that unlocks the next
+  // tab has just been satisfied.
+  const goToTabDirect = (tab: StaffTab) => {
     setActiveStaffTab(tab);
     Animated.spring(tabAnim, {
       toValue: 1,
@@ -4059,6 +4041,44 @@ const StaffFormsScreen = ({ navigation }: any) => {
       tension: 100,
       friction: 8,
     }).start(() => tabAnim.setValue(0));
+  };
+
+  // Central place to move between tabs via the tab bar. Enforces the
+  // Onboarding → TFN → Superannuation order and drives the tab-switch
+  // animation.
+  const goToTab = (tab: StaffTab) => {
+    if (tab === "tfn" && !onboardingSaved) {
+      Toast.show({
+        type: "error",
+        text1: "Please save the Onboarding form first",
+        position: "bottom",
+      });
+      return;
+    }
+    if (tab === "super" && !(onboardingSaved && tfnSaved)) {
+      Toast.show({
+        type: "error",
+        text1: "Please save the TFN Declaration first",
+        position: "bottom",
+      });
+      return;
+    }
+    goToTabDirect(tab);
+  };
+
+  // Header back button: from Superannuation, go straight to the Profile
+  // page instead of the previous screen in the stack.
+  const handleBackPress = () => {
+    if (activeStaffTab === "super") {
+      navigation.dispatch(
+        CommonActions.navigate({
+          name: "MainTabs",
+          params: { screen: "Profile" },
+        }),
+      );
+      return;
+    }
+    navigation.goBack();
   };
 
   const openDatePicker = (field: string) => {
@@ -4922,26 +4942,42 @@ const StaffFormsScreen = ({ navigation }: any) => {
     return result.filePath;
   };
 
-  const saveAndOpenPdf = async (cachePath: string) => {
+  // Copies a generated PDF from the app's cache directory into a location
+  // the user can browse directly from the device:
+  //  - Android: the public Downloads folder (RNFS.DownloadDirectoryPath)
+  //  - iOS: the app's Documents directory (RNFS.DocumentDirectoryPath),
+  //    which shows up in the Files app as long as the app has
+  //    UIFileSharingEnabled / LSSupportsOpeningDocumentsInPlace set in
+  //    Info.plist
+  const downloadFileToDevice = async (
+    sourcePath: string,
+    fileName: string,
+  ): Promise<string> => {
+    const cleanFileName = fileName.replace(/[^a-zA-Z0-9_\-. ]/g, "_");
+    const destDir =
+      Platform.OS === "android"
+        ? RNFS.DownloadDirectoryPath
+        : RNFS.DocumentDirectoryPath;
+    const destPath = `${destDir}/${cleanFileName}`;
+
     try {
-      await FileViewer.open(cachePath, {
-        showOpenWithDialog: true,
-        showAppsSuggestions: true,
-      });
-    } catch (err: any) {
-      console.error("File viewer error:", err);
-      if (Platform.OS === "android") {
-        const uri = cachePath.startsWith("file://")
-          ? cachePath
-          : `file://${cachePath}`;
-        await Linking.openURL(uri).catch(() => {
-          Toast.show({ type: "error", text1: "Could not open or save file" });
-        });
+      const dirExists = await RNFS.exists(destDir);
+      if (!dirExists) {
+        await RNFS.mkdir(destDir);
       }
+      const fileExists = await RNFS.exists(destPath);
+      if (fileExists) {
+        await RNFS.unlink(destPath);
+      }
+      await RNFS.copyFile(sourcePath, destPath);
+      return destPath;
+    } catch (err) {
+      console.error("Download to device error:", err);
+      throw err;
     }
   };
 
-  const generateUploadAndOpenPdf = async (
+  const generateUploadAndDownloadPdf = async (
     pdfType: "tfn" | "super_form" | "onboarding",
   ) => {
     try {
@@ -4958,12 +4994,16 @@ const StaffFormsScreen = ({ navigation }: any) => {
       const formData = formRes.data?.data || formRes.data || {};
 
       let pdfFilePath = "";
+      let downloadFileName = "";
       if (pdfType === "tfn") {
         pdfFilePath = await generateTfnPdf(formData);
+        downloadFileName = "TFN_Declaration.pdf";
       } else if (pdfType === "super_form") {
         pdfFilePath = await generateSuperPdf(formData);
+        downloadFileName = "Superannuation_Form.pdf";
       } else {
         pdfFilePath = await generateOnboardingPdf(formData);
+        downloadFileName = "Onboarding_Form.pdf";
       }
 
       const form = new FormData();
@@ -4983,12 +5023,21 @@ const StaffFormsScreen = ({ navigation }: any) => {
         },
       });
 
-      await saveAndOpenPdf(pdfFilePath);
+      await downloadFileToDevice(pdfFilePath, downloadFileName);
+
+      Toast.show({
+        type: "success",
+        text1: "✓ Document saved to your device",
+        text2:
+          Platform.OS === "android"
+            ? "Check your Downloads folder"
+            : "Check the Files app",
+      });
     } catch (error: any) {
-      console.error("❌ PDF generate/upload error:", error);
+      console.error("❌ PDF generate/upload/download error:", error);
       Toast.show({
         type: "error",
-        text1: "PDF Failed",
+        text1: "Document Save Failed",
         text2: error?.response?.data?.message || error?.message || "Try again",
       });
     } finally {
@@ -5245,12 +5294,12 @@ const StaffFormsScreen = ({ navigation }: any) => {
     setFirstAidExpiryBackend("");
 
     // NOTE: intentionally NOT resetting tfnSaved / superSaved / onboardingSaved
-    // here. Those three are the source of truth for the "Save X" vs "Next"
-    // button state and must persist across tab switches. fetchFormData()
-    // re-derives the correct value for whichever tab is being (re)loaded
-    // straight from the server immediately after this runs, and the other
-    // two tabs' flags are left untouched so their state doesn't get lost
-    // just because the user looked at a different tab.
+    // here. Those three are the source of truth for tab locking and must
+    // persist across tab switches. fetchFormData() re-derives the correct
+    // value for whichever tab is being (re)loaded straight from the server
+    // immediately after this runs, and the other two tabs' flags are left
+    // untouched so their state doesn't get lost just because the user
+    // looked at a different tab.
 
     if (currentTfnDob) {
       setTfnDob(currentTfnDob);
@@ -5290,8 +5339,9 @@ const StaffFormsScreen = ({ navigation }: any) => {
     try {
       const token = await getToken();
       const headers = { Authorization: `Bearer ${token}` };
+      const savedTab = activeStaffTab;
 
-      if (activeStaffTab === "tfn") {
+      if (savedTab === "tfn") {
         const tfnPayload = {
           user_id: userId,
           tfn: tfnNumber,
@@ -5313,7 +5363,7 @@ const StaffFormsScreen = ({ navigation }: any) => {
         await axios.post(`${BASE_URL}/api/tfn-declaration`, tfnPayload, {
           headers,
         });
-      } else if (activeStaffTab === "super") {
+      } else if (savedTab === "super") {
         const superPayload = {
           user_id: userId,
           full_name: superFullName || autoFullName,
@@ -5332,7 +5382,7 @@ const StaffFormsScreen = ({ navigation }: any) => {
         await axios.post(`${BASE_URL}/api/superannuation`, superPayload, {
           headers,
         });
-      } else if (activeStaffTab === "onboarding") {
+      } else if (savedTab === "onboarding") {
         const onboardingPayload = {
           user_id: userId,
           full_name: onboardFullName || autoFullName,
@@ -5388,24 +5438,31 @@ const StaffFormsScreen = ({ navigation }: any) => {
 
       // Mark this tab as saved AND capture a fresh dirty-tracking baseline
       // so further edits (and only further edits) flip it back to unsaved.
-      if (activeStaffTab === "tfn") {
+      if (savedTab === "tfn") {
         setTfnSaved(true);
         tfnSnapshotRef.current = buildTfnSnapshot();
-      } else if (activeStaffTab === "super") {
+      } else if (savedTab === "super") {
         setSuperSaved(true);
         superSnapshotRef.current = buildSuperSnapshot();
-      } else if (activeStaffTab === "onboarding") {
+      } else if (savedTab === "onboarding") {
         setOnboardingSaved(true);
         onboardSnapshotRef.current = buildOnboardSnapshot();
       }
 
-      const pdfType =
-        activeStaffTab === "super" ? "super_form" : activeStaffTab;
-      await generateUploadAndOpenPdf(
+      const pdfType = savedTab === "super" ? "super_form" : savedTab;
+      await generateUploadAndDownloadPdf(
         pdfType as "tfn" | "super_form" | "onboarding",
       );
 
       await fetchFormData(userId);
+
+      // Move to the next step in the Onboarding → TFN → Superannuation flow.
+      if (savedTab === "onboarding") {
+        goToTabDirect("tfn");
+      } else if (savedTab === "tfn") {
+        goToTabDirect("super");
+      }
+      // Superannuation is the final step — no further navigation.
     } catch (err: any) {
       console.error("❌ Save/Upload Flow Error:", err);
       Toast.show({
@@ -5417,48 +5474,6 @@ const StaffFormsScreen = ({ navigation }: any) => {
       });
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleFinish = async () => {
-    if (!userId) return;
-
-    if (!(tfnSaved && superSaved && onboardingSaved)) {
-      Toast.show({
-        type: "error",
-        text1: "Please complete all three sections first",
-      });
-      return;
-    }
-
-    try {
-      setFinishing(true);
-
-      await AsyncStorage.setItem(`profile_finished_${userId}`, "true");
-      setProfileFinished(true);
-
-      Toast.show({
-        type: "success",
-        text1: "🎉 Profile activated successfully!",
-      });
-
-      // Nested navigator: go to MainTabs → Profile tab
-      navigation.dispatch(
-        CommonActions.navigate({
-          name: "MainTabs",
-          params: { screen: "Profile" },
-        }),
-      );
-    } catch (error: any) {
-      console.error("Finish error:", error);
-
-      Toast.show({
-        type: "error",
-        text1: "Could not activate profile",
-        text2: "Please try again.",
-      });
-    } finally {
-      setFinishing(false);
     }
   };
 
@@ -5549,7 +5564,7 @@ const StaffFormsScreen = ({ navigation }: any) => {
 
       {/* Header */}
       <View style={s.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={s.backBtn}>
+        <TouchableOpacity onPress={handleBackPress} style={s.backBtn}>
           <ArrowLeft size={20} color="#fff" />
         </TouchableOpacity>
         <Text style={s.headerTitle}>Staff Verification Forms</Text>
@@ -5564,7 +5579,9 @@ const StaffFormsScreen = ({ navigation }: any) => {
           { key: "super", label: "Superannuation", Icon: Building2 },
         ].map((tab) => {
           const active = activeStaffTab === tab.key;
-          const locked = tab.key === "super" && !tfnSaved;
+          const locked =
+            (tab.key === "tfn" && !onboardingSaved) ||
+            (tab.key === "super" && !(onboardingSaved && tfnSaved));
           return (
             <TouchableOpacity
               key={tab.key}
@@ -5743,21 +5760,12 @@ const StaffFormsScreen = ({ navigation }: any) => {
               </View>
             </View>
 
-            {tfnSaved ? (
-              <TouchableOpacity
-                style={s.saveBtn}
-                onPress={() => goToTab("super")}
-              >
-                <Text style={s.saveBtnText}>Next →</Text>
-              </TouchableOpacity>
-            ) : (
-              <SaveButton
-                label="Save TFN"
-                loading={loading}
-                disabled={!isFormComplete(activeStaffTab)}
-                onPress={handleSave}
-              />
-            )}
+            <SaveButton
+              label="Save TFN & Next"
+              loading={loading}
+              disabled={!isFormComplete(activeStaffTab)}
+              onPress={handleSave}
+            />
           </View>
         )}
 
@@ -5906,53 +5914,12 @@ const StaffFormsScreen = ({ navigation }: any) => {
               </TouchableOpacity>
             </Field>
 
-            {superSaved ? (
-              !profileFinished ? (
-                tfnSaved && onboardingSaved ? (
-                  <>
-                    <View style={s.finishNoticeBox}>
-                      <Text style={s.finishNoticeText}>
-                        All required documents are added. Now click Finish to
-                        activate your profile.
-                      </Text>
-                    </View>
-                    <TouchableOpacity
-                      style={[s.saveBtn, finishing && { opacity: 0.7 }]}
-                      onPress={handleFinish}
-                      disabled={finishing}
-                    >
-                      {finishing ? (
-                        <ActivityIndicator size="small" color={BRAND_DARK} />
-                      ) : (
-                        <Text style={s.saveBtnText}>Finish</Text>
-                      )}
-                    </TouchableOpacity>
-                  </>
-                ) : (
-                  <View style={s.finishNoticeBox}>
-                    <Text style={s.finishNoticeText}>
-                      Superannuation saved. Please complete and save the
-                      remaining section(s) to activate your profile.
-                    </Text>
-                  </View>
-                )
-              ) : (
-                // Profile was already activated earlier — a resave here just
-                // confirms the update, it never re-shows Finish or the
-                // "Profile Activated" celebration.
-                <View style={s.savedIndicatorBox}>
-                  <Check size={16} color={BRAND} />
-                  <Text style={s.savedIndicatorText}>Superannuation Saved</Text>
-                </View>
-              )
-            ) : (
-              <SaveButton
-                label="Save Superannuation"
-                loading={loading}
-                disabled={!isFormComplete(activeStaffTab)}
-                onPress={handleSave}
-              />
-            )}
+            <SaveButton
+              label="Save Superannuation"
+              loading={loading}
+              disabled={!isFormComplete(activeStaffTab)}
+              onPress={handleSave}
+            />
           </View>
         )}
 
@@ -6381,21 +6348,12 @@ const StaffFormsScreen = ({ navigation }: any) => {
               </View>
             </View>
 
-            {onboardingSaved ? (
-              <TouchableOpacity
-                style={s.saveBtn}
-                onPress={() => goToTab("tfn")}
-              >
-                <Text style={s.saveBtnText}>Next →</Text>
-              </TouchableOpacity>
-            ) : (
-              <SaveButton
-                label="Save Onboarding Form"
-                loading={loading}
-                disabled={!isFormComplete(activeStaffTab)}
-                onPress={handleSave}
-              />
-            )}
+            <SaveButton
+              label="Save Onboarding Form & Next"
+              loading={loading}
+              disabled={!isFormComplete(activeStaffTab)}
+              onPress={handleSave}
+            />
           </View>
         )}
       </ScrollView>
@@ -6905,57 +6863,6 @@ const s = StyleSheet.create({
     marginTop: 20,
   },
   saveBtnText: { color: "#fff", fontSize: 15, fontWeight: "700" },
-  finishNoticeBox: {
-    backgroundColor: "rgba(137, 231, 208, 0.1)",
-    borderWidth: 1,
-    borderColor: "rgba(137, 231, 208, 0.35)",
-    borderRadius: 12,
-    padding: 12,
-    marginTop: 20,
-  },
-  finishNoticeText: {
-    color: BRAND,
-    fontSize: 12.5,
-    lineHeight: 18,
-    textAlign: "center",
-    fontWeight: "600",
-  },
-  finishedBox: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    backgroundColor: "rgba(137, 231, 208, 0.15)",
-    borderWidth: 1,
-    borderColor: BRAND,
-    borderRadius: 12,
-    paddingVertical: 14,
-    marginTop: 20,
-  },
-  finishedText: {
-    color: BRAND,
-    fontSize: 15,
-    fontWeight: "700",
-  },
-  // ── Plain "saved" indicator shown for Superannuation after the profile
-  // has already been activated — deliberately neutral, no Finish/celebration.
-  savedIndicatorBox: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    backgroundColor: "rgba(148, 163, 184, 0.1)",
-    borderWidth: 1,
-    borderColor: "rgba(148, 163, 184, 0.3)",
-    borderRadius: 12,
-    paddingVertical: 14,
-    marginTop: 20,
-  },
-  savedIndicatorText: {
-    color: BRAND,
-    fontSize: 14,
-    fontWeight: "700",
-  },
   downloadBtn: {
     flexDirection: "row",
     backgroundColor: "#fff",
