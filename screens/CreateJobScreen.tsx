@@ -1,5 +1,3 @@
-
-
 // import React, {
 //   useState,
 //   useMemo,
@@ -75,14 +73,47 @@
 //   label: "Sydney, NSW, Australia",
 // };
 
-// const BRAND_BG = "#0F172A";
-// const CARD_BG = "#1E2937";
-// const CHIP_DARK = "#334155";
-// const ACCENT_TEAL = "#14E6C9";
-// const TEXT_PRIMARY = "#F1F5F9";
-// const TEXT_MUTED = "#94A3B8";
-// const ERROR_RED = "#FF4D67";
-// const BORDER_COLOR = "#475569";
+// // ─── Theme ─────────────────────────────────────────────────────────────────
+// const COLORS = {
+//   background: "#030508",
+//   surface: "#07111A",
+//   card: "#0D1421",
+//   cardBorder: "rgba(98, 97, 97, 0.83)",
+//   primary: "#00A99D",
+//   primaryDark: "#017A70",
+//   primaryGlow: "rgba(0,169,157,0.25)",
+//   primaryBorder: "rgba(0,169,157,0.25)",
+//   text: "#FFFFFF",
+//   textSecondary: "#94A3B8",
+//   textMuted: "#4A6080",
+//   success: "#34C88A",
+//   danger: "#F87171",
+//   dangerBg: "rgba(248,88,88,0.12)",
+//   warning: "#F5A623",
+//   warningBg: "rgba(245,166,35,0.08)",
+//   heroBg1: "#0D1F2D",
+//   heroBg2: "#061014",
+// };
+
+// // Text color to use on top of the bright primary teal (buttons, selected
+// // pills, badges) — dark text reads far better on #00A99D than white does.
+// const ON_PRIMARY = COLORS.background;
+
+// // A subtle "raised" surface used for inputs/chips that sit on top of a
+// // COLORS.card panel, so they read as distinct without introducing new hues.
+// const RAISED_BG = "rgba(255,255,255,0.06)";
+// const RAISED_BORDER = "rgba(255,255,255,0.14)";
+
+// // Back-compat aliases so the rest of the component (and the styles below)
+// // can keep using short, semantic names while staying tied to COLORS.
+// const BRAND_BG = COLORS.background;
+// const CARD_BG = COLORS.card;
+// const CHIP_DARK = RAISED_BG;
+// const ACCENT_TEAL = COLORS.primary;
+// const TEXT_PRIMARY = COLORS.text;
+// const TEXT_MUTED = COLORS.textSecondary;
+// const ERROR_RED = COLORS.danger;
+// const BORDER_COLOR = COLORS.cardBorder;
 // const MAX_DESCRIPTION_LENGTH = 500;
 
 // // Number of columns to render in the calendar day-grid.
@@ -423,10 +454,16 @@
 //             backgroundColor: CARD_BG,
 //             borderRadius: 12,
 //             margin: 16,
+//             borderWidth: 1,
+//             borderColor: COLORS.cardBorder,
 //           }}
 //         >
 //           <Text
-//             style={{ color: "#ef4444", fontWeight: "700", marginBottom: 12 }}
+//             style={{
+//               color: COLORS.danger,
+//               fontWeight: "700",
+//               marginBottom: 12,
+//             }}
 //           >
 //             Schedule layout issue detected. Tap Reset to restore stability.
 //           </Text>
@@ -439,11 +476,11 @@
 //               paddingVertical: 12,
 //               paddingHorizontal: 16,
 //               borderRadius: 12,
-//               backgroundColor: "#3b82f6",
+//               backgroundColor: COLORS.primary,
 //               alignSelf: "flex-start",
 //             }}
 //           >
-//             <Text style={{ color: "#fff", fontWeight: "700" }}>
+//             <Text style={{ color: ON_PRIMARY, fontWeight: "700" }}>
 //               Reset Schedule
 //             </Text>
 //           </TouchableOpacity>
@@ -628,7 +665,7 @@
 //     // { label: "MSIC Card Required?", value: "msic_card" },
 //     {
 //       label: "Control Room License Required?",
-//       value: "is_control_room_license",
+//       value: "control_room_license",
 //     },
 //     { label: "RSA Certificate Required?", value: "rsa_certificate" },
 //   ];
@@ -1920,7 +1957,7 @@
 
 //       <View style={styles.header}>
 //         <TouchableOpacity onPress={handleGoBack} style={styles.backButton}>
-//           <ArrowLeft size={22} color="#FFF" />
+//           <ArrowLeft size={22} color={COLORS.text} />
 //         </TouchableOpacity>
 //         <Text style={styles.headerTitle}>Create New Job</Text>
 //         <View style={{ width: 40 }} />
@@ -1941,11 +1978,13 @@
 //           onScroll={(e) => {
 //             scrollOffsetY.current = e.nativeEvent.contentOffset.y;
 //           }}
-//           contentContainerStyle={{ paddingBottom: 120 }}
+//           contentContainerStyle={{ paddingBottom: 100 }}
 //         >
 //           {/* Job Location */}
 //           <View style={styles.sectionCard}>
-//             <Text style={styles.inputLabel}>Job Location *</Text>
+//             <Text style={styles.inputLabel}>
+//               Job Location <Text style={styles.required}>*</Text>
+//             </Text>
 
 //             <View
 //               style={[
@@ -1953,7 +1992,7 @@
 //                 errors.location && styles.inputErrorBorder,
 //               ]}
 //             >
-//               <Search size={18} color={TEXT_MUTED} style={{ marginRight: 8 }} />
+//               <Search size={16} color={TEXT_MUTED} style={{ marginRight: 5 }} />
 
 //               <TextInput
 //                 style={styles.searchBarInput}
@@ -2019,7 +2058,7 @@
 //                   color={TEXT_MUTED}
 //                   style={{ marginRight: 8 }}
 //                 />
-//                 <Text style={{ color: "#FFF", flex: 1 }}>
+//                 <Text style={{ color: COLORS.text, flex: 1 }}>
 //                   {item.description}
 //                 </Text>
 //               </TouchableOpacity>
@@ -2097,7 +2136,7 @@
 //                       color={ACCENT_TEAL}
 //                       style={{ marginRight: 8 }}
 //                     />
-//                     <Text style={{ color: "#FFF" }}>
+//                     <Text style={{ color: COLORS.text, fontSize: 11 }}>
 //                       Date: {formatDate(singleDaySchedule.date)}
 //                     </Text>
 //                   </TouchableOpacity>
@@ -2186,7 +2225,7 @@
 //                         }}
 //                       >
 //                         <Calendar size={16} color={ACCENT_TEAL} />
-//                         <Text style={{ color: "#FFF", fontSize: 13 }}>
+//                         <Text style={{ color: COLORS.text, fontSize: 13 }}>
 //                           From: {formatDate(rangeFrom)}
 //                         </Text>
 //                       </TouchableOpacity>
@@ -2198,7 +2237,7 @@
 //                         }}
 //                       >
 //                         <Calendar size={16} color={ACCENT_TEAL} />
-//                         <Text style={{ color: "#FFF", fontSize: 13 }}>
+//                         <Text style={{ color: COLORS.text, fontSize: 13 }}>
 //                           To: {formatDate(rangeTo)}
 //                         </Text>
 //                       </TouchableOpacity>
@@ -2209,7 +2248,13 @@
 //                       onPress={openIndividualDatePicker}
 //                     >
 //                       <Plus size={16} color={ACCENT_TEAL} />
-//                       <Text style={{ color: "#FFF" }}>
+//                       <Text
+//                         style={{
+//                           color: COLORS.text,
+//                           fontSize: 11,
+//                           marginLeft: 6,
+//                         }}
+//                       >
 //                         Click Dates To Select/Deselect
 //                       </Text>
 //                     </TouchableOpacity>
@@ -2231,7 +2276,7 @@
 //                             applyToAll && styles.checkboxChecked,
 //                           ]}
 //                         >
-//                           {applyToAll && <Check size={12} color="#000" />}
+//                           {applyToAll && <Check size={12} color={ON_PRIMARY} />}
 //                         </View>
 //                       </TouchableOpacity>
 
@@ -2239,7 +2284,7 @@
 //                         style={styles.timePickerButtonFlex}
 //                         onPress={() => openMasterTimePicker("startTime")}
 //                       >
-//                         <Text style={{ color: "#FFF" }}>
+//                         <Text style={{ color: COLORS.text }}>
 //                           {masterStartTime
 //                             ? formatTime(masterStartTime)
 //                             : "Start"}
@@ -2250,7 +2295,7 @@
 //                         style={styles.timePickerButtonFlex}
 //                         onPress={() => openMasterTimePicker("endTime")}
 //                       >
-//                         <Text style={{ color: "#FFF" }}>
+//                         <Text style={{ color: COLORS.text }}>
 //                           {masterEndTime ? formatTime(masterEndTime) : "End"}
 //                         </Text>
 //                       </TouchableOpacity>
@@ -2315,8 +2360,10 @@
 //                   justifyContent: "space-between",
 //                 }}
 //               >
-//                 <Text style={{ color: TEXT_MUTED }}>Calculated Hours</Text>
-//                 <Text style={{ color: "#FFF", fontWeight: "700" }}>
+//                 <Text style={{ color: TEXT_MUTED, fontSize: 12 }}>
+//                   Calculated Hours
+//                 </Text>
+//                 <Text style={{ color: COLORS.text, fontWeight: "700" }}>
 //                   {formatManHoursLabel(totalManHours)}
 //                 </Text>
 //               </View>
@@ -2324,41 +2371,30 @@
 //           </View>
 //           {/* Category */}
 //           <View style={styles.sectionCard}>
-//             <Text style={styles.inputLabel}>Job Category *</Text>
+//             <Text style={styles.inputLabel}>
+//               Job Category <Text style={styles.required}>*</Text>
+//             </Text>
 
-//             <LinearGradient
-//               colors={[
-//                 "rgba(255,255,255,0.41)",
-//                 "rgba(255,255,255,0.35)",
-//                 "rgba(255,255,255,0.2)",
-//                 "rgba(255,255,255,0.10)",
-//                 "rgba(255,255,255,0.22)",
+//             <TouchableOpacity
+//               style={[
+//                 styles.selectBox,
+//                 errors.category && styles.inputErrorBorder,
 //               ]}
-//               start={{ x: 0, y: 0 }}
-//               end={{ x: 1, y: 1 }}
-//               style={styles.dropdownGradient}
+//               onPress={() => setShowCategoryModal(true)}
 //             >
-//               <TouchableOpacity
-//                 style={[
-//                   styles.selectBox,
-//                   errors.category && styles.inputErrorBorder,
-//                 ]}
-//                 onPress={() => setShowCategoryModal(true)}
+//               <Text
+//                 style={{
+//                   color: form.category ? COLORS.text : TEXT_MUTED, fontSize:12,
+//                   flex: 1,
+//                 }}
 //               >
-//                 <Text
-//                   style={{
-//                     color: form.category ? "#FFF" : TEXT_MUTED,
-//                     flex: 1,
-//                   }}
-//                 >
-//                   {form.category
-//                     ? categoryOptions.find((o) => o.value === form.category)
-//                         ?.label || "Others"
-//                     : "Select Category"}
-//                 </Text>
-//                 <ChevronDown size={18} color={ACCENT_TEAL} />
-//               </TouchableOpacity>
-//             </LinearGradient>
+//                 {form.category
+//                   ? categoryOptions.find((o) => o.value === form.category)
+//                       ?.label || "Others"
+//                   : "Select Category"}
+//               </Text>
+//               <ChevronDown size={18} color={ACCENT_TEAL} />
+//             </TouchableOpacity>
 
 //             {errors.category && (
 //               <Text style={styles.errorText}>{errors.category}</Text>
@@ -2436,7 +2472,9 @@
 //             <View
 //               style={{ flexDirection: "row", justifyContent: "space-between" }}
 //             >
-//               <Text style={styles.inputLabel}> Job Details Description *</Text>
+//               <Text style={styles.inputLabel}>
+//                 Job Details Description <Text style={styles.required}>*</Text>
+//               </Text>
 //               <Text style={{ color: TEXT_MUTED, fontSize: 12 }}>
 //                 {form.description.length}/{MAX_DESCRIPTION_LENGTH}
 //               </Text>
@@ -2484,7 +2522,9 @@
 //               ) : (
 //                 <>
 //                   <CloudUpload size={28} color={ACCENT_TEAL} />
-//                   <Text style={{ color: "#FFF", marginTop: 6, fontSize: 13 }}>
+//                   <Text
+//                     style={{ color: COLORS.text, marginTop: 6, fontSize: 13 }}
+//                   >
 //                     Upload files here
 //                   </Text>
 //                 </>
@@ -2509,19 +2549,19 @@
 //             disabled={calculatingQuote}
 //           >
 //             <LinearGradient
-//               colors={["#5CE1D6", "#2bbcb0"]}
+//               colors={[COLORS.primary, COLORS.primaryDark]}
 //               style={styles.gradientButtonWrapper}
 //               start={{ x: 0, y: 0 }}
 //               end={{ x: 1, y: 0 }}
 //             >
 //               {calculatingQuote ? (
-//                 <ActivityIndicator color="#001F3F" />
+//                 <ActivityIndicator color="#fff" />
 //               ) : (
 //                 <>
 //                   <Text style={styles.primaryActionText}>
 //                     Proceed to Quotation Review
 //                   </Text>
-//                   <ArrowRight size={18} color="#001F3F" />
+//                   <ArrowRight size={18} color="#fff" />
 //                 </>
 //               )}
 //             </LinearGradient>
@@ -2539,7 +2579,7 @@
 //             display={Platform.OS === "ios" ? "spinner" : "default"}
 //             value={pickerValue}
 //             onChange={onTimePickerChange}
-//             textColor="#FFFFFF"
+//             textColor={COLORS.text}
 //           />
 //           {Platform.OS === "ios" && (
 //             <View
@@ -2566,7 +2606,7 @@
 //                   backgroundColor: ACCENT_TEAL,
 //                 }}
 //               >
-//                 <Text style={{ color: BRAND_BG, fontWeight: "700" }}>
+//                 <Text style={{ color: ON_PRIMARY, fontWeight: "700" }}>
 //                   Confirm
 //                 </Text>
 //               </TouchableOpacity>
@@ -2579,10 +2619,12 @@
 //                   paddingVertical: 10,
 //                   paddingHorizontal: 16,
 //                   borderRadius: 10,
-//                   backgroundColor: "rgba(255,255,255,0.08)",
+//                   backgroundColor: RAISED_BG,
 //                 }}
 //               >
-//                 <Text style={{ color: "#fff", fontWeight: "700" }}>Cancel</Text>
+//                 <Text style={{ color: COLORS.text, fontWeight: "700" }}>
+//                   Cancel
+//                 </Text>
 //               </TouchableOpacity>
 //             </View>
 //           )}
@@ -2615,7 +2657,7 @@
 //                 display="spinner"
 //                 value={pickerValue}
 //                 onChange={onTimePickerChange}
-//                 textColor="#FFFFFF"
+//                 textColor={COLORS.text}
 //                 style={{ height: 180 }}
 //               />
 
@@ -2636,11 +2678,11 @@
 //                     flex: 1,
 //                     paddingVertical: 12,
 //                     borderRadius: 10,
-//                     backgroundColor: CHIP_DARK,
+//                     backgroundColor: RAISED_BG,
 //                     alignItems: "center",
 //                   }}
 //                 >
-//                   <Text style={{ color: "#FFF", fontWeight: "600" }}>
+//                   <Text style={{ color: COLORS.text, fontWeight: "600" }}>
 //                     Cancel
 //                   </Text>
 //                 </TouchableOpacity>
@@ -2658,7 +2700,7 @@
 //                     alignItems: "center",
 //                   }}
 //                 >
-//                   <Text style={{ color: BRAND_BG, fontWeight: "700" }}>
+//                   <Text style={{ color: ON_PRIMARY, fontWeight: "700" }}>
 //                     Confirm
 //                   </Text>
 //                 </TouchableOpacity>
@@ -2688,7 +2730,7 @@
 //                   )
 //                 }
 //               >
-//                 <ChevronLeft size={20} color="#FFF" />
+//                 <ChevronLeft size={20} color={COLORS.text} />
 //               </TouchableOpacity>
 //               <Text style={styles.calendarMonthHeadingText}>
 //                 {calendarMonth.toLocaleString("default", {
@@ -2707,7 +2749,7 @@
 //                   )
 //                 }
 //               >
-//                 <ChevronRight size={20} color="#FFF" />
+//                 <ChevronRight size={20} color={COLORS.text} />
 //               </TouchableOpacity>
 //             </View>
 //             <View style={styles.calWeekRow}>
@@ -2795,7 +2837,8 @@
 //                 >
 //                   <Text
 //                     style={{
-//                       color: form.category === opt.value ? ACCENT_TEAL : "#FFF",
+//                       color:
+//                         form.category === opt.value ? ACCENT_TEAL : COLORS.text,
 //                       fontSize: 16,
 //                     }}
 //                   >
@@ -2816,46 +2859,63 @@
 // }
 
 // const styles = StyleSheet.create({
-//   safeArea: { flex: 1, backgroundColor: "#030508", paddingTop: 20 },
+//   safeArea: { flex: 1, backgroundColor: COLORS.background, paddingTop: 30 },
 //   header: {
-//     height: 60,
 //     flexDirection: "row",
 //     alignItems: "center",
 //     justifyContent: "space-between",
 //     paddingHorizontal: 16,
 //   },
-//   backButton: { padding: 4 },
-//   headerTitle: { color: "#FFF", fontSize: 18, fontWeight: "700" },
+//   backButton: {
+//     width: 36,
+//     height: 36,
+//     borderRadius: 12,
+//     backgroundColor: COLORS.card,
+//     borderWidth: 1,
+//     borderColor: COLORS.cardBorder,
+//     alignItems: "center",
+//     justifyContent: "center",
+//   },
+//   headerTitle: { color: COLORS.text, fontSize: 18, fontWeight: "700" },
 //   calculatedcard: {
+//     backgroundColor: COLORS.card,
 //     borderRadius: 16,
 //     padding: 14,
 //     marginBottom: 7,
-//     paddingBottom: 0,
+//     paddingBottom: 10,
 //     borderWidth: 1,
 //     borderColor: BORDER_COLOR,
 //   },
 //   container: { flex: 1, padding: 16 },
 //   sectionCard: {
+//     backgroundColor: COLORS.card,
 //     borderRadius: 16,
-//     padding: 12,
-//     marginBottom: 8,
+//     padding: 14,
+//     marginBottom: 10,
 //     borderWidth: 1,
 //     borderColor: BORDER_COLOR,
+//     shadowColor: "#000",
+//     shadowOffset: { width: 0, height: 6 },
+//     shadowOpacity: 0.18,
+//     shadowRadius: 12,
+//     elevation: 4,
 //   },
 //   inputLabel: {
-//     color: "#FFF",
+//     color: COLORS.text,
 //     fontSize: 12,
-//     fontWeight: "600",
-//     marginBottom: 5,
+//     fontWeight: "700",
+//     marginBottom: 8,
 //   },
 //   selectBox: {
-//     height: 50,
+//     height: 45,
 //     backgroundColor: CHIP_DARK,
 //     borderRadius: 10,
 //     flexDirection: "row",
 //     alignItems: "center",
 //     justifyContent: "space-between",
 //     paddingHorizontal: 14,
+//     borderWidth: 1,
+//     borderColor: RAISED_BORDER,
 //   },
 //   inputBox: {
 //     height: 50,
@@ -2864,7 +2924,7 @@
 //     color: TEXT_PRIMARY,
 //     paddingHorizontal: 14,
 //     borderWidth: 1,
-//     borderColor: BORDER_COLOR,
+//     borderColor: RAISED_BORDER,
 //   },
 //   textAreaBox: {
 //     height: 120,
@@ -2875,9 +2935,9 @@
 //     paddingTop: 12,
 //     textAlignVertical: "top",
 //     borderWidth: 1,
-//     borderColor: BORDER_COLOR,
+//     borderColor: RAISED_BORDER,
 //   },
-//   inputErrorBorder: { borderColor: ERROR_RED, borderWidth: 1 },
+//   inputErrorBorder: { borderColor: ERROR_RED, borderWidth: 1.5 },
 //   errorText: {
 //     color: ERROR_RED,
 //     fontSize: 12,
@@ -2890,55 +2950,65 @@
 //     borderRadius: 10,
 //     flexDirection: "row",
 //     alignItems: "center",
-//     paddingHorizontal: 14,
+//     paddingHorizontal: 12,
+//     borderWidth: 1,
+//     borderColor: RAISED_BORDER,
 //   },
-//   searchBarInput: { flex: 1, color: "#FFF" },
+//   searchBarInput: { flex: 1, color: COLORS.text },
 //   suggestionRow: {
 //     flexDirection: "row",
 //     alignItems: "center",
-//     paddingVertical: 12,
+//     paddingVertical: 8,
+//     paddingHorizontal: 2,
 //     borderBottomWidth: 1,
-//     borderBottomColor: "#1E293B",
+//     borderBottomColor: RAISED_BORDER,
 //   },
-//   dayCellDisabled: { backgroundColor: "#1E293B", opacity: 0.35 },
-//   dayCellTextDisabled: { color: "#64748B", textDecorationLine: "line-through" },
+//   dayCellDisabled: { backgroundColor: RAISED_BG, opacity: 0.35 },
+//   dayCellTextDisabled: {
+//     color: COLORS.textMuted,
+//     textDecorationLine: "line-through",
+//   },
 //   mapFrame: {
 //     height: 140,
 //     borderRadius: 12,
 //     overflow: "hidden",
-//     marginTop: 7,
+//     marginTop: 5,
+//     borderWidth: 1,
+//     borderColor: RAISED_BORDER,
 //   },
 //   sectionTitle: {
-//     color: "#FFF",
+//     color: COLORS.text,
 //     fontSize: 12,
-//     fontWeight: "700",
-//     marginBottom: 12,
+//     fontWeight: "800",
+//     marginBottom: 7,
 //   },
 //   dropdownGradient: { borderRadius: 12, overflow: "hidden", marginTop: 0 },
 //   modeTabsRow: {
 //     flexDirection: "row",
-//     backgroundColor: CHIP_DARK,
-//     borderRadius: 8,
+//     backgroundColor: RAISED_BG,
+//     borderRadius: 10,
 //     padding: 4,
-//     marginBottom: 14,
+//     marginBottom: 8,
 //   },
 //   modeTabButton: {
 //     flex: 1,
-//     paddingVertical: 8,
+//     paddingVertical: 9,
 //     alignItems: "center",
-//     borderRadius: 6,
+//     borderRadius: 8,
 //   },
-//   modeTabActive: { backgroundColor: BRAND_BG },
-//   modeTabTxt: { color: TEXT_MUTED, fontSize: 13, fontWeight: "600" },
-//   modeTabTxtActive: { color: ACCENT_TEAL },
+//   modeTabActive: { backgroundColor: COLORS.primary },
+//   modeTabTxt: { color: TEXT_MUTED, fontSize: 11, fontWeight: "600" },
+//   modeTabTxtActive: { color: "#fff", fontWeight: "800" },
 //   calendarTriggerBtn: {
-//     height: 46,
+//     height: 40,
 //     backgroundColor: CHIP_DARK,
 //     borderRadius: 8,
 //     flexDirection: "row",
 //     alignItems: "center",
 //     paddingHorizontal: 12,
 //     gap: 8,
+//     borderWidth: 1,
+//     borderColor: RAISED_BORDER,
 //   },
 //   shiftCardRow: {
 //     flexDirection: "row",
@@ -2949,24 +3019,24 @@
 //     padding: 10,
 //     marginTop: 10,
 //     borderWidth: 1,
-//     borderColor: BORDER_COLOR,
+//     borderColor: RAISED_BORDER,
 //   },
 //   timePickerButton: {
 //     flexDirection: "row",
 //     alignItems: "center",
 //     gap: 6,
-//     backgroundColor: BRAND_BG,
+//     backgroundColor: COLORS.surface,
 //     paddingVertical: 8,
 //     paddingHorizontal: 10,
 //     borderRadius: 6,
 //   },
-//   timePickerText: { color: "#FFF", fontSize: 13, fontWeight: "600" },
+//   timePickerText: { color: COLORS.text, fontSize: 13, fontWeight: "600" },
 //   guardsInput: {
 //     width: 45,
 //     height: 36,
-//     backgroundColor: BRAND_BG,
+//     backgroundColor: COLORS.surface,
 //     borderRadius: 6,
-//     color: "#FFF",
+//     color: COLORS.text,
 //     textAlign: "center",
 //     padding: 0,
 //   },
@@ -2978,22 +3048,27 @@
 //     paddingVertical: 4,
 //   },
 //   masterConfigContainer: {
-//     backgroundColor: BRAND_BG,
+//     backgroundColor: COLORS.surface,
 //     borderRadius: 10,
 //     padding: 12,
 //     marginBottom: 14,
+//     borderWidth: 1,
+//     borderColor: RAISED_BORDER,
 //   },
 //   masterConfigTitle: {
 //     color: TEXT_MUTED,
-//     fontSize: 12,
+//     fontSize: 11,
 //     fontWeight: "700",
-//     marginBottom: 8,
+//     marginBottom: 10,
+//     letterSpacing: 0.3,
 //   },
 //   dayGroupContainer: {
-//     backgroundColor: BRAND_BG,
+//     backgroundColor: COLORS.surface,
 //     borderRadius: 10,
 //     padding: 10,
 //     marginTop: 12,
+//     borderWidth: 1,
+//     borderColor: RAISED_BORDER,
 //   },
 //   dayGroupHeading: {
 //     color: ACCENT_TEAL,
@@ -3003,7 +3078,7 @@
 //   },
 //   uploadBoxFrame: {
 //     height: 90,
-//     borderWidth: 1,
+//     borderWidth: 1.5,
 //     borderColor: ACCENT_TEAL,
 //     borderStyle: "dashed",
 //     borderRadius: 10,
@@ -3015,21 +3090,28 @@
 //     flexDirection: "row",
 //     alignItems: "center",
 //     gap: 6,
-//     marginTop: 6,
+//     marginTop: 8,
 //     paddingHorizontal: 4,
 //   },
 //   fileRowTxt: { color: TEXT_MUTED, fontSize: 12, flex: 1 },
 //   quotationSummaryCard: {
-//     backgroundColor: "#1E293B",
+//     backgroundColor: COLORS.surface,
 //     borderRadius: 10,
 //     padding: 12,
-//     marginBottom: 20,
+//     marginBottom: 0,
+//     borderWidth: 1,
+//     borderColor: RAISED_BORDER,
 //   },
 //   primaryActionButton: {
-//     height: 54,
-//     borderRadius: 12,
+//     height: 44,
+//     borderRadius: 10,
 //     overflow: "hidden",
-//     marginBottom: 50,
+//     marginBottom: 5,
+//     shadowColor: COLORS.primary,
+//     shadowOffset: { width: 0, height: 8 },
+//     shadowOpacity: 0.35,
+//     shadowRadius: 14,
+//     elevation: 8,
 //   },
 //   gradientButtonWrapper: {
 //     flex: 1,
@@ -3038,7 +3120,7 @@
 //     alignItems: "center",
 //     gap: 8,
 //   },
-//   primaryActionText: { color: "#001F3F", fontSize: 16, fontWeight: "700" },
+//   primaryActionText: { color: "#ffff", fontSize: 12, fontWeight: "800" },
 //   modalBackgroundOverlay: {
 //     flex: 1,
 //     backgroundColor: "rgba(0,0,0,0.7)",
@@ -3050,7 +3132,7 @@
 //     borderRadius: 16,
 //     padding: 20,
 //     borderWidth: 1,
-//     borderColor: "#1E293B",
+//     borderColor: BORDER_COLOR,
 //   },
 //   calNavRow: {
 //     flexDirection: "row",
@@ -3058,7 +3140,11 @@
 //     justifyContent: "space-between",
 //     marginBottom: 14,
 //   },
-//   calendarMonthHeadingText: { color: "#FFF", fontSize: 15, fontWeight: "700" },
+//   calendarMonthHeadingText: {
+//     color: COLORS.text,
+//     fontSize: 15,
+//     fontWeight: "700",
+//   },
 //   calWeekRow: { flexDirection: "row", marginBottom: 6 },
 //   calWeekDay: {
 //     flex: 1,
@@ -3082,10 +3168,10 @@
 //     justifyContent: "center",
 //     marginBottom: 6,
 //   },
-//   dayCellSelected: { backgroundColor: ACCENT_TEAL, borderRadius: 6 },
-//   dayCellText: { color: "#FFF", fontSize: 13 },
-//   dayCellTextSelected: { color: "#001F3F", fontWeight: "700" },
-//   closeModalTextLink: { color: ACCENT_TEAL, fontSize: 14, fontWeight: "600" },
+//   dayCellSelected: { backgroundColor: ACCENT_TEAL, borderRadius: 8 },
+//   dayCellText: { color: COLORS.text, fontSize: 13 },
+//   dayCellTextSelected: { color: ON_PRIMARY, fontWeight: "800" },
+//   closeModalTextLink: { color: ACCENT_TEAL, fontSize: 14, fontWeight: "700" },
 //   bottomSheetContent: {
 //     backgroundColor: CARD_BG,
 //     maxHeight: "70%",
@@ -3095,10 +3181,10 @@
 //     borderBottomRightRadius: 20,
 //     padding: 16,
 //     borderTopWidth: 1,
-//     borderTopColor: "#1E293B",
+//     borderTopColor: BORDER_COLOR,
 //   },
 //   modalTitleHeader: {
-//     color: "#FFF",
+//     color: COLORS.text,
 //     fontSize: 18,
 //     fontWeight: "800",
 //     marginBottom: 14,
@@ -3109,7 +3195,7 @@
 //     alignItems: "center",
 //     paddingVertical: 14,
 //     borderBottomWidth: 1,
-//     borderBottomColor: BRAND_BG,
+//     borderBottomColor: RAISED_BORDER,
 //   },
 //   shiftHeaderRow: {
 //     flexDirection: "row",
@@ -3130,10 +3216,10 @@
 //     alignItems: "center",
 //     borderRadius: 0,
 //   },
-//   toggleOptionActiveYes: { backgroundColor: "#1A8754" },
-//   toggleOptionActiveNo: { backgroundColor: "#6B7280" },
-//   toggleText: { fontSize: 12, fontWeight: "700", color: "#4B5563" },
-//   toggleTextActive: { color: "#FFFFFF" },
+//   toggleOptionActiveYes: { backgroundColor: COLORS.success },
+//   toggleOptionActiveNo: { backgroundColor: COLORS.textMuted },
+//   toggleText: { fontSize: 12, fontWeight: "700", color: COLORS.textSecondary },
+//   toggleTextActive: { color: COLORS.text },
 
 //   masterRow: {
 //     flexDirection: "row",
@@ -3147,14 +3233,18 @@
 //     borderRadius: 6,
 //     justifyContent: "center",
 //     alignItems: "center",
+//     borderWidth: 1,
+//     borderColor: RAISED_BORDER,
 //   },
 //   masterGuardsInputFlex: {
 //     flex: 1,
 //     height: 40,
 //     backgroundColor: CHIP_DARK,
 //     borderRadius: 6,
-//     color: "#FFF",
+//     color: COLORS.text,
 //     paddingHorizontal: 10,
+//     borderWidth: 1,
+//     borderColor: RAISED_BORDER,
 //   },
 //   checkboxRow: {
 //     width: 40,
@@ -3166,7 +3256,7 @@
 //     width: 18,
 //     height: 18,
 //     borderRadius: 4,
-//     borderWidth: 1,
+//     borderWidth: 1.5,
 //     borderColor: TEXT_MUTED,
 //     justifyContent: "center",
 //     alignItems: "center",
@@ -3177,23 +3267,23 @@
 //   },
 
 //   toggleContainer: {
-//     flexDirection: "column", // changed to single column so full text fits nicely
-//     gap: 7,
+//     flexDirection: "column", // single column so full text fits nicely
+//     gap: 8,
 //   },
 
 //   toggleCard: {
 //     width: "100%",
-//     borderRadius: 12,
+//     borderRadius: 8,
 //     backgroundColor: CHIP_DARK,
 //     borderWidth: 1,
-//     borderColor: "rgba(255,255,255,0.12)",
-//     paddingVertical: 8,
+//     borderColor: RAISED_BORDER,
+//     paddingVertical: 5,
 //     paddingHorizontal: 14,
 //   },
 
 //   toggleCardActive: {
 //     borderColor: ACCENT_TEAL,
-//     backgroundColor: "rgba(0, 200, 180, 0.12)",
+//     backgroundColor: COLORS.primaryGlow,
 //   },
 
 //   toggleRow: {
@@ -3205,26 +3295,26 @@
 //   toggleLabel: {
 //     flex: 1,
 //     fontSize: 11,
-//     color: "#CBD5E1",
+//     color: COLORS.textSecondary,
 //     fontWeight: "600",
-//     lineHeight: 16,
+//     lineHeight: 17,
 //     marginRight: 12,
 //   },
 
 //   toggleLabelActive: {
-//     color: "#FFFFFF",
+//     color: COLORS.text,
 //   },
 
 //   toggleSwitchActive: {
-//     backgroundColor: "#1A8754",
+//     backgroundColor: COLORS.success,
 //   },
 
 //   toggleKnobActive: {
 //     alignSelf: "flex-end",
 //   },
 //   toggleSwitch: {
-//     width: 54,
-//     height: 26,
+//     width: 48,
+//     height: 22,
 //     borderRadius: 14,
 //     flexDirection: "row",
 //     alignItems: "center",
@@ -3232,20 +3322,20 @@
 //   },
 
 //   toggleSwitchYes: {
-//     backgroundColor: "#1A8754", // blue like the image
+//     backgroundColor: COLORS.success,
 //     justifyContent: "space-between",
 //   },
 
 //   toggleSwitchNo: {
-//     backgroundColor: "#9CA3AF", // gray like the image
+//     backgroundColor: COLORS.textMuted,
 //     justifyContent: "space-between",
 //   },
 
 //   toggleKnob: {
-//     width: 20,
-//     height: 20,
+//     width: 19,
+//     height: 19,
 //     borderRadius: 10,
-//     backgroundColor: "#FFFFFF",
+//     backgroundColor: COLORS.text,
 //     // soft shadow (optional)
 //     shadowColor: "#000",
 //     shadowOffset: { width: 0, height: 1 },
@@ -3255,22 +3345,22 @@
 //   },
 
 //   toggleSwitchTextYes: {
-//     color: "#FFFFFF",
-//     fontSize: 11,
+//     color: COLORS.text,
+//     fontSize: 9,
 //     fontWeight: "800",
 //     marginLeft: 6,
 //     letterSpacing: 0.3,
 //   },
 
 //   toggleSwitchTextNo: {
-//     color: "#374151",
-//     fontSize: 11,
+//     color: COLORS.text,
+//     fontSize: 9,
 //     fontWeight: "800",
 //     marginRight: 6,
 //     letterSpacing: 0.3,
 //   },
+//   required: { color: COLORS.danger },
 // });
-
 
 import React, {
   useState,
@@ -3334,6 +3424,7 @@ import {
   ArrowLeft,
   ChevronRight,
   X,
+  AlertCircle,
 } from "lucide-react-native";
 import { Keyboard } from "react-native";
 import LinearGradient from "react-native-linear-gradient";
@@ -3733,7 +3824,11 @@ class ScheduleErrorBoundary extends React.Component<
           }}
         >
           <Text
-            style={{ color: COLORS.danger, fontWeight: "700", marginBottom: 12 }}
+            style={{
+              color: COLORS.danger,
+              fontWeight: "700",
+              marginBottom: 12,
+            }}
           >
             Schedule layout issue detected. Tap Reset to restore stability.
           </Text>
@@ -3917,6 +4012,7 @@ export default function CreateJobScreen() {
 
   const [currentJobLevel, setCurrentJobLevel] = useState<number>(1);
   const [showCategoryModal, setShowCategoryModal] = useState(false);
+  const [showIncompleteModal, setShowIncompleteModal] = useState(false);
   const [otherCategory, setOtherCategory] = useState("");
   const [otherDocument, setOtherDocument] = useState("");
   const [uploading, setUploading] = useState(false);
@@ -4885,7 +4981,7 @@ export default function CreateJobScreen() {
     setErrors(newErrors);
 
     if (Object.keys(newErrors).length > 0) {
-      Alert.alert("Incomplete Form", "Please fill all required fields");
+      setShowIncompleteModal(true);
       return;
     }
 
@@ -5248,11 +5344,13 @@ export default function CreateJobScreen() {
           onScroll={(e) => {
             scrollOffsetY.current = e.nativeEvent.contentOffset.y;
           }}
-          contentContainerStyle={{ paddingBottom: 120 }}
+          contentContainerStyle={{ paddingBottom: 100 }}
         >
           {/* Job Location */}
           <View style={styles.sectionCard}>
-            <Text style={styles.inputLabel}>Job Location *</Text>
+            <Text style={styles.inputLabel}>
+              Job Location <Text style={styles.required}>*</Text>
+            </Text>
 
             <View
               style={[
@@ -5260,7 +5358,7 @@ export default function CreateJobScreen() {
                 errors.location && styles.inputErrorBorder,
               ]}
             >
-              <Search size={18} color={TEXT_MUTED} style={{ marginRight: 8 }} />
+              <Search size={16} color={TEXT_MUTED} style={{ marginRight: 5 }} />
 
               <TextInput
                 style={styles.searchBarInput}
@@ -5404,7 +5502,7 @@ export default function CreateJobScreen() {
                       color={ACCENT_TEAL}
                       style={{ marginRight: 8 }}
                     />
-                    <Text style={{ color: COLORS.text }}>
+                    <Text style={{ color: COLORS.text, fontSize: 11 }}>
                       Date: {formatDate(singleDaySchedule.date)}
                     </Text>
                   </TouchableOpacity>
@@ -5516,7 +5614,13 @@ export default function CreateJobScreen() {
                       onPress={openIndividualDatePicker}
                     >
                       <Plus size={16} color={ACCENT_TEAL} />
-                      <Text style={{ color: COLORS.text }}>
+                      <Text
+                        style={{
+                          color: COLORS.text,
+                          fontSize: 11,
+                          marginLeft: 6,
+                        }}
+                      >
                         Click Dates To Select/Deselect
                       </Text>
                     </TouchableOpacity>
@@ -5622,7 +5726,9 @@ export default function CreateJobScreen() {
                   justifyContent: "space-between",
                 }}
               >
-                <Text style={{ color: TEXT_MUTED }}>Calculated Hours</Text>
+                <Text style={{ color: TEXT_MUTED, fontSize: 12 }}>
+                  Calculated Hours
+                </Text>
                 <Text style={{ color: COLORS.text, fontWeight: "700" }}>
                   {formatManHoursLabel(totalManHours)}
                 </Text>
@@ -5631,41 +5737,31 @@ export default function CreateJobScreen() {
           </View>
           {/* Category */}
           <View style={styles.sectionCard}>
-            <Text style={styles.inputLabel}>Job Category *</Text>
+            <Text style={styles.inputLabel}>
+              Job Category <Text style={styles.required}>*</Text>
+            </Text>
 
-            <LinearGradient
-              colors={[
-                "rgba(255,255,255,0.41)",
-                "rgba(255,255,255,0.35)",
-                "rgba(255,255,255,0.2)",
-                "rgba(255,255,255,0.10)",
-                "rgba(255,255,255,0.22)",
+            <TouchableOpacity
+              style={[
+                styles.selectBox,
+                errors.category && styles.inputErrorBorder,
               ]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.dropdownGradient}
+              onPress={() => setShowCategoryModal(true)}
             >
-              <TouchableOpacity
-                style={[
-                  styles.selectBox,
-                  errors.category && styles.inputErrorBorder,
-                ]}
-                onPress={() => setShowCategoryModal(true)}
+              <Text
+                style={{
+                  color: form.category ? COLORS.text : TEXT_MUTED,
+                  fontSize: 12,
+                  flex: 1,
+                }}
               >
-                <Text
-                  style={{
-                    color: form.category ? COLORS.text : TEXT_MUTED,
-                    flex: 1,
-                  }}
-                >
-                  {form.category
-                    ? categoryOptions.find((o) => o.value === form.category)
-                        ?.label || "Others"
-                    : "Select Category"}
-                </Text>
-                <ChevronDown size={18} color={ACCENT_TEAL} />
-              </TouchableOpacity>
-            </LinearGradient>
+                {form.category
+                  ? categoryOptions.find((o) => o.value === form.category)
+                      ?.label || "Others"
+                  : "Select Category"}
+              </Text>
+              <ChevronDown size={18} color={ACCENT_TEAL} />
+            </TouchableOpacity>
 
             {errors.category && (
               <Text style={styles.errorText}>{errors.category}</Text>
@@ -5743,7 +5839,9 @@ export default function CreateJobScreen() {
             <View
               style={{ flexDirection: "row", justifyContent: "space-between" }}
             >
-              <Text style={styles.inputLabel}> Job Details Description *</Text>
+              <Text style={styles.inputLabel}>
+                Job Details Description <Text style={styles.required}>*</Text>
+              </Text>
               <Text style={{ color: TEXT_MUTED, fontSize: 12 }}>
                 {form.description.length}/{MAX_DESCRIPTION_LENGTH}
               </Text>
@@ -5791,7 +5889,9 @@ export default function CreateJobScreen() {
               ) : (
                 <>
                   <CloudUpload size={28} color={ACCENT_TEAL} />
-                  <Text style={{ color: COLORS.text, marginTop: 6, fontSize: 13 }}>
+                  <Text
+                    style={{ color: COLORS.text, marginTop: 6, fontSize: 13 }}
+                  >
                     Upload files here
                   </Text>
                 </>
@@ -5822,13 +5922,13 @@ export default function CreateJobScreen() {
               end={{ x: 1, y: 0 }}
             >
               {calculatingQuote ? (
-                <ActivityIndicator color='#fff' />
+                <ActivityIndicator color="#fff" />
               ) : (
                 <>
                   <Text style={styles.primaryActionText}>
                     Proceed to Quotation Review
                   </Text>
-                  <ArrowRight size={18} color='#fff' />
+                  <ArrowRight size={18} color="#fff" />
                 </>
               )}
             </LinearGradient>
@@ -6070,6 +6170,71 @@ export default function CreateJobScreen() {
         </View>
       </Modal>
 
+      {/* Incomplete Form Modal */}
+      <Modal
+        visible={showIncompleteModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowIncompleteModal(false)}
+      >
+        <View style={styles.incompleteModalOverlay}>
+          <View style={styles.incompleteModalCard}>
+            <View style={styles.incompleteModalAccent} />
+
+            <View style={styles.incompleteIconWrap}>
+              <AlertCircle size={28} color={COLORS.danger} />
+            </View>
+
+            <Text style={styles.incompleteModalTitle}>Incomplete Form</Text>
+            <Text style={styles.incompleteModalSubtitle}>
+              Please fill all required fields before continuing.
+            </Text>
+
+            <View style={styles.incompleteErrorList}>
+              {errors.location ? (
+                <View style={styles.incompleteErrorRow}>
+                  <View style={styles.incompleteErrorDot} />
+                  <Text style={styles.incompleteErrorText}>
+                    {errors.location}
+                  </Text>
+                </View>
+              ) : null}
+              {errors.category ? (
+                <View style={styles.incompleteErrorRow}>
+                  <View style={styles.incompleteErrorDot} />
+                  <Text style={styles.incompleteErrorText}>
+                    {errors.category}
+                  </Text>
+                </View>
+              ) : null}
+              {errors.description ? (
+                <View style={styles.incompleteErrorRow}>
+                  <View style={styles.incompleteErrorDot} />
+                  <Text style={styles.incompleteErrorText}>
+                    {errors.description}
+                  </Text>
+                </View>
+              ) : null}
+            </View>
+
+            <TouchableOpacity
+              style={styles.incompleteModalButton}
+              activeOpacity={0.85}
+              onPress={() => setShowIncompleteModal(false)}
+            >
+              <LinearGradient
+                colors={[COLORS.primary, COLORS.primaryDark]}
+                style={styles.incompleteModalButtonGradient}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+              >
+                <Text style={styles.incompleteModalButtonText}>Got it</Text>
+              </LinearGradient>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
       <Modal
         visible={showCategoryModal}
         transparent
@@ -6105,9 +6270,7 @@ export default function CreateJobScreen() {
                   <Text
                     style={{
                       color:
-                        form.category === opt.value
-                          ? ACCENT_TEAL
-                          : COLORS.text,
+                        form.category === opt.value ? ACCENT_TEAL : COLORS.text,
                       fontSize: 16,
                     }}
                   >
@@ -6128,9 +6291,8 @@ export default function CreateJobScreen() {
 }
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: COLORS.background, paddingTop: 20 },
+  safeArea: { flex: 1, backgroundColor: COLORS.background, paddingTop: 30 },
   header: {
-    height: 60,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
@@ -6177,7 +6339,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   selectBox: {
-    height: 50,
+    height: 45,
     backgroundColor: CHIP_DARK,
     borderRadius: 10,
     flexDirection: "row",
@@ -6215,12 +6377,12 @@ const styles = StyleSheet.create({
     fontWeight: "500",
   },
   searchBarContainer: {
-    height: 44,
+    height: 40,
     backgroundColor: CHIP_DARK,
     borderRadius: 10,
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 14,
+    paddingHorizontal: 12,
     borderWidth: 1,
     borderColor: RAISED_BORDER,
   },
@@ -6228,8 +6390,8 @@ const styles = StyleSheet.create({
   suggestionRow: {
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: 12,
-    paddingHorizontal: 4,
+    paddingVertical: 8,
+    paddingHorizontal: 2,
     borderBottomWidth: 1,
     borderBottomColor: RAISED_BORDER,
   },
@@ -6242,7 +6404,7 @@ const styles = StyleSheet.create({
     height: 140,
     borderRadius: 12,
     overflow: "hidden",
-    marginTop: 10,
+    marginTop: 5,
     borderWidth: 1,
     borderColor: RAISED_BORDER,
   },
@@ -6258,7 +6420,7 @@ const styles = StyleSheet.create({
     backgroundColor: RAISED_BG,
     borderRadius: 10,
     padding: 4,
-    marginBottom: 14,
+    marginBottom: 8,
   },
   modeTabButton: {
     flex: 1,
@@ -6267,10 +6429,10 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   modeTabActive: { backgroundColor: COLORS.primary },
-  modeTabTxt: { color: TEXT_MUTED, fontSize: 13, fontWeight: "600" },
-  modeTabTxtActive: { color: '#fff', fontWeight: "800" },
+  modeTabTxt: { color: TEXT_MUTED, fontSize: 11, fontWeight: "600" },
+  modeTabTxtActive: { color: "#fff", fontWeight: "800" },
   calendarTriggerBtn: {
-    height: 46,
+    height: 40,
     backgroundColor: CHIP_DARK,
     borderRadius: 8,
     flexDirection: "row",
@@ -6390,7 +6552,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 8,
   },
-  primaryActionText: { color: '#ffff', fontSize: 12, fontWeight: "800" },
+  primaryActionText: { color: "#ffff", fontSize: 12, fontWeight: "800" },
   modalBackgroundOverlay: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.7)",
@@ -6543,11 +6705,11 @@ const styles = StyleSheet.create({
 
   toggleCard: {
     width: "100%",
-    borderRadius: 12,
+    borderRadius: 8,
     backgroundColor: CHIP_DARK,
     borderWidth: 1,
     borderColor: RAISED_BORDER,
-    paddingVertical: 10,
+    paddingVertical: 5,
     paddingHorizontal: 14,
   },
 
@@ -6564,7 +6726,7 @@ const styles = StyleSheet.create({
 
   toggleLabel: {
     flex: 1,
-    fontSize: 12,
+    fontSize: 11,
     color: COLORS.textSecondary,
     fontWeight: "600",
     lineHeight: 17,
@@ -6583,8 +6745,8 @@ const styles = StyleSheet.create({
     alignSelf: "flex-end",
   },
   toggleSwitch: {
-    width: 54,
-    height: 26,
+    width: 48,
+    height: 22,
     borderRadius: 14,
     flexDirection: "row",
     alignItems: "center",
@@ -6602,8 +6764,8 @@ const styles = StyleSheet.create({
   },
 
   toggleKnob: {
-    width: 20,
-    height: 20,
+    width: 19,
+    height: 19,
     borderRadius: 10,
     backgroundColor: COLORS.text,
     // soft shadow (optional)
@@ -6616,7 +6778,7 @@ const styles = StyleSheet.create({
 
   toggleSwitchTextYes: {
     color: COLORS.text,
-    fontSize: 11,
+    fontSize: 9,
     fontWeight: "800",
     marginLeft: 6,
     letterSpacing: 0.3,
@@ -6624,9 +6786,110 @@ const styles = StyleSheet.create({
 
   toggleSwitchTextNo: {
     color: COLORS.text,
-    fontSize: 11,
+    fontSize: 9,
     fontWeight: "800",
     marginRight: 6,
+    letterSpacing: 0.3,
+  },
+  required: { color: COLORS.danger },
+
+  // ── Incomplete Form Modal ──────────────────────────────────────────────
+  incompleteModalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.75)",
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 28,
+  },
+  incompleteModalCard: {
+    width: "100%",
+    maxWidth: 340,
+    backgroundColor: COLORS.card,
+    borderRadius: 20,
+    paddingTop: 0,
+    paddingBottom: 24,
+    paddingHorizontal: 22,
+    borderWidth: 1,
+    borderColor: COLORS.cardBorder,
+    overflow: "hidden",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.45,
+    shadowRadius: 24,
+    elevation: 16,
+  },
+  incompleteModalAccent: {
+    height: 4,
+    backgroundColor: COLORS.danger,
+    marginBottom: 22,
+  },
+  incompleteIconWrap: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: COLORS.dangerBg,
+    alignItems: "center",
+    justifyContent: "center",
+    alignSelf: "center",
+    marginBottom: 16,
+  },
+  incompleteModalTitle: {
+    color: COLORS.text,
+    fontSize: 18,
+    fontWeight: "800",
+    textAlign: "center",
+    marginBottom: 8,
+  },
+  incompleteModalSubtitle: {
+    color: COLORS.textSecondary,
+    fontSize: 13,
+    lineHeight: 19,
+    textAlign: "center",
+    marginBottom: 18,
+  },
+  incompleteErrorList: {
+    backgroundColor: RAISED_BG,
+    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    marginBottom: 22,
+    borderWidth: 1,
+    borderColor: RAISED_BORDER,
+    gap: 10,
+  },
+  incompleteErrorRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+  },
+  incompleteErrorDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: COLORS.danger,
+    marginTop: 6,
+    marginRight: 10,
+  },
+  incompleteErrorText: {
+    flex: 1,
+    color: COLORS.text,
+    fontSize: 13,
+    lineHeight: 18,
+    fontWeight: "500",
+  },
+  incompleteModalButton: {
+    height: 46,
+    borderRadius: 12,
+    overflow: "hidden",
+  },
+  incompleteModalButtonGradient: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  incompleteModalButtonText: {
+    color: "#FFFFFF",
+    fontSize: 15,
+    fontWeight: "800",
     letterSpacing: 0.3,
   },
 });

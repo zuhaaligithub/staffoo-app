@@ -11,6 +11,7 @@ import {
   StyleSheet,
   Image,
   ActivityIndicator,
+  Modal,
 } from "react-native";
 import {
   ArrowLeft,
@@ -63,6 +64,9 @@ export default function StaffInductionScreen({
   const [profileImage, setProfileImage] = useState<string | null>(null);
 
   const recentInduction = inductions[0];
+  const [modalVisible, setModalVisible] = useState(false);
+const [selectedInduction, setSelectedInduction] = useState<any>(null);
+const [isAlreadyCompleted, setIsAlreadyCompleted] = useState(false);
 
   useEffect(() => {
     loadUserAndInductions();
@@ -116,8 +120,9 @@ export default function StaffInductionScreen({
         if (imageUri) {
           const fullImage = imageUri.startsWith("http")
             ? imageUri
-            : //  : `https://apis.staffoo.com.au/storage/${imageUri}`;
-              `https://apis-staging.staffoo.com.au/storage/${imageUri}`;
+            :  `https://apis-staging.staffoo.com.au/storage/${imageUri}`; 
+            //  : `https://apis.staffoo.com.au/storage/${imageUri}`;
+              
           setProfileImage(fullImage);
         }
       }
@@ -205,31 +210,13 @@ export default function StaffInductionScreen({
     return parts[0][0].toUpperCase() + parts[parts.length - 1][0].toUpperCase();
   };
 
-  const handleStartInduction = (item: any) => {
-    if (isCompleted(item.status)) {
-      Alert.alert("Completed", "You have already passed this induction.");
-      return;
-    }
+ const handleStartInduction = (item: any) => {
+  const done = isCompleted(item.status);
 
-    const inductionTitle = capitalizeText(item.title || "Induction");
-
-    Alert.alert(
-      inductionTitle,
-      `This induction contains ${item.questions} ${
-        item.questions === 1 ? "question" : "questions"
-      }.\n\nReady to start?`,
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Start Now",
-          onPress: () =>
-            navigation.navigate("InductionQuestions", {
-              inductionId: item.id,
-            }),
-        },
-      ],
-    );
-  };
+  setSelectedInduction(item);
+  setIsAlreadyCompleted(done);
+  setModalVisible(true);
+};
   const renderInductionItem = ({ item }: { item: any }) => {
     const done = isCompleted(item.status);
 
@@ -466,7 +453,80 @@ export default function StaffInductionScreen({
             </Text>
           </View>
         )}
+        
       </ScrollView>
+{/* ── Compact Custom Modal ── */}
+<Modal
+  visible={modalVisible}
+  transparent
+  animationType="fade"
+  onRequestClose={() => setModalVisible(false)}
+>
+  <View style={styles.modalOverlay}>
+    <View style={styles.modalCard}>
+      {/* Icon */}
+      <View
+        style={[
+          styles.modalIconWrap,
+          {
+            backgroundColor: isAlreadyCompleted
+              ? "rgba(34,197,94,0.15)"
+              : "rgba(0,169,157,0.15)",
+          },
+        ]}
+      >
+        {isAlreadyCompleted ? (
+          <CheckCircle size={28} color="#22c55e" />
+        ) : (
+          <BookOpen size={28} color={COLORS.primary} />
+        )}
+      </View>
+
+      {/* Title */}
+      <Text style={styles.modalTitle}>
+        {isAlreadyCompleted
+          ? "Already Completed"
+          : capitalizeText(selectedInduction?.title || "Induction")}
+      </Text>
+
+      {/* Message */}
+      <Text style={styles.modalMessage}>
+        {isAlreadyCompleted
+          ? "You have already passed this induction."
+          : `This induction contains ${selectedInduction?.questions || 0} ${
+              selectedInduction?.questions === 1 ? "question" : "questions"
+            }.\nReady to start?`}
+      </Text>
+
+      {/* Buttons */}
+      <View style={styles.modalButtons}>
+        <TouchableOpacity
+          style={styles.modalCancelBtn}
+          onPress={() => setModalVisible(false)}
+          activeOpacity={0.8}
+        >
+          <Text style={styles.modalCancelText}>Cancel</Text>
+        </TouchableOpacity>
+
+        {!isAlreadyCompleted && (
+          <TouchableOpacity
+            style={styles.modalStartBtn}
+            onPress={() => {
+              setModalVisible(false);
+              navigation.navigate("InductionQuestions", {
+                inductionId: selectedInduction?.id,
+              });
+            }}
+            activeOpacity={0.85}
+          >
+            <Text style={styles.modalStartText}>Start Now</Text>
+          </TouchableOpacity>
+        )}
+      </View>
+    </View>
+  </View>
+</Modal>
+      
     </SafeAreaView>
   );
 }
@@ -984,4 +1044,73 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     fontSize: 14,
   },
+  modalOverlay: {
+  flex: 1,
+  backgroundColor: "rgba(0,0,0,0.75)",
+  justifyContent: "center",
+  alignItems: "center",
+  paddingHorizontal: 32,
+},
+modalCard: {
+  width: "100%",
+  maxWidth: 320,
+  backgroundColor: "#0D1421",
+  borderRadius: 20,
+  paddingVertical: 15,
+  paddingHorizontal: 20,
+  alignItems: "center",
+  borderWidth: 1,
+  borderColor: '#8a8787',
+},
+modalIconWrap: {
+  width: 46,
+  height: 46,
+  borderRadius: 14,
+  justifyContent: "center",
+  alignItems: "center",
+  marginBottom: 10,
+},
+modalTitle: {
+  fontSize: 17,
+  fontWeight: "800",
+  color: "#fff",
+  textAlign: "center",
+  marginBottom: 8,
+},
+modalMessage: {
+  fontSize: 14,
+  color: "#94A3B8",
+  textAlign: "center",
+  lineHeight: 20,
+  marginBottom: 22,
+},
+modalButtons: {
+  flexDirection: "row",
+  width: "100%",
+  gap: 10,
+},
+modalCancelBtn: {
+  flex: 1,
+  paddingVertical: 12,
+  borderRadius: 12,
+  backgroundColor: "rgba(255,255,255,0.08)",
+  alignItems: "center",
+},
+modalCancelText: {
+  color: "#94A3B8",
+  fontWeight: "700",
+  fontSize: 14,
+},
+modalStartBtn: {
+  flex: 1,
+  paddingVertical: 12,
+  borderRadius: 12,
+  backgroundColor: COLORS.primary,
+  alignItems: "center",
+},
+modalStartText: {
+  color: "#fff",
+  fontWeight: "800",
+  fontSize: 14,
+},
 });

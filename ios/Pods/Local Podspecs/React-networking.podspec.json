@@ -17,6 +17,7 @@
   "pod_target_xcconfig": {
     "CLANG_CXX_LANGUAGE_STANDARD": "c++20",
     "HEADER_SEARCH_PATHS": [
+      "\"$(PODS_TARGET_SRCROOT)/../..\"",
       "\"${PODS_CONFIGURATION_BUILD_DIR}/React-featureflags/React_featureflags.framework/Headers\"",
       "\"${PODS_CONFIGURATION_BUILD_DIR}/React-jsinspectornetwork/jsinspector_modernnetwork.framework/Headers\"",
       "\"${PODS_CONFIGURATION_BUILD_DIR}/React-jsinspectortracing/jsinspector_moderntracing.framework/Headers\"",
@@ -30,6 +31,8 @@
     ],
     "DEFINES_MODULE": "YES"
   },
+  "module_name": "React_networking",
+  "header_mappings_dir": "../..",
   "dependencies": {
     "React-featureflags": [],
     "React-jsinspectornetwork": [],

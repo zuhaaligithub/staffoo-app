@@ -18,6 +18,7 @@
   "pod_target_xcconfig": {
     "CLANG_CXX_LANGUAGE_STANDARD": "c++20",
     "HEADER_SEARCH_PATHS": [
+      "\"$(PODS_TARGET_SRCROOT)/../../..\"",
       "\"${PODS_CONFIGURATION_BUILD_DIR}/React-runtimeexecutor/React_runtimeexecutor.framework/Headers\"",
       "\"${PODS_CONFIGURATION_BUILD_DIR}/React-runtimeexecutor/React_runtimeexecutor.framework/Headers/platform/ios\"",
       "\"${PODS_CONFIGURATION_BUILD_DIR}/React-debug/React_debug.framework/Headers\"",
@@ -31,6 +32,8 @@
       "$(PODS_ROOT)/RCT-Folly"
     ]
   },
+  "module_name": "React_runtimescheduler",
+  "header_mappings_dir": "../../..",
   "dependencies": {
     "React-runtimeexecutor": [],
     "React-callinvoker": [],

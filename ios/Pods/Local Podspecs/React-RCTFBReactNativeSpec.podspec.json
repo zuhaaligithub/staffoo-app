@@ -38,6 +38,8 @@
       "$(PODS_ROOT)/RCT-Folly"
     ]
   },
+  "module_name": "React_RCTFBReactNativeSpec",
+  "header_mappings_dir": "FBReactNativeSpec",
   "dependencies": {
     "React-jsi": [],
     "RCTRequired": [],

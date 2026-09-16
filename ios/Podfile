@@ -16,21 +16,27 @@ setup_permissions([
   'PhotoLibrary',
 ])
 
-linkage = ENV['USE_FRAMEWORKS']
-if linkage != nil
-  Pod::UI.puts "Configuring Pod with #{linkage}ally linked Frameworks".green
-  use_frameworks! :linkage => linkage.to_sym
-end
+# Force static frameworks globally so both main app and extension match
+use_frameworks! :linkage => :static
+
+# Hoisted to top level so it's visible in both the target block and post_install
+config = use_native_modules!
 
 target 'STAFFO' do
-  config = use_native_modules!
+  # Pinned to explicit subspecs (instead of bare pod names) so CocoaPods
+  # doesn't create duplicate "default" vs "subspec" targets for the same
+  # pod when another dependency (AppAuth/GTMAppAuth) pulls a specific
+  # subspec transitively. That mismatch is what caused the
+  # "Multiple commands produce" archive errors.
+  pod 'GoogleUtilities/Environment', :modular_headers => true
+  pod 'GoogleUtilities/Logger', :modular_headers => true
+  pod 'GoogleUtilities/UserDefaults', :modular_headers => true
 
-pod 'GoogleUtilities', :modular_headers => true
   pod 'RecaptchaInterop', :modular_headers => true
   pod 'AppCheckCore', :modular_headers => true
   pod 'AppAuth', :modular_headers => true
   pod 'GTMAppAuth', :modular_headers => true
-  pod 'GTMSessionFetcher', :modular_headers => true
+  pod 'GTMSessionFetcher/Core', :modular_headers => true
 
   pod 'OneSignalXCFramework', '>= 5.0.0', '< 6.0'
 
@@ -40,23 +46,26 @@ pod 'GoogleUtilities', :modular_headers => true
     :new_arch_enabled => false,
     :hermes_enabled => true
   )
+end
 
-  target 'OneSignalNotificationServiceExtension' do
-    inherit! :search_paths
-    pod 'OneSignalXCFramework', '>= 5.0.0', '< 6.0'
-  end
+# Separate target for the extension (important)
+target 'OneSignalNotificationServiceExtension' do
+  pod 'OneSignalXCFramework/OneSignalExtension', '>= 5.0.0', '< 6.0'
+end
 
 post_install do |installer|
-    react_native_post_install(
-      installer,
-      config[:reactNativePath],
-      :mac_catalyst_enabled => false,
-    )
+  react_native_post_install(
+    installer,
+    config[:reactNativePath],
+    :mac_catalyst_enabled => false,
+  )
 
-    installer.pods_project.targets.each do |target|
-      target.build_configurations.each do |config|
-        config.build_settings['CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES'] = 'YES'
-      end
+  installer.pods_project.targets.each do |target|
+    target.build_configurations.each do |build_config|
+      build_config.build_settings['CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES'] = 'YES'
+      build_config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = min_ios_version_supported
+      build_config.build_settings['APPLICATION_EXTENSION_API_ONLY'] = 'NO'
+      build_config.build_settings['ENABLE_USER_SCRIPT_SANDBOXING'] = 'NO'
     end
   end
 end

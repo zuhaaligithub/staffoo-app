@@ -201,6 +201,9 @@ export default function ContractorRatesScreen() {
   const [finishedThisSession, setFinishedThisSession] = useState(false);
   const finishedHydratedRef = useRef(false);
 
+  const getFinishedKey = (uid: number | string | null) =>
+    uid ? `@contractor_rates_finished_${uid}` : null;
+
   // ----- Top tabs (Active Rates / Request History) -----
   const [topTab, setTopTab] = useState<TopTab>("active");
 
@@ -362,15 +365,22 @@ export default function ContractorRatesScreen() {
 
   useEffect(() => {
     (async () => {
-      const finishedFlag = await AsyncStorage.getItem(
-        "@contractor_rates_finished",
-      );
-      if (finishedFlag === "true") {
-        setFinishedThisSession(true);
-      }
-      finishedHydratedRef.current = true; // ← allow future persists
-
+      // 1. First load rates + profile (this also sets userId)
       const res = await fetchRates();
+
+      // 2. Now that we have the real user id, load the per-user flag
+      if (res?.uid) {
+        const key = getFinishedKey(res.uid);
+        if (key) {
+          const finishedFlag = await AsyncStorage.getItem(key);
+          if (finishedFlag === "true") {
+            setFinishedThisSession(true);
+          }
+        }
+      }
+
+      finishedHydratedRef.current = true;
+
       if (res) {
         fetchHistory(res.uid, res.token);
       } else {
@@ -388,12 +398,13 @@ export default function ContractorRatesScreen() {
   };
 
   useEffect(() => {
-    if (!finishedHydratedRef.current) return; // don't overwrite on first paint
-    AsyncStorage.setItem(
-      "@contractor_rates_finished",
-      finishedThisSession ? "true" : "false",
-    );
-  }, [finishedThisSession]);
+    if (!finishedHydratedRef.current || !userId) return;
+
+    const key = getFinishedKey(userId);
+    if (!key) return;
+
+    AsyncStorage.setItem(key, finishedThisSession ? "true" : "false");
+  }, [finishedThisSession, userId]);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -716,50 +727,46 @@ export default function ContractorRatesScreen() {
 
   // Opens the wizard for a single state — used by "Continue Draft" and
   // "Resubmit" actions. If the state is truly missing, force empty fields.
-  const openSingleStateModal = (code: string, clearRates = false) => {
-    const normalized = code.toLowerCase();
+ const openSingleStateModal = (code: string, clearRates = false) => {
+  const normalized = code.toLowerCase();
 
-    // If this is a truly missing state, always start with empty fields
-    if (!clearRates && getStateRateStatus(normalized) === "missing") {
-      clearRates = true;
-    }
+  if (!clearRates && getStateRateStatus(normalized) === "missing") {
+    clearRates = true;
+  }
 
-    const status = getStateRateStatus(normalized);
-    const isDraft = status === "draft";
+  const status = getStateRateStatus(normalized);
+  const isDraft = status === "draft";
 
-    // Include the clicked state + all other states that need attention
-    // This way user can update multiple states in one session
-    const allCodes = getAllowedStateCodes();
-    const attentionStates = allCodes.filter(
-      (c) => getStateRateStatus(c) !== "active",
-    );
+  // Get all allowed states
+  const allCodes = getAllowedStateCodes();
 
-    // Put the clicked state first, then other attention states
-    const statesToEdit = attentionStates.includes(normalized)
-      ? [normalized, ...attentionStates.filter((c) => c !== normalized)]
-      : [normalized, ...attentionStates];
+  // Put the clicked state first, then the rest
+  const statesToEdit = allCodes.includes(normalized)
+    ? [normalized, ...allCodes.filter((c) => c !== normalized)]
+    : [normalized, ...allCodes];
 
-    const initial = buildInitialRatesForCodes(statesToEdit);
-    if (clearRates) initial[normalized] = emptyRateForm();
+  const initial = buildInitialRatesForCodes(statesToEdit);
+  if (clearRates) {
+    initial[normalized] = emptyRateForm();
+  }
 
-    const statuses: Record<string, StateRateStatus> = {};
-    statesToEdit.forEach((code) => {
-      statuses[code] = getStateRateStatus(code);
-    });
+  const statuses: Record<string, StateRateStatus> = {};
+  statesToEdit.forEach((c) => {
+    statuses[c] = getStateRateStatus(c);
+  });
 
-    setStateRates(initial);
-    setOriginalStateRates(cloneRatesMap(initial));
-    setOriginalStateStatuses(statuses);
-    setWizardStates(statesToEdit);
+  setStateRates(initial);
+  setOriginalStateRates(cloneRatesMap(initial));
+  setOriginalStateStatuses(statuses);
+  setWizardStates(statesToEdit);
+  setWizardIndex(0);
 
-    // Start with the clicked state
-    const startIndex = statesToEdit.findIndex((c) => c === normalized);
-    setWizardIndex(Math.max(0, startIndex));
-
-    setAdminNotes("");
-    setModalMode(isDraft ? "draft" : "update");
-    setModalVisible(true);
-  };
+  setAdminNotes("");
+  setModalMode(isDraft ? "draft" : "update");
+  setIsSubmitMode(false);
+  setSubmitModeItem(null);
+  setModalVisible(true);
+};
 
   const openResubmitModal = (item: any) => {
     const code = String(item?.state || "").toLowerCase();
@@ -768,26 +775,61 @@ export default function ContractorRatesScreen() {
     // Prefill with the rejected request's rates (do NOT clear)
     openSingleStateModal(code, false);
   };
-  // Opens modal in submit-only mode (only shows Save & Submit, no draft option)
-  const openSubmitModal = (item: any) => {
-    const code = String(item?.state || "").toLowerCase();
-    if (!code) return;
+const openSubmitModal = (item: any) => {
+  const clickedCode = String(item?.state || "").toLowerCase();
+  if (!clickedCode) return;
 
-    // Use mapRecordToRateForm(item) to correctly prefill the existing saved rates from the draft history item!
-    const initial = {
-      [code]: mapRecordToRateForm(item),
-    };
+  // Get ALL draft states
+  const allDraftStates = historyList
+    .filter((h) => Number(h.is_submitted) === 0)
+    .map((h) => String(h.state || "").toLowerCase())
+    .filter(Boolean);
 
-    setStateRates(initial);
-    setOriginalStateRates(cloneRatesMap(initial));
-    setOriginalStateStatuses({ [code]: getStateRateStatus(code) });
-    setWizardStates([code]);
-    setWizardIndex(0);
-    setAdminNotes("");
-    setIsSubmitMode(true);
-    setSubmitModeItem(item);
-    setModalVisible(true);
-  };
+  // Remove duplicates
+  const uniqueDraftStates = [...new Set(allDraftStates)];
+
+  // Put the clicked state first, then the rest of the drafts
+  const statesToEdit = uniqueDraftStates.includes(clickedCode)
+    ? [clickedCode, ...uniqueDraftStates.filter((c) => c !== clickedCode)]
+    : [clickedCode, ...uniqueDraftStates];
+
+  // Build initial rates for all these draft states
+  const initial: Record<string, RateFormShape> = {};
+  statesToEdit.forEach((code) => {
+    const historyItem =
+      historyList.find(
+        (h) =>
+          String(h.state || "").toLowerCase() === code &&
+          Number(h.is_submitted) === 0,
+      ) || item;
+
+    initial[code] = mapRecordToRateForm(historyItem);
+  });
+
+  const statuses: Record<string, StateRateStatus> = {};
+  statesToEdit.forEach((code) => {
+    statuses[code] = "draft";
+  });
+
+  setStateRates(initial);
+  setOriginalStateRates(cloneRatesMap(initial));
+  setOriginalStateStatuses(statuses);
+  setWizardStates(statesToEdit);
+  setWizardIndex(0);
+
+  // Prefill notes from the clicked item
+  setAdminNotes(
+    item?.review_note ||
+      item?.notes ||
+      item?.admin_note ||
+      item?.admin_notes ||
+      "",
+  );
+
+  setIsSubmitMode(true);
+  setSubmitModeItem(item);
+  setModalVisible(true);
+};
 
   const activeWizardState = wizardStates[wizardIndex] || "";
   const isLastWizardState = wizardIndex === wizardStates.length - 1;
@@ -973,8 +1015,7 @@ export default function ContractorRatesScreen() {
       setAdminNotes("");
       setIsSubmitMode(false);
       setSubmitModeItem(null);
-      // Reset the finished flag so if rates become complete again, user can finish
-      setFinishedThisSession(false);
+      
 
       // Refetch from the API — this is the single source of truth for
       // whether a state is active / draft / pending / rejected.
@@ -1035,57 +1076,55 @@ export default function ContractorRatesScreen() {
   // ---------------------------------------------------------------
   const wasCompleteRef = useRef<boolean | null>(null);
 
-  useEffect(() => {
-    if (loading || historyLoading) {
-      setShowFinishCTA(false);
-      return;
-    }
+ useEffect(() => {
+  if (loading || historyLoading) {
+    setShowFinishCTA(false);
+    return;
+  }
 
-    const hasAllowedStates = allowedCodesForBadge.length > 0;
-    const hasRateRecords = ratesList.length > 0;
-    const ratesFullyComplete =
-      hasAllowedStates && hasRateRecords && allStatesComplete;
+  const hasAllowedStates = allowedCodesForBadge.length > 0;
+  const hasRateRecords = ratesList.length > 0;
+  const ratesFullyComplete =
+    hasAllowedStates && hasRateRecords && allStatesComplete;
 
-    if (!ratesFullyComplete) {
-      setFinishedThisSession(false);
-      setShowFinishCTA(false);
-      wasCompleteRef.current = false;
-      completeToastShownRef.current = false;
-      return;
-    }
+  // If rates are not complete → hide button and reset
+  if (!ratesFullyComplete) {
+    setShowFinishCTA(false);
+    wasCompleteRef.current = false;
+    return;
+  }
 
-    if (finishedThisSession) {
-      setShowFinishCTA(false);
-      wasCompleteRef.current = true;
-      return;
-    }
-
-    setShowFinishCTA(ratesFullyComplete);
-
-    // Rates just became complete this session → nudge the user with a
-    // toast and make sure they're looking at the Active Rates tab.
-    if (wasCompleteRef.current === false && !completeToastShownRef.current) {
-      completeToastShownRef.current = true;
-      setTopTab("active");
-      Toast.show({
-        type: "info",
-        text1: "Rates complete",
-        text2: "Please click on Finish to activate your profile.",
-        position: "top",
-        visibilityTime: 5000,
-      });
-    }
-
+  // If user already finished once → never show again
+  if (finishedThisSession) {
+    setShowFinishCTA(false);
     wasCompleteRef.current = true;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    loading,
-    historyLoading,
-    allStatesComplete,
-    allowedCodesForBadge.length,
-    ratesList.length,
-    finishedThisSession,
-  ]);
+    return;
+  }
+
+  // Show Finish button only the first time rates become complete
+  setShowFinishCTA(true);
+
+  if (wasCompleteRef.current === false && !completeToastShownRef.current) {
+    completeToastShownRef.current = true;
+    setTopTab("active");
+    Toast.show({
+      type: "info",
+      text1: "Rates complete",
+      text2: "Please click on Finish to activate your profile.",
+      position: "top",
+      visibilityTime: 5000,
+    });
+  }
+
+  wasCompleteRef.current = true;
+}, [
+  loading,
+  historyLoading,
+  allStatesComplete,
+  allowedCodesForBadge.length,
+  ratesList.length,
+  finishedThisSession,
+]);
 
   const handleFinishPress = () => {
     setFinishedThisSession(true); // triggers persist after hydration
@@ -2284,16 +2323,28 @@ export default function ContractorRatesScreen() {
               end={{ x: 1, y: 1 }}
               style={styles.viewModalHeader}
             >
-              <Text style={styles.viewModalTitle} numberOfLines={1}>
-                Requested Rates —{" "}
-                {getStateLabel(String(viewModalData?.state || ""))}
-              </Text>
-              <TouchableOpacity
-                onPress={() => setViewModalVisible(false)}
-                style={styles.viewModalCloseBtn}
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  width: "100%",
+                }}
               >
-                <X size={18} color="#fff" />
-              </TouchableOpacity>
+                <Text
+                  style={[styles.viewModalTitle, { flex: 1 }]}
+                  numberOfLines={1}
+                >
+                  Requested Rates —{" "}
+                  {getStateLabel(String(viewModalData?.state || ""))}
+                </Text>
+
+                <TouchableOpacity
+                  style={styles.viewModalCloseBtn}
+                  onPress={() => setViewModalVisible(false)}
+                >
+                  <X size={18} color="#fff" />
+                </TouchableOpacity>
+              </View>
             </LinearGradient>
 
             <ScrollView
@@ -2341,13 +2392,17 @@ export default function ContractorRatesScreen() {
                 </Text>
               </View>
 
-              {(viewModalData?.notes ||
+              {(viewModalData?.review_note ||
+                viewModalData?.notes ||
                 viewModalData?.admin_note ||
                 viewModalData?.admin_notes) && (
                 <View style={styles.viewModalNoteBox}>
-                  <Text style={styles.viewModalNoteLabel}>Admin Note</Text>
+                  <Text style={styles.viewModalNoteLabel}>
+                    Admin Review Note
+                  </Text>
                   <Text style={styles.viewModalNoteText}>
-                    {viewModalData?.notes ||
+                    {viewModalData?.review_note ||
+                      viewModalData?.notes ||
                       viewModalData?.admin_note ||
                       viewModalData?.admin_notes}
                   </Text>
@@ -2541,6 +2596,7 @@ const styles = StyleSheet.create({
   heroInner: {
     width: "100%",
     paddingHorizontal: 10,
+    paddingBottom: Platform.OS === "ios" ? 25 : 0, // prevents tabs from hiding on iOS
   },
 
   center: {
@@ -2801,7 +2857,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "700",
   },
-
+  viewModalTitleContainer: { padding: 0 },
   // ---- Draft / Pending / Rejected card action row ----
   stateCardActionRow: {
     flexDirection: "row",
@@ -2852,17 +2908,19 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "flex-start",
-    padding: 20,
   },
   modalTitle: {
     fontSize: 18,
     fontWeight: "800",
     color: "#fff",
     marginBottom: 2,
+    padding: 20,
   },
   modalSubtitle: {
     fontSize: 12,
     color: "rgba(255,255,255,0.7)",
+    marginLeft: 15,
+    marginBottom: 10,
   },
   closeBtn: {
     width: 32,
@@ -2871,6 +2929,8 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(255,255,255,0.15)",
     alignItems: "center",
     justifyContent: "center",
+    marginTop: 10,
+    marginRight: 10,
   },
   modalScroll: {
     flex: 1,
@@ -3224,22 +3284,6 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
 
-  viewModalTitle: {
-    flex: 1,
-    color: "#fff",
-    fontSize: 17,
-    fontWeight: "800",
-    marginRight: 10,
-  },
-  viewModalCloseBtn: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    backgroundColor: "rgba(255,255,255,0.18)",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-
   viewModalMetaRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -3366,13 +3410,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: COLORS.cardBorder,
   },
-  viewModalHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 18,
-    paddingVertical: 18,
-  },
+
   viewModalBody: {
     flexGrow: 1,
     flexShrink: 1,
@@ -3466,5 +3504,47 @@ const styles = StyleSheet.create({
 
   stateSegmentTextActive: {
     color: COLORS.primary,
+  },
+  viewModalHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    minHeight: Platform.OS === "ios" ? 106 : undefined,
+    position: Platform.OS === "ios" ? "relative" : undefined,
+  },
+
+  viewModalTitle: {
+    flex: 1,
+    color: "#fff",
+    fontSize: Platform.OS === "ios" ? 14 : 17,
+    fontWeight: "800",
+
+    marginRight: Platform.OS === "ios" ? 5 : 10,
+    paddingRight: Platform.OS === "ios" ? 50 : 0,
+  },
+
+  viewModalCloseBtn: {
+    ...(Platform.OS === "ios"
+      ? {
+          position: "absolute",
+          right: 26,
+          // top: 11,
+          width: 34,
+          height: 34,
+          borderRadius: 17,
+          backgroundColor: "rgba(255,255,255,0.25)",
+          alignItems: "center",
+          justifyContent: "center",
+          zIndex: 10,
+        }
+      : {
+          width: 30,
+          height: 30,
+          borderRadius: 15,
+          backgroundColor: "rgba(255,255,255,0.18)",
+          alignItems: "center",
+          justifyContent: "center",
+        }),
   },
 });

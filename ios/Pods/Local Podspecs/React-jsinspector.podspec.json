@@ -16,6 +16,7 @@
   "header_dir": "jsinspector-modern",
   "pod_target_xcconfig": {
     "HEADER_SEARCH_PATHS": [
+      "\"$(PODS_TARGET_SRCROOT)/..\"",
       "\"${PODS_CONFIGURATION_BUILD_DIR}/React-oscompat/React_oscompat.framework/Headers\"",
       "\"${PODS_CONFIGURATION_BUILD_DIR}/React-runtimeexecutor/React_runtimeexecutor.framework/Headers\"",
       "\"${PODS_CONFIGURATION_BUILD_DIR}/React-runtimeexecutor/React_runtimeexecutor.framework/Headers/platform/ios\"",
@@ -34,8 +35,10 @@
       "$(PODS_ROOT)/RCT-Folly"
     ],
     "CLANG_CXX_LANGUAGE_STANDARD": "c++20",
-    "DEFINES_MODULE": "YES"
+    "DEFINES_MODULE": "YES",
+    "PUBLIC_HEADERS_FOLDER_PATH": "jsinspector_modern.framework/Headers/jsinspector-modern"
   },
+  "module_name": "jsinspector_modern",
   "dependencies": {
     "React-oscompat": [],
     "React-featureflags": [],

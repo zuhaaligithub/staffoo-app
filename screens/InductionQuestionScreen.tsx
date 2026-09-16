@@ -1,3 +1,685 @@
+// import React, { useEffect, useState } from "react";
+// import {
+//   SafeAreaView,
+//   ScrollView,
+//   View,
+//   Text,
+//   TouchableOpacity,
+//   StyleSheet,
+//   Dimensions,
+//   Alert,
+//   StatusBar,
+//   ActivityIndicator,
+//   TextInput,
+// } from "react-native";
+// import { ChevronLeft, X, Check } from "lucide-react-native";
+// import AsyncStorage from "@react-native-async-storage/async-storage";
+// import { useRoute, useNavigation } from "@react-navigation/native";
+// import { BASE_URL } from "../services/authApi";
+
+// const { width } = Dimensions.get("window");
+
+// type Question = {
+//   question: string;
+//   type: string;
+//   answer: string;
+//   optiona?: string | null;
+//   optionb?: string | null;
+//   optionc?: string | null;
+//   optiond?: string | null;
+// };
+
+// type QuestionnaireItem = {
+//   id: number;
+//   questionnaire_id: number;
+//   title: string;
+//   questionnaire: Question[];
+//   status?: string;
+// };
+
+// type RouteParams = {
+//   inductionId: number | string;
+// };
+
+// export default function InductionQuestionsScreen() {
+//   const route = useRoute();
+//   const navigation = useNavigation();
+//   const { inductionId: routeInductionId } = route.params as RouteParams;
+//   const capitalizeFirstLetter = (text: string) => {
+//     if (!text) return "";
+//     return text.charAt(0).toUpperCase() + text.slice(1);
+//   };
+//   const [induction, setInduction] = useState<QuestionnaireItem | null>(null);
+//   const [questions, setQuestions] = useState<Question[]>([]);
+//   const [currentIndex, setCurrentIndex] = useState(0);
+//   const [selectedOption, setSelectedOption] = useState<number | null>(null);
+//   const [shortAnswer, setShortAnswer] = useState<string>("");
+//   const [userAnswers, setUserAnswers] = useState<any[]>([]);
+//   const [loading, setLoading] = useState(true);
+//   const [submitting, setSubmitting] = useState(false);
+//   const [error, setError] = useState<string | null>(null);
+//   const [userId, setUserId] = useState<string | null>(null);
+//   const [questionnaireId, setQuestionnaireId] = useState<number | null>(null);
+
+//   const currentQuestion = questions[currentIndex];
+//   const progress =
+//     questions.length > 0 ? ((currentIndex + 1) / questions.length) * 100 : 0;
+
+//   const COLORS = {
+//     primary: "#89E7D0",
+//     background: "#001F3F",
+//     surface2: "#12243A",
+//     card: "rgba(255,255,255,0.06)",
+//     cardBorder: "rgba(255,255,255,0.08)",
+//     text: "#FFFFFF",
+//     textSecondary: "rgba(255,255,255,0.7)",
+//     textMuted: "rgba(255,255,255,0.5)",
+//     success: "#22C55E",
+//     danger: "#EF4444",
+//     border: "rgba(255,255,255,0.08)",
+//   };
+
+//   useEffect(() => {
+//     loadUserAndFetchQuestions();
+//   }, [routeInductionId]);
+
+//   const loadUserAndFetchQuestions = async () => {
+//     try {
+//       setLoading(true);
+//       setError(null);
+
+//       const cachedUser = await AsyncStorage.getItem("user");
+//       if (!cachedUser) {
+//         setError("User session not found. Please login again.");
+//         return;
+//       }
+
+//       const parsedUser = JSON.parse(cachedUser);
+//       const uid =
+//         parsedUser?.id || parsedUser?.user?.id || parsedUser?.guard_id;
+
+//       if (!uid) {
+//         setError("User ID not found in session");
+//         return;
+//       }
+
+//       setUserId(uid);
+//       await fetchInductionQuestions(uid);
+//     } catch (err) {
+//       console.error("Error loading user:", err);
+//       setError("Failed to load user data");
+//     } finally {
+//       setLoading(false);
+//     }
+//   };
+
+//   const fetchInductionQuestions = async (currentUserId: string) => {
+//     try {
+//       const token = await AsyncStorage.getItem("@auth_token");
+//       if (!token) {
+//         Alert.alert("Session Expired", "Please login again");
+//         return;
+//       }
+
+//       console.log(`Fetching: ${BASE_URL}/get-questionnaire/${currentUserId}`);
+
+//       const response = await fetch(
+//         `${BASE_URL}/get-questionnaire/${currentUserId}`,
+//         {
+//           method: "GET",
+//           headers: {
+//             Authorization: `Bearer ${token}`,
+//             Accept: "application/json",
+//           },
+//         },
+//       );
+
+//       const data = await response.json();
+//       console.log("📦 API Response:", JSON.stringify(data, null, 2));
+
+//       if (
+//         !data.success ||
+//         !Array.isArray(data.data) ||
+//         data.data.length === 0
+//       ) {
+//         setError("No questionnaires found");
+//         return;
+//       }
+
+//       const selectedInduction = data.data.find(
+//         (item: any) =>
+//           item.id === Number(routeInductionId) ||
+//           item.questionnaire_id === Number(routeInductionId),
+//       );
+
+//       if (!selectedInduction?.questionnaire?.length) {
+//         setError("Selected questionnaire not found or has no questions");
+//         return;
+//       }
+
+//       setInduction(selectedInduction);
+//       setQuestions(selectedInduction.questionnaire);
+//       setQuestionnaireId(selectedInduction.questionnaire_id); // 1
+
+//       const initialAnswers = selectedInduction.questionnaire.map(() => ({
+//         selectedOption: null,
+//         shortAnswer: "",
+//       }));
+//       setUserAnswers(initialAnswers);
+//     } catch (err) {
+//       console.error("❌ Fetch Error:", err);
+//       setError("Failed to load questions. Please try again.");
+//     }
+//   };
+
+//   const getOptions = (q: Question) => {
+//     if (
+//       q.type?.toLowerCase().includes("true") ||
+//       q.type?.toLowerCase().includes("false")
+//     ) {
+//       return [
+//         { label: "True", value: "1" },
+//         { label: "False", value: "2" },
+//       ];
+//     }
+//     const opts: { label: string; value: string }[] = [];
+//     if (q.optiona) opts.push({ label: q.optiona, value: "1" });
+//     if (q.optionb) opts.push({ label: q.optionb, value: "2" });
+//     if (q.optionc) opts.push({ label: q.optionc, value: "3" });
+//     if (q.optiond) opts.push({ label: q.optiond, value: "4" });
+//     return opts;
+//   };
+
+//   const handleSelect = (index: number) => {
+//     setSelectedOption(index);
+//     const updated = [...userAnswers];
+//     updated[currentIndex] = { ...updated[currentIndex], selectedOption: index };
+//     setUserAnswers(updated);
+//   };
+
+//   const handleShortAnswerChange = (text: string) => {
+//     setShortAnswer(text);
+//     const updated = [...userAnswers];
+//     updated[currentIndex] = { ...updated[currentIndex], shortAnswer: text };
+//     setUserAnswers(updated);
+//   };
+
+//   const calculateMarks = (): number => {
+//     let correctCount = 0;
+//     let totalGradedQuestions = 0;
+
+//     questions.forEach((question, index) => {
+//       if (question.type === "MCQs" || question.type === "True/False") {
+//         totalGradedQuestions++;
+//         const userAnswer = userAnswers[index];
+//         const correctAnswerIndex = parseInt(question.answer) - 1;
+//         if (userAnswer?.selectedOption === correctAnswerIndex) {
+//           correctCount++;
+//         }
+//       }
+//     });
+
+//     const percentage =
+//       totalGradedQuestions > 0
+//         ? (correctCount / totalGradedQuestions) * 100
+//         : 0;
+//     return Math.round(percentage);
+//   };
+
+//   const submitInduction = async () => {
+//     if (!userId) {
+//       Alert.alert("Error", "User ID not found");
+//       return;
+//     }
+
+//     try {
+//       setSubmitting(true);
+//       const token = await AsyncStorage.getItem("@auth_token");
+//       if (!token) {
+//         Alert.alert("Session Expired", "Please login again");
+//         return;
+//       }
+
+//       const marks = calculateMarks();
+
+//       // Submit API - Send inductionId (4) as requested
+//       const submitFormData = new FormData();
+//       submitFormData.append("guard_id", userId);
+//       submitFormData.append("marks", marks.toString());
+//       submitFormData.append("questionnaire_id", routeInductionId.toString()); // ← 4
+
+//       console.log("=== SUBMIT PAYLOAD ===", {
+//         guard_id: userId,
+//         marks: marks,
+//         questionnaire_id: routeInductionId,
+//       });
+
+//       const submitResponse = await fetch(
+//         `${BASE_URL}/submit-guard-questionnaire`,
+//         {
+//           method: "POST",
+//           headers: {
+//             Authorization: `Bearer ${token}`,
+//             Accept: "application/json",
+//           },
+//           body: submitFormData,
+//         },
+//       );
+
+//       const submitData = await submitResponse.json();
+//       console.log(
+//         "=== SUBMIT RESPONSE ===",
+//         JSON.stringify(submitData, null, 2),
+//       );
+
+//       if (submitData.success) {
+//         // Update Status - Send real questionnaire_id (1)
+//         const statusFormData = new FormData();
+//         statusFormData.append("guard_id", userId);
+//         statusFormData.append("id", questionnaireId?.toString() || "1");
+
+//         console.log("=== UPDATE STATUS PAYLOAD ===", {
+//           guard_id: userId,
+//           id: questionnaireId,
+//         });
+
+//         const statusResponse = await fetch(
+//           `${BASE_URL}/update-induction-read-status`,
+//           {
+//             method: "POST",
+//             headers: {
+//               Authorization: `Bearer ${token}`,
+//               Accept: "application/json",
+//             },
+//             body: statusFormData,
+//           },
+//         );
+
+//         const statusData = await statusResponse.json();
+//         console.log(
+//           "=== UPDATE STATUS RESPONSE ===",
+//           JSON.stringify(statusData, null, 2),
+//         );
+
+//         if (marks > 80) {
+//           Alert.alert(
+//             "🎉 Congratulations!",
+//             "Induction certificate submitted successfully!",
+//             [{ text: "Done", onPress: () => navigation.goBack() }],
+//           );
+//         } else {
+//           Alert.alert(
+//             "⚠️ Not Eligible",
+//             "You are not eligible for the induction card. Please re-attempt the test again!",
+//             [{ text: "Retry", onPress: () => navigation.goBack() }],
+//           );
+//         }
+//       } else {
+//         Alert.alert("Error", submitData.message || "Submission failed");
+//       }
+//     } catch (err) {
+//       console.error("❌ Submission Error:", err);
+//       Alert.alert("Error", "Failed to submit induction");
+//     } finally {
+//       setSubmitting(false);
+//     }
+//   };
+//   const capitalizeText = (text: string = "") => {
+//     return text
+//       .toLowerCase()
+//       .split(" ")
+//       .filter(Boolean)
+//       .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+//       .join(" ");
+//   };
+//   const capitalizeSentence = (text: string = "") => {
+//     if (!text) return "";
+//     return text.charAt(0).toUpperCase() + text.slice(1).toLowerCase();
+//   };
+//   const handleNext = () => {
+//     if (currentQuestion.type === "Short Question") {
+//       if (!shortAnswer.trim()) {
+//         Alert.alert("Required", "Please enter your answer");
+//         return;
+//       }
+//     } else {
+//       if (selectedOption === null) {
+//         Alert.alert("Required", "Please select an option");
+//         return;
+//       }
+//     }
+
+//     if (currentIndex < questions.length - 1) {
+//       setCurrentIndex((prev) => prev + 1);
+//       const nextAnswer = userAnswers[currentIndex + 1];
+//       setSelectedOption(nextAnswer?.selectedOption ?? null);
+//       setShortAnswer(nextAnswer?.shortAnswer ?? "");
+//     } else {
+//       submitInduction();
+//     }
+//   };
+
+//   if (loading) {
+//     return (
+//       <SafeAreaView style={styles.container}>
+//         <View
+//           style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
+//         >
+//           <ActivityIndicator size="large" color={COLORS.primary} />
+//           <Text style={{ marginTop: 12, color: COLORS.text }}>
+//             Loading Questions...
+//           </Text>
+//         </View>
+//       </SafeAreaView>
+//     );
+//   }
+
+//   if (error || questions.length === 0) {
+//     return (
+//       <SafeAreaView style={styles.container}>
+//         <View
+//           style={{
+//             flex: 1,
+//             justifyContent: "center",
+//             alignItems: "center",
+//             padding: 20,
+//           }}
+//         >
+//           <Text style={{ fontSize: 18, color: "red", textAlign: "center" }}>
+//             {error || "No questions available"}
+//           </Text>
+//           <TouchableOpacity
+//             style={styles.nextButton}
+//             onPress={() => navigation.goBack()}
+//           >
+//             <Text style={styles.nextButtonText}>Go Back</Text>
+//           </TouchableOpacity>
+//         </View>
+//       </SafeAreaView>
+//     );
+//   }
+
+//   const isShortQuestion = currentQuestion.type === "Short Question";
+//   const options = !isShortQuestion ? getOptions(currentQuestion) : [];
+
+//   return (
+//     <SafeAreaView style={styles.container}>
+//       <StatusBar barStyle="light-content" backgroundColor={COLORS.background} />
+
+//       <View style={styles.header}>
+//         <View style={styles.headerRow}>
+//           <TouchableOpacity
+//             onPress={() => navigation.goBack()}
+//             style={styles.iconButton}
+//           >
+//             <ChevronLeft size={24} color={COLORS.text} />
+//           </TouchableOpacity>
+//           <Text style={styles.questionCounter}>
+//             Question {currentIndex + 1} / {questions.length}
+//           </Text>
+//           <TouchableOpacity
+//             onPress={() => navigation.goBack()}
+//             style={styles.iconButton}
+//           >
+//             <X size={24} color={COLORS.text} />
+//           </TouchableOpacity>
+//         </View>
+//         <View style={styles.progressContainer}>
+//           <View style={[styles.progressBar, { width: `${progress}%` }]} />
+//         </View>
+//       </View>
+
+//       <ScrollView contentContainerStyle={styles.scrollContent}>
+//         <Text style={styles.inductionTitle}>
+//           {capitalizeText(induction?.title || "")}
+//         </Text>
+
+//         <View style={styles.questionCard}>
+//           <Text style={styles.questionText}>
+//             {capitalizeSentence(currentQuestion.question)}
+//           </Text>
+//           <View style={styles.questionTypeBadge}>
+//             <Text style={styles.questionTypeText}>{currentQuestion.type}</Text>
+//           </View>
+//         </View>
+
+//         {isShortQuestion ? (
+//           <View style={styles.shortAnswerContainer}>
+//             <TextInput
+//               style={styles.shortAnswerInput}
+//               placeholder="Type your answer here..."
+//               placeholderTextColor="#94a3b8"
+//               multiline
+//               numberOfLines={4}
+//               value={shortAnswer}
+//               onChangeText={handleShortAnswerChange}
+//             />
+//           </View>
+//         ) : (
+//           <View style={styles.optionsContainer}>
+//             {options.map((option, index) => (
+//               <TouchableOpacity
+//                 key={index}
+//                 style={[
+//                   styles.optionButton,
+//                   selectedOption === index && styles.selectedOption,
+//                 ]}
+//                 onPress={() => handleSelect(index)}
+//               >
+//                 <View style={styles.optionContent}>
+//                   <View style={styles.checkbox}>
+//                     {selectedOption === index ? (
+//                       <View style={styles.checkedBox}>
+//                         <Check size={18} color="#fff" strokeWidth={3} />
+//                       </View>
+//                     ) : (
+//                       <View style={styles.emptyCheckbox} />
+//                     )}
+//                   </View>
+//                   <Text
+//                     style={[
+//                       styles.optionText,
+//                       selectedOption === index && styles.selectedOptionText,
+//                     ]}
+//                   >
+//                     {capitalizeFirstLetter(option.label)}
+//                   </Text>
+//                 </View>
+//               </TouchableOpacity>
+//             ))}
+//           </View>
+//         )}
+//       </ScrollView>
+
+//       <View style={styles.footer}>
+//         <TouchableOpacity
+//           style={[
+//             styles.nextButton,
+//             (isShortQuestion ? !shortAnswer.trim() : selectedOption === null) &&
+//               styles.disabledButton,
+//           ]}
+//           onPress={handleNext}
+//           disabled={
+//             submitting ||
+//             (isShortQuestion ? !shortAnswer.trim() : selectedOption === null)
+//           }
+//         >
+//           {submitting ? (
+//             <ActivityIndicator color="#fff" />
+//           ) : (
+//             <Text style={styles.nextButtonText}>
+//               {currentIndex === questions.length - 1
+//                 ? "Finish Induction"
+//                 : "Next Question"}
+//             </Text>
+//           )}
+//         </TouchableOpacity>
+//       </View>
+//     </SafeAreaView>
+//   );
+// }
+
+// const styles = StyleSheet.create({
+//   container: {
+//     flex: 1,
+//     backgroundColor: "#030508",
+//     paddingTop: 30,
+
+//   },
+//   header: {
+//     paddingBottom: 15,
+//     paddingHorizontal: 20,
+//     backgroundColor: "#12243A",
+//     borderBottomLeftRadius: 20,
+//     borderBottomRightRadius: 20,
+//     marginHorizontal: 10,
+//     paddingTop: 7,
+//     borderWidth: 1,
+//     borderColor: "rgba(255,255,255,0.08)",
+//   },
+//   headerRow: {
+//     flexDirection: "row",
+//     alignItems: "center",
+//     justifyContent: "space-between",
+//     marginBottom: 10,
+//   },
+//   iconButton: { padding: 4 },
+//   questionCounter: {
+//     color: "#FFFFFF",
+//     fontSize: 14,
+//     fontWeight: "700",
+//   },
+//   progressContainer: {
+//     height: 8,
+//     backgroundColor: "rgba(255,255,255,0.08)",
+//     borderRadius: 4,
+//     overflow: "hidden",
+//   },
+//   progressBar: {
+//     height: "100%",
+//     backgroundColor: "#89E7D0",
+//     borderRadius: 4,
+//   },
+//   inductionTitle: {
+//     fontSize: 22,
+//     fontWeight: "700",
+//     color: "#FFFFFF",
+//     textAlign: "center",
+//     marginVertical: 10,
+//   },
+//   scrollContent: {
+//     flexGrow: 1,
+//     padding: 20,
+//     paddingBottom: 120,
+//   },
+//   questionCard: {
+//     backgroundColor: "rgba(255,255,255,0.06)",
+//     borderRadius: 16,
+//     padding: 12,
+//     marginBottom: 24,
+//     borderWidth: 1,
+//     borderColor: "rgba(255,255,255,0.08)",
+//   },
+//   questionText: {
+//     fontSize: 16,
+//     lineHeight: 20,
+//     color: "#FFFFFF",
+//     fontWeight: "600",
+//   },
+//   questionTypeBadge: {
+//     backgroundColor: "rgba(137,231,208,0.15)",
+//     paddingHorizontal: 12,
+//     paddingVertical: 6,
+//     borderRadius: 10,
+//     alignSelf: "flex-start",
+//     marginTop: 14,
+//     borderWidth: 1,
+//     borderColor: "rgba(137,231,208,0.25)",
+//   },
+//   questionTypeText: {
+//     color: "#89E7D0",
+//     fontSize: 12,
+//     fontWeight: "700",
+//   },
+//   shortAnswerContainer: { marginBottom: 20 },
+//   shortAnswerInput: {
+//     backgroundColor: "rgba(255,255,255,0.06)",
+//     borderRadius: 18,
+//     padding: 18,
+//     fontSize: 16,
+//     color: "#FFFFFF",
+//     borderWidth: 1,
+//     borderColor: "rgba(255,255,255,0.08)",
+//     minHeight: 140,
+//     textAlignVertical: "top",
+//   },
+//   optionsContainer: { gap: 14 },
+//   optionButton: {
+//     backgroundColor: "rgba(255,255,255,0.06)",
+//     borderRadius: 50,
+//     padding: 10,
+//     borderWidth: 1,
+//     borderColor: "rgba(255,255,255,0.08)",
+//   },
+//   selectedOption: {
+//     borderColor: "#89E7D0",
+//     backgroundColor: "rgba(137,231,208,0.12)",
+//   },
+//   optionContent: {
+//     flexDirection: "row",
+//     alignItems: "center",
+//   },
+//   checkbox: { marginRight: 16 },
+//   emptyCheckbox: {
+//     width: 26,
+//     height: 26,
+//     borderRadius: 13,
+//     borderWidth: 2,
+//     borderColor: "rgba(255,255,255,0.5)",
+//   },
+//   checkedBox: {
+//     width: 26,
+//     height: 26,
+//     borderRadius: 13,
+//     backgroundColor: "#89E7D0",
+//     alignItems: "center",
+//     justifyContent: "center",
+//   },
+//   optionText: {
+//     fontSize: 14,
+//     color: "rgba(255,255,255,0.7)",
+//     flex: 1,
+//     lineHeight: 24,
+//   },
+//   selectedOptionText: {
+//     color: "#FFFFFF",
+//     fontWeight: "700",
+//   },
+//   footer: {
+//     position: "absolute",
+//     bottom: 0,
+//     left: 0,
+//     right: 0,
+//     backgroundColor: "#12243A",
+//     padding: 18,
+//     borderTopWidth: 1,
+//     borderTopColor: "rgba(255,255,255,0.08)",
+//   },
+//   nextButton: {
+//     backgroundColor: "#89E7D0",
+//     paddingVertical: 14,
+//     borderRadius: 18,
+//     alignItems: "center",
+//   },
+//   disabledButton: {
+//     backgroundColor: "rgba(255,255,255,0.2)",
+//   },
+//   nextButtonText: {
+//     color: "#001F3F",
+//     fontSize: 18,
+//     fontWeight: "700",
+//   },
+// });
 import React, { useEffect, useState } from "react";
 import {
   SafeAreaView,
@@ -7,12 +689,12 @@ import {
   TouchableOpacity,
   StyleSheet,
   Dimensions,
-  Alert,
   StatusBar,
   ActivityIndicator,
   TextInput,
+  Modal,
 } from "react-native";
-import { ChevronLeft, X, Check } from "lucide-react-native";
+import { ChevronLeft, X, Check, HelpCircle } from "lucide-react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRoute, useNavigation } from "@react-navigation/native";
 import { BASE_URL } from "../services/authApi";
@@ -41,19 +723,31 @@ type RouteParams = {
   inductionId: number | string;
 };
 
+const COLORS = {
+  background: "#030508",
+  surface: "#0A121C",
+  card: "#0D1421",
+  primary: "#00A99D",
+  primaryLight: "rgba(0,169,157,0.15)",
+  primaryBorder: "rgba(0,169,157,0.35)",
+  text: "#FFFFFF",
+  textSecondary: "#94A3B8",
+  textMuted: "#64748B",
+  success: "#22C55E",
+  danger: "#EF4444",
+  border: "rgba(255,255,255,0.08)",
+};
+
 export default function InductionQuestionsScreen() {
   const route = useRoute();
   const navigation = useNavigation();
   const { inductionId: routeInductionId } = route.params as RouteParams;
-  const capitalizeFirstLetter = (text: string) => {
-    if (!text) return "";
-    return text.charAt(0).toUpperCase() + text.slice(1);
-  };
+
   const [induction, setInduction] = useState<QuestionnaireItem | null>(null);
   const [questions, setQuestions] = useState<Question[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedOption, setSelectedOption] = useState<number | null>(null);
-  const [shortAnswer, setShortAnswer] = useState<string>("");
+  const [shortAnswer, setShortAnswer] = useState("");
   const [userAnswers, setUserAnswers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -61,22 +755,30 @@ export default function InductionQuestionsScreen() {
   const [userId, setUserId] = useState<string | null>(null);
   const [questionnaireId, setQuestionnaireId] = useState<number | null>(null);
 
+  // Custom modal states
+  const [alertVisible, setAlertVisible] = useState(false);
+  const [alertTitle, setAlertTitle] = useState("");
+  const [alertMessage, setAlertMessage] = useState("");
+  const [alertType, setAlertType] = useState<"info" | "success" | "error">(
+    "info",
+  );
+  const [alertAction, setAlertAction] = useState<(() => void) | null>(null);
+
   const currentQuestion = questions[currentIndex];
   const progress =
     questions.length > 0 ? ((currentIndex + 1) / questions.length) * 100 : 0;
 
-  const COLORS = {
-    primary: "#89E7D0",
-    background: "#001F3F",
-    surface2: "#12243A",
-    card: "rgba(255,255,255,0.06)",
-    cardBorder: "rgba(255,255,255,0.08)",
-    text: "#FFFFFF",
-    textSecondary: "rgba(255,255,255,0.7)",
-    textMuted: "rgba(255,255,255,0.5)",
-    success: "#22C55E",
-    danger: "#EF4444",
-    border: "rgba(255,255,255,0.08)",
+  const showAlert = (
+    title: string,
+    message: string,
+    type: "info" | "success" | "error" = "info",
+    onPress?: () => void,
+  ) => {
+    setAlertTitle(title);
+    setAlertMessage(message);
+    setAlertType(type);
+    setAlertAction(() => onPress || null);
+    setAlertVisible(true);
   };
 
   useEffect(() => {
@@ -117,11 +819,9 @@ export default function InductionQuestionsScreen() {
     try {
       const token = await AsyncStorage.getItem("@auth_token");
       if (!token) {
-        Alert.alert("Session Expired", "Please login again");
+        showAlert("Session Expired", "Please login again", "error");
         return;
       }
-
-      console.log(`Fetching: ${BASE_URL}/get-questionnaire/${currentUserId}`);
 
       const response = await fetch(
         `${BASE_URL}/get-questionnaire/${currentUserId}`,
@@ -135,7 +835,6 @@ export default function InductionQuestionsScreen() {
       );
 
       const data = await response.json();
-      console.log("📦 API Response:", JSON.stringify(data, null, 2));
 
       if (
         !data.success ||
@@ -159,7 +858,7 @@ export default function InductionQuestionsScreen() {
 
       setInduction(selectedInduction);
       setQuestions(selectedInduction.questionnaire);
-      setQuestionnaireId(selectedInduction.questionnaire_id); // 1
+      setQuestionnaireId(selectedInduction.questionnaire_id);
 
       const initialAnswers = selectedInduction.questionnaire.map(() => ({
         selectedOption: null,
@@ -167,7 +866,7 @@ export default function InductionQuestionsScreen() {
       }));
       setUserAnswers(initialAnswers);
     } catch (err) {
-      console.error("❌ Fetch Error:", err);
+      console.error("Fetch Error:", err);
       setError("Failed to load questions. Please try again.");
     }
   };
@@ -228,7 +927,7 @@ export default function InductionQuestionsScreen() {
 
   const submitInduction = async () => {
     if (!userId) {
-      Alert.alert("Error", "User ID not found");
+      showAlert("Error", "User ID not found", "error");
       return;
     }
 
@@ -236,23 +935,16 @@ export default function InductionQuestionsScreen() {
       setSubmitting(true);
       const token = await AsyncStorage.getItem("@auth_token");
       if (!token) {
-        Alert.alert("Session Expired", "Please login again");
+        showAlert("Session Expired", "Please login again", "error");
         return;
       }
 
       const marks = calculateMarks();
 
-      // Submit API - Send inductionId (4) as requested
       const submitFormData = new FormData();
       submitFormData.append("guard_id", userId);
       submitFormData.append("marks", marks.toString());
-      submitFormData.append("questionnaire_id", routeInductionId.toString()); // ← 4
-
-      console.log("=== SUBMIT PAYLOAD ===", {
-        guard_id: userId,
-        marks: marks,
-        questionnaire_id: routeInductionId,
-      });
+      submitFormData.append("questionnaire_id", routeInductionId.toString());
 
       const submitResponse = await fetch(
         `${BASE_URL}/submit-guard-questionnaire`,
@@ -267,84 +959,69 @@ export default function InductionQuestionsScreen() {
       );
 
       const submitData = await submitResponse.json();
-      console.log(
-        "=== SUBMIT RESPONSE ===",
-        JSON.stringify(submitData, null, 2),
-      );
 
       if (submitData.success) {
-        // Update Status - Send real questionnaire_id (1)
         const statusFormData = new FormData();
         statusFormData.append("guard_id", userId);
         statusFormData.append("id", questionnaireId?.toString() || "1");
 
-        console.log("=== UPDATE STATUS PAYLOAD ===", {
-          guard_id: userId,
-          id: questionnaireId,
+        await fetch(`${BASE_URL}/update-induction-read-status`, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            Accept: "application/json",
+          },
+          body: statusFormData,
         });
 
-        const statusResponse = await fetch(
-          `${BASE_URL}/update-induction-read-status`,
-          {
-            method: "POST",
-            headers: {
-              Authorization: `Bearer ${token}`,
-              Accept: "application/json",
-            },
-            body: statusFormData,
-          },
-        );
-
-        const statusData = await statusResponse.json();
-        console.log(
-          "=== UPDATE STATUS RESPONSE ===",
-          JSON.stringify(statusData, null, 2),
-        );
-
         if (marks > 80) {
-          Alert.alert(
-            "🎉 Congratulations!",
-            "Induction certificate submitted successfully!",
-            [{ text: "Done", onPress: () => navigation.goBack() }],
+          showAlert(
+            "Congratulations!",
+            "Induction completed successfully!",
+            "success",
+            () => navigation.goBack(),
           );
         } else {
-          Alert.alert(
-            "⚠️ Not Eligible",
-            "You are not eligible for the induction card. Please re-attempt the test again!",
-            [{ text: "Retry", onPress: () => navigation.goBack() }],
+          showAlert(
+            "Not Eligible",
+            "You scored below 80%. Please re-attempt the induction.",
+            "error",
+            () => navigation.goBack(),
           );
         }
       } else {
-        Alert.alert("Error", submitData.message || "Submission failed");
+        showAlert("Error", submitData.message || "Submission failed", "error");
       }
     } catch (err) {
-      console.error("❌ Submission Error:", err);
-      Alert.alert("Error", "Failed to submit induction");
+      console.error("Submission Error:", err);
+      showAlert("Error", "Failed to submit induction", "error");
     } finally {
       setSubmitting(false);
     }
   };
-  const capitalizeText = (text: string = "") => {
-    return text
+
+  const capitalizeText = (text: string = "") =>
+    text
       .toLowerCase()
       .split(" ")
       .filter(Boolean)
       .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
       .join(" ");
-  };
+
   const capitalizeSentence = (text: string = "") => {
     if (!text) return "";
-    return text.charAt(0).toUpperCase() + text.slice(1).toLowerCase();
+    return text.charAt(0).toUpperCase() + text.slice(1);
   };
+
   const handleNext = () => {
     if (currentQuestion.type === "Short Question") {
       if (!shortAnswer.trim()) {
-        Alert.alert("Required", "Please enter your answer");
+        showAlert("Required", "Please enter your answer", "info");
         return;
       }
     } else {
       if (selectedOption === null) {
-        Alert.alert("Required", "Please select an option");
+        showAlert("Required", "Please select an option", "info");
         return;
       }
     }
@@ -362,13 +1039,9 @@ export default function InductionQuestionsScreen() {
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
-        <View
-          style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
-        >
+        <View style={styles.center}>
           <ActivityIndicator size="large" color={COLORS.primary} />
-          <Text style={{ marginTop: 12, color: COLORS.text }}>
-            Loading Questions...
-          </Text>
+          <Text style={styles.loadingText}>Loading Questions...</Text>
         </View>
       </SafeAreaView>
     );
@@ -377,22 +1050,15 @@ export default function InductionQuestionsScreen() {
   if (error || questions.length === 0) {
     return (
       <SafeAreaView style={styles.container}>
-        <View
-          style={{
-            flex: 1,
-            justifyContent: "center",
-            alignItems: "center",
-            padding: 20,
-          }}
-        >
-          <Text style={{ fontSize: 18, color: "red", textAlign: "center" }}>
+        <View style={styles.center}>
+          <Text style={styles.errorText}>
             {error || "No questions available"}
           </Text>
           <TouchableOpacity
-            style={styles.nextButton}
+            style={styles.primaryButton}
             onPress={() => navigation.goBack()}
           >
-            <Text style={styles.nextButtonText}>Go Back</Text>
+            <Text style={styles.primaryButtonText}>Go Back</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -406,103 +1072,131 @@ export default function InductionQuestionsScreen() {
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor={COLORS.background} />
 
+      {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerRow}>
           <TouchableOpacity
             onPress={() => navigation.goBack()}
             style={styles.iconButton}
           >
-            <ChevronLeft size={24} color={COLORS.text} />
+            <ChevronLeft size={22} color={COLORS.text} />
           </TouchableOpacity>
-          <Text style={styles.questionCounter}>
-            Question {currentIndex + 1} / {questions.length}
-          </Text>
+
+          <View style={styles.counterBadge}>
+            <Text style={styles.counterText}>
+              {currentIndex + 1} / {questions.length}
+            </Text>
+          </View>
+
           <TouchableOpacity
             onPress={() => navigation.goBack()}
             style={styles.iconButton}
           >
-            <X size={24} color={COLORS.text} />
+            <X size={22} color={COLORS.text} />
           </TouchableOpacity>
         </View>
-        <View style={styles.progressContainer}>
-          <View style={[styles.progressBar, { width: `${progress}%` }]} />
+
+        {/* Progress */}
+        <View style={styles.progressTrack}>
+          <View style={[styles.progressFill, { width: `${progress}%` }]} />
         </View>
       </View>
 
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Induction Title */}
         <Text style={styles.inductionTitle}>
           {capitalizeText(induction?.title || "")}
         </Text>
 
+        {/* Question Card */}
         <View style={styles.questionCard}>
+          <View style={styles.questionTypeRow}>
+            <View style={styles.typeBadge}>
+              <HelpCircle size={12} color={COLORS.primary} />
+              <Text style={styles.typeText}>{currentQuestion.type}</Text>
+            </View>
+          </View>
+
           <Text style={styles.questionText}>
             {capitalizeSentence(currentQuestion.question)}
           </Text>
-          <View style={styles.questionTypeBadge}>
-            <Text style={styles.questionTypeText}>{currentQuestion.type}</Text>
-          </View>
         </View>
 
+        {/* Short Answer */}
         {isShortQuestion ? (
-          <View style={styles.shortAnswerContainer}>
+          <View style={styles.shortAnswerBox}>
             <TextInput
               style={styles.shortAnswerInput}
               placeholder="Type your answer here..."
-              placeholderTextColor="#94a3b8"
+              placeholderTextColor={COLORS.textMuted}
               multiline
-              numberOfLines={4}
+              numberOfLines={5}
               value={shortAnswer}
               onChangeText={handleShortAnswerChange}
             />
           </View>
         ) : (
-          <View style={styles.optionsContainer}>
-            {options.map((option, index) => (
-              <TouchableOpacity
-                key={index}
-                style={[
-                  styles.optionButton,
-                  selectedOption === index && styles.selectedOption,
-                ]}
-                onPress={() => handleSelect(index)}
-              >
-                <View style={styles.optionContent}>
-                  <View style={styles.checkbox}>
-                    {selectedOption === index ? (
-                      <View style={styles.checkedBox}>
-                        <Check size={18} color="#fff" strokeWidth={3} />
-                      </View>
-                    ) : (
-                      <View style={styles.emptyCheckbox} />
-                    )}
-                  </View>
-                  <Text
+          /* Options */
+          <View style={styles.optionsList}>
+            {options.map((option, index) => {
+              const isSelected = selectedOption === index;
+              return (
+                <TouchableOpacity
+                  key={index}
+                  activeOpacity={0.85}
+                  style={[
+                    styles.optionCard,
+                    isSelected && styles.optionCardSelected,
+                  ]}
+                  onPress={() => handleSelect(index)}
+                >
+                  <View
                     style={[
-                      styles.optionText,
-                      selectedOption === index && styles.selectedOptionText,
+                      styles.radioOuter,
+                      isSelected && styles.radioOuterSelected,
                     ]}
                   >
-                    {capitalizeFirstLetter(option.label)}
+                    {isSelected && <View style={styles.radioInner} />}
+                  </View>
+
+                  <Text
+                    style={[
+                      styles.optionLabel,
+                      isSelected && styles.optionLabelSelected,
+                    ]}
+                  >
+                    {capitalizeSentence(option.label)}
                   </Text>
-                </View>
-              </TouchableOpacity>
-            ))}
+
+                  {isSelected && (
+                    <View style={styles.checkIcon}>
+                      <Check size={16} color="#fff" strokeWidth={3} />
+                    </View>
+                  )}
+                </TouchableOpacity>
+              );
+            })}
           </View>
         )}
       </ScrollView>
 
+      {/* Footer */}
       <View style={styles.footer}>
         <TouchableOpacity
           style={[
             styles.nextButton,
             (isShortQuestion ? !shortAnswer.trim() : selectedOption === null) &&
-              styles.disabledButton,
+              styles.nextButtonDisabled,
           ]}
           onPress={handleNext}
           disabled={
             submitting ||
             (isShortQuestion ? !shortAnswer.trim() : selectedOption === null)
           }
+          activeOpacity={0.85}
         >
           {submitting ? (
             <ActivityIndicator color="#fff" />
@@ -515,6 +1209,42 @@ export default function InductionQuestionsScreen() {
           )}
         </TouchableOpacity>
       </View>
+
+      {/* Custom Alert Modal */}
+      <Modal
+        visible={alertVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setAlertVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalCard}>
+            <Text style={styles.modalTitle}>{alertTitle}</Text>
+            <Text style={styles.modalMessage}>{alertMessage}</Text>
+
+            <TouchableOpacity
+              style={[
+                styles.modalButton,
+                alertType === "success" && { backgroundColor: COLORS.success },
+                alertType === "error" && { backgroundColor: COLORS.danger },
+              ]}
+              onPress={() => {
+                setAlertVisible(false);
+                if (alertAction) alertAction();
+              }}
+              activeOpacity={0.85}
+            >
+              <Text style={styles.modalButtonText}>
+                {alertType === "success"
+                  ? "Done"
+                  : alertType === "error"
+                  ? "Okay"
+                  : "Got it"}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -522,160 +1252,279 @@ export default function InductionQuestionsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#030508",
-    paddingTop: 30,
+    backgroundColor: COLORS.background,
+    paddingTop:20
   },
+  center: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 24,
+  },
+  loadingText: {
+    marginTop: 14,
+    color: COLORS.textSecondary,
+    fontSize: 15,
+  },
+  errorText: {
+    fontSize: 16,
+    color: COLORS.danger,
+    textAlign: "center",
+    marginBottom: 20,
+  },
+  primaryButton: {
+    backgroundColor: COLORS.primary,
+    paddingHorizontal: 28,
+    paddingVertical: 14,
+    borderRadius: 14,
+  },
+  primaryButtonText: {
+    color: "#fff",
+    fontWeight: "700",
+    fontSize: 15,
+  },
+
+  // Header
   header: {
-    paddingBottom: 15,
+    paddingTop: 16,
     paddingHorizontal: 20,
-    backgroundColor: "#12243A",
-    borderBottomLeftRadius: 20,
-    borderBottomRightRadius: 20,
-    marginHorizontal: 10,
-    paddingTop: 7,
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.08)",
+    paddingBottom: 16,
+    backgroundColor: COLORS.surface,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
   },
   headerRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginBottom: 10,
+    marginBottom: 14,
   },
-  iconButton: { padding: 4 },
-  questionCounter: {
-    color: "#FFFFFF",
-    fontSize: 14,
+  iconButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: "rgba(255,255,255,0.06)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  counterBadge: {
+    backgroundColor: COLORS.primaryLight,
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: COLORS.primaryBorder,
+  },
+  counterText: {
+    color: COLORS.primary,
+    fontSize: 13,
     fontWeight: "700",
   },
-  progressContainer: {
-    height: 8,
+  progressTrack: {
+    height: 6,
     backgroundColor: "rgba(255,255,255,0.08)",
-    borderRadius: 4,
+    borderRadius: 3,
     overflow: "hidden",
   },
-  progressBar: {
+  progressFill: {
     height: "100%",
-    backgroundColor: "#89E7D0",
-    borderRadius: 4,
+    backgroundColor: COLORS.primary,
+    borderRadius: 3,
   },
-  inductionTitle: {
-    fontSize: 22,
-    fontWeight: "700",
-    color: "#FFFFFF",
-    textAlign: "center",
-    marginVertical: 10,
-  },
+
+  // Content
   scrollContent: {
-    flexGrow: 1,
     padding: 20,
     paddingBottom: 120,
   },
+  inductionTitle: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: COLORS.textSecondary,
+    textAlign: "center",
+    marginBottom: 18,
+    textTransform: "uppercase",
+    letterSpacing: 0.8,
+  },
+
+  // Question Card
   questionCard: {
-    backgroundColor: "rgba(255,255,255,0.06)",
-    borderRadius: 24,
-    padding: 12,
+    backgroundColor: COLORS.card,
+    borderRadius: 18,
+    padding: 20,
     marginBottom: 24,
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.08)",
+    borderColor: '#8c8a8add',
   },
-  questionText: {
-    fontSize: 16,
-    lineHeight: 20,
-    color: "#FFFFFF",
-    fontWeight: "600",
+  questionTypeRow: {
+    marginBottom: 12,
   },
-  questionTypeBadge: {
-    backgroundColor: "rgba(137,231,208,0.15)",
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 10,
+  typeBadge: {
+    flexDirection: "row",
+    alignItems: "center",
     alignSelf: "flex-start",
-    marginTop: 14,
+    backgroundColor: COLORS.primaryLight,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 8,
+    gap: 6,
     borderWidth: 1,
-    borderColor: "rgba(137,231,208,0.25)",
+    borderColor: COLORS.primaryBorder,
   },
-  questionTypeText: {
-    color: "#89E7D0",
-    fontSize: 12,
+  typeText: {
+    color: COLORS.primary,
+    fontSize: 11,
     fontWeight: "700",
   },
-  shortAnswerContainer: { marginBottom: 20 },
+  questionText: {
+    fontSize: 17,
+    lineHeight: 26,
+    color: COLORS.text,
+    fontWeight: "600",
+  },
+
+  // Short Answer
+  shortAnswerBox: {
+    marginBottom: 20,
+  },
   shortAnswerInput: {
-    backgroundColor: "rgba(255,255,255,0.06)",
-    borderRadius: 18,
-    padding: 18,
-    fontSize: 16,
-    color: "#FFFFFF",
+    backgroundColor: COLORS.card,
+    borderRadius: 16,
+    padding: 16,
+    fontSize: 15,
+    color: COLORS.text,
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.08)",
+    borderColor: COLORS.border,
     minHeight: 140,
     textAlignVertical: "top",
   },
-  optionsContainer: { gap: 14 },
-  optionButton: {
-    backgroundColor: "rgba(255,255,255,0.06)",
-    borderRadius: 50,
-    padding: 10,
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.08)",
+
+  // Options
+  optionsList: {
+    gap: 12,
   },
-  selectedOption: {
-    borderColor: "#89E7D0",
-    backgroundColor: "rgba(137,231,208,0.12)",
-  },
-  optionContent: {
+  optionCard: {
     flexDirection: "row",
     alignItems: "center",
+    backgroundColor: COLORS.card,
+    borderRadius: 50,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderWidth: 1.5,
+  borderColor: '#434242dd',
   },
-  checkbox: { marginRight: 16 },
-  emptyCheckbox: {
-    width: 26,
-    height: 26,
-    borderRadius: 13,
+  optionCardSelected: {
+    borderColor: COLORS.primary,
+    backgroundColor: COLORS.primaryLight,
+  },
+  radioOuter: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
     borderWidth: 2,
-    borderColor: "rgba(255,255,255,0.5)",
+    borderColor: COLORS.textMuted,
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 14,
   },
-  checkedBox: {
+  radioOuterSelected: {
+    borderColor: COLORS.primary,
+  },
+  radioInner: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: COLORS.primary,
+  },
+  optionLabel: {
+    flex: 1,
+    fontSize: 15,
+    color: COLORS.textSecondary,
+    lineHeight: 22,
+  },
+  optionLabelSelected: {
+    color: COLORS.text,
+    fontWeight: "600",
+  },
+  checkIcon: {
     width: 26,
     height: 26,
     borderRadius: 13,
-    backgroundColor: "#89E7D0",
-    alignItems: "center",
+    backgroundColor: COLORS.primary,
     justifyContent: "center",
+    alignItems: "center",
+    marginLeft: 10,
   },
-  optionText: {
-    fontSize: 14,
-    color: "rgba(255,255,255,0.7)",
-    flex: 1,
-    lineHeight: 24,
-  },
-  selectedOptionText: {
-    color: "#FFFFFF",
-    fontWeight: "700",
-  },
+
+  // Footer
   footer: {
     position: "absolute",
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: "#12243A",
+    backgroundColor: COLORS.surface,
     padding: 18,
+    paddingBottom: 28,
     borderTopWidth: 1,
-    borderTopColor: "rgba(255,255,255,0.08)",
+    borderTopColor: COLORS.border,
   },
   nextButton: {
-    backgroundColor: "#89E7D0",
-    paddingVertical: 14,
-    borderRadius: 18,
+    backgroundColor: COLORS.primary,
+    paddingVertical: 16,
+    borderRadius: 16,
     alignItems: "center",
   },
-  disabledButton: {
-    backgroundColor: "rgba(255,255,255,0.2)",
+  nextButtonDisabled: {
+    backgroundColor: "rgba(255,255,255,0.12)",
   },
   nextButtonText: {
-    color: "#001F3F",
-    fontSize: 18,
+    color: "#fff",
+    fontSize: 16,
     fontWeight: "700",
+  },
+
+  // Modal
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.7)",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 28,
+  },
+  modalCard: {
+    width: "100%",
+    maxWidth: 320,
+    backgroundColor: COLORS.card,
+    borderRadius: 20,
+    padding: 24,
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: "800",
+    color: COLORS.text,
+    marginBottom: 10,
+    textAlign: "center",
+  },
+  modalMessage: {
+    fontSize: 14,
+    color: COLORS.textSecondary,
+    textAlign: "center",
+    lineHeight: 21,
+    marginBottom: 24,
+  },
+  modalButton: {
+    width: "100%",
+    backgroundColor: COLORS.primary,
+    paddingVertical: 14,
+    borderRadius: 14,
+    alignItems: "center",
+  },
+  modalButtonText: {
+    color: "#fff",
+    fontWeight: "700",
+    fontSize: 15,
   },
 });

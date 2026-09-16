@@ -1,3 +1,5 @@
+
+
 import React, { useEffect, useState } from "react";
 import {
   View,
@@ -16,7 +18,6 @@ import {
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import Pdf from "react-native-pdf";
 import {
   Headset,
   User,
@@ -37,25 +38,6 @@ import {
 import { BASE_URL, getAuthToken } from "../services/authApi";
 
 type UserType = "staff" | "contractor" | "customer";
-
-const IOS_PDF_ASSETS: Record<UserType, any> = {
-  staff: require("../assets/staff_policy.pdf"),
-  contractor: require("../assets/contractor_policy.pdf"),
-  customer: require("../assets/customer_policy.pdf"),
-};
-
-const ANDROID_ASSET_FILENAMES: Record<UserType, string> = {
-  staff: "staff_policy.pdf",
-  contractor: "contractor_policy.pdf",
-  customer: "customer_policy.pdf",
-};
-
-function getPdfSourceForUserType(userType: UserType) {
-  if (Platform.OS === "android") {
-    return { uri: `bundle-assets://${ANDROID_ASSET_FILENAMES[userType]}` };
-  }
-  return IOS_PDF_ASSETS[userType];
-}
 
 const POLICY_TITLES: Record<UserType, string> = {
   staff: "Staff Policy & Terms",
@@ -81,6 +63,314 @@ const COLORS = {
   warningBg: "rgba(245,166,35,0.08)",
   heroBg1: "#0D1F2D",
   heroBg2: "#061014",
+};
+
+/* ────────────────────────────────────────────────
+   POLICY CONTENT (same as PoliciesScreen)
+──────────────────────────────────────────────── */
+const POLICY_CONTENT: Record<
+  UserType,
+  {
+    title: string;
+    version: string;
+    intro: string;
+    sections: {
+      heading: string;
+      items: { title?: string; body: string; bullets?: string[] }[];
+    }[];
+  }
+> = {
+  staff: {
+    title: "App User Terms & Conditions",
+    version: "Version 3.1 (2026 Legal Release)",
+    intro:
+      "Operated by Capital Services Pty Ltd (ABN 48 613 317 838). These terms apply to individual security guards and workforce personnel using the Staffoo mobile application.",
+    sections: [
+      {
+        heading: "1. Account Security & Verification",
+        items: [
+          {
+            title: "1.1 Intended Use",
+            body: "The Staffoo mobile application is intended for use by individual security guards and workforce personnel (“Users”).",
+          },
+          {
+            title: "1.2 Credential Integrity",
+            body: "Users are required to log into their own individual account using their assigned credentials. Sharing logins, passwords, or devices with any other individual is strictly prohibited and constitutes a major security breach.",
+          },
+          {
+            title: "1.3 Statutory Licensing",
+            body: "Users must upload genuine, accurate, and unexpired licensing (e.g. State Security Licence, First Aid, RSA) and identity documents. Falsifying credentials is a breach of these terms, a violation of state security industry laws, and will result in immediate termination of access and mandatory reporting to state police or regulatory bodies.",
+          },
+        ],
+      },
+      {
+        heading: "2. Employment Status",
+        items: [
+          {
+            title: "2.1 Independence",
+            body: "Accessing the Staffoo app does not create an employment or contractor relationship between the User and Capital Services Pty Ltd, unless the User is operating in a jurisdiction where Capital Services Pty Ltd acts as the licensed Principal Contractor and has executed a direct employment contract with the User.",
+          },
+          {
+            title: "2.2 Resource Partner Engagement",
+            body: "In all other instances, the User is employed or engaged exclusively by their respective Resource Partner, who remains solely responsible for payroll, entitlements, and workers’ compensation under the Fair Work Act 2009.",
+          },
+        ],
+      },
+      {
+        heading: "3. Operational Standards & Uniforms",
+        items: [
+          {
+            title: "3.1 Mandatory Uniform Code",
+            body: "Unless explicitly instructed otherwise by a specific client site brief, Users must adhere to the standard security uniform code (black and white). This includes a clean white or black collared security shirt, black trousers, and enclosed black safety footwear. High-visibility (hi-vis) vests must be worn where mandated by site safety protocols.",
+          },
+          {
+            title: "3.2 Professionalism",
+            body: "Users must use the platform and conduct themselves on-site responsibly, professionally, and in full compliance with the private security code of conduct applicable in their state.",
+          },
+        ],
+      },
+      {
+        heading: "4. Geofencing, Location Data & Timesheets",
+        items: [
+          {
+            title: "4.1 Location Tracking & Consent",
+            body: "The Staffoo platform utilizes location-based services to verify site attendance and ensure workplace safety. By clocking into a shift, the User explicitly consents to the app capturing GPS location coordinates during active shift hours.",
+          },
+          {
+            title: "4.2 Device Tampering",
+            body: "Users must not use GPS-spoofing software, VPNs, jailbroken devices, or location-masking tools to falsify their geographical data.",
+          },
+          {
+            title: "4.3 Timesheet Accuracy",
+            body: "Shift timesheets must accurately reflect the exact hours physically worked on-site. Deliberate time-theft or manipulation of the check-in/check-out system will result in permanent removal from the Staffoo network and forfeiture of disputed payments.",
+          },
+        ],
+      },
+      {
+        heading: "5. Prohibited Conduct, Performance & App Termination",
+        items: [
+          {
+            title: "5.1 Unlawful Acts",
+            body: "Staffoo strictly prohibits any unlawful acts, including harassing or stalking other users, hacking or interfering with the app’s infrastructure, infecting the app with viruses, or circumventing the platform’s computer security systems. Users must not impersonate any person or misrepresent their association with any security firm or client site.",
+          },
+          {
+            title: "5.2 Immediate Termination for Non-Compliance",
+            body: "Staffoo reserves the right to suspend or permanently terminate a User’s access to the application and network without notice. Immediate closure of app usage will apply in the event of:",
+            bullets: [
+              "Verified client complaints regarding the User’s conduct, professionalism, or standard of service.",
+              "Failure to follow proper site instructions, Standard Operating Procedures (SOPs), or Workplace Health and Safety (WHS) guidelines.",
+              "Negligent performance of duties, abandoning a security post, or arriving on-site out of uniform.",
+            ],
+          },
+        ],
+      },
+    ],
+  },
+
+  contractor: {
+    title: "Resource Partner & Subcontractor Agreement",
+    version: "Version 3.0 (2026 Legal Release)",
+    intro:
+      "This Agreement governs the commercial and operational relationship between Capital Services Pty Ltd (ABN 48 613 317 838, trading as “Staffoo”) and independent licensed security providers, vendors, and staffing agencies (“Resource Partner”) accepting shift allocations and providing security personnel through the Staffoo platform.",
+    sections: [
+      {
+        heading: "1. Licensing, Statutory Warranties & Compliance",
+        items: [
+          {
+            title: "1.1 Corporate Licensing & Registration",
+            body: "The Resource Partner warrants that it holds and maintains at all times all necessary Master Security Licences, Labour Hire Licences (where mandated by state legislation, including Victoria, Queensland, and South Australia), and corporate registrations required to legally supply security personnel in all operating jurisdictions.",
+          },
+          {
+            title: "1.2 Personnel Qualifications & VEVO Verification",
+            body: "The Resource Partner warrants that all guards assigned to Staffoo shifts possess valid, current individual security licences, valid First Aid/CPR certifications, Responsible Service of Alcohol (RSA, where applicable), and legal Australian working rights verified via VEVO.",
+          },
+        ],
+      },
+      {
+        heading: "2. Operational Standards, Uniforms & Shift Punctuality",
+        items: [
+          {
+            title: "2.1 Standard Uniform & Presentation Requirements",
+            body: "The Resource Partner must ensure that all deployed personnel arrive on site wearing a neat, professional standard black security uniform (black trousers, black collared security shirt or blazer, and clean black safety footwear). Personnel must wear a high-visibility (hi-vis) safety vest where required by site safety protocols, client briefs, or WHS laws.",
+          },
+          {
+            title: "2.2 Mandatory 15-Minute Early Arrival",
+            body: "To ensure proper site handover, safety briefings, and timely clock-in, the Resource Partner must ensure that all personnel arrive on site at least fifteen (15) minutes prior to the scheduled shift start time.",
+          },
+          {
+            title: "2.3 App Usage & Attendance Logging",
+            body: "All time, attendance, site check-ins, break logging, and duress checks must be completed exclusively through the Staffoo mobile application. Unauthorized sub-subcontracting or secondary outsourcing of assigned shifts is strictly prohibited.",
+          },
+        ],
+      },
+      {
+        heading: "3. Employment Obligations, Fair Work & WHS Compliance",
+        items: [
+          {
+            title: "3.1 Direct Employment Relationship",
+            body: "The Resource Partner acknowledges that it is the sole employer or principal contractor of all personnel deployed. No employment, agency, or joint-venture relationship exists between Staffoo and the Resource Partner’s personnel.",
+          },
+          {
+            title: "3.2 Modern Award & Fatigue Management",
+            body: "The Resource Partner warrants strict compliance with the Security Services Industry Award 2020 [MA000016], the Fair Work Act 2009 (Cth), Superannuation Guarantee laws, and state Workers’ Compensation laws. This includes paying mandatory minimum hourly rates, penalty rates, and enforcing fatigue limits (including mandatory minimum 8-to-10 hour breaks between shifts).",
+          },
+        ],
+      },
+      {
+        heading:
+          "4. Client Deductions, Negligence Liability & Financial Set-Off",
+        items: [
+          {
+            title: "4.1 Liability for Negligence & Client Deductions",
+            body: "If a Client reduces, deducts, or refuses payment for shift hours due to late arrival, abandonment, uniform non-compliance, misconduct, breach of site instructions, or negligence by the Resource Partner or its personnel, the Resource Partner shall be held fully responsible for all resulting financial losses, damages, and administrative costs suffered by Staffoo.",
+          },
+          {
+            title: "4.2 Right of Recovery & Set-Off",
+            body: "The Resource Partner expressly authorizes Staffoo to deduct, withhold, or set off the amount of any client payment deductions or loss claims directly from current or future funds held in the Resource Partner’s Stripe account or pending payout ledger.",
+          },
+        ],
+      },
+      {
+        heading: "5. Platform Fees, Automated Deductions & Insurance",
+        items: [
+          {
+            title: "5.1 Platform Service Fee",
+            body: "In consideration for access to the Staffoo marketplace, WFM tools, and automated billing engine, the Resource Partner agrees to pay Staffoo the agreed Platform Service Fee per shift.",
+          },
+          {
+            title: "5.2 Automated Stripe Payout Deductions",
+            body: "The Resource Partner authorizes Staffoo and its payment gateway provider (Stripe) to automatically deduct the Platform Service Fee from captured client funds upon job completion before remitting the net balance to the Resource Partner’s bank account.",
+          },
+        ],
+      },
+      {
+        heading: "6. Mandatory Insurance Requirements",
+        items: [
+          {
+            title: "6.1 Required Policies",
+            body: "The Resource Partner must maintain at all times:",
+            bullets: [
+              "Public & Products Liability Insurance: Minimum coverage of $10,000,000 per claim (or $20,000,000 where specified by site brief).",
+              "Workers’ Compensation Insurance: Statutory coverage for all employees in accordance with relevant state laws.",
+            ],
+          },
+        ],
+      },
+      {
+        heading: "7. Governing Law",
+        items: [
+          {
+            body: "This Agreement is governed by the laws of the State of Victoria, Australia. Both parties submit to the exclusive jurisdiction of the courts operating in Victoria.",
+          },
+        ],
+      },
+    ],
+  },
+
+  customer: {
+    title: "Customer / Client Terms of Service & Booking Agreement",
+    version: "Version 3.0 (2026 Legal Release)",
+    intro:
+      "These Customer Terms of Service (“Terms”) govern the access to and use of the Staffoo web dashboard, mobile applications, and booking infrastructure (collectively, the “Platform”), operated by Capital Services Pty Ltd (ABN 48 613 317 838). By requesting, booking, or managing security personnel or workforce services through Staffoo, the user (“Client”) agrees to be bound by these Terms.",
+    sections: [
+      {
+        heading: "1. Nature of Platform & Unrestricted Subcontracting Rights",
+        items: [
+          {
+            title: "1.1 Technology Platform",
+            body: "Staffoo provides specialized Workforce Management (WFM) and Customer Relationship Management (CRM) technology enabling Clients to book, schedule, and coordinate security guarding, crowd control, and asset protection services.",
+          },
+          {
+            title: "1.2 Absolute Discretion to Fulfill via Resource Partners",
+            body: "The Client acknowledges and agrees that Capital Services Pty Ltd reserves the absolute right and discretion at all times to fulfill any booking requirement either directly or by engaging, assigning, or subcontracting the shift to an independent, licensed third-party security provider or staffing agency (“Resource Partner”).",
+          },
+          {
+            title: "1.3 Jurisdictional & Licence Capacity Disclaimer",
+            body: "The existence or holding of a Master Security Licence or Labour Hire Licence by Capital Services Pty Ltd in any specific State or Territory shall not obligate Capital Services Pty Ltd to act as the principal direct service provider. In all jurisdictions and under all operational circumstances:",
+            bullets: [
+              "Capital Services Pty Ltd may assign bookings to an authorized, fully licensed Resource Partner.",
+              "Where a booking is assigned to a Resource Partner, the legal obligation for on-site security execution sits with the Resource Partner, and Staffoo acts as the technology platform and billing agent.",
+              "The Client shall not hold Capital Services Pty Ltd liable for exercising its commercial right to utilize Resource Partners to fulfill booking requests.",
+            ],
+          },
+        ],
+      },
+      {
+        heading: "2. Bookings, Payment Holds & Automatic Settlement",
+        items: [
+          {
+            title: "2.1 Payment Authorization",
+            body: "Upon requesting shift or roster coverage, the Client authorizes Staffoo to place an authorization hold or pre-charge on their designated payment method (processed securely via Stripe) for the full estimated booking total.",
+          },
+          {
+            title: "2.2 Escrow-Style Payment Release",
+            body: "Funds are held securely via the payment gateway upon shift completion. The Client is granted a twenty-four (24) hour review window post-shift to confirm digital timesheets or log an operational dispute via the Platform.",
+          },
+          {
+            title: "2.3 Automatic Confirmation",
+            body: "If no dispute or confirmation is lodged within twenty-four (24) hours post-shift, the shift timesheet is deemed automatically approved, and funds will be permanently released to the fulfilling provider.",
+          },
+          {
+            title: "2.4 Invoicing & Billing Agency",
+            body: "In instances where a Resource Partner fulfills the shift, invoices for the security guarding services are generated by or on behalf of the Resource Partner (under their Master Security Licence and ABN), with Staffoo acting as an authorized billing, collection, and technology intermediary agent.",
+          },
+        ],
+      },
+      {
+        heading: "3. Client Workplace Health & Safety (WHS) Obligations",
+        items: [
+          {
+            title: "3.1 Statutory Compliance",
+            body: "The Client must maintain a safe work environment compliant with all applicable Commonwealth, State, and Territory Workplace Health and Safety (WHS / OHS) legislation (including model WHS laws and the Occupational Health and Safety Act 2004 (Vic)).",
+          },
+        ],
+      },
+      {
+        heading: "4. Cancellations, Shift Modifications & Disputes",
+        items: [
+          {
+            title: "4.1 Minimum Notice Cancellation Fees",
+            body: "Cancellations made within the mandatory minimum notice window (as specified during the booking checkout flow) will attract a standardized cancellation fee to cover administrative overheads and guard mobilization costs.",
+          },
+          {
+            title: "4.2 Dispute Resolution Protocol",
+            body: "Operational disputes regarding guard attendance or performance must be submitted via the Platform within 24 hours post-shift, supported by time-stamped evidence. Staffoo will mediate disputes in good faith utilizing automated GPS geofencing, clock-in timestamps, and platform audit logs.",
+          },
+        ],
+      },
+      {
+        heading: "5. Non-Solicitation & Anti-Poaching",
+        items: [
+          {
+            title: "5.1 Non-Circumvention Period",
+            body: "The Client agrees that during active platform usage and for a period of six (6) months following the completion of any booking, it will not directly or indirectly engage, employ, solicit, or contract with any Resource Partner or individual guard introduced to the Client via Staffoo, outside of the Platform.",
+          },
+        ],
+      },
+      {
+        heading: "6. Limitation of Liability, Statutory Warranties & Indemnity",
+        items: [
+          {
+            title: "6.1 Australian Consumer Law (ACL)",
+            body: "Nothing in these Terms excludes, restricts, or modifies any statutory guarantee, right, or remedy implied by Schedule 2 of the Competition and Consumer Act 2010 (Cth) that cannot be lawfully excluded.",
+          },
+          {
+            title: "6.2 Intermediary Liability Exclusion",
+            body: "To the maximum extent permitted by Australian law, where a booking is fulfilled by a Resource Partner, Staffoo excludes all liability for property damage, theft, personal injury, or indirect/consequential losses arising from the acts or omissions of the Resource Partner or its personnel.",
+          },
+        ],
+      },
+      {
+        heading: "7. Governing Law & Jurisdiction",
+        items: [
+          {
+            title: "7.1 Governing Law",
+            body: "These Terms are governed by and construed in accordance with the laws of the State of Victoria, Australia. The parties submit to the exclusive jurisdiction of the courts operating in Victoria.",
+          },
+        ],
+      },
+    ],
+  },
 };
 
 const INQUIRY_TYPES = [
@@ -116,9 +406,6 @@ const INITIAL_STATE: FormState = {
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-// Adjust this to whatever key you already store your auth token under.
-const AUTH_TOKEN_KEY = "auth_token";
-
 export default function SupportScreen() {
   const navigation = useNavigation();
 
@@ -131,7 +418,6 @@ export default function SupportScreen() {
     Partial<Record<keyof FormState, string>>
   >({});
 
-  // ── User type (for policy selection) ──
   const [userType, setUserType] = useState<UserType | null>(null);
   const [loadingUser, setLoadingUser] = useState(true);
   const [policyModalVisible, setPolicyModalVisible] = useState(false);
@@ -143,8 +429,6 @@ export default function SupportScreen() {
       try {
         const token = await getAuthToken();
 
-        // Get logged-in user id from storage
-        // Adjust the key / field name to match what you save at login
         const userJson = await AsyncStorage.getItem("user");
         const storedUser = userJson ? JSON.parse(userJson) : null;
         const userId = storedUser?.id ?? storedUser?.user_id;
@@ -207,9 +491,7 @@ export default function SupportScreen() {
     return Object.keys(next).length === 0;
   };
 
-  // ── Checkbox / policy modal logic ──
   const handleCheckboxPress = () => {
-    // Already agreed → simple uncheck, no need to re-show the policy.
     if (agree) {
       setAgree(false);
       return;
@@ -319,7 +601,8 @@ export default function SupportScreen() {
           </View>
           <Text style={styles.successTitle}>Message Sent</Text>
           <Text style={styles.successSubtitle}>
-            Thanks for reaching out — our team will review your message and get back to you soon.
+            Thanks for reaching out — our team will review your message and get
+            back to you soon.
           </Text>
           <TouchableOpacity
             style={styles.successBtn}
@@ -331,6 +614,8 @@ export default function SupportScreen() {
       </View>
     );
   }
+
+  const policy = userType ? POLICY_CONTENT[userType] : null;
 
   return (
     <KeyboardAvoidingView
@@ -472,9 +757,7 @@ export default function SupportScreen() {
               {loadingUser ? (
                 <ActivityIndicator size="small" color={COLORS.primary} />
               ) : (
-                agree && (
-                  <Check size={14} color="#fff" strokeWidth={3} />
-                )
+                agree && <Check size={14} color="#fff" strokeWidth={3} />
               )}
             </View>
             <Text style={styles.checkboxLabel}>
@@ -554,7 +837,8 @@ export default function SupportScreen() {
           </View>
         </Pressable>
       </Modal>
-      {/* Policy PDF Modal */}
+
+      {/* Custom Policy Modal (no PDF) */}
       <Modal
         visible={policyModalVisible}
         transparent
@@ -577,29 +861,61 @@ export default function SupportScreen() {
               </TouchableOpacity>
             </View>
 
-            {/* PDF — same source logic as PoliciesScreen */}
-            <View style={styles.pdfWrap}>
-              {userType ? (
-                <Pdf
-                  key={userType}
-                  source={getPdfSourceForUserType(userType)}
-                  style={styles.pdf}
-                  trustAllCerts={false}
-                  onLoadComplete={(numberOfPages) => {
-                    console.log(
-                      `Loaded ${userType} policy, pages: ${numberOfPages}`,
-                    );
-                  }}
-                  onError={(error) => {
-                    console.log("PDF Error:", error);
-                  }}
-                />
+            {/* Custom Policy Content */}
+            <ScrollView
+              style={styles.policyScroll}
+              contentContainerStyle={styles.policyScrollContent}
+              showsVerticalScrollIndicator={false}
+            >
+              {policy ? (
+                <>
+                  <View style={styles.docHeader}>
+                    <Text style={styles.docBrand}>STAFFOO PLATFORM</Text>
+                    <Text style={styles.docTitle}>{policy.title}</Text>
+                    <Text style={styles.docVersion}>{policy.version}</Text>
+                    <Text style={styles.docIntro}>{policy.intro}</Text>
+                  </View>
+
+                  {policy.sections.map((section, sIdx) => (
+                    <View key={sIdx} style={styles.section}>
+                      <View style={styles.sectionHeader}>
+                        <View style={styles.sectionAccent} />
+                        <Text style={styles.sectionHeading}>
+                          {section.heading}
+                        </Text>
+                      </View>
+
+                      {section.items.map((item, iIdx) => (
+                        <View key={iIdx} style={styles.item}>
+                          {item.title ? (
+                            <Text style={styles.itemTitle}>{item.title}</Text>
+                          ) : null}
+                          <Text style={styles.itemBody}>{item.body}</Text>
+
+                          {item.bullets?.map((bullet, bIdx) => (
+                            <View key={bIdx} style={styles.bulletRow}>
+                              <Text style={styles.bulletDot}>•</Text>
+                              <Text style={styles.bulletText}>{bullet}</Text>
+                            </View>
+                          ))}
+                        </View>
+                      ))}
+                    </View>
+                  ))}
+
+                  <View style={styles.docFooter}>
+                    <Text style={styles.footerText}>
+                      Staffoo • Capital Services Pty Ltd (ABN 48 613 317 838)
+                    </Text>
+                    <Text style={styles.footerText}>End of Document</Text>
+                  </View>
+                </>
               ) : (
                 <View style={styles.pdfFallback}>
                   <ActivityIndicator color={COLORS.primary} />
                 </View>
               )}
-            </View>
+            </ScrollView>
 
             {/* Agree button */}
             <TouchableOpacity
@@ -678,7 +994,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.background,
-  
   },
   scrollContent: {
     paddingHorizontal: 20,
@@ -686,17 +1001,17 @@ const styles = StyleSheet.create({
     paddingBottom: 48,
   },
 
-header: {
-  flexDirection: "row",
-  alignItems: "center",
-  justifyContent: "space-between",
-  paddingHorizontal: 16,
-  paddingTop: Platform.OS === "ios" ? 54 : 30, // was 18 on Android
-  paddingBottom: 12,
-  backgroundColor: COLORS.background,
-  borderBottomWidth: 1,
-  borderBottomColor: "rgba(255,255,255,0.06)",
-},
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 16,
+    paddingTop: Platform.OS === "ios" ? 54 : 30,
+    paddingBottom: 12,
+    backgroundColor: COLORS.background,
+    borderBottomWidth: 1,
+    borderBottomColor: "rgba(255,255,255,0.06)",
+  },
   backBtn: {
     width: 36,
     height: 36,
@@ -964,7 +1279,7 @@ header: {
     backgroundColor: "rgba(255,255,255,0.06)",
   },
 
-  // Policy PDF Modal
+  // Policy Modal
   policyOverlay: {
     flex: 1,
     backgroundColor: "rgba(3,5,8,0.85)",
@@ -995,11 +1310,124 @@ header: {
     fontWeight: "700",
   },
 
+  policyScroll: {
+    flex: 1,
+    backgroundColor: COLORS.surface,
+  },
+  policyScrollContent: {
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 32,
+  },
+
+  docHeader: {
+    marginBottom: 24,
+    paddingBottom: 18,
+    borderBottomWidth: 1,
+    borderBottomColor: "rgba(255,255,255,0.08)",
+  },
+  docBrand: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: COLORS.primary,
+    letterSpacing: 1.1,
+    marginBottom: 6,
+  },
+  docTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: COLORS.text,
+    lineHeight: 26,
+    marginBottom: 6,
+  },
+  docVersion: {
+    fontSize: 12,
+    color: COLORS.textSecondary,
+    marginBottom: 12,
+  },
+  docIntro: {
+    fontSize: 13,
+    color: COLORS.textSecondary,
+    lineHeight: 20,
+  },
+
+  section: {
+    marginBottom: 24,
+  },
+  sectionHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 12,
+  },
+  sectionAccent: {
+    width: 4,
+    height: 16,
+    backgroundColor: COLORS.primary,
+    borderRadius: 2,
+    marginRight: 10,
+  },
+  sectionHeading: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: COLORS.text,
+    flex: 1,
+  },
+
+  item: {
+    marginBottom: 14,
+    paddingLeft: 14,
+  },
+  itemTitle: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: COLORS.text,
+    marginBottom: 4,
+  },
+  itemBody: {
+    fontSize: 13,
+    color: COLORS.textSecondary,
+    lineHeight: 20,
+  },
+
+  bulletRow: {
+    flexDirection: "row",
+    marginTop: 6,
+    paddingLeft: 4,
+  },
+  bulletDot: {
+    fontSize: 13,
+    color: COLORS.primary,
+    marginRight: 8,
+    lineHeight: 20,
+  },
+  bulletText: {
+    flex: 1,
+    fontSize: 13,
+    color: COLORS.textSecondary,
+    lineHeight: 20,
+  },
+
+  docFooter: {
+    marginTop: 8,
+    paddingTop: 18,
+    borderTopWidth: 1,
+    borderTopColor: "rgba(255,255,255,0.08)",
+    alignItems: "center",
+  },
+  footerText: {
+    fontSize: 11,
+    color: COLORS.textMuted,
+    textAlign: "center",
+    marginBottom: 2,
+  },
+
   pdfFallback: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
+    minHeight: 200,
   },
+
   policyAgreeBtn: {
     flexDirection: "row",
     alignItems: "center",
@@ -1014,16 +1442,5 @@ header: {
     color: "#ffffff",
     fontSize: 15,
     fontWeight: "700",
-  },
-  pdfWrap: {
-    flex: 1,
-    minHeight: 400,
-    backgroundColor: COLORS.surface,
-  },
-  pdf: {
-    flex: 1,
-    width: "100%",
-    height: "100%",
-    backgroundColor: COLORS.surface,
   },
 });

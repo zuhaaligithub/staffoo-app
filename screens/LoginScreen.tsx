@@ -134,8 +134,6 @@ export default function LoginScreen({ navigation }: Props) {
     return () => clearTimeout(timer);
   }, []);
 
-
-
   const requestLocationPermission = async () => {
     if (hasRequestedLocation.current) return true;
     hasRequestedLocation.current = true;
@@ -390,7 +388,7 @@ export default function LoginScreen({ navigation }: Props) {
       setLoading(false);
     }
   };
- 
+
   const handleForgotPassword = async () => {
     if (!email.trim()) {
       return Toast.show({
@@ -433,7 +431,6 @@ export default function LoginScreen({ navigation }: Props) {
       setForgotLoading(false);
     }
   };
-
 
   const handleSignIn = async () => {
     if (!email.trim()) {
@@ -753,7 +750,7 @@ export default function LoginScreen({ navigation }: Props) {
               </LinearGradient>
             </TouchableOpacity>
 
-            {Platform.OS === "android" && (
+            {/* {Platform.OS === "android" && (
               <>
                 <View style={styles.orContainer}>
                   <View style={styles.orLine} />
@@ -776,7 +773,7 @@ export default function LoginScreen({ navigation }: Props) {
                   <Text style={styles.googleText}>Continue with Google</Text>
                 </TouchableOpacity>
               </>
-            )}
+            )} */}
           </View>
 
           <View style={styles.signupRow}>

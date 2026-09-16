@@ -20,6 +20,11 @@
       "\"$(PODS_TARGET_SRCROOT)/ReactCommon\"",
       "\"$(PODS_ROOT)/Headers/Private/Yoga\"",
       "\"$(PODS_TARGET_SRCROOT)\"",
+      "\"$(PODS_TARGET_SRCROOT)/react/renderer/textlayoutmanager/platform/ios\"",
+      "\"$(PODS_TARGET_SRCROOT)/react/renderer/components/scrollview/platform/cxx\"",
+      "\"$(PODS_TARGET_SRCROOT)/react/renderer/components/textinput/platform/ios\"",
+      "\"$(PODS_TARGET_SRCROOT)/react/renderer/components/text/platform/cxx\"",
+      "\"$(PODS_TARGET_SRCROOT)/react/renderer/components/view/platform/cxx\"",
       "\"${PODS_CONFIGURATION_BUILD_DIR}/React-RCTFBReactNativeSpec/React_RCTFBReactNativeSpec.framework/Headers\"",
       "\"${PODS_CONFIGURATION_BUILD_DIR}/React-rendererdebug/React_rendererdebug.framework/Headers\"",
       "\"${PODS_CONFIGURATION_BUILD_DIR}/React-graphics/React_graphics.framework/Headers\"",
@@ -37,6 +42,8 @@
       "$(PODS_ROOT)/RCT-Folly"
     ]
   },
+  "module_name": "React_FabricComponents",
+  "header_mappings_dir": "./",
   "dependencies": {
     "React-jsiexecutor": [],
     "RCTRequired": [],

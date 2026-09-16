@@ -805,11 +805,11 @@ export default function HomeScreen({ navigation }: any) {
 
                         {/* Address */}
                         <View style={styles.addressRow}>
-                          <MapPin size={13} color={COLORS.textSecondary} />
+                          {/* <MapPin size={13} color={COLORS.textSecondary} /> */}
 
                           <Text
                             style={styles.siteAddress}
-                            numberOfLines={2}
+                            numberOfLines={3}
                             ellipsizeMode="tail"
                           >
                             {job.site?.address || "No address available"}
@@ -1229,7 +1229,7 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: COLORS.textSecondary,
     marginLeft: 2,
-    lineHeight: 10,
+    lineHeight: 15,
   },
 
   /* Date + Time + Hours */

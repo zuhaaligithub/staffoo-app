@@ -1529,14 +1529,12 @@ export const styles = StyleSheet.create({
   },
 
   hero: {
-    paddingTop: Platform.OS === "ios" ? 5 : 26,
+    paddingTop: Platform.OS === "ios" ? 10 : 26,
     paddingBottom: 10,
     paddingHorizontal: Platform.OS === "ios" ? 0 : 10,
     borderBottomLeftRadius: 26,
     borderBottomRightRadius: 26,
     borderColor: COLORS.cardBorder,
-
-    height: Platform.OS === "ios" ? 200 : undefined,
   },
 
   heroInner: {
@@ -1595,6 +1593,7 @@ export const styles = StyleSheet.create({
     borderRadius: 16,
     paddingVertical: 14,
     paddingHorizontal: 12,
+    marginBottom: Platform.OS === "ios" ? 20 : 14,
   },
 
   statBox: {

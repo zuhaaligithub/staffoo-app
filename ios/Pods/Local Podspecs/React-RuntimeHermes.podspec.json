@@ -36,6 +36,8 @@
     "CLANG_CXX_LANGUAGE_STANDARD": "c++20",
     "GCC_WARN_PEDANTIC": "YES"
   },
+  "module_name": "React_RuntimeHermes",
+  "header_mappings_dir": "../../",
   "dependencies": {
     "React-jsitracing": [],
     "React-jsi": [],

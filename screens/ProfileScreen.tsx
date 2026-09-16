@@ -30,6 +30,8 @@ import {
   X,
   Lock,
   Headphones,
+  Info,
+  AlertCircle,
 } from "lucide-react-native";
 import DeviceInfo from "react-native-device-info";
 import Geolocation from "@react-native-community/geolocation";
@@ -80,8 +82,8 @@ const COLORS = {
   dangerBg: "rgba(248,88,88,0.12)",
   warning: "#F5A623",
   warningBg: "rgba(245,166,35,0.08)",
-  heroBg1: "#0D1F2D",
-  heroBg2: "#061014",
+  heroBg1: "#0e2231",
+  heroBg2: "#071318",
 };
 
 export default function ProfileScreen({ navigation }: Props) {
@@ -108,6 +110,50 @@ export default function ProfileScreen({ navigation }: Props) {
   const hasClosedChargeRatePopupRef = useRef(false);
   const [imageFile, setImageFile] = useState<any>(null);
   const GOOGLE_API_KEY = "AIzaSyCS-DB39Kk-Z25C5GWymVGshXIALbjXPGY";
+
+  /** Returns true when the document has a past expiry date */
+  const isDocumentExpired = (expiry?: string | null): boolean => {
+    if (!expiry || !String(expiry).trim()) return false;
+    const d = new Date(expiry);
+    if (Number.isNaN(d.getTime())) return false;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return d < today;
+  };
+
+  /** Count documents that have a file and are past their expiry date */
+  const getExpiredDocumentsCount = (userData: any): number => {
+    const docs: any[] = Array.isArray(userData?.documents)
+      ? userData.documents
+      : [];
+    return docs.filter((d) => {
+      const hasFile = !!(d.file && String(d.file).trim().length > 0);
+      return hasFile && isDocumentExpired(d.document_expiry);
+    }).length;
+  };
+
+  /** Get list of documents that have a file and are past their expiry date */
+  const getExpiredDocuments = (userData: any): any[] => {
+    const docs: any[] = Array.isArray(userData?.documents)
+      ? userData.documents
+      : [];
+    return docs.filter((d) => {
+      const hasFile = !!(d.file && String(d.file).trim().length > 0);
+      return hasFile && isDocumentExpired(d.document_expiry);
+    });
+  };
+
+  /** Format document name for display (e.g. "security_master_license" → "Security Master License") */
+  const getDisplayName = (name?: string | null): string => {
+    if (!name) return "Document";
+    return String(name)
+      .replace(/[_-]+/g, " ")
+      .replace(/\s+/g, " ")
+      .trim()
+      .split(" ")
+      .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+      .join(" ");
+  };
   const getInitials = (name: string): string => {
     if (!name) return "U";
     const parts = name.trim().split(" ").filter(Boolean);
@@ -395,6 +441,27 @@ export default function ProfileScreen({ navigation }: Props) {
       if (interval) clearInterval(interval);
     };
   }, [userId]);
+
+  const isOnlyBasicInfo = (): boolean => {
+    if (!user) return false;
+
+    const hasName = !!(user.name && String(user.name).trim());
+    const hasEmail = !!(user.email && String(user.email).trim());
+    const hasPhone = !!(
+      user.phone ||
+      user.staff?.phone ||
+      user.contractor?.phone
+    );
+
+    // Missing the important Personal Information fields
+    const hasAddress = !!(user.address && String(user.address).trim());
+    const hasCity = !!(user.city && String(user.city).trim());
+    const hasState = !!(user.state && String(user.state).trim());
+
+    return (
+      hasName && hasEmail && hasPhone && !hasAddress && !hasCity && !hasState
+    );
+  };
 
   const parseStatesAllowed = (raw: unknown): string[] => {
     if (!raw) return [];
@@ -687,32 +754,6 @@ export default function ProfileScreen({ navigation }: Props) {
       return hasName && hasPhone && hasEmail && hasAddress && hasCity;
     };
 
-    const hasCompletedStaffDocuments = (): boolean => {
-      if (!user) return false;
-      if ((user.user_type || "").toLowerCase().trim() !== "staff") return true;
-
-      const docs: any[] = Array.isArray(user.documents) ? user.documents : [];
-      if (docs.length === 0) return false;
-
-      const visaType =
-        user?.staff?.staff_document_type || user?.staff_document_type || null;
-
-      // Prefer docs matching current visa category
-      const relevant = visaType
-        ? docs.filter(
-            (d) =>
-              String(d.document_category || "").toLowerCase() ===
-              String(visaType).toLowerCase(),
-          )
-        : docs;
-
-      if (relevant.length === 0) return false;
-
-      // Every listed doc must have a file
-      return relevant.every(
-        (d) => !!(d.file && String(d.file).trim().length > 0),
-      );
-    };
     const isLocked = (title: string): boolean => {
       if (isActive) return false;
 
@@ -874,16 +915,6 @@ export default function ProfileScreen({ navigation }: Props) {
       .replace(/[^a-z0-9]+/g, "_")
       .replace(/^_|_$/g, "");
 
-  /** Returns true when the document has a past expiry date */
-  const isDocumentExpired = (expiry?: string | null): boolean => {
-    if (!expiry || !String(expiry).trim()) return false;
-    const d = new Date(expiry);
-    if (Number.isNaN(d.getTime())) return false;
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    return d < today;
-  };
-
   const getStaffDocumentPoints = (userData: any): number => {
     const docs: any[] = Array.isArray(userData?.documents)
       ? userData.documents
@@ -1010,7 +1041,7 @@ export default function ProfileScreen({ navigation }: Props) {
       >
         {/* ── Hero Header ── */}
         <LinearGradient
-          colors={[COLORS.heroBg1, COLORS.heroBg2]}
+          colors={[COLORS.heroBg2, COLORS.heroBg1]}
           start={{ x: 0, y: 0 }}
           end={{ x: 0.5, y: 1 }}
           style={styles.heroSection}
@@ -1074,7 +1105,7 @@ export default function ProfileScreen({ navigation }: Props) {
                           styles.statusChipText,
                           {
                             color: isActive ? COLORS.success : COLORS.danger,
-                            marginLeft: 6,
+                            marginLeft: 4,
                           },
                         ]}
                       >
@@ -1128,6 +1159,57 @@ export default function ProfileScreen({ navigation }: Props) {
             )}
           </View>
         </LinearGradient>
+
+        {/* ── Activation Banner ── */}
+        {isOnlyBasicInfo() &&
+          (user?.user_type === "contractor" || user?.user_type === "staff") && (
+            <View style={styles.activationBanner}>
+              <Info size={18} color="#D97706"     style={{ marginRight: 0, marginTop: 2 }} />
+              <Text style={styles.activationBannerText}>
+                Please open the{" "}
+                <Text style={{ fontWeight: "700" }}>Personal Information</Text>{" "}
+                tab and complete your details to activate your profile.
+              </Text>
+            </View>
+          )}
+
+        {/* ── Expired Documents Banner ── */}
+        {(() => {
+          const expiredDocuments = getExpiredDocuments(user);
+          const showExpiredBanner =
+            expiredDocuments.length > 0 &&
+            completionPercentage < 100 &&
+            (user?.user_type === "contractor" || user?.user_type === "staff");
+
+          if (!showExpiredBanner) return null;
+
+          return (
+            <View style={styles.incompleteTopBanner}>
+              <AlertCircle
+                size={18}
+                color="#ff6b6b"
+                style={{ marginRight: 10, marginTop: 2 }}
+              />
+              <View style={{ flex: 1 }}>
+                <Text style={styles.incompleteTopBannerTitle}>
+                  {expiredDocuments.length === 1
+                    ? "1 document has expired"
+                    : `${expiredDocuments.length} documents have expired`}
+                </Text>
+                <Text style={styles.incompleteTopBannerText}>
+                  {expiredDocuments
+                    .map((d) => getDisplayName(d.document_name))
+                    .join(", ")}
+                  . Please update{" "}
+                  {expiredDocuments.length === 1
+                    ? "this document"
+                    : "these documents"}{" "}
+                  to keep your profile active.
+                </Text>
+              </View>
+            </View>
+          );
+        })()}
 
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Account Settings</Text>
@@ -1418,22 +1500,22 @@ const styles = StyleSheet.create({
     fontWeight: "500",
   },
   innercontainer: {
-    padding: 20,
+    padding: 16,
   },
   heroSection: {
-    paddingBottom: 10,
-    borderBottomWidth: 1,
+    paddingBottom: 5,
+    borderBottomWidth: 1.5,
     // borderBottomColor: COLORS.primaryBorder,
     borderBottomLeftRadius: 26,
     borderBottomRightRadius: 26,
   },
   greeting: {
-    fontSize: 20,
+    fontSize: 16,
     fontWeight: "700",
     color: "#FFFFFF",
     textTransform: "capitalize",
     letterSpacing: 0.3,
-    marginBottom: 4,
+    // marginBottom: 2,
   },
 
   heroTopRow: {
@@ -1444,7 +1526,7 @@ const styles = StyleSheet.create({
   },
 
   heroTitle: {
-    fontSize: 26,
+    fontSize: 22,
     fontWeight: "700",
     color: COLORS.text,
     letterSpacing: 0.3,
@@ -1465,7 +1547,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 16,
-    marginBottom: 22,
+    marginBottom: 15,
   },
 
   avatarWrapper: {
@@ -1705,7 +1787,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     flexWrap: "nowrap",
-    marginTop: 8,
+    marginTop: 0,
     gap: 8,
   },
   addressChip: {
@@ -2004,7 +2086,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
     borderRadius: 20,
     overflow: "hidden",
-    paddingBottom: 24,
+    paddingBottom: 20,
     elevation: 14,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 10 },
@@ -2017,27 +2099,27 @@ const styles = StyleSheet.create({
   },
   lockedModalIconWrap: {
     alignItems: "center",
-    marginTop: 28,
-    marginBottom: 12,
+    marginTop: 15,
+    // marginBottom: 12,
   },
   lockedModalIconCircle: {
-    width: 68,
-    height: 68,
-    borderRadius: 34,
+    width: 58,
+    height: 58,
+    borderRadius: 30,
     justifyContent: "center",
     alignItems: "center",
   },
   lockedModalTitle: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: "700",
     color: "#111827",
     textAlign: "center",
-    marginBottom: 10,
+    marginBottom: 5,
     paddingHorizontal: 24,
   },
   lockedModalMessage: {
-    fontSize: 15,
-    lineHeight: 22,
+    fontSize: 14,
+    lineHeight: 15,
     color: "#6B7280",
     textAlign: "center",
     paddingHorizontal: 24,
@@ -2063,7 +2145,7 @@ const styles = StyleSheet.create({
   },
   logoutCancelBtn: {
     flex: 1,
-    paddingVertical: 14,
+    paddingVertical: 12,
     borderRadius: 14,
     borderWidth: 1.5,
     borderColor: "#E5E7EB",
@@ -2077,7 +2159,7 @@ const styles = StyleSheet.create({
   },
   logoutConfirmBtn: {
     flex: 1,
-    paddingVertical: 14,
+    paddingVertical: 12,
     borderRadius: 14,
     backgroundColor: "#EF4444",
     alignItems: "center",
@@ -2086,5 +2168,64 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 15,
     fontWeight: "700",
+  },
+
+  activationBanner: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    backgroundColor: "rgba(217, 119, 6, 0.10)",
+    borderRadius: 12,
+    padding: 5,
+    marginHorizontal: 16,
+    marginTop: 5,
+    borderWidth: 1,
+    borderColor: "rgba(217, 119, 6, 0.30)",
+    gap: 10,
+  },
+  activationBannerText: {
+    flex: 1,
+    fontSize: 12,
+    color: "#B45309",
+    lineHeight: 20,
+  },
+  expiredBanner: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    backgroundColor: "rgba(220, 38, 38, 0.10)",
+    borderRadius: 12,
+    padding: 10,
+    marginHorizontal: 16,
+    marginTop: 5,
+    borderWidth: 1,
+    borderColor: "rgba(220, 38, 38, 0.30)",
+    gap: 10,
+  },
+  expiredBannerText: {
+    flex: 1,
+    fontSize: 12,
+    color: "#B91C1C",
+    lineHeight: 20,
+  },
+  incompleteTopBanner: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    backgroundColor: "rgba(255, 107, 107, 0.10)",
+    borderRadius: 12,
+    padding: 8,
+    marginHorizontal: 14,
+    marginTop: 8,
+    borderWidth: 1,
+    borderColor: "rgba(255, 107, 107, 0.30)",
+  },
+  incompleteTopBannerTitle: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#ff6b6b",
+    marginBottom: 2,
+  },
+  incompleteTopBannerText: {
+    fontSize: 10,
+    color: "#fca5a5",
+    lineHeight: 18,
   },
 });
