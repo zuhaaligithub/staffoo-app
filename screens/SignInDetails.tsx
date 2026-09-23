@@ -1,3 +1,5 @@
+
+
 import React, { useState, useEffect } from "react";
 import {
   View,
@@ -28,6 +30,7 @@ import {
   RefreshCw,
   ArrowLeft,
   RotateCcw,
+  ShieldCheck,
 } from "lucide-react-native";
 import { launchCamera } from "react-native-image-picker";
 import Geolocation from "react-native-geolocation-service";
@@ -38,26 +41,26 @@ import ImageResizer from "react-native-image-resizer";
 
 const COLORS = {
   background: "#030508",
-  surface: "#0A121C",
-  card: "#0F1A28",
-  cardAlt: "#0D1621",
-  cardBorder: "rgba(255,255,255,0.06)",
-  cardBorderStrong: "rgba(255,255,255,0.10)",
-  primary: "#00C2B2",
-  primaryDark: "#00A99D",
-  primaryGlow: "rgba(0,194,178,0.16)",
-  primaryBorder: "rgba(0,194,178,0.35)",
+  surface: "#07111A",
+  card: "#0D1421",
+  cardBorder: "rgba(98, 97, 97, 0.83)",
+  primary: "#00A99D",
+  primaryGlow: "rgba(0,169,157,0.25)",
+  primaryBorder: "rgba(0,169,157,0.25)",
   text: "#FFFFFF",
-  textSecondary: "#9AAABC",
-  textMuted: "#5C6E85",
-  success: "#34D399",
-  successBg: "rgba(52,211,153,0.12)",
+  textSecondary: "#94A3B8",
+  textMuted: "#4A6080",
+  success: "#34C88A",
   danger: "#F87171",
-  dangerBg: "rgba(248,113,113,0.12)",
-  warning: "#FBBF24",
-  warningBg: "rgba(251,191,36,0.10)",
-  disabled: "#26313F",
-  disabledText: "#5C6E85",
+  dangerBg: "rgba(248,88,88,0.12)",
+  warning: "#F5A623",
+  warningBg: "rgba(245,166,35,0.08)",
+  heroBg1: "#0e2231",
+  heroBg2: "#071318",
+  // Derived tones used only for this screen's finer details.
+  successBg: "rgba(52,200,138,0.12)",
+  disabled: "#1B2531",
+  disabledText: "#4A6080",
 };
 
 interface SignInDetailsProps {
@@ -88,9 +91,10 @@ export default function SignInDetails({
     route?.params?.shiftId ||
     route?.params?.id;
 
-  const formatTime = (isoString: string | undefined | null): string => {
-    if (!isoString) return "--:--";
-    const parts = isoString.split(" ");
+  const formatTime = (dateTime: string | undefined | null): string => {
+    if (!dateTime) return "--:--";
+    // Handles "17-09-2026 21:00:00" and "2026-09-17 21:00:00"
+    const parts = dateTime.split(" ");
     return parts[1]?.slice(0, 5) || "--:--";
   };
 
@@ -98,20 +102,39 @@ export default function SignInDetails({
     startTime: formatTime(rawShift.start) || "09:00",
     endTime: formatTime(rawShift.end) || "17:00",
     break: rawShift.break || "No",
-    event: rawShift.event || rawShift.job_title || "",
+
+    // Title shown in the header
+    event:
+      rawShift.site?.site_name ||
+      rawShift.event ||
+      rawShift.job_title ||
+      rawShift.description ||
+      "Sign in to your shift",
+
+    // Address card
     address:
       rawShift.site?.address ||
+      rawShift.site?.site_name ||
       rawShift.address ||
       rawShift.location ||
       "No address provided",
-    tasks: rawShift.tasks || "No task is available",
+
+    // Tasks (if you later want to show them)
+    tasks:
+      (Array.isArray(rawShift.job_roster_task) &&
+        rawShift.job_roster_task.length > 0 &&
+        rawShift.job_roster_task.map((t: any) => t.name || t).join(", ")) ||
+      rawShift.tasks ||
+      "No task is available",
+
+    // Site description / notes
     notes:
       rawShift.shift_instructions ||
       rawShift.site?.description ||
+      rawShift.description ||
       rawShift.notes ||
       rawShift.instructions ||
-      rawShift.description ||
-      "",
+      "No site description available.",
   };
 
   const requestCameraPermission = async (): Promise<boolean> => {
@@ -333,20 +356,32 @@ export default function SignInDetails({
       <StatusBar barStyle="light-content" backgroundColor={COLORS.background} />
 
       {/* Header */}
-      <View style={styles.header}>
+      <LinearGradient
+        colors={[COLORS.heroBg1, COLORS.heroBg2]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.header}
+      >
         <TouchableOpacity
           style={styles.backButton}
           onPress={() => navigation.goBack()}
           activeOpacity={0.7}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
         >
           <ArrowLeft size={18} color={COLORS.text} />
         </TouchableOpacity>
+
         <View style={styles.headerTextWrap}>
-          <Text style={styles.headerTitle}>Shift Sign-in</Text>
-          <Text style={styles.headerSubtitle}>{shift.event}</Text>
+          <Text style={styles.headerEyebrow}>Shift sign-in</Text>
+          <Text style={styles.headerTitle} numberOfLines={1}>
+            Sign in to your shift
+          </Text>
         </View>
+
+        {/* Balances the back button so the title block stays visually
+            centered between two equal-width elements. */}
         <View style={styles.headerSpacer} />
-      </View>
+      </LinearGradient>
 
       <ScrollView
         contentContainerStyle={styles.scrollContent}
@@ -356,7 +391,7 @@ export default function SignInDetails({
         <View style={styles.timeRow}>
           <View style={styles.timeCard}>
             <View style={styles.timeIconCircle}>
-              <Clock size={18} color={COLORS.primary} />
+              <Clock size={17} color={COLORS.primary} />
             </View>
             <Text style={styles.timeLabel}>SHIFT START</Text>
             <Text style={styles.timeValue}>{shift.startTime}</Text>
@@ -366,34 +401,32 @@ export default function SignInDetails({
 
           <View style={styles.timeCard}>
             <View style={styles.timeIconCircle}>
-              <Clock size={18} color={COLORS.primary} />
+              <Clock size={17} color={COLORS.primary} />
             </View>
             <Text style={styles.timeLabel}>SHIFT END</Text>
             <Text style={styles.timeValue}>{shift.endTime}</Text>
           </View>
         </View>
 
-      
-
         {/* Status + Notes */}
         <View style={styles.mainContentRow}>
           <View style={styles.leftPanel}>
             <View style={styles.statusPanel}>
               <View style={styles.panelIcon}>
-                <AlertCircle size={17} color={COLORS.primary} />
+                <ShieldCheck size={16} color={COLORS.primary} />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={styles.panelTitle}>Status</Text>
-                <Text style={styles.panelValue}>Ready to Sign-in</Text>
+                <Text style={styles.panelValue}>Ready to sign in</Text>
               </View>
             </View>
 
             <View style={styles.notesPanel}>
               <View style={styles.panelIcon}>
-                <FileText size={17} color={COLORS.primary} />
+                <FileText size={16} color={COLORS.primary} />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={styles.panelTitle}>Site Description</Text>
+                <Text style={styles.panelTitle}>Site description</Text>
                 <Text style={styles.notesText} numberOfLines={4}>
                   {shift.notes || "No site description available."}
                 </Text>
@@ -414,12 +447,15 @@ export default function SignInDetails({
                   style={styles.selfieImage}
                   resizeMode="cover"
                 />
-                <View style={styles.selfieOverlay}>
+                <LinearGradient
+                  colors={["rgba(3,5,8,0)", "rgba(3,5,8,0.75)"]}
+                  style={styles.selfieOverlay}
+                >
                   <View style={styles.retakeBadge}>
                     <RotateCcw size={13} color={COLORS.text} />
                     <Text style={styles.retakeBadgeText}>Retake</Text>
                   </View>
-                </View>
+                </LinearGradient>
                 <View style={styles.selfieCheck}>
                   <Check size={13} color={COLORS.background} />
                 </View>
@@ -427,22 +463,66 @@ export default function SignInDetails({
             ) : (
               <View style={styles.selfiePlaceholder}>
                 <View style={styles.cameraIconContainer}>
-                  <Camera size={30} color={COLORS.primary} />
+                  <Camera size={28} color={COLORS.primary} />
                 </View>
-                <Text style={styles.selfieTitle}>Sign-In Selfie</Text>
+                <Text style={styles.selfieTitle}>Sign-in selfie</Text>
                 <Text style={styles.selfieSubtitle}>Tap to take photo</Text>
               </View>
             )}
           </TouchableOpacity>
         </View>
 
+        {/* Location status */}
+        {/* {locationLoading ? (
+          <View style={[styles.statusBanner, styles.infoBanner]}>
+            <ActivityIndicator size="small" color={COLORS.primary} />
+            <Text style={styles.statusBannerText}>
+              Getting your current location…
+            </Text>
+          </View>
+        ) : locationReady ? (
+          <View style={[styles.statusBanner, styles.successBanner]}>
+            <MapPin size={15} color={COLORS.success} />
+            <Text style={[styles.statusBannerText, { color: COLORS.success }]}>
+              Location confirmed
+            </Text>
+          </View>
+        ) : locationError ? (
+          <View style={[styles.statusBanner, styles.errorBanner]}>
+            <MapPinOff size={15} color={COLORS.danger} />
+            <Text style={[styles.statusBannerText, { color: COLORS.danger }]}>
+              {locationError}
+            </Text>
+            <TouchableOpacity
+              style={styles.retryPill}
+              onPress={fetchLocation}
+              activeOpacity={0.8}
+            >
+              <RefreshCw size={12} color={COLORS.danger} />
+              <Text style={styles.retryPillText}>Retry</Text>
+            </TouchableOpacity>
+          </View>
+        ) : null} */}
+
         {/* Address */}
+        {/* Site Name */}
         <View style={styles.addressCard}>
           <View style={styles.panelIcon}>
-            <MapPin size={17} color={COLORS.primary} />
+            <ShieldCheck size={16} color={COLORS.primary} />
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={styles.panelTitle}>Site Address</Text>
+            <Text style={styles.panelTitle}>Site name</Text>
+            <Text style={styles.addressText}>{shift.event}</Text>
+          </View>
+        </View>
+
+        {/* Site Address */}
+        <View style={[styles.addressCard, { marginTop: 12 }]}>
+          <View style={styles.panelIcon}>
+            <MapPin size={16} color={COLORS.primary} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.panelTitle}>Site address</Text>
             <Text style={styles.addressText}>{shift.address}</Text>
           </View>
         </View>
@@ -451,29 +531,45 @@ export default function SignInDetails({
       {/* Start Button */}
       <View style={styles.startButtonWrap}>
         <TouchableOpacity
-          style={[styles.startButton, !canStart && styles.startButtonDisabled]}
           activeOpacity={0.85}
           disabled={!canStart || loading}
           onPress={handleStartShift}
         >
-          {loading ? (
-            <ActivityIndicator color={COLORS.background} />
+          {canStart ? (
+            <LinearGradient
+              colors={[COLORS.primary, "#00847A"]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.startButton}
+            >
+              {loading ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <>
+                  <Check size={18} color="#fff" />
+                  <Text style={styles.startButtonText}>Start shift</Text>
+                </>
+              )}
+            </LinearGradient>
           ) : (
-            <>
-              {canStart && <Check size={18} color={COLORS.background} />}
-              <Text
-                style={[
-                  styles.startButtonText,
-                  !canStart && styles.startButtonTextDisabled,
-                ]}
-              >
-                {!selfieUri
-                  ? "Take your selfie to continue"
-                  : !locationReady
-                  ? "Waiting for location…"
-                  : "Start Shift"}
-              </Text>
-            </>
+            <View style={[styles.startButton, styles.startButtonDisabled]}>
+              {loading ? (
+                <ActivityIndicator color={COLORS.disabledText} />
+              ) : (
+                <Text
+                  style={[
+                    styles.startButtonText,
+                    styles.startButtonTextDisabled,
+                  ]}
+                >
+                  {!selfieUri
+                    ? "Take your selfie to continue"
+                    : !locationReady
+                    ? "Waiting for location…"
+                    : "Start shift"}
+                </Text>
+              )}
+            </View>
           )}
         </TouchableOpacity>
       </View>
@@ -485,48 +581,56 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.background,
-    paddingTop: 25,
   },
 
-  // Header
+  // ── Header ──────────────────────────────────────────────────────────────
   header: {
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 16,
-    paddingTop: 30,
-    paddingBottom: 14,
-    // paddingVertical: 20,
+    paddingTop: Platform.OS === "ios" ? 8 : 28,
+    paddingBottom: 18,
+    borderBottomLeftRadius: 26,
+    borderBottomRightRadius: 26,
+    // borderBottomWidth: 1,
+    borderColor: COLORS.cardBorder,
   },
   backButton: {
     width: 38,
     height: 38,
     borderRadius: 12,
-    backgroundColor: COLORS.card,
+    backgroundColor: "rgba(255,255,255,0.06)",
     borderWidth: 1,
-    borderColor: COLORS.cardBorder,
+    borderColor: "rgba(255,255,255,0.10)",
     justifyContent: "center",
     alignItems: "center",
   },
   headerTextWrap: {
     flex: 1,
-    marginLeft: 80,
-    marginTop: 10,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  headerEyebrow: {
+    fontSize: 10.5,
+    fontWeight: "700",
+    color: COLORS.primary,
+    letterSpacing: 0.6,
+    textTransform: "uppercase",
+    marginBottom: 3,
   },
   headerTitle: {
-    fontSize: 18,
-    fontWeight: "700",
+    fontSize: 17,
+    fontWeight: "800",
     color: COLORS.text,
-  },
-  headerSubtitle: {
-    fontSize: 12,
-    color: COLORS.textMuted,
-    marginTop: 2,
+    textAlign: "center",
+    maxWidth: 220,
   },
   headerSpacer: {
     width: 38,
+    height: 38,
   },
 
-  // Empty state
+  // ── Empty state ─────────────────────────────────────────────────────────
   emptyStateWrap: {
     flex: 1,
     alignItems: "center",
@@ -541,6 +645,8 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     marginBottom: 16,
+    borderWidth: 1,
+    borderColor: "rgba(248,113,113,0.3)",
   },
   emptyTitle: {
     color: COLORS.text,
@@ -557,10 +663,11 @@ const styles = StyleSheet.create({
 
   scrollContent: {
     paddingHorizontal: 16,
+    paddingTop: 18,
     paddingBottom: 130,
   },
 
-  // Time row
+  // ── Time row ────────────────────────────────────────────────────────────
   timeRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -568,8 +675,8 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     borderWidth: 1,
     borderColor: COLORS.cardBorder,
-    paddingVertical: 10,
-    marginBottom: 10,
+    paddingVertical: 16,
+    marginBottom: 12,
   },
   timeCard: {
     flex: 1,
@@ -583,8 +690,10 @@ const styles = StyleSheet.create({
   timeIconCircle: {
     width: 36,
     height: 36,
-    borderRadius: 18,
+    borderRadius: 12,
     backgroundColor: COLORS.primaryGlow,
+    borderWidth: 1,
+    borderColor: COLORS.primaryBorder,
     justifyContent: "center",
     alignItems: "center",
     marginBottom: 8,
@@ -594,22 +703,23 @@ const styles = StyleSheet.create({
     color: COLORS.textMuted,
     letterSpacing: 0.8,
     marginBottom: 4,
-    fontWeight: "600",
+    fontWeight: "700",
   },
   timeValue: {
-    fontSize: 17,
-    fontWeight: "700",
+    fontSize: 18,
+    fontWeight: "800",
     color: COLORS.text,
+    letterSpacing: 0.2,
   },
 
-  // Status banners
+  // ── Status banners ──────────────────────────────────────────────────────
   statusBanner: {
     flexDirection: "row",
     alignItems: "center",
     borderRadius: 16,
-    paddingVertical: 5,
+    paddingVertical: 11,
     paddingHorizontal: 14,
-    marginBottom: 10,
+    marginBottom: 12,
     borderWidth: 1,
     gap: 10,
   },
@@ -619,7 +729,7 @@ const styles = StyleSheet.create({
   },
   successBanner: {
     backgroundColor: COLORS.successBg,
-    borderColor: "rgba(52,211,153,0.3)",
+    borderColor: "rgba(52,200,138,0.3)",
   },
   errorBanner: {
     backgroundColor: COLORS.dangerBg,
@@ -646,18 +756,19 @@ const styles = StyleSheet.create({
     color: COLORS.danger,
   },
 
-  // Main content row
+  // ── Main content row ────────────────────────────────────────────────────
   mainContentRow: {
     flexDirection: "row",
     gap: 12,
-    marginBottom: 14,
+    marginBottom: 12,
+    alignItems: "stretch",
   },
   leftPanel: {
     flex: 1,
     gap: 10,
   },
   statusPanel: {
-    // height: 72,
+    flex: 1,
     backgroundColor: COLORS.card,
     borderRadius: 18,
     padding: 14,
@@ -668,7 +779,7 @@ const styles = StyleSheet.create({
     borderColor: COLORS.cardBorder,
   },
   notesPanel: {
-    // height: 92,
+    flex: 1,
     backgroundColor: COLORS.card,
     borderRadius: 18,
     padding: 14,
@@ -681,8 +792,10 @@ const styles = StyleSheet.create({
   panelIcon: {
     width: 34,
     height: 34,
-    borderRadius: 12,
+    borderRadius: 11,
     backgroundColor: COLORS.primaryGlow,
+    borderWidth: 1,
+    borderColor: COLORS.primaryBorder,
     justifyContent: "center",
     alignItems: "center",
   },
@@ -695,7 +808,7 @@ const styles = StyleSheet.create({
   },
   panelValue: {
     fontSize: 13,
-    fontWeight: "600",
+    fontWeight: "700",
     color: COLORS.text,
   },
   notesText: {
@@ -704,10 +817,10 @@ const styles = StyleSheet.create({
     lineHeight: 16,
   },
 
-  // Selfie
+  // ── Selfie ──────────────────────────────────────────────────────────────
   selfiePanel: {
     width: 158,
-    height: 164,
+    height: 180, // ← fixed height
     backgroundColor: COLORS.card,
     borderRadius: 20,
     borderWidth: 1.5,
@@ -719,13 +832,17 @@ const styles = StyleSheet.create({
   },
   selfiePlaceholder: {
     alignItems: "center",
+    justifyContent: "center",
     paddingHorizontal: 12,
+    paddingVertical: 24,
   },
   cameraIconContainer: {
     width: 56,
     height: 56,
     borderRadius: 28,
     backgroundColor: COLORS.primaryGlow,
+    borderWidth: 1,
+    borderColor: COLORS.primaryBorder,
     justifyContent: "center",
     alignItems: "center",
     marginBottom: 12,
@@ -745,15 +862,16 @@ const styles = StyleSheet.create({
   selfieImage: {
     width: "100%",
     height: "100%",
+    minHeight: 164,
   },
   selfieOverlay: {
     position: "absolute",
     bottom: 0,
     left: 0,
     right: 0,
-    paddingVertical: 8,
+    paddingVertical: 10,
     alignItems: "center",
-    backgroundColor: "rgba(3,5,8,0.55)",
+    justifyContent: "center",
   },
   retakeBadge: {
     flexDirection: "row",
@@ -777,7 +895,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
 
-  // Address
+  // ── Address ─────────────────────────────────────────────────────────────
   addressCard: {
     backgroundColor: COLORS.card,
     borderRadius: 18,
@@ -795,7 +913,7 @@ const styles = StyleSheet.create({
     lineHeight: 19,
   },
 
-  // Start button
+  // ── Start button ────────────────────────────────────────────────────────
   startButtonWrap: {
     position: "absolute",
     bottom: 0,
@@ -815,13 +933,14 @@ const styles = StyleSheet.create({
     gap: 8,
     paddingVertical: 16,
     borderRadius: 16,
-    backgroundColor: COLORS.primary,
   },
   startButtonDisabled: {
     backgroundColor: COLORS.disabled,
+    borderWidth: 1,
+    borderColor: COLORS.cardBorder,
   },
   startButtonText: {
-    color: COLORS.background,
+    color: "#ffff",
     fontSize: 16,
     fontWeight: "700",
   },

@@ -1,3 +1,4 @@
+
 import { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import {
   View,
@@ -13,6 +14,7 @@ import {
   UserCheck,
   CheckCircle,
   Briefcase,
+  ArrowRight,
 } from "lucide-react-native";
 import { Clock, MapPin, FileText, CalendarDays } from "lucide-react-native";
 import BottomSheet from "@gorhom/bottom-sheet";
@@ -39,6 +41,9 @@ import {
   extractJobData,
   styles,
   cardStyles,
+  IconBadge,
+  StatusPill,
+  GradientButton,
 } from "./StaffShiftsShared";
 import BrandLoader from "../BrandLoader";
 
@@ -223,11 +228,7 @@ export function useStaffShiftsController(
     if (raw == null || raw === "") return NaN;
     if (typeof raw === "number") return raw;
     const s = String(raw).trim();
-    // Try the DD-MM-YYYY (with optional time) format FIRST. Native `new Date()`
-    // parsing of non-ISO strings is implementation-defined and can silently
-    // misinterpret "DD-MM-YYYY" as "MM-DD-YYYY" on some engines (e.g. Hermes)
-    // when DD <= 12, corrupting the computed shift duration without ever
-    // throwing/returning NaN. Checking the known API format first avoids that.
+  
     const m = s.match(
       /^(\d{1,2})-(\d{1,2})-(\d{4})(?:[ T](\d{1,2}):(\d{2})(?::(\d{2}))?)?$/,
     );
@@ -246,12 +247,7 @@ export function useStaffShiftsController(
     return ms;
   };
 
-  // Resolves a shift/job item to a flat object of the fields we care about
-  // (contractor_invoice, job_status, start, end, hours) regardless of how
-  // deeply the API nested them (top-level, .raw, .roster, .job, or inside
-  // whatever extractJobData() knows how to unwrap). Today's and Week's
-  // endpoints have been observed to nest fields slightly differently, so
-  // every lookup below checks all known shapes instead of just the top level.
+
   const resolveShiftFields = (item: any) => {
     if (!item) return null;
     const jd =
@@ -540,27 +536,35 @@ export function useStaffShiftsController(
 
   const fetchAvailableJobs = useCallback(async (page = 1, append = false) => {
     if (isFetchingJobsRef.current) return;
+
     const token = await AsyncStorage.getItem("@auth_token");
     const userId = await AsyncStorage.getItem("@user_id");
     if (!token || !userId) return;
+
     isFetchingJobsRef.current = true;
     if (page === 1) setLoadingAvailable(true);
     else setLoadingMore(true);
+
     try {
       const response = await axios.get(`${BASE_URL}/jobs/available/${userId}`, {
         headers: { Authorization: `Bearer ${token}` },
+        params: { page },
       });
+
       const apiResponse = response.data;
       const jobsPaginator = apiResponse?.data?.jobs;
       const jobsArray = jobsPaginator?.data;
+
       if (!jobsPaginator || !Array.isArray(jobsArray)) {
         throw new Error("Invalid response format");
       }
+
       const apiJobs = jobsArray;
       const current = Number(jobsPaginator.current_page) || page;
       const last = Number(jobsPaginator.last_page) || 1;
       const total = Number(jobsPaginator.total) || apiJobs.length;
       const formatted = apiJobs.map(mapAvailableJob);
+
       setAvailableJobs((prev) => {
         if (append) {
           const seen = new Set(prev.map((j: AvailableJob) => j.id));
@@ -573,14 +577,15 @@ export function useStaffShiftsController(
           });
           return merged;
         }
+
         if (prev.length === 0) {
           return formatted;
         }
+
         const same =
           prev.length === formatted.length &&
           prev.every((oldJob, index) => {
             const newJob = formatted[index];
-
             return (
               oldJob.id === newJob.id &&
               oldJob.status === newJob.status &&
@@ -589,15 +594,19 @@ export function useStaffShiftsController(
               oldJob.endTime === newJob.endTime
             );
           });
+
         if (same) {
           return prev;
         }
+
         return formatted;
       });
+
       setCurrentPage(current);
       setLastPage(last);
       setTotalJobsCount(total);
       setHasMore(current < last);
+
       console.log(
         `Loaded ${formatted.length} jobs | Page ${current}/${last} | Total: ${total}`,
       );
@@ -1000,39 +1009,38 @@ export function useStaffShiftsController(
     setAssignTargetShift(null);
   };
 
+  // ── Available job card — premium layout: icon badge + site name + status
+  // pill up top, a hairline divider, then a clean two-column detail block,
+  // and a full-width primary CTA anchored to the bottom of the card. ──
   const renderAvailableCard = ({ item }: { item: AvailableJob }) => (
     <View style={styles.shiftCard}>
       <View style={cardStyles.headerRow}>
         <View style={cardStyles.siteIconWrap}>
-          <Briefcase size={14} color={COLORS.primary} />
+          <Briefcase size={16} color={COLORS.primary} />
         </View>
         <Text style={cardStyles.siteNameText} numberOfLines={1}>
           {item.siteName}
         </Text>
-        {item.status ? (
-          <View style={cardStyles.statusBadge}>
-            <Text style={cardStyles.statusBadgeText}>{item.status}</Text>
-          </View>
-        ) : null}
+        {item.status ? <StatusPill label={item.status} tone="warning" /> : null}
       </View>
 
       <View style={cardStyles.divider} />
 
       <View style={styles.rowItem}>
         <View style={styles.iconBgGrey}>
-          <MapPin size={14} color={COLORS.primary} />
+          <MapPin size={12} color={COLORS.primary} />
         </View>
         <Text style={styles.rowText}>{item.location}</Text>
       </View>
 
       <View style={styles.rowItem}>
         <View style={styles.iconBgGrey}>
-          <CalendarDays size={14} color={COLORS.primary} />
+          <CalendarDays size={12} color={COLORS.primary} />
         </View>
         <Text style={styles.rowText}>
           {item.date}
           {"   "}
-          <Text style={{ color: COLORS.primary, fontWeight: "700" }}>
+          <Text style={{ color: COLORS.primary, fontWeight: "800" }}>
             {item.startTime} – {item.endTime}
           </Text>
         </Text>
@@ -1040,7 +1048,7 @@ export function useStaffShiftsController(
 
       <View style={styles.rowItem}>
         <View style={styles.iconBgGrey}>
-          <FileText size={14} color={COLORS.primary} />
+          <FileText size={12} color={COLORS.primary} />
         </View>
         <Text style={styles.addressText} numberOfLines={2}>
           {item.address}
@@ -1133,7 +1141,7 @@ export function useStaffShiftsController(
         : styles.viewButton;
     const actionTextColor =
       buttonVariant === "signIn"
-        ? "#92400e"
+        ? COLORS.primary
         : buttonVariant === "ongoing"
         ? COLORS.success
         : COLORS.textMuted;
@@ -1174,29 +1182,13 @@ export function useStaffShiftsController(
             style={{
               flexDirection: "row",
               justifyContent: "flex-end",
-              marginBottom: 6,
+              marginBottom: 10,
             }}
           >
-            <View
-              style={[
-                cardStyles.statusBadge,
-                isConfirmed && {
-                  backgroundColor: "#DCFCE7",
-                  borderColor: "#86EFAC",
-                },
-              ]}
-            >
-              <Text
-                style={[
-                  cardStyles.statusBadgeText,
-                  isConfirmed && {
-                    color: "#16A34A",
-                  },
-                ]}
-              >
-                {shiftStatusLabel}
-              </Text>
-            </View>
+            <StatusPill
+              label={shiftStatusLabel}
+              tone={isConfirmed ? "success" : "warning"}
+            />
           </View>
         ) : null}
 
@@ -1264,7 +1256,7 @@ export function useStaffShiftsController(
                 styles.actionButton,
                 actionBtnStyle,
                 {
-                  width: 100,
+                  width: 106,
                   alignSelf: "flex-start",
                   marginLeft: 10,
                 },
@@ -1282,7 +1274,7 @@ export function useStaffShiftsController(
 
         {userType === "contractor" && !hideAssignForContractor && (
           <View style={styles.contractorAssignSection}>
-            <Text style={styles.assignLabel}>Assign to Staff Member</Text>
+            <Text style={styles.assignLabel}>Assign to staff member</Text>
             <TouchableOpacity
               style={[
                 styles.customDropdown,
@@ -1346,12 +1338,15 @@ export function useStaffShiftsController(
           onPress={loadMoreAvailableJobs}
           activeOpacity={0.85}
         >
-          <Text style={cardStyles.loadMoreButtonText}>
-            Load More Jobs
-            {totalJobsCount
-              ? ` (${availableJobs.length}/${totalJobsCount})`
-              : ""}
-          </Text>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+            <Text style={cardStyles.loadMoreButtonText}>
+              Load more jobs
+              {totalJobsCount
+                ? ` (${availableJobs.length}/${totalJobsCount})`
+                : ""}
+            </Text>
+            <ArrowRight size={14} color={COLORS.primary} />
+          </View>
         </TouchableOpacity>
       );
     }
@@ -1380,9 +1375,12 @@ export function useStaffShiftsController(
       return (
         <View style={cardStyles.emptyContainer}>
           <View style={cardStyles.emptyIconWrap}>
-            <Briefcase size={36} color={COLORS.primary} />
+            <Briefcase size={34} color={COLORS.primary} />
           </View>
           <Text style={cardStyles.emptyText}>No available jobs right now</Text>
+          <Text style={cardStyles.emptySubText}>
+            Pull down to refresh — new shifts appear here first.
+          </Text>
         </View>
       );
     }
@@ -1408,13 +1406,13 @@ export function useStaffShiftsController(
       return (
         <View style={styles.loadingContainer}>
           <BrandLoader size={60} />
-          <Text style={styles.loadingText}>Loading Shifts…</Text>
+          <Text style={styles.loadingText}>Loading shifts…</Text>
         </View>
       );
     }
     return (
       <>
-        <Text style={styles.sectionHeader}>Today's Shifts</Text>
+        <Text style={styles.sectionHeader}>TODAY'S SHIFTS</Text>
         {todayShifts.length === 0 ? (
           <View style={styles.emptyBlock}>
             <Text style={styles.emptyText}>No shifts today</Text>
@@ -1422,7 +1420,7 @@ export function useStaffShiftsController(
         ) : (
           todayShifts.map((shift, index) => renderShiftCard(shift, index, true))
         )}
-        <Text style={styles.sectionHeader}>This Week's Shifts</Text>
+        <Text style={styles.sectionHeader}>THIS WEEK'S SHIFTS</Text>
         {weekShifts.length === 0 ? (
           <View style={styles.emptyBlock}>
             <Text style={styles.emptyText}>No shifts this week</Text>

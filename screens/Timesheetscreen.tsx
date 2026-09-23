@@ -93,7 +93,6 @@ type LoggedInUser = {
   user_type?: string | null;
 };
 
-
 const formatAU = (date: Date) =>
   `${date.getDate().toString().padStart(2, "0")}/${(date.getMonth() + 1)
     .toString()
@@ -168,7 +167,6 @@ const statusBadgeStyle = (status: JobStatus) => {
   }
 };
 
-
 const deriveJobFromRow = (row: TimesheetRow): Job => {
   if ((row.ph_morning_hours || 0) > 0 || (row.ph_night_hours || 0) > 0)
     return "Public Holiday";
@@ -181,7 +179,6 @@ const deriveJobFromRow = (row: TimesheetRow): Job => {
     return "Sunday";
   return "Regular";
 };
-
 
 const getLoggedInUser = async (): Promise<LoggedInUser | null> => {
   try {

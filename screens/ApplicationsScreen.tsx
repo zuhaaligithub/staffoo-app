@@ -182,12 +182,7 @@ const getInitials = (name?: string): string => {
   return parts[0][0].toUpperCase() + parts[parts.length - 1][0].toUpperCase();
 };
 
-/**
- * Display tag logic:
- * - If contractor_invoice === 1 → never show "Job assigned – waiting for payment"
- * - Only show "Job assigned – waiting for payment" when contractor_invoice === 0
- *   and the job is accepted / payment not required / pending with acceptance.
- */
+
 const getDisplayTag = (
   jobStatus: string | null | undefined,
   acceptedBy: any,
@@ -246,7 +241,6 @@ const getDisplayTag = (
     .join(" ");
 };
 
-/** Only jobs that are waiting for payment AND contractor_invoice === 0 */
 const getWaitingForPaymentJobs = (list: Shift[]): Shift[] =>
   list.filter((s) => {
     const isWaiting = (s.tag || "")
@@ -256,7 +250,6 @@ const getWaitingForPaymentJobs = (list: Shift[]): Shift[] =>
     return isWaiting && !isContractorInvoice;
   });
 
-/** Helper: does this tag/status string represent the "waiting for payment" state */
 const isWaitingForPaymentTag = (tag?: string | null): boolean =>
   (tag || "").toLowerCase().includes("waiting for payment");
 
@@ -282,13 +275,8 @@ export default function WeeklyRosterScreen({ navigation }: any) {
   const [pendingPaymentJobs, setPendingPaymentJobs] = useState<Shift[]>([]);
   const paymentInProgressRef = useRef(false);
 
-  // Tracks the last known tag/status per shift id so we can detect the exact
-  // moment a job flips from "Pending" -> "Job assigned – waiting for payment"
-  // even while silently polling in the background.
   const prevTagsRef = useRef<Map<number, string>>(new Map());
-  // Prevents opening the payment modal for jobs that are ALREADY in the
-  // waiting-for-payment state the first time the screen loads (we only want
-  // this to trigger on new transitions detected while the user is active).
+
   const hasInitializedTagsRef = useRef(false);
 
   const [searchText, setSearchText] = useState("");
@@ -300,8 +288,6 @@ export default function WeeklyRosterScreen({ navigation }: any) {
   const [lastPage, setLastPage] = useState(1);
   const [loadingMore, setLoadingMore] = useState(false);
   const [totalJobs, setTotalJobs] = useState(0);
-
-  // Transaction history modal states
   const [showTransactionModal, setShowTransactionModal] = useState(false);
   const [shiftTransactions, setShiftTransactions] = useState<any[]>([]);
   const [loadingTransactions, setLoadingTransactions] = useState(false);
@@ -735,22 +721,13 @@ export default function WeeklyRosterScreen({ navigation }: any) {
     };
   };
 
-  /**
-   * Compares the freshly fetched shifts against the last known tags and, the
-   * moment any shift flips from a non-waiting state (e.g. "Pending") into
-   * "Job assigned – waiting for payment", immediately opens the existing
-   * "Waiting for Payment" Modal (the same one used on initial load) instead
-   * of showing a native Alert. Runs for both the silent 20s poll and normal
-   * fetches so the customer sees the modal pop up in real time without
-   * needing to pull-to-refresh.
-   */
+
   const detectAndAlertPaymentTransitions = (
     freshShifts: Shift[],
     currentUserType: string | null,
   ) => {
     if (currentUserType !== "customer") {
-      // Keep the map in sync even for non-customer users so nothing stale
-      // leaks in if the user type changes later in the session.
+
       freshShifts.forEach((s) => prevTagsRef.current.set(s.id, s.tag));
       hasInitializedTagsRef.current = true;
       return;
@@ -1267,6 +1244,7 @@ export default function WeeklyRosterScreen({ navigation }: any) {
           end={{ x: 1, y: 1 }}
           style={styles.hero}
         >
+           <View style={styles.heroGlowDot} />
           <View style={styles.heroInner}>
             <View style={styles.heroTopRow}>
               <TouchableOpacity
@@ -2286,6 +2264,16 @@ const styles = StyleSheet.create({
     width: "100%",
     paddingHorizontal: 10,
   },
+    heroGlowDot: {
+    position: "absolute",
+    width: 160,
+    height: 160,
+    borderRadius: 80,
+    backgroundColor: COLORS.primaryGlow,
+    top: -70,
+    right: -50,
+    opacity: 0.5,
+  },
   heroTopRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -2802,29 +2790,29 @@ const styles = StyleSheet.create({
   },
   paymentModalHeader: {
     alignItems: "center",
-    paddingHorizontal: 24,
-    paddingTop: 22,
-    paddingBottom: 16,
+    paddingHorizontal: 15,
+    paddingTop: 10,
+    paddingBottom: 10,
   },
   paymentIconCircle: {
-    width: 68,
-    height: 68,
-    borderRadius: 34,
+    width: 58,
+    height: 58,
+    borderRadius: 30,
     backgroundColor: "#FEE2E2",
     justifyContent: "center",
     alignItems: "center",
     marginBottom: 10,
   },
   paymentModalTitle: {
-    fontSize: 19,
+    fontSize: 17,
     fontWeight: "800",
     color: "#111827",
     textAlign: "center",
-    marginBottom: 8,
+    marginBottom: 2,
   },
   paymentModalSubtitle: {
-    fontSize: 13,
-    lineHeight: 19,
+    fontSize: 11,
+    lineHeight: 16,
     color: "#6B7280",
     textAlign: "center",
   },
@@ -2833,24 +2821,24 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#E5E7EB",
     borderRadius: 14,
-    padding: 14,
-    marginBottom: 12,
+    padding: 10,
+    marginBottom: 5,
   },
   paymentJobSite: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: "700",
     color: "#111827",
     marginBottom: 2,
   },
   paymentJobType: {
-    fontSize: 12,
+    fontSize: 11,
     color: "#6B7280",
-    marginBottom: 8,
+    marginBottom: 5,
   },
   paymentJobMetaRow: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginBottom: 6,
+    marginBottom: 5,
   },
   paymentJobMetaText: {
     fontSize: 11,
@@ -2871,32 +2859,32 @@ const styles = StyleSheet.create({
     flex: 1,
     borderWidth: 1.5,
     borderColor: "#D1D5DB",
-    borderRadius: 10,
-    paddingVertical: 11,
+    borderRadius: 7,
+    paddingVertical: 7,
     alignItems: "center",
   },
   paymentDetailsBtnText: {
     color: "#374151",
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: "700",
   },
   paymentPayBtn: {
     flex: 1,
     backgroundColor: "#EF4444",
-    borderRadius: 10,
-    paddingVertical: 11,
+    borderRadius: 7,
+    paddingVertical: 7,
     alignItems: "center",
   },
   paymentPayBtnText: {
     color: "#fff",
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: "700",
   },
   paymentCloseBtn: {
     borderWidth: 1.5,
     borderColor: "#D1D5DB",
     borderRadius: 12,
-    paddingVertical: 13,
+    paddingVertical: 11,
     alignItems: "center",
   },
   paymentCloseBtnText: {

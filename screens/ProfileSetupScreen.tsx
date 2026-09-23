@@ -1,5 +1,3 @@
-
-
 import React, { useEffect, useState, useRef } from "react";
 import {
   View,
@@ -286,6 +284,8 @@ export default function ProfileSetupScreen({ navigation }: Props) {
     "Western Australia",
     "South Australia",
     "Tasmania",
+    "Australian Capital Territory",
+    "Northern Territory",
   ];
   const [selectedStates, setSelectedStates] = useState<string[]>([]);
   const [showStatesModal, setShowStatesModal] = useState(false);
@@ -310,6 +310,8 @@ export default function ProfileSetupScreen({ navigation }: Props) {
     tas_document: "Tasmania",
     wa_document: "Western Australia",
     sa_document: "South Australia",
+    act_document: "Australian Capital Territory",
+    nt_document: "Northern Territory",
   };
 
   const resolveCountryName = (input: string): string => {
@@ -1350,9 +1352,8 @@ export default function ProfileSetupScreen({ navigation }: Props) {
           >
             <ArrowLeft size={16} color={COLORS.text} />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Complete Your Profile</Text>
+          <Text style={styles.headerTitle}>Personal Information</Text>
           <View style={{ width: 36 }} />
-          
         </LinearGradient>
 
         <TouchableOpacity
@@ -1415,10 +1416,7 @@ export default function ProfileSetupScreen({ navigation }: Props) {
                   size={17}
                   color={phoneVerified ? COLORS.success : COLORS.danger}
                 /> */}
-                  <Phone
-                  size={15}
-            color='#28e1d5'
-                />
+                <Phone size={15} color="#28e1d5" />
               </View>
 
               <TextInput
@@ -1462,7 +1460,7 @@ export default function ProfileSetupScreen({ navigation }: Props) {
               style={[styles.inputContainer, styles.inputContainerDisabled]}
             >
               <View style={styles.inputIconWrap}>
-                <Mail size={17} color='#28e1d5' />
+                <Mail size={17} color="#28e1d5" />
               </View>
               <TextInput
                 style={styles.input}
@@ -2378,7 +2376,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.background,
-    paddingTop:15
+    paddingTop: 15,
   },
   scrollContent: {
     paddingHorizontal: 16,
@@ -2396,7 +2394,6 @@ const styles = StyleSheet.create({
     borderBottomLeftRadius: 24,
     borderBottomRightRadius: 24,
     marginBottom: 10,
-  
   },
   headerBackBtn: {
     width: 30,
@@ -2407,7 +2404,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   headerTitle: {
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: "700",
     color: COLORS.text,
     letterSpacing: 0.2,

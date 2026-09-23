@@ -148,7 +148,6 @@ const mapRecordToRateForm = (record: any): RateFormShape => ({
   reg_pub: String(record?.def_reg_pub_holi_day_rate ?? ""),
 });
 
-// A field counts as "filled" only if it holds a valid, non-negative number.
 const isFieldFilled = (value: string) => {
   if (value === undefined || value === null || value.trim() === "")
     return false;
@@ -164,8 +163,7 @@ const getMissingFields = (form: RateFormShape): RateFieldKey[] =>
 const isRateFormComplete = (form: RateFormShape) =>
   getMissingFields(form).length === 0;
 
-// Deep-clones a { stateCode: RateFormShape } map so a later edit to the
-// "current" map never mutates the "original" snapshot taken at modal-open.
+
 const cloneRatesMap = (
   map: Record<string, RateFormShape>,
 ): Record<string, RateFormShape> => {
@@ -176,9 +174,7 @@ const cloneRatesMap = (
   return clone;
 };
 
-// Compares two rate forms field-by-field, treating blank/invalid values as
-// "no value" so "" and "0" don't get flagged as different from each other
-// incorrectly, while a real numeric change (including new -> filled) does.
+
 const areRatesEqual = (a: RateFormShape, b: RateFormShape) =>
   (Object.keys(a) as RateFieldKey[]).every((key) => {
     const av = isFieldFilled(a[key]) ? parseFloat(a[key]) : null;
@@ -204,20 +200,12 @@ export default function ContractorRatesScreen() {
   const getFinishedKey = (uid: number | string | null) =>
     uid ? `@contractor_rates_finished_${uid}` : null;
 
-  // ----- Top tabs (Active Rates / Request History) -----
   const [topTab, setTopTab] = useState<TopTab>("active");
-
-  // ----- Which state's card is shown in the Active Rates tab -----
   const [selectedStateTab, setSelectedStateTab] = useState<string | null>(null);
-
-  // ----- Request history (single merged list — no status sub-tabs) -----
-  // Start true so first paint never treats empty historyList as "missing"
   const [historyLoading, setHistoryLoading] = useState(true);
   const [historyList, setHistoryList] = useState<any[]>([]);
   const [viewModalVisible, setViewModalVisible] = useState(false);
   const [viewModalData, setViewModalData] = useState<any>(null);
-
-  // ----- Request rate update modal (step wizard) -----
   const [modalVisible, setModalVisible] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [savingExit, setSavingExit] = useState(false);
@@ -227,10 +215,7 @@ export default function ContractorRatesScreen() {
   const [stateRates, setStateRates] = useState<Record<string, RateFormShape>>(
     {},
   );
-  // Snapshot of what each wizard state's rates (and status) looked like the
-  // moment the modal opened — used to work out which states the user
-  // actually changed, so the payload never re-sends an untouched approved
-  // rate.
+  
   const [originalStateRates, setOriginalStateRates] = useState<
     Record<string, RateFormShape>
   >({});
@@ -243,9 +228,7 @@ export default function ContractorRatesScreen() {
     "request",
   );
 
-  // =========================================================
-  // Fetch: Active rates + profile
-  // =========================================================
+
   const fetchRates = useCallback(async () => {
     try {
       const userStr = await AsyncStorage.getItem("user");
@@ -295,12 +278,7 @@ export default function ContractorRatesScreen() {
     }
   }, []);
 
-  // =========================================================
-  // Fetch: Request history — a single call returns every status
-  // (draft / pending / approved / rejected) in one list. We load
-  // this eagerly (not just when the History tab opens) because the
-  // Active Rates tab needs it to know which states are drafts.
-  // =========================================================
+
   const fetchHistory = useCallback(
     async (overrideUid?: number | string, overrideToken?: string) => {
       try {
@@ -365,10 +343,7 @@ export default function ContractorRatesScreen() {
 
   useEffect(() => {
     (async () => {
-      // 1. First load rates + profile (this also sets userId)
       const res = await fetchRates();
-
-      // 2. Now that we have the real user id, load the per-user flag
       if (res?.uid) {
         const key = getFinishedKey(res.uid);
         if (key) {
@@ -387,7 +362,6 @@ export default function ContractorRatesScreen() {
         fetchHistory();
       }
     })();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleTopTabPress = (tab: TopTab) => {
@@ -415,9 +389,7 @@ export default function ContractorRatesScreen() {
     }
   }, [fetchRates, fetchHistory]);
 
-  // =========================================================
-  // Helpers
-  // =========================================================
+
   const formatMoney = (val: any) => {
     if (val === undefined || val === null || val === "") return "—";
     const num = parseFloat(String(val));
@@ -442,7 +414,6 @@ export default function ContractorRatesScreen() {
     });
   };
 
-  // Build the 5 display rows (Mon-Fri Day/Night, Sat, Sun, Pub Holiday) for any single rate record
   const buildRowsForRate = (rate: any): RateRow[] => {
     if (!rate) return [];
     return [
@@ -538,20 +509,12 @@ export default function ContractorRatesScreen() {
 
   const getStateRateStatus = useCallback(
     (code: string): StateRateStatus => {
-      // NOTE: We intentionally do NOT short-circuit to "missing" just
-      // because ratesList (approved rates) is empty — a contractor can
-      // have zero approved rates while still having a draft/pending/
-      // rejected request in historyList for a given state, and that must
-      // still be reflected accurately per-state below.
+    
       const activeRate = getActiveRateForState(code);
       if (!activeRate) {
         const latest = getLatestHistoryForState(code);
         if (!latest) return "missing";
-
-        // If you only want true unsubmitted drafts to show as 'draft',
-        // ensure it's explicitly marked as a draft/unsubmitted AND there's no active history
         if (Number(latest.is_submitted) === 0) return "draft";
-
         const s = String(latest.status || "pending").toLowerCase();
         if (s === "rejected") return "rejected";
         return "pending";
@@ -563,8 +526,7 @@ export default function ContractorRatesScreen() {
   );
   const allowedCodesForBadge = getAllowedStateCodes();
 
-  // States that still need attention (not fully active yet) — used for the
-  // status chips row, which shows Missing / Draft / Pending / Rejected.
+
   const attentionStates = allowedCodesForBadge.filter(
     (c) => getStateRateStatus(c) !== "active",
   );
@@ -572,7 +534,6 @@ export default function ContractorRatesScreen() {
   const allStatesComplete =
     allowedCodesForBadge.length > 0 && missingStatesCount === 0;
 
-  // Sort tabs: missing first, then draft / pending / rejected, then active.
   const STATUS_TAB_ORDER: Record<StateRateStatus, number> = {
     missing: 0,
     draft: 1,
@@ -588,20 +549,17 @@ export default function ContractorRatesScreen() {
         if (orderA !== orderB) return orderA - orderB;
         return getStateLabel(a).localeCompare(getStateLabel(b));
       }),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     [allowedCodesForBadge.join(","), ratesList, historyList],
   );
 
   const missingStates = useMemo(
     () =>
       allowedCodesForBadge.filter((c) => getStateRateStatus(c) === "missing"),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     [allowedCodesForBadge.join(","), ratesList, historyList],
   );
 
   const hasMissingRates = missingStates.length > 0;
 
-  // Badge meta for every status including Active (green tick)
   const STATUS_BADGE_META: Record<
     StateRateStatus,
     { label: string; color: string; bg: string }
@@ -613,11 +571,6 @@ export default function ContractorRatesScreen() {
     active: { label: "Active", color: "#fff", bg: COLORS.success },
   };
 
-  // ---------------------------------------------------------------
-  // Keep the selected state tab valid: default to the first state
-  // that still needs attention (missing first), or the first allowed
-  // state if everything is active. Purely derived from live API data.
-  // ---------------------------------------------------------------
   useEffect(() => {
     if (allowedCodesForBadge.length === 0) {
       if (selectedStateTab !== null) setSelectedStateTab(null);
@@ -654,28 +607,17 @@ export default function ContractorRatesScreen() {
         initial[code] = mapRecordToRateForm(active);
         return;
       }
-
-      // 2) Otherwise use the latest history item (including rejected)
       const latest = getLatestHistoryForState(code);
       if (latest) {
         initial[code] = mapRecordToRateForm(latest);
         return;
       }
-
-      // 3) Truly missing → empty
       initial[code] = emptyRateForm();
     });
     return initial;
   };
 
-  // =========================================================
-  // Request modal (step wizard)
-  //
-  // wizardStates holds the ordered list of states being filled in this
-  // session. The user moves forward one state at a time; "Next State" is
-  // disabled until the current state's 10 fields are valid. On the last
-  // state, Save & Exit / Save & Submit replace the Next button.
-  // =========================================================
+
   const openRequestModal = () => {
     const codes = getAllowedStateCodes();
     if (codes.length === 0) {
@@ -688,15 +630,9 @@ export default function ContractorRatesScreen() {
       return;
     }
 
-    // Show every state assigned to this contractor — including ones that
-    // already have an approved rate — so the user can review or update any
-    // of them from a single place. Only whichever states actually change
-    // end up in the submit payload (see getChangedWizardStates).
     const order = codes;
 
     const initial = buildInitialRatesForCodes(order);
-
-    // Truly missing states always start with blank fields.
     order.forEach((code) => {
       if (getStateRateStatus(code) === "missing") {
         initial[code] = emptyRateForm();
@@ -713,8 +649,6 @@ export default function ContractorRatesScreen() {
     setOriginalStateStatuses(statuses);
     setWizardStates(order);
 
-    // Default to the first state that still needs attention, if any —
-    // otherwise just start at the first state in the list.
     const firstAttentionIndex = order.findIndex(
       (c) => statuses[c] !== "active",
     );
@@ -725,111 +659,94 @@ export default function ContractorRatesScreen() {
     setModalVisible(true);
   };
 
-  // Opens the wizard for a single state — used by "Continue Draft" and
-  // "Resubmit" actions. If the state is truly missing, force empty fields.
- const openSingleStateModal = (code: string, clearRates = false) => {
-  const normalized = code.toLowerCase();
+  const openSingleStateModal = (code: string, clearRates = false) => {
+    const normalized = code.toLowerCase();
 
-  if (!clearRates && getStateRateStatus(normalized) === "missing") {
-    clearRates = true;
-  }
+    if (!clearRates && getStateRateStatus(normalized) === "missing") {
+      clearRates = true;
+    }
 
-  const status = getStateRateStatus(normalized);
-  const isDraft = status === "draft";
+    const status = getStateRateStatus(normalized);
+    const isDraft = status === "draft";
+    const allCodes = getAllowedStateCodes();
+    const statesToEdit = allCodes.includes(normalized)
+      ? [normalized, ...allCodes.filter((c) => c !== normalized)]
+      : [normalized, ...allCodes];
 
-  // Get all allowed states
-  const allCodes = getAllowedStateCodes();
+    const initial = buildInitialRatesForCodes(statesToEdit);
+    if (clearRates) {
+      initial[normalized] = emptyRateForm();
+    }
 
-  // Put the clicked state first, then the rest
-  const statesToEdit = allCodes.includes(normalized)
-    ? [normalized, ...allCodes.filter((c) => c !== normalized)]
-    : [normalized, ...allCodes];
+    const statuses: Record<string, StateRateStatus> = {};
+    statesToEdit.forEach((c) => {
+      statuses[c] = getStateRateStatus(c);
+    });
 
-  const initial = buildInitialRatesForCodes(statesToEdit);
-  if (clearRates) {
-    initial[normalized] = emptyRateForm();
-  }
+    setStateRates(initial);
+    setOriginalStateRates(cloneRatesMap(initial));
+    setOriginalStateStatuses(statuses);
+    setWizardStates(statesToEdit);
+    setWizardIndex(0);
 
-  const statuses: Record<string, StateRateStatus> = {};
-  statesToEdit.forEach((c) => {
-    statuses[c] = getStateRateStatus(c);
-  });
-
-  setStateRates(initial);
-  setOriginalStateRates(cloneRatesMap(initial));
-  setOriginalStateStatuses(statuses);
-  setWizardStates(statesToEdit);
-  setWizardIndex(0);
-
-  setAdminNotes("");
-  setModalMode(isDraft ? "draft" : "update");
-  setIsSubmitMode(false);
-  setSubmitModeItem(null);
-  setModalVisible(true);
-};
+    setAdminNotes("");
+    setModalMode(isDraft ? "draft" : "update");
+    setIsSubmitMode(false);
+    setSubmitModeItem(null);
+    setModalVisible(true);
+  };
 
   const openResubmitModal = (item: any) => {
     const code = String(item?.state || "").toLowerCase();
     if (!code) return;
-
-    // Prefill with the rejected request's rates (do NOT clear)
     openSingleStateModal(code, false);
   };
-const openSubmitModal = (item: any) => {
-  const clickedCode = String(item?.state || "").toLowerCase();
-  if (!clickedCode) return;
+  const openSubmitModal = (item: any) => {
+    const clickedCode = String(item?.state || "").toLowerCase();
+    if (!clickedCode) return;
+    const allDraftStates = historyList
+      .filter((h) => Number(h.is_submitted) === 0)
+      .map((h) => String(h.state || "").toLowerCase())
+      .filter(Boolean);
+    const uniqueDraftStates = [...new Set(allDraftStates)];
+    const statesToEdit = uniqueDraftStates.includes(clickedCode)
+      ? [clickedCode, ...uniqueDraftStates.filter((c) => c !== clickedCode)]
+      : [clickedCode, ...uniqueDraftStates];
 
-  // Get ALL draft states
-  const allDraftStates = historyList
-    .filter((h) => Number(h.is_submitted) === 0)
-    .map((h) => String(h.state || "").toLowerCase())
-    .filter(Boolean);
+    const initial: Record<string, RateFormShape> = {};
+    statesToEdit.forEach((code) => {
+      const historyItem =
+        historyList.find(
+          (h) =>
+            String(h.state || "").toLowerCase() === code &&
+            Number(h.is_submitted) === 0,
+        ) || item;
 
-  // Remove duplicates
-  const uniqueDraftStates = [...new Set(allDraftStates)];
+      initial[code] = mapRecordToRateForm(historyItem);
+    });
 
-  // Put the clicked state first, then the rest of the drafts
-  const statesToEdit = uniqueDraftStates.includes(clickedCode)
-    ? [clickedCode, ...uniqueDraftStates.filter((c) => c !== clickedCode)]
-    : [clickedCode, ...uniqueDraftStates];
+    const statuses: Record<string, StateRateStatus> = {};
+    statesToEdit.forEach((code) => {
+      statuses[code] = "draft";
+    });
 
-  // Build initial rates for all these draft states
-  const initial: Record<string, RateFormShape> = {};
-  statesToEdit.forEach((code) => {
-    const historyItem =
-      historyList.find(
-        (h) =>
-          String(h.state || "").toLowerCase() === code &&
-          Number(h.is_submitted) === 0,
-      ) || item;
+    setStateRates(initial);
+    setOriginalStateRates(cloneRatesMap(initial));
+    setOriginalStateStatuses(statuses);
+    setWizardStates(statesToEdit);
+    setWizardIndex(0);
+    setAdminNotes(
+      item?.review_note ||
+        item?.notes ||
+        item?.admin_note ||
+        item?.admin_notes ||
+        "",
+    );
 
-    initial[code] = mapRecordToRateForm(historyItem);
-  });
-
-  const statuses: Record<string, StateRateStatus> = {};
-  statesToEdit.forEach((code) => {
-    statuses[code] = "draft";
-  });
-
-  setStateRates(initial);
-  setOriginalStateRates(cloneRatesMap(initial));
-  setOriginalStateStatuses(statuses);
-  setWizardStates(statesToEdit);
-  setWizardIndex(0);
-
-  // Prefill notes from the clicked item
-  setAdminNotes(
-    item?.review_note ||
-      item?.notes ||
-      item?.admin_note ||
-      item?.admin_notes ||
-      "",
-  );
-
-  setIsSubmitMode(true);
-  setSubmitModeItem(item);
-  setModalVisible(true);
-};
+    setIsSubmitMode(true);
+    setSubmitModeItem(item);
+    setModalVisible(true);
+  };
 
   const activeWizardState = wizardStates[wizardIndex] || "";
   const isLastWizardState = wizardIndex === wizardStates.length - 1;
@@ -848,7 +765,6 @@ const openSubmitModal = (item: any) => {
   };
 
   const goToWizardState = (index: number) => {
-    // Only allow jumping to a state already reached (or the current one)
     if (index > wizardIndex) return;
     setWizardIndex(index);
   };
@@ -867,10 +783,7 @@ const openSubmitModal = (item: any) => {
     setModalMode("request");
   };
 
-  // Which wizard states actually changed compared to the snapshot taken
-  // when the modal opened. A state that already had an approved rate and
-  // was left untouched is excluded; every other state (missing/draft/
-  // pending/rejected, or an approved state the user edited) is included.
+
   const getChangedWizardStates = () =>
     wizardStates.filter((code) => {
       const wasApproved = originalStateStatuses[code] === "active";
@@ -880,16 +793,7 @@ const openSubmitModal = (item: any) => {
       return !areRatesEqual(original, current);
     });
 
-  // =========================================================
-  // Shared submit — hits the same `request-charge-rate` endpoint for
-  // both "Save & Exit" and "Save and Submit". The only difference is
-  // the `is_submitted` flag: 0 = draft (no field-completeness check),
-  // 1 = final submission (requires every changed state's fields filled).
-  // The payload only ever contains states the user actually changed in
-  // this session — an untouched approved rate is never re-sent.
-  // Nothing about the rates is ever cached on-device — every screen
-  // re-derives state purely from the latest API responses.
-  // =========================================================
+
   const submitRatesRequest = async (isSubmitted: 0 | 1) => {
     if (wizardStates.length === 0) {
       Toast.show({
@@ -913,8 +817,7 @@ const openSubmitModal = (item: any) => {
       return;
     }
 
-    // A full submission requires every changed state's fields to be filled.
-    // Saving & exiting is allowed to go out with blank/partial rates.
+ 
     const allComplete = changedStates.every((code) =>
       isRateFormComplete(stateRates[code] || emptyRateForm()),
     );
@@ -945,8 +848,6 @@ const openSubmitModal = (item: any) => {
         const n = parseFloat(v);
         return isNaN(n) ? 0 : n;
       };
-
-      // Only the states that actually changed go into the payload.
       const rates = changedStates.map((stateCode) => {
         const r = stateRates[stateCode] || emptyRateForm();
         return {
@@ -971,7 +872,6 @@ const openSubmitModal = (item: any) => {
         };
       });
 
-      // is_submitted: 0 → Save & Exit (draft), 1 → Save and Submit (active review)
       const payload = {
         user_id: user?.id,
         rates,
@@ -1015,20 +915,10 @@ const openSubmitModal = (item: any) => {
       setAdminNotes("");
       setIsSubmitMode(false);
       setSubmitModeItem(null);
-      
-
-      // Refetch from the API — this is the single source of truth for
-      // whether a state is active / draft / pending / rejected.
       await Promise.all([fetchRates(), fetchHistory()]);
-
-      // Keep the just-edited state selected/visible so the user
-      // immediately sees the card they saved or submitted.
       if (closedWizardStates.length === 1) {
         setSelectedStateTab(closedWizardStates[0]);
       }
-
-      // A full submission moves the contractor straight to the archive
-      // so they can see the request they just sent for review.
       if (isSubmitted === 1) {
         setTopTab("history");
       } else {
@@ -1053,12 +943,8 @@ const openSubmitModal = (item: any) => {
     }
   };
 
-  // Save & Exit → is_submitted: 0 in the payload.
   const handleSaveAndExit = () => submitRatesRequest(0);
-  // Save and Submit → is_submitted: 1 in the payload.
   const handleRequestSubmit = () => submitRatesRequest(1);
-
-  // Always allow back — no incomplete-rates gate.
   const handleBackPress = () => {
     navigation.dispatch(
       CommonActions.navigate({
@@ -1068,63 +954,58 @@ const openSubmitModal = (item: any) => {
     );
   };
 
-  // ---------------------------------------------------------------
-  // Finish CTA — derived entirely from live API data (ratesList +
-  // historyList) on every render. No AsyncStorage / on-device flag
-  // is used to remember this; it is purely a function of the current
-  // API state, so it always reflects reality even across devices.
-  // ---------------------------------------------------------------
+
   const wasCompleteRef = useRef<boolean | null>(null);
 
- useEffect(() => {
-  if (loading || historyLoading) {
-    setShowFinishCTA(false);
-    return;
-  }
+  useEffect(() => {
+    if (loading || historyLoading) {
+      setShowFinishCTA(false);
+      return;
+    }
 
-  const hasAllowedStates = allowedCodesForBadge.length > 0;
-  const hasRateRecords = ratesList.length > 0;
-  const ratesFullyComplete =
-    hasAllowedStates && hasRateRecords && allStatesComplete;
+    const hasAllowedStates = allowedCodesForBadge.length > 0;
+    const hasRateRecords = ratesList.length > 0;
+    const ratesFullyComplete =
+      hasAllowedStates && hasRateRecords && allStatesComplete;
 
-  // If rates are not complete → hide button and reset
-  if (!ratesFullyComplete) {
-    setShowFinishCTA(false);
-    wasCompleteRef.current = false;
-    return;
-  }
 
-  // If user already finished once → never show again
-  if (finishedThisSession) {
-    setShowFinishCTA(false);
+    if (!ratesFullyComplete) {
+      setShowFinishCTA(false);
+      wasCompleteRef.current = false;
+      completeToastShownRef.current = false;
+      if (finishedThisSession) {
+        setFinishedThisSession(false);
+      }
+      return;
+    }
+    if (finishedThisSession) {
+      setShowFinishCTA(false);
+      wasCompleteRef.current = true;
+      return;
+    }
+    setShowFinishCTA(true);
+
+    if (wasCompleteRef.current === false && !completeToastShownRef.current) {
+      completeToastShownRef.current = true;
+      setTopTab("active");
+      Toast.show({
+        type: "info",
+        text1: "Rates complete",
+        text2: "Please click on Finish to activate your profile.",
+        position: "top",
+        visibilityTime: 5000,
+      });
+    }
+
     wasCompleteRef.current = true;
-    return;
-  }
-
-  // Show Finish button only the first time rates become complete
-  setShowFinishCTA(true);
-
-  if (wasCompleteRef.current === false && !completeToastShownRef.current) {
-    completeToastShownRef.current = true;
-    setTopTab("active");
-    Toast.show({
-      type: "info",
-      text1: "Rates complete",
-      text2: "Please click on Finish to activate your profile.",
-      position: "top",
-      visibilityTime: 5000,
-    });
-  }
-
-  wasCompleteRef.current = true;
-}, [
-  loading,
-  historyLoading,
-  allStatesComplete,
-  allowedCodesForBadge.length,
-  ratesList.length,
-  finishedThisSession,
-]);
+  }, [
+    loading,
+    historyLoading,
+    allStatesComplete,
+    allowedCodesForBadge.length,
+    ratesList.length,
+    finishedThisSession,
+  ]);
 
   const handleFinishPress = () => {
     setFinishedThisSession(true); // triggers persist after hydration
@@ -1186,26 +1067,14 @@ const openSubmitModal = (item: any) => {
   const requestButtonLabel =
     missingStatesCount > 0 ? "Request Rates" : "Update Rates";
 
-  // =========================================================
-  // Single-state card for the Active Rates tab — shows whichever
-  // state is currently selected in the tab bar.
-  //  - active:  full approved rate table.
-  //  - draft / pending / rejected: the rates the contractor entered are
-  //    shown (never hidden behind a generic placeholder), clearly marked
-  //    as not yet approved so it's never confused with an active rate.
-  //  - missing: empty state with a CTA to request rates.
-  // =========================================================
   const renderSelectedStateCard = () => {
     if (!selectedStateTab) return null;
 
     const status = getStateRateStatus(selectedStateTab);
     const stateLabel = getStateLabel(selectedStateTab);
-
-    // Strictly enforce that 'active' cards only render if an active rate record exists from the API
     if (status === "active") {
       const rate = getActiveRateForState(selectedStateTab);
       if (!rate) {
-        // Fallback if data is empty
         return renderMissingCard(selectedStateTab, stateLabel);
       }
       const rows = buildRowsForRate(rate);
@@ -1285,10 +1154,7 @@ const openSubmitModal = (item: any) => {
       );
     }
 
-    // Draft / Pending / Rejected: the contractor has already entered rates
-    // for this state, they just haven't been approved yet. Show what was
-    // actually entered instead of a generic "Draft Saved" placeholder, and
-    // never present this with the "Active" styling.
+
     if (status === "draft" || status === "pending" || status === "rejected") {
       const record = getLatestHistoryForState(selectedStateTab);
       const rows = buildRowsForRate(record);
@@ -2111,10 +1977,8 @@ const openSubmitModal = (item: any) => {
                           >
                             <MapPin
                               size={13}
-                              color={
-                                isActive ? COLORS.primary : COLORS.textMuted
-                              }
-                              style={{ marginRight: 6 }}
+                              color={isActive ? "#FFFFFF" : COLORS.textMuted}
+                              style={{ marginRight: 4 }}
                             />
                             <Text
                               style={[
@@ -2899,7 +2763,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.background,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
-    height: "90%",
+    height: "94%",
     borderWidth: 1.5,
     borderColor: "#dddd",
     overflow: "hidden",
@@ -2910,11 +2774,11 @@ const styles = StyleSheet.create({
     alignItems: "flex-start",
   },
   modalTitle: {
-    fontSize: 18,
+    fontSize: 14,
     fontWeight: "800",
     color: "#fff",
-    marginBottom: 2,
-    padding: 20,
+    // marginBottom: 2,
+    padding: 15,
   },
   modalSubtitle: {
     fontSize: 12,
@@ -2923,14 +2787,14 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   closeBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 25,
+    height: 25,
+    borderRadius: 15,
     backgroundColor: "rgba(255,255,255,0.15)",
     alignItems: "center",
     justifyContent: "center",
     marginTop: 10,
-    marginRight: 10,
+    marginRight: 15,
   },
   modalScroll: {
     flex: 1,
@@ -2939,7 +2803,7 @@ const styles = StyleSheet.create({
   stateSelectCard: {
     backgroundColor: COLORS.card,
     borderRadius: 14,
-    padding: 14,
+    padding: 10,
     borderWidth: 1,
     borderColor: COLORS.cardBorder,
     marginBottom: 14,
@@ -2959,33 +2823,33 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   stateSelectTitle: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: "700",
     color: COLORS.text,
     letterSpacing: 0.3,
   },
 
   editingStateNote: {
-    fontSize: 11.5,
+    fontSize: 10.5,
     color: COLORS.textSecondary,
     textAlign: "center",
-    marginTop: 12,
+    marginTop: 9,
   },
 
   formSection: {
     backgroundColor: COLORS.card,
     borderRadius: 14,
-    padding: 14,
+    padding: 10,
     borderWidth: 1,
     borderColor: COLORS.cardBorder,
-    marginBottom: 16,
+    marginBottom: 30,
     ...CARD_SHADOW,
   },
   formSectionTitle: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: "700",
     color: COLORS.textSecondary,
-    marginBottom: 10,
+    marginBottom: 5,
     letterSpacing: 0.4,
   },
   textArea: {
@@ -2993,21 +2857,22 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: COLORS.cardBorder,
     borderRadius: 10,
-    padding: 12,
+    padding: 10,
     color: COLORS.text,
-    fontSize: 13,
+    fontSize: 12,
     textAlignVertical: "top",
     minHeight: 80,
+    marginBottom: 10,
   },
 
   formRatesContainer: {
-    marginBottom: 4,
+    marginBottom: 30,
     gap: 10,
   },
   rateInputCard: {
     backgroundColor: COLORS.card,
     borderRadius: 14,
-    padding: 12,
+    padding: 8,
     borderWidth: 1,
     borderColor: COLORS.cardBorder,
     ...CARD_SHADOW,
@@ -3016,10 +2881,10 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 10,
+    marginBottom: 5,
   },
   rateCardTitle: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: "700",
     color: COLORS.text,
     flexShrink: 1,
@@ -3043,17 +2908,18 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.cardAlt,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: COLORS.cardBorder,
+    height: 50,
+    borderColor: "#464545dd",
     padding: 10,
   },
   rateInputBoxMissing: {
     borderColor: COLORS.dangerBorder,
   },
   subInputLabel: {
-    fontSize: 9.5,
+    fontSize: 8.5,
     fontWeight: "800",
     color: COLORS.textMuted,
-    marginBottom: 4,
+    marginBottom: 2,
     letterSpacing: 0.3,
   },
   rateInputWithPrefix: {
@@ -3061,7 +2927,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   rateInputPrefix: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: "700",
     color: COLORS.textMuted,
     marginRight: 3,
@@ -3069,7 +2935,7 @@ const styles = StyleSheet.create({
   textInputRate: {
     flex: 1,
     color: COLORS.text,
-    fontSize: 14,
+    fontSize: 11,
     fontWeight: "700",
     padding: 0,
   },
@@ -3470,8 +3336,10 @@ const styles = StyleSheet.create({
     flexWrap: "wrap",
     width: "100%",
     backgroundColor: COLORS.cardAlt,
+    borderWidth: 1,
+    borderColor: "#2a2a2add",
     borderRadius: 12,
-    padding: 4,
+    padding: 10,
     gap: 4,
   },
 
@@ -3480,14 +3348,20 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: 10,
+    paddingVertical: 5,
     paddingHorizontal: 4,
-    borderRadius: 9,
+    borderRadius: 7,
   },
 
   stateSegmentActive: {
-    backgroundColor: COLORS.card,
+    backgroundColor: COLORS.primary, // green/teal theme
+    borderWidth: 1,
+    borderColor: COLORS.primary,
     ...CARD_SHADOW,
+  },
+
+  stateSegmentTextActive: {
+    color: "#FFFFFF", // white text
   },
 
   stateSegmentDisabled: {
@@ -3496,15 +3370,12 @@ const styles = StyleSheet.create({
 
   stateSegmentText: {
     flexShrink: 1,
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: "700",
     color: COLORS.textMuted,
     textAlign: "center",
   },
 
-  stateSegmentTextActive: {
-    color: COLORS.primary,
-  },
   viewModalHeader: {
     flexDirection: "row",
     alignItems: "center",

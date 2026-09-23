@@ -129,40 +129,40 @@ export default function LoginScreen({ navigation }: Props) {
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      requestLocationPermission();
-    }, 600);
+      requestLocationPermission().catch((e) => {
+        console.warn("Location permission error:", e);
+      });
+    }, 1200); // slightly longer after cold resume
     return () => clearTimeout(timer);
   }, []);
 
   const requestLocationPermission = async () => {
-    if (hasRequestedLocation.current) return true;
-    hasRequestedLocation.current = true;
+    try {
+      if (hasRequestedLocation.current) return true;
+      hasRequestedLocation.current = true;
 
-    const message = Platform.select({
-      android:
-        "Staffoo collects location data to find and display available shifts near you, " +
-        "track your attendance during shifts, and verify your presence at job sites. " +
-        "This data is collected even when the app is closed or not in use.",
-      ios:
-        "Staffoo collects location data to find and display available shifts near you, " +
-        "track your attendance during shifts, and verify your presence at job sites.",
-    });
+      if (Platform.OS === "android") {
+        const granted = await PermissionsAndroid.request(
+          PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+          {
+            title: "Staffoo Needs Location Access",
+            message:
+              "Staffoo collects location data to find and display available shifts near you, " +
+              "track your attendance during shifts, and verify your presence at job sites. " +
+              "This data is collected even when the app is closed or not in use.",
+            buttonNeutral: "Ask Me Later",
+            buttonNegative: "Deny",
+            buttonPositive: "Allow",
+          },
+        );
+        return granted === PermissionsAndroid.RESULTS.GRANTED;
+      }
 
-    if (Platform.OS === "android") {
-      const granted = await PermissionsAndroid.request(
-        PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
-        {
-          title: "Staffoo Needs Location Access",
-          message: message!,
-          buttonNeutral: "Ask Me Later",
-          buttonNegative: "Deny",
-          buttonPositive: "Allow",
-        },
-      );
-      return granted === PermissionsAndroid.RESULTS.GRANTED;
-    } else {
       const result = await request(PERMISSIONS.IOS.LOCATION_WHEN_IN_USE);
       return result === RESULTS.GRANTED;
+    } catch (e) {
+      console.warn("requestLocationPermission failed:", e);
+      return false;
     }
   };
 

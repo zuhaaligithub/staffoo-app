@@ -274,9 +274,10 @@ type ParsedSection = {
   body: string;
 };
 
-/** Splits a legal document into numbered sections for highlighted rendering */
+/** Splits a legal document into numbered sections for highlighted rendering.
+ *  Any text before the first numbered heading is kept as an intro section.
+ */
 const parseLegalSections = (raw: string): ParsedSection[] => {
-  // Match lines that start with "1." / "1.1" / "2." etc.
   const sectionRegex =
     /(?:^|\n)(\d+(?:\.\d+)*)\.\s+([A-Z][A-Z0-9 &\/,–\-\(\)]+)(?=\n|$)/g;
 
@@ -292,11 +293,23 @@ const parseLegalSections = (raw: string): ParsedSection[] => {
   }
 
   if (matches.length === 0) {
-    // Fallback – treat whole text as one block
     return [{ number: "", title: "", body: raw.trim() }];
   }
 
   const sections: ParsedSection[] = [];
+
+  // Intro text before the first numbered section
+  const firstMatchIndex = matches[0].index;
+  if (firstMatchIndex > 0) {
+    const introBody = raw.slice(0, firstMatchIndex).trim();
+    if (introBody) {
+      sections.push({
+        number: "",
+        title: "",
+        body: introBody,
+      });
+    }
+  }
 
   for (let i = 0; i < matches.length; i++) {
     const current = matches[i];
@@ -827,8 +840,6 @@ export default function SignUpScreen({ navigation }: { navigation: any }) {
             contentContainerStyle={styles.modalScrollContent}
             showsVerticalScrollIndicator={false}
           >
-            {/* ── Highlighted Meta Card ── */}
-            {/* ── Highlighted Meta Card ── */}
             <View style={styles.metaCard}>
               <View style={styles.metaBadge}>
                 <FileText size={14} color={COLORS.primary} />
@@ -935,7 +946,10 @@ export default function SignUpScreen({ navigation }: { navigation: any }) {
               style={styles.goToLoginButton}
               onPress={() => {
                 setShowVerifyModal(false);
-                navigation.navigate("Login");
+                navigation.reset({
+                  index: 0,
+                  routes: [{ name: "Login" }],
+                });
               }}
             >
               <Text style={styles.goToLoginText}>Go to Login Page</Text>

@@ -1,3 +1,5 @@
+
+
 import React from "react";
 import {
   View,
@@ -39,6 +41,9 @@ import {
   styles,
   cardStyles,
   assignStyles,
+  IconBadge,
+  StatusPill,
+  GradientButton,
 } from "./shifts/StaffShiftsShared";
 import { useStaffShiftsController } from "./shifts/useStaffShiftsController";
 
@@ -59,8 +64,6 @@ export default function AvailableJobsScreen({ navigation, route }: Props) {
     if (m === 0) return `${h}h`;
     return `${h}h ${m} minute${m === 1 ? "" : "s"}`;
   };
-
-  /** Prefer API hours; otherwise derive from start/end (handles overnight). */
   const getJobHoursLabel = (job: any): string => {
     if (!job) return "—";
 
@@ -167,20 +170,38 @@ export default function AvailableJobsScreen({ navigation, route }: Props) {
 
       {/* Cover Jobs Banner */}
       <View style={styles.coverJobsBanner}>
-        <View style={styles.availableRow}>
-          <View style={styles.availableDot} />
-          <Text style={styles.availableLabel}>AVAILABLE JOBS</Text>
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "space-between",
+          }}
+        >
+          <View style={styles.availableRow}>
+            <View style={styles.availableDot} />
+            <Text style={styles.availableLabel}>Available jobs</Text>
+          </View>
+          {typeof totalJobsCount === "number" && (
+            <StatusPill
+              label={`${totalJobsCount} open`}
+              tone={totalJobsCount > 0 ? "primary" : "neutral"}
+            />
+          )}
         </View>
 
-        {/* {!loadingAvailable && (
-          <Text style={styles.coverJobsSubtitle}>
-            {totalJobsCount === 0
-              ? "No open shifts right now"
-              : `${totalJobsCount} open shift${
-                  totalJobsCount === 1 ? "" : "s"
-                } waiting for you`}
-          </Text>
-        )} */}
+        {/* {!loadingAvailable && ( */}
+        <Text style={styles.coverJobsSubtitle}>
+          {loadingAvailable
+            ? "Loading available shifts…"
+            : totalJobsCount === 0
+            ? "No open shifts right now — pull to refresh"
+            : typeof totalJobsCount === "number"
+            ? `${totalJobsCount} open shift${
+                totalJobsCount === 1 ? "" : "s"
+              } waiting for you`
+            : "—"}
+        </Text>
+        {/* )} */}
       </View>
       <ScrollView
         style={styles.scrollContainer}
@@ -198,24 +219,6 @@ export default function AvailableJobsScreen({ navigation, route }: Props) {
         {screenMode === "accepted" ? renderAcceptedTab() : renderNewTab()}
         {!notificationJob && <View style={styles.placeholder} />}
       </ScrollView>
-
-      {/* <ScrollView
-        style={styles.scrollContainer}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl
-            refreshing={isRefreshing}
-            onRefresh={onRefresh}
-            tintColor="transparent"
-            colors={["transparent"]}
-            progressBackgroundColor="transparent"
-          />
-        }
-      >
-        {screenMode === "accepted" ? renderAcceptedTab() : renderNewTab()}
-        {!notificationJob && <View style={styles.placeholder} />}
-      </ScrollView> */}
 
       <StaffAssignSheet
         visible={acceptSheetVisible}
@@ -265,10 +268,38 @@ export default function AvailableJobsScreen({ navigation, route }: Props) {
           contentContainerStyle={styles.sheetContent}
           showsVerticalScrollIndicator={false}
         >
-          <Text style={styles.newRequest}>🔔 New Job Request</Text>
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 12,
+              marginBottom: 10,
+            }}
+          >
+            <IconBadge size={40} tone="primary">
+              <Text style={{ fontSize: 14 }}>🔔</Text>
+            </IconBadge>
+            <View>
+              <Text
+                style={{
+                  fontSize: 9.5,
+                  fontWeight: "700",
+                  color: COLORS.primary,
+                  letterSpacing: 0.6,
+                  textTransform: "uppercase",
+                  marginBottom: 2,
+                }}
+              >
+                Incoming
+              </Text>
+              <Text style={styles.newRequest}>New job request</Text>
+            </View>
+          </View>
 
           <View style={styles.infoRow}>
-            <Calendar size={18} color={COLORS.primary} />
+            <IconBadge size={28} tone="primary">
+              <Calendar size={14} color={COLORS.primary} />
+            </IconBadge>
 
             <View style={{ flex: 1 }}>
               <Text style={assignStyles.infoLabel}>Date</Text>
@@ -276,7 +307,9 @@ export default function AvailableJobsScreen({ navigation, route }: Props) {
             </View>
           </View>
           <View style={styles.infoRow}>
-            <Clock size={16} color={COLORS.primary} />
+            <IconBadge size={28} tone="info">
+              <Clock size={14} color={COLORS.info} />
+            </IconBadge>
 
             <View style={{ flex: 1 }}>
               <Text style={assignStyles.infoLabel}>Time</Text>
@@ -286,7 +319,9 @@ export default function AvailableJobsScreen({ navigation, route }: Props) {
             </View>
           </View>
           <View style={styles.infoRow}>
-            <MapPin size={16} color={COLORS.danger} />
+            <IconBadge size={28} tone="danger">
+              <MapPin size={14} color={COLORS.danger} />
+            </IconBadge>
 
             <View style={{ flex: 1 }}>
               <Text style={assignStyles.infoLabel}>Location</Text>
@@ -298,7 +333,9 @@ export default function AvailableJobsScreen({ navigation, route }: Props) {
             </View>
           </View>
           <View style={styles.infoRow}>
-            <FileText size={16} color={COLORS.primary} />
+            <IconBadge size={28} tone="neutral">
+              <FileText size={14} color={COLORS.textSecondary} />
+            </IconBadge>
 
             <View style={{ flex: 1 }}>
               <Text style={assignStyles.infoLabel}>Site Description</Text>
@@ -309,17 +346,11 @@ export default function AvailableJobsScreen({ navigation, route }: Props) {
               </Text>
             </View>
           </View>
-          {/* <View style={styles.infoRow}>
-            <Clock size={16} color={COLORS.primary} />
-
-            <View style={{ flex: 1 }}>
-              <Text style={assignStyles.infoLabel}>Total Hours</Text>
-              <Text style={styles.infoText}>{jobData?.hours ?? "—"}</Text>
-            </View>
-          </View> */}
 
           <View style={styles.infoRow}>
-            <Clock size={16} color={COLORS.primary} />
+            <IconBadge size={28} tone="primary">
+              <Clock size={14} color={COLORS.primary} />
+            </IconBadge>
             <View style={{ flex: 1 }}>
               <Text style={assignStyles.infoLabel}>Total Hours</Text>
               <Text style={styles.infoText}>{getJobHoursLabel(jobData)}</Text>
@@ -330,7 +361,7 @@ export default function AvailableJobsScreen({ navigation, route }: Props) {
           {notifRequiredDocuments.length > 0 && (
             <View style={styles.documentsSection}>
               <Text style={styles.documentsSectionTitle}>
-                Required Documents
+                Required documents
               </Text>
 
               {notifRequiredDocuments.map((doc, index) => {
@@ -368,7 +399,7 @@ export default function AvailableJobsScreen({ navigation, route }: Props) {
                     ]}
                   >
                     <Text style={styles.documentLabel}>{label}</Text>
-                    <Text style={styles.documentYes}>YES</Text>
+                    <StatusPill label="YES" />
                   </View>
                 );
               })}
@@ -376,9 +407,9 @@ export default function AvailableJobsScreen({ navigation, route }: Props) {
           )}
 
           {userType === "contractor" && !notifHideAssignForContractor && (
-            <View style={{ marginVertical: 5 }}>
+            <View style={{ marginVertical: 4 }}>
               <Text style={styles.assignLabel}>
-                Assign to Staff Member (optional)
+                Assign to staff member (optional)
               </Text>
               {loadingContractorStaff ? (
                 <ActivityIndicator size="small" color={COLORS.primary} />
@@ -395,7 +426,7 @@ export default function AvailableJobsScreen({ navigation, route }: Props) {
                     disabled={acceptingNotification}
                   >
                     <View style={styles.dropdownContent}>
-                      <UserCheck size={18} color={COLORS.primary} />
+                      <UserCheck size={16} color={COLORS.primary} />
                       <Text style={styles.dropdownText} numberOfLines={1}>
                         {notifSelectedGuard
                           ? capitalizeWords(
@@ -456,34 +487,23 @@ export default function AvailableJobsScreen({ navigation, route }: Props) {
           <View
             style={[styles.buttonContainer, { paddingBottom: insets.bottom }]}
           >
-            <TouchableOpacity
-              style={[
-                styles.acceptButton,
-                acceptingNotification && styles.disabledButton,
-              ]}
+            <GradientButton
+              variant="success"
+              flex={1}
               disabled={acceptingNotification}
+              loading={acceptingNotification}
               onPress={handleAcceptNotification}
-            >
-              {acceptingNotification ? (
-                <ActivityIndicator color="#fff" size="small" />
-              ) : (
-                <>
-                  <CheckCircle size={16} color="#fff" />
-                  <Text style={styles.buttonText}>ACCEPT</Text>
-                </>
-              )}
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[
-                styles.declineButton,
-                acceptingNotification && styles.disabledButton,
-              ]}
-              onPress={handleDeclineNotification}
+              label="Accept"
+              icon={<CheckCircle size={16} color="#fff" />}
+            />
+            <GradientButton
+              variant="danger"
+              flex={1}
               disabled={acceptingNotification}
-            >
-              <XCircle size={16} color="#fff" />
-              <Text style={styles.buttonText}>DECLINE</Text>
-            </TouchableOpacity>
+              onPress={handleDeclineNotification}
+              label="Decline"
+              icon={<XCircle size={16} color="#fff" />}
+            />
           </View>
         </BottomSheetScrollView>
       </BottomSheet>
@@ -565,65 +585,90 @@ export default function AvailableJobsScreen({ navigation, route }: Props) {
         <View
           style={{
             flex: 1,
-            backgroundColor: "rgba(0,0,0,0.4)",
+            backgroundColor: "rgba(4,6,9,0.78)",
             justifyContent: "center",
             alignItems: "center",
+            paddingHorizontal: 24,
           }}
         >
           <View
             style={{
-              width: 320,
-              backgroundColor: "#fff",
-              borderRadius: 16,
+              width: "100%",
+              maxWidth: 340,
+              backgroundColor: COLORS.surfaceRaised,
+              borderRadius: 26,
               overflow: "hidden",
               alignItems: "center",
+              borderWidth: 1,
+              borderColor: COLORS.cardBorder,
             }}
           >
-            <View
-              style={{ height: 80, backgroundColor: "#0fa786", width: "100%" }}
+            <LinearGradient
+              colors={[COLORS.success, "#1F7A57"]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={{ height: 88, width: "100%" }}
             />
-            <View style={{ marginTop: -40, alignItems: "center" }}>
+            <View style={{ marginTop: -36, alignItems: "center" }}>
               <View
                 style={{
                   width: 72,
                   height: 72,
                   borderRadius: 36,
-                  backgroundColor: "#fff",
+                  backgroundColor: COLORS.surfaceRaised,
                   justifyContent: "center",
                   alignItems: "center",
-                  elevation: 4,
+                  borderWidth: 3,
+                  borderColor: COLORS.surfaceRaised,
                 }}
               >
-                <CheckCircle size={36} color="#0fa786" />
+                <View
+                  style={{
+                    width: 60,
+                    height: 60,
+                    borderRadius: 30,
+                    backgroundColor: COLORS.successSoft,
+                    borderWidth: 1,
+                    borderColor: COLORS.successBorder,
+                    justifyContent: "center",
+                    alignItems: "center",
+                  }}
+                >
+                  <CheckCircle size={32} color={COLORS.success} />
+                </View>
               </View>
             </View>
-            <View style={{ padding: 20, alignItems: "center" }}>
+            <View style={{ padding: 22, alignItems: "center", width: "100%" }}>
               <Text
-                style={{ fontSize: 20, fontWeight: "700", marginBottom: 8 }}
+                style={{
+                  fontSize: 19,
+                  fontWeight: "800",
+                  color: COLORS.text,
+                  marginBottom: 10,
+                }}
               >
-                Success!
+                Request sent!
               </Text>
               <Text
-                style={{ textAlign: "center", color: "#666", marginBottom: 16 }}
+                style={{
+                  textAlign: "center",
+                  color: COLORS.textSecondary,
+                  marginBottom: 18,
+                  fontSize: 13.5,
+                  lineHeight: 20,
+                }}
               >
                 Please wait for the client to give further confirmation. We will
                 notify you shortly and the shift will appear on your Accepted
                 Jobs page.
               </Text>
-              <TouchableOpacity
-                style={{
-                  backgroundColor: "#0b856f",
-                  paddingVertical: 12,
-                  paddingHorizontal: 24,
-                  borderRadius: 30,
-                }}
+              <GradientButton
+                variant="primary"
                 onPress={hideAcceptSuccessModal}
-              >
-                <Text style={{ color: "#fff", fontWeight: "700" }}>
-                  Awesome, Thanks!
-                </Text>
-              </TouchableOpacity>
-              <View style={{ height: 16 }} />
+                label="Awesome, thanks!"
+                icon={<CheckCircle size={16} color={COLORS.textOnPrimary} />}
+                style={{ width: "100%" }}
+              />
             </View>
           </View>
         </View>

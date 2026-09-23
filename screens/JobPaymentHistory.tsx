@@ -719,6 +719,7 @@ export default function JobPaymentHistory({ navigation }: Props) {
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={styles.shareTitle}>Share Invoice</Text>
+
                 <Text style={styles.shareSubtitle}>
                   Send {selectedTransaction?.invoice_filename || "Invoice"}{" "}
                   securely to the provided email addresses.

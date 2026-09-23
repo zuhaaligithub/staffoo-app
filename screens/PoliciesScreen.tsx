@@ -1,11 +1,8 @@
-
-
-
-
 import React, { useCallback, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  Modal,
   Platform,
   ScrollView,
   StyleSheet,
@@ -204,7 +201,8 @@ const POLICY_CONTENT: Record<
         ],
       },
       {
-        heading: "4. Client Deductions, Negligence Liability & Financial Set-Off",
+        heading:
+          "4. Client Deductions, Negligence Liability & Financial Set-Off",
         items: [
           {
             title: "4.1 Liability for Negligence & Client Deductions",
@@ -370,6 +368,21 @@ export default function PoliciesScreen() {
   const [isUpdating, setIsUpdating] = useState(false);
   const [isCheckboxDisabled, setIsCheckboxDisabled] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [modalType, setModalType] = useState<"success" | "error">("success");
+  const [modalTitle, setModalTitle] = useState("");
+  const [modalMessage, setModalMessage] = useState("");
+
+  const showModal = (
+    type: "success" | "error",
+    title: string,
+    message: string,
+  ) => {
+    setModalType(type);
+    setModalTitle(title);
+    setModalMessage(message);
+    setModalVisible(true);
+  };
 
   const getPolicyKey = (uid: string | null) =>
     uid ? `@policy_accepted_${uid}` : "@policy_accepted";
@@ -476,7 +489,8 @@ export default function PoliciesScreen() {
         throw new Error(responseData?.message || "Request failed");
       }
 
-      Alert.alert(
+      showModal(
+        "success",
         "Success",
         responseData.message || "Policy accepted successfully",
       );
@@ -489,7 +503,7 @@ export default function PoliciesScreen() {
     } catch (error) {
       console.log("Error:", error);
       setIsAccepted(!newValue);
-      Alert.alert("Error", "Failed to update policy preference.");
+      showModal("error", "Error", "Failed to update policy preference.");
     } finally {
       setIsUpdating(false);
     }
@@ -579,10 +593,7 @@ export default function PoliciesScreen() {
                 disabled={isUpdating || isCheckboxDisabled || isLoading}
               >
                 <View
-                  style={[
-                    styles.checkbox,
-                    isAccepted && styles.checkboxActive,
-                  ]}
+                  style={[styles.checkbox, isAccepted && styles.checkboxActive]}
                 >
                   {isAccepted && (
                     <Check size={14} color="#fff" strokeWidth={3} />
@@ -612,6 +623,53 @@ export default function PoliciesScreen() {
           </>
         )}
       </View>
+      {/* Custom feedback modal */}
+      <Modal
+        visible={modalVisible}
+        transparent
+        animationType="fade"
+        statusBarTranslucent
+        onRequestClose={() => setModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalCard}>
+            <View
+              style={[
+                styles.modalIconCircle,
+                {
+                  backgroundColor:
+                    modalType === "success"
+                      ? "rgba(0,169,157,0.15)"
+                      : "rgba(248,113,113,0.12)",
+                },
+              ]}
+            >
+              {modalType === "success" ? (
+                <Check size={28} color={COLORS.primary} strokeWidth={2.5} />
+              ) : (
+                <Text style={{ fontSize: 26, color: COLORS.danger }}>!</Text>
+              )}
+            </View>
+
+            <Text style={styles.modalTitle}>{modalTitle}</Text>
+            <Text style={styles.modalMessage}>{modalMessage}</Text>
+
+            <TouchableOpacity
+              style={[
+                styles.modalButton,
+                {
+                  backgroundColor:
+                    modalType === "success" ? COLORS.primary : COLORS.danger,
+                },
+              ]}
+              activeOpacity={0.85}
+              onPress={() => setModalVisible(false)}
+            >
+              <Text style={styles.modalButtonText}>OK</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -812,5 +870,57 @@ const styles = StyleSheet.create({
   },
   loader: {
     marginLeft: 10,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(3,5,8,0.78)",
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 24,
+  },
+  modalCard: {
+    width: "100%",
+    maxWidth: 340,
+    backgroundColor: COLORS.card,
+    borderRadius: 22,
+    paddingHorizontal: 22,
+    paddingTop: 28,
+    paddingBottom: 22,
+    borderWidth: 1,
+    borderColor: COLORS.cardBorder,
+    alignItems: "center",
+  },
+  modalIconCircle: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 16,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: "800",
+    color: COLORS.text,
+    textAlign: "center",
+    marginBottom: 8,
+  },
+  modalMessage: {
+    fontSize: 14,
+    color: COLORS.textSecondary,
+    textAlign: "center",
+    lineHeight: 21,
+    marginBottom: 24,
+  },
+  modalButton: {
+    width: "100%",
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: "center",
+  },
+  modalButtonText: {
+    color: "#fff",
+    fontSize: 15,
+    fontWeight: "700",
   },
 });

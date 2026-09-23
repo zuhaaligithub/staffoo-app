@@ -147,6 +147,12 @@ const STATE_TAB_CONFIG: StateTab[] = [
   { code: "tas", label: "Tasmania", category: "tas_document" },
   { code: "wa", label: "Western Australia", category: "wa_document" },
   { code: "sa", label: "South Australia", category: "sa_document" },
+  {
+    code: "act",
+    label: "Australian Capital Territory",
+    category: "act_document",
+  },
+  { code: "nt", label: "Northern Territory", category: "nt_document" },
 ];
 
 const parseStatesAllowed = (raw: unknown): string[] => {
@@ -503,10 +509,36 @@ export default function DocumentsScreen({ navigation }: Props) {
    *  - it's in the always-verifiable list (visa, security license), OR
    *  - it's "Security Master License" AND the current user is a contractor
    */
+  const isSaOrTasCategory = (category?: string | null): boolean => {
+    const c = (category || "").toLowerCase().trim();
+    return c === "sa_document" || c === "tas_document";
+  };
+
+  /**
+   * A document type requires the "Verify" flow when:
+   *  - it's in the always-verifiable list (visa, security license), OR
+   *  - it's "Security Master License" AND the current user is a contractor
+   * EXCEPT for South Australia & Tasmania — no online verify, expiry is manual.
+   */
   const docTypeNeedsVerification = (
-    docType: { label?: string | null; value?: string | null } | null,
+    docType: {
+      label?: string | null;
+      value?: string | null;
+      category?: string | null;
+    } | null,
   ): boolean => {
     if (!docType) return false;
+
+    // SA / TAS: never require online verification
+    const category =
+      docType.category ||
+      selectedStateCategory ||
+      selectedDocType?.category ||
+      "";
+    if (isSaOrTasCategory(category)) {
+      return false;
+    }
+
     if (isVerifiableDocType(docType)) return true;
     if (isContractor && isSecurityMasterLicenseDocType(docType)) return true;
     return false;
@@ -516,11 +548,11 @@ export default function DocumentsScreen({ navigation }: Props) {
     ? docTypeNeedsVerification(selectedDocType)
     : false;
 
+  const isExpiryLocked = needsVerification;
+
   const isVisaSelected = selectedDocType
     ? isVisaDocType(selectedDocType)
     : false;
-
-  const isExpiryLocked = needsVerification;
 
   const contractorStateTabs = useMemo((): StateTab[] => {
     if (!isContractor) return [];
@@ -538,13 +570,42 @@ export default function DocumentsScreen({ navigation }: Props) {
       setSelectedStateCategory(null);
       return;
     }
+
+    // Prefer a tab that still has missing documents
+    const firstIncompleteTab = contractorStateTabs.find((tab) => {
+      const tabDocs = uploadedDocuments.filter(
+        (d) => d.document_category === tab.category,
+      );
+
+      // No docs assigned yet → treat as incomplete
+      if (tabDocs.length === 0) return true;
+
+      // Incomplete if any document is missing its own file
+      // (shared docs still count as complete)
+      return tabDocs.some((d) => {
+        const hasOwnFile = !!(d.file && String(d.file).trim().length > 0);
+        if (hasOwnFile) return false;
+        return !findSharedUploadedDoc(
+          uploadedDocuments,
+          d.document_name,
+          tab.category,
+        );
+      });
+    });
+
+    if (firstIncompleteTab) {
+      setSelectedStateCategory(firstIncompleteTab.category);
+      return;
+    }
+
+    // All states complete → keep current tab if still valid, otherwise first tab
     const stillValid = contractorStateTabs.some(
       (t) => t.category === selectedStateCategory,
     );
     if (!stillValid) {
       setSelectedStateCategory(contractorStateTabs[0].category);
     }
-  }, [isContractor, contractorStateTabs]);
+  }, [isContractor, contractorStateTabs, uploadedDocuments]);
 
   const displayedDocuments = useMemo(() => {
     if (!isContractor) return uploadedDocuments;
@@ -1383,10 +1444,22 @@ export default function DocumentsScreen({ navigation }: Props) {
           return;
         }
 
+        // Logged-in user id + user_type
+        const loggedInUserId =
+          userId || profile?.id || (await AsyncStorage.getItem("@user_id"));
+
+        const loggedInUserType =
+          (profile?.user_type || userProfile?.user_type || "")
+            .toLowerCase()
+            .trim() ||
+          (await AsyncStorage.getItem("@user_type")) ||
+          "";
+
         const payload = {
           document_type: selectedDocType.label,
           license_number: documentNumber.trim(),
           state: userState,
+          user_type: loggedInUserType, // e.g. "staff" | "contractor"
         };
 
         console.log(
@@ -1883,9 +1956,7 @@ export default function DocumentsScreen({ navigation }: Props) {
   };
 
   const renderEmptyCard = (item: Document) => {
-    // Empty / missing document card — no yellow dashed highlight.
-    // Add Document button uses a red border so missing items stand out.
-    // Staff-only: points this document would contribute once uploaded.
+   
     const docPoints = isStaff ? getStaffDocPoints(item) : 0;
 
     const openAdd = () =>
@@ -2178,11 +2249,70 @@ export default function DocumentsScreen({ navigation }: Props) {
                       <Text style={styles.incompleteTopBannerTitle}>
                         Please complete all required documents
                       </Text>
-                      <Text style={styles.incompleteTopBannerText}>
-                        Upload the missing documents below before proceeding to
-                        Rates.
-                      </Text>
+
+                      {missingDocumentsByState.length > 0 ? (
+                        <View style={{ marginTop: 6 }}>
+                          <Text style={styles.incompleteTopBannerText}>
+                            {missingDocumentsByState.length === 1
+                              ? "Documents are still missing in this state:"
+                              : "Documents are still missing in these states:"}
+                          </Text>
+
+                          {missingDocumentsByState.map((group) => (
+                            <View
+                              key={group.stateLabel}
+                              style={{
+                                flexDirection: "row",
+                                alignItems: "center",
+                                marginTop: 5,
+                              }}
+                            >
+                              <View
+                                style={{
+                                  width: 6,
+                                  height: 6,
+                                  borderRadius: 3,
+                                  backgroundColor: "#ff6b6b",
+                                  marginRight: 8,
+                                }}
+                              />
+                              <Text
+                                style={[
+                                  styles.incompleteTopBannerText,
+                                  { fontWeight: "600", color: "#ffb4b4" },
+                                ]}
+                              >
+                                {group.stateLabel}
+                              </Text>
+                              <Text
+                                style={[
+                                  styles.incompleteTopBannerText,
+                                  { marginLeft: 6 },
+                                ]}
+                              >
+                                ({group.items.length} missing)
+                              </Text>
+                            </View>
+                          ))}
+
+                          <Text
+                            style={[
+                              styles.incompleteTopBannerText,
+                              { marginTop: 8, opacity: 0.9 },
+                            ]}
+                          >
+                            Upload the missing documents below before proceeding
+                            to Rates.
+                          </Text>
+                        </View>
+                      ) : (
+                        <Text style={styles.incompleteTopBannerText}>
+                          Upload the missing documents below before proceeding
+                          to Rates.
+                        </Text>
+                      )}
                     </View>
+
                     <TouchableOpacity
                       onPress={() => setShowIncompleteTopBanner(false)}
                       hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
@@ -2385,7 +2515,7 @@ export default function DocumentsScreen({ navigation }: Props) {
                   ) : (
                     <>
                       <CloudUpload
-                        size={22}
+                        size={18}
                         color="#fff"
                         style={{ marginRight: 8 }}
                       />
@@ -3004,19 +3134,19 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "rgba(255,107,107,0.45)",
     borderRadius: 12,
-    padding: 14,
+    padding: 8,
     marginBottom: 16,
   },
   incompleteTopBannerTitle: {
     color: "#ff6b6b",
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: "800",
-    marginBottom: 4,
+    marginBottom: 2,
   },
   incompleteTopBannerText: {
     color: "rgba(255,255,255,0.75)",
-    fontSize: 13,
-    lineHeight: 19,
+    fontSize: 11,
+    lineHeight: 15,
   },
 
   // ── Badges ──
@@ -3056,7 +3186,7 @@ const styles = StyleSheet.create({
   },
   modalBody: { padding: 16, backgroundColor: "#111111" },
 
-  imageUploadArea: { alignItems: "center", marginBottom: 20 },
+  imageUploadArea: { alignItems: "center", marginBottom: 10 },
 
   uploadTriggerButton: {
     flexDirection: "row",
@@ -3065,12 +3195,12 @@ const styles = StyleSheet.create({
     borderColor: THEME.border,
     borderStyle: "dashed",
     width: "100%",
-    height: 48,
+    height: 40,
     borderRadius: 8,
     justifyContent: "center",
     alignItems: "center",
   },
-  uploadTriggerText: { color: "#fff", fontSize: 12, fontWeight: "600" },
+  uploadTriggerText: { color: "#fff", fontSize: 11, fontWeight: "600" },
 
   fieldLabel: {
     color: THEME.teal,
@@ -3082,11 +3212,11 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(255,255,255,0.05)",
     borderWidth: 1,
     borderColor: THEME.border,
-    height: 48,
+    height: 40,
     borderRadius: 8,
     paddingHorizontal: 12,
     color: "#fff",
-    fontSize: 14,
+    fontSize: 12,
   },
   verifyButton: {
     width: 110,
@@ -3099,7 +3229,7 @@ const styles = StyleSheet.create({
     borderBottomRightRadius: 8,
     backgroundColor: "rgba(255,255,255,0.05)",
   },
-  verifyButtonText: { color: THEME.teal, fontWeight: "bold", fontSize: 14 },
+  verifyButtonText: { color: THEME.teal, fontWeight: "bold", fontSize: 12 },
   dateButton: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -3107,11 +3237,11 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(255,255,255,0.05)",
     borderWidth: 1,
     borderColor: THEME.border,
-    height: 48,
+    height: 40,
     borderRadius: 8,
     paddingHorizontal: 12,
   },
-  dateText: { color: "#fff", fontSize: 14 },
+  dateText: { color: "#fff", fontSize: 12 },
   dateButtonDisabled: {
     backgroundColor: "rgba(255,255,255,0.02)",
     borderColor: "rgba(255,255,255,0.05)",
@@ -3135,11 +3265,11 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(255,255,255,0.05)",
     borderWidth: 1,
     borderColor: THEME.border,
-    height: 48,
+    height: 40,
     borderRadius: 8,
     paddingHorizontal: 12,
   },
-  dropdownText: { color: "#fff", fontSize: 14, fontWeight: "500" },
+  dropdownText: { color: "#fff", fontSize: 12, fontWeight: "500" },
   inputHelpText: {
     color: THEME.textMuted,
     fontSize: 11,
@@ -3149,13 +3279,13 @@ const styles = StyleSheet.create({
 
   saveButton: {
     backgroundColor: THEME.accent,
-    height: 54,
+    height: 45,
     justifyContent: "center",
     alignItems: "center",
     margin: 16,
     borderRadius: 8,
   },
-  saveButtonText: { color: "#fff", fontSize: 15, fontWeight: "bold" },
+  saveButtonText: { color: "#fff", fontSize: 14, fontWeight: "bold" },
 
   errorPreviewText: {
     color: "#ff6b6b",

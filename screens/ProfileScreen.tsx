@@ -1039,17 +1039,20 @@ export default function ProfileScreen({ navigation }: Props) {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 100 }}
       >
-        {/* ── Hero Header ── */}
         <LinearGradient
           colors={[COLORS.heroBg2, COLORS.heroBg1]}
           start={{ x: 0, y: 0 }}
           end={{ x: 0.5, y: 1 }}
           style={styles.heroSection}
         >
+          {/* Glow dot */}
+          <View style={styles.heroGlowDot} />
+
           <View style={styles.innercontainer}>
             <View style={styles.heroTopRow}>
               <Text style={styles.heroTitle}>My Profile</Text>
             </View>
+
             <View style={styles.profileInfoContainer}>
               <TouchableOpacity
                 style={styles.avatarWrapper}
@@ -1100,6 +1103,7 @@ export default function ProfileScreen({ navigation }: Props) {
                           },
                         ]}
                       />
+
                       <Text
                         style={[
                           styles.statusChipText,
@@ -1113,9 +1117,11 @@ export default function ProfileScreen({ navigation }: Props) {
                       </Text>
                     </View>
                   )}
+
                   {user?.address ? (
                     <View style={styles.addressChip}>
                       <MapPin size={12} color={COLORS.textSecondary} />
+
                       <Text
                         numberOfLines={1}
                         ellipsizeMode="tail"
@@ -1135,10 +1141,12 @@ export default function ProfileScreen({ navigation }: Props) {
                 accurate and complete.
               </Text>
             )}
+
             {user?.user_type !== "customer" && (
               <View style={styles.progressSection}>
                 <View style={styles.progressLabelRow}>
                   <Text style={styles.progressLabel}>Profile Completion</Text>
+
                   <Text style={styles.progressValue}>
                     {completionPercentage}%
                   </Text>
@@ -1164,7 +1172,11 @@ export default function ProfileScreen({ navigation }: Props) {
         {isOnlyBasicInfo() &&
           (user?.user_type === "contractor" || user?.user_type === "staff") && (
             <View style={styles.activationBanner}>
-              <Info size={18} color="#D97706"     style={{ marginRight: 0, marginTop: 2 }} />
+              <Info
+                size={18}
+                color="#D97706"
+                style={{ marginRight: 0, marginTop: 2 }}
+              />
               <Text style={styles.activationBannerText}>
                 Please open the{" "}
                 <Text style={{ fontWeight: "700" }}>Personal Information</Text>{" "}
@@ -1502,13 +1514,27 @@ const styles = StyleSheet.create({
   innercontainer: {
     padding: 16,
   },
+
   heroSection: {
     paddingBottom: 5,
     borderBottomWidth: 1.5,
     // borderBottomColor: COLORS.primaryBorder,
     borderBottomLeftRadius: 26,
     borderBottomRightRadius: 26,
+    overflow: "hidden",
   },
+
+  heroGlowDot: {
+    position: "absolute",
+    width: 160,
+    height: 160,
+    borderRadius: 80,
+    backgroundColor: COLORS.primaryGlow,
+    top: -70,
+    right: -50,
+    opacity: 0.5,
+  },
+
   greeting: {
     fontSize: 16,
     fontWeight: "700",
@@ -1547,7 +1573,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 16,
-    marginBottom: 15,
+    marginBottom: 10,
   },
 
   avatarWrapper: {
@@ -1667,7 +1693,7 @@ const styles = StyleSheet.create({
   },
 
   progressSection: {
-    marginTop: 4,
+    marginTop: 2,
   },
   progressLabelRow: {
     flexDirection: "row",

@@ -1118,7 +1118,7 @@ export default function StaffManagement({ navigation }: Props) {
   const handleUpload = async () => {
     try {
       const result = await launchImageLibrary({
-        mediaType: "mixed",
+        mediaType: "photo",
         quality: 0.8,
         selectionLimit: 1,
       });
@@ -1748,7 +1748,6 @@ export default function StaffManagement({ navigation }: Props) {
         style={[
           styles.cardGradientWrapper,
           {
-            borderStyle: "dashed",
             borderWidth: 1,
             borderColor: "rgba(255,255,255,0.08)",
           },
@@ -1759,9 +1758,9 @@ export default function StaffManagement({ navigation }: Props) {
         <View style={styles.cardInnerContainer}>
           <View style={docStyles.cardTopRow}>
             <View style={docStyles.docIconBox}>
-              <FileText size={22} color={COLORS.primary} />
+              <FileText size={18} color={COLORS.primary} />
             </View>
-            <View style={{ flex: 1, marginHorizontal: 12 }}>
+            <View style={{ flex: 1, marginHorizontal: 10 }}>
               <Text style={docStyles.cardDocName} numberOfLines={1}>
                 {getDisplayName(item.document_name)}
               </Text>
@@ -1778,7 +1777,7 @@ export default function StaffManagement({ navigation }: Props) {
               style={docStyles.editDocBtn}
               onPress={() => openDocModal(docTypeDef, item)}
             >
-              <Pencil size={15} color={COLORS.primary} />
+              <Pencil size={13} color={COLORS.primary} />
             </TouchableOpacity>
           </View>
           <View style={docStyles.divider} />
@@ -1837,7 +1836,7 @@ export default function StaffManagement({ navigation }: Props) {
               { backgroundColor: "rgba(255,255,255,0.03)" },
             ]}
           >
-            <FileText size={22} color={COLORS.textMuted} />
+            <FileText size={18} color={COLORS.textMuted} />
           </View>
           <View style={{ flex: 1, marginHorizontal: 12 }}>
             <Text style={[docStyles.cardDocName, { color: COLORS.textMuted }]}>
@@ -2133,7 +2132,7 @@ export default function StaffManagement({ navigation }: Props) {
               ) : (
                 <>
                   <CloudUpload
-                    size={22}
+                    size={18}
                     color="#fff"
                     style={{ marginRight: 8 }}
                   />
@@ -2895,8 +2894,8 @@ const styles = StyleSheet.create({
 
   // Inner container handling correct iOS padding
   cardInnerContainer: {
-    padding: 16,
-    backgroundColor:'#101b27',
+    padding: 10,
+    backgroundColor: "#101b27",
     width: "100%",
   },
 
@@ -2926,9 +2925,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   actionText: { color: COLORS.text, fontWeight: "600", marginLeft: 6 },
- 
 
- 
   modalBody: { padding: 16, gap: 12 },
   input: {
     backgroundColor: "#1E2D3D",
@@ -3004,7 +3001,7 @@ const styles = StyleSheet.create({
   },
   genderOption: {
     paddingHorizontal: 16,
-    paddingVertical: 10,
+    paddingVertical: 8,
     borderRadius: 20,
     backgroundColor: "#1E2D3D",
     borderWidth: 1,
@@ -3014,8 +3011,8 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.primary,
     borderColor: COLORS.primary,
   },
-  genderOptionText: { color: COLORS.textSecondary },
-  genderOptionTextActive: { color: "#fff", fontWeight: "600" },
+  genderOptionText: { color: COLORS.textSecondary, fontSize: 12 },
+  genderOptionTextActive: { color: "#fff", fontWeight: "600", fontSize: 12 },
 
   cancelButton: {
     backgroundColor: COLORS.surface,
@@ -3035,88 +3032,86 @@ const styles = StyleSheet.create({
   saveText: { color: COLORS.text, fontWeight: "700" },
   buttonDisabled: { opacity: 0.6 },
 
-
-
   modalOverlay: {
-  flex: 1,
-  backgroundColor: "rgba(0,0,0,0.75)",
-  justifyContent: "flex-end",
-},
-modalCard: {
-  width: "100%",
-  maxHeight: "92%",
-  backgroundColor: "#000000",       // body black
-  borderTopLeftRadius: 24,
-  borderTopRightRadius: 24,
-  borderWidth: 1,
-  borderColor: COLORS.cardBorder,
-  overflow: "hidden",
-  flex: 1,
-},
-modalHeaderRow: {
-  flexDirection: "row",
-  alignItems: "center",
-  paddingHorizontal: 12,
-  paddingVertical: 10,
-  borderBottomWidth: 1,
-  borderBottomColor: "rgba(255,255,255,0.15)",
-  backgroundColor: "#1E2D3D",       // top row blue
-},
-headerTabs: {
-  flexDirection: "row",
-  flex: 1,
-  gap: 8,
-},
-tab: {
-  paddingVertical: 8,
-  paddingHorizontal: 11,
-  borderRadius: 20,
-  backgroundColor: "rgba(255,255,255,0.15)",
-},
-tabActive: {
-  backgroundColor: "#fff",
-},
-tabText: {
-  fontSize: 13,
-  color: "rgba(255,255,255,0.7)",
-  fontWeight: "600",
-},
-tabTextActive: {
-  color: "#1E3A8A",                 // blue text on white active tab
-  fontWeight: "700",
-},
-closeBtn: {
-  width: 32,
-  height: 32,
-  borderRadius: 16,
-  backgroundColor: "rgba(255,255,255,0.15)",
-  justifyContent: "center",
-  alignItems: "center",
-  marginLeft: 8,
-},
-footer: {
-  flexDirection: "row",
-  justifyContent: "flex-end",
-  padding: 16,
-  borderTopWidth: 1,
-  borderTopColor: "rgba(255,255,255,0.1)",
-  gap: 10,
-  backgroundColor: "#000000",       // keep footer black too
-},
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.75)",
+    justifyContent: "flex-end",
+  },
+  modalCard: {
+    width: "100%",
+    maxHeight: "92%",
+    backgroundColor: "#000000", // body black
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    borderWidth: 1,
+    borderColor: COLORS.cardBorder,
+    overflow: "hidden",
+    flex: 1,
+  },
+  modalHeaderRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: "rgba(255,255,255,0.15)",
+    backgroundColor: "#1E2D3D", // top row blue
+  },
+  headerTabs: {
+    flexDirection: "row",
+    flex: 1,
+    gap: 8,
+  },
+  tab: {
+    paddingVertical: 8,
+    paddingHorizontal: 11,
+    borderRadius: 20,
+    backgroundColor: "rgba(255,255,255,0.15)",
+  },
+  tabActive: {
+    backgroundColor: "#fff",
+  },
+  tabText: {
+    fontSize: 13,
+    color: "rgba(255,255,255,0.7)",
+    fontWeight: "600",
+  },
+  tabTextActive: {
+    color: "#1E3A8A", // blue text on white active tab
+    fontWeight: "700",
+  },
+  closeBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: "rgba(255,255,255,0.15)",
+    justifyContent: "center",
+    alignItems: "center",
+    marginLeft: 8,
+  },
+  footer: {
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    padding: 16,
+    borderTopWidth: 1,
+    borderTopColor: "rgba(255,255,255,0.1)",
+    gap: 10,
+    backgroundColor: "#000000", // keep footer black too
+  },
 });
 
 const docStyles = StyleSheet.create({
   cardGradient: { borderRadius: 14, padding: 16, marginBottom: 14 },
   cardTopRow: { flexDirection: "row", alignItems: "center" },
   docIconBox: {
-    width: 42,
-    height: 42,
+    width: 35,
+    height: 35,
     borderRadius: 10,
     backgroundColor: "rgba(0,169,157,0.12)",
     justifyContent: "center",
     alignItems: "center",
   },
-  cardDocName: { color: "#fff", fontSize: 15, fontWeight: "bold" },
+  cardDocName: { color: "#fff", fontSize: 12, fontWeight: "bold" },
   cardSubRow: {
     flexDirection: "row",
     marginTop: 4,
@@ -3131,8 +3126,8 @@ const docStyles = StyleSheet.create({
   },
   extBadgeText: { color: "#fff", fontSize: 10, fontWeight: "bold" },
   editDocBtn: {
-    width: 34,
-    height: 34,
+    width: 32,
+    height: 32,
     borderRadius: 10,
     backgroundColor: "rgba(0,169,157,0.12)",
     justifyContent: "center",
@@ -3146,7 +3141,7 @@ const docStyles = StyleSheet.create({
     marginVertical: 12,
   },
 
-  viewBtnText: { color: "#fff", fontSize: 13, fontWeight: "bold" },
+  viewBtnText: { color: "#fff", fontSize: 11, fontWeight: "bold" },
   addCardButton: {
     height: 38,
     backgroundColor: "rgba(0,169,157,0.08)",
@@ -3160,7 +3155,7 @@ const docStyles = StyleSheet.create({
   },
   addCardButtonText: {
     color: COLORS.primary,
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: "bold",
   },
   badge: { paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 },
@@ -3208,35 +3203,35 @@ const docStyles = StyleSheet.create({
   imageUploadArea: { alignItems: "center", marginBottom: 20 },
   imagePlaceholder: {
     width: "100%",
-    height: 180,
+    height: 160,
     backgroundColor: "#1C2541",
-    borderRadius: 14,
+    borderRadius: 7,
     overflow: "hidden",
-    marginBottom: 12,
+    marginBottom: 5,
     justifyContent: "center",
     alignItems: "center",
   },
   previewImage: { width: "100%", height: "100%" },
   uploadTriggerButton: {
     width: "100%",
-    height: 52,
+    height: 40,
     backgroundColor: COLORS.primary,
-    borderRadius: 12,
+    borderRadius: 7,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
   },
-  uploadTriggerText: { color: "#fff", fontWeight: "700", fontSize: 13 },
+  uploadTriggerText: { color: "#fff", fontWeight: "700", fontSize: 11 },
   docPreviewCard: {
     width: "100%",
-    borderRadius: 14,
+    borderRadius: 7,
     backgroundColor: "#1C2541",
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.1)",
     paddingVertical: 24,
     paddingHorizontal: 16,
     alignItems: "center",
-    marginBottom: 12,
+    marginBottom: 8,
     gap: 12,
   },
   docPreviewIconWrap: {
@@ -3259,8 +3254,8 @@ const docStyles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: "#366bf0",
     paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 10,
+    paddingVertical: 8,
+    borderRadius: 7,
     marginTop: 4,
   },
   viewDocButtonText: { color: "#fff", fontWeight: "700", fontSize: 13 },
@@ -3275,10 +3270,11 @@ const docStyles = StyleSheet.create({
     backgroundColor: "#1C2541",
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.1)",
-    borderRadius: 10,
-    padding: 14,
+    borderRadius: 7,
+    padding: 10,
     color: "#fff",
-    fontSize: 14,
+    height: 42,
+    fontSize: 12,
   },
   verifyButton: {
     width: 110,
@@ -3299,15 +3295,15 @@ const docStyles = StyleSheet.create({
     backgroundColor: "#1C2541",
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.1)",
-    height: 50,
-    borderRadius: 10,
-    paddingHorizontal: 14,
+    height: 40,
+    borderRadius: 7,
+    paddingHorizontal: 10,
   },
   dateButtonDisabled: {
     backgroundColor: "rgba(255,255,255,0.02)",
     borderColor: "rgba(255,255,255,0.05)",
   },
-  dateText: { color: "#fff", fontSize: 14, flex: 1 },
+  dateText: { color: "#fff", fontSize: 12, flex: 1 },
   errorText: { color: "#ff6b6b", fontSize: 12 },
   dropdownSelector: {
     flexDirection: "row",
@@ -3316,11 +3312,11 @@ const docStyles = StyleSheet.create({
     backgroundColor: "#1C2541",
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.1)",
-    height: 50,
-    borderRadius: 10,
-    paddingHorizontal: 14,
+    height: 40,
+    borderRadius: 7,
+    paddingHorizontal: 12,
   },
-  dropdownText: { color: "#fff", fontSize: 14, fontWeight: "500" },
+  dropdownText: { color: "#fff", fontSize: 12, fontWeight: "500" },
   inputHelpText: {
     color: "#6C7A89",
     fontSize: 11,
@@ -3329,13 +3325,13 @@ const docStyles = StyleSheet.create({
   },
   saveButton: {
     backgroundColor: COLORS.primary,
-    height: 54,
+    height: 45,
     justifyContent: "center",
     alignItems: "center",
     margin: 16,
-    borderRadius: 12,
+    borderRadius: 5,
   },
-  saveButtonText: { color: "#fff", fontSize: 15, fontWeight: "bold" },
+  saveButtonText: { color: "#fff", fontSize: 14, fontWeight: "bold" },
 
   calendarModalOverlay: {
     flex: 1,
@@ -3426,12 +3422,12 @@ const docStyles = StyleSheet.create({
   },
   infoLabel: {
     color: THEME.textMuted,
-    fontSize: 13,
+    fontSize: 11,
     flex: 1,
   },
   infoValue: {
     color: "#fff",
-    fontSize: 13,
+    fontSize: 10,
     fontWeight: "500",
     textAlign: "right",
     flex: 1,
@@ -3440,13 +3436,14 @@ const docStyles = StyleSheet.create({
   cardActionsRow: {
     flexDirection: "row",
     gap: 10,
-    marginTop: 12,
+    marginTop: 15,
     width: "100%",
   },
   viewBtn: {
     backgroundColor: THEME.accent,
-    height: 40,
-    borderRadius: 8,
+    height: 38,
+    marginTop: 10,
+    borderRadius: 5,
     flex: 1,
     flexDirection: "row",
     justifyContent: "center",

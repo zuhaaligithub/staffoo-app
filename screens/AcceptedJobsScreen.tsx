@@ -1,3 +1,7 @@
+
+
+
+
 import React from "react";
 import {
   View,
@@ -40,6 +44,9 @@ import {
   StaffAssignSheet,
   styles,
   assignStyles,
+  IconBadge,
+  StatusPill,
+  GradientButton,
 } from "./shifts/StaffShiftsShared";
 import { useStaffShiftsController } from "./shifts/useStaffShiftsController";
 
@@ -143,6 +150,22 @@ export default function AcceptedJobsScreen({ navigation, route }: Props) {
           end={{ x: 1, y: 1 }}
           style={styles.hero}
         >
+          {/* Soft radial accent glow — a single deliberate highlight rather
+              than a flat gradient wash across the whole hero. */}
+          <View
+            pointerEvents="none"
+            style={{
+              position: "absolute",
+              top: -60,
+              right: -40,
+              width: 180,
+              height: 180,
+              borderRadius: 90,
+              backgroundColor: COLORS.primaryGlow,
+              opacity: 0.35,
+            }}
+          />
+
           <View style={styles.heroInner}>
             {/* Back + User Info in One Row */}
             <View style={styles.userHeaderRow}>
@@ -162,14 +185,15 @@ export default function AcceptedJobsScreen({ navigation, route }: Props) {
 
                 <Text style={styles.heroSubtitle}>Welcome to Staffoo</Text>
               </View>
+
+              {/* <StatusPill label="Accepted" tone="success" /> */}
             </View>
 
             {isStaffooStaffMember && (
               <View style={styles.statsRow}>
                 <View style={styles.statBox}>
                   <View style={styles.statLabelRow}>
-                    <CalendarDays size={12} color={COLORS.textSecondary} />
-
+                    <CalendarDays size={12} color="rgba(255,255,255,0.55)" />
                     <Text style={styles.statLabel}>AVAILABLE JOBS</Text>
                   </View>
 
@@ -180,8 +204,7 @@ export default function AcceptedJobsScreen({ navigation, route }: Props) {
 
                 <View style={styles.statBox}>
                   <View style={styles.statLabelRow}>
-                    <Layers size={12} color={COLORS.textSecondary} />
-
+                    <Layers size={12} color="rgba(255,255,255,0.55)" />
                     <Text style={styles.statLabel}>ACCEPTED SHIFTS</Text>
                   </View>
 
@@ -202,9 +225,8 @@ export default function AcceptedJobsScreen({ navigation, route }: Props) {
           <RefreshControl
             refreshing={isRefreshing}
             onRefresh={onRefresh}
-            tintColor="transparent"
-            colors={["transparent"]}
-            progressBackgroundColor="transparent"
+            tintColor={COLORS.primary}
+            colors={[COLORS.primary]}
           />
         }
       >
@@ -260,10 +282,38 @@ export default function AcceptedJobsScreen({ navigation, route }: Props) {
           contentContainerStyle={styles.sheetContent}
           showsVerticalScrollIndicator={false}
         >
-          <Text style={styles.newRequest}>🔔 New Job Request</Text>
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 12,
+              marginBottom: 16,
+            }}
+          >
+            <IconBadge size={40} tone="primary">
+              <Text style={{ fontSize: 16 }}>🔔</Text>
+            </IconBadge>
+            <View>
+              <Text
+                style={{
+                  fontSize: 10.5,
+                  fontWeight: "700",
+                  color: COLORS.primary,
+                  letterSpacing: 0.6,
+                  textTransform: "uppercase",
+                  marginBottom: 2,
+                }}
+              >
+                Incoming
+              </Text>
+              <Text style={styles.newRequest}>New job request</Text>
+            </View>
+          </View>
 
           <View style={styles.infoRow}>
-            <Calendar size={18} color={COLORS.primary} />
+            <IconBadge size={32} tone="primary">
+              <Calendar size={15} color={COLORS.primary} />
+            </IconBadge>
 
             <View style={{ flex: 1 }}>
               <Text style={assignStyles.infoLabel}>Date</Text>
@@ -271,7 +321,9 @@ export default function AcceptedJobsScreen({ navigation, route }: Props) {
             </View>
           </View>
           <View style={styles.infoRow}>
-            <Clock size={16} color={COLORS.primary} />
+            <IconBadge size={32} tone="info">
+              <Clock size={14} color={COLORS.info} />
+            </IconBadge>
 
             <View style={{ flex: 1 }}>
               <Text style={assignStyles.infoLabel}>Time</Text>
@@ -281,7 +333,9 @@ export default function AcceptedJobsScreen({ navigation, route }: Props) {
             </View>
           </View>
           <View style={styles.infoRow}>
-            <MapPin size={16} color={COLORS.danger} />
+            <IconBadge size={32} tone="danger">
+              <MapPin size={14} color={COLORS.danger} />
+            </IconBadge>
 
             <View style={{ flex: 1 }}>
               <Text style={assignStyles.infoLabel}>Location</Text>
@@ -293,7 +347,9 @@ export default function AcceptedJobsScreen({ navigation, route }: Props) {
             </View>
           </View>
           <View style={styles.infoRow}>
-            <FileText size={16} color={COLORS.primary} />
+            <IconBadge size={32} tone="neutral">
+              <FileText size={14} color={COLORS.textSecondary} />
+            </IconBadge>
 
             <View style={{ flex: 1 }}>
               <Text style={assignStyles.infoLabel}>Site Description</Text>
@@ -305,7 +361,9 @@ export default function AcceptedJobsScreen({ navigation, route }: Props) {
             </View>
           </View>
           <View style={styles.infoRow}>
-            <Clock size={16} color={COLORS.primary} />
+            <IconBadge size={32} tone="primary">
+              <Clock size={14} color={COLORS.primary} />
+            </IconBadge>
             <View style={{ flex: 1 }}>
               <Text style={assignStyles.infoLabel}>Total Hours</Text>
               <Text style={styles.infoText}>{getJobHoursLabel(jobData)}</Text>
@@ -316,7 +374,7 @@ export default function AcceptedJobsScreen({ navigation, route }: Props) {
           {(notifHasWorkingWithChildren || notifHasWhiteCard) && (
             <View style={styles.documentsSection}>
               <Text style={styles.documentsSectionTitle}>
-                Required Documents
+                Required documents
               </Text>
 
               {notifHasWorkingWithChildren && (
@@ -324,23 +382,23 @@ export default function AcceptedJobsScreen({ navigation, route }: Props) {
                   <Text style={styles.documentLabel}>
                     Working with Children Check Required
                   </Text>
-                  <Text style={styles.documentYes}>YES</Text>
+                  <StatusPill label="Required" tone="warning" />
                 </View>
               )}
 
               {notifHasWhiteCard && (
                 <View style={[styles.documentRow, { borderBottomWidth: 0 }]}>
                   <Text style={styles.documentLabel}>White Card Required</Text>
-                  <Text style={styles.documentYes}>YES</Text>
+                  <StatusPill label="Required" tone="warning" />
                 </View>
               )}
             </View>
           )}
 
           {userType === "contractor" && !notifHideAssignForContractor && (
-            <View style={{ marginVertical: 2 }}>
+            <View style={{ marginVertical: 4 }}>
               <Text style={styles.assignLabel}>
-                Assign to Staff Member (optional)
+                Assign to staff member (optional)
               </Text>
               {loadingContractorStaff ? (
                 <ActivityIndicator size="small" color={COLORS.primary} />
@@ -418,34 +476,23 @@ export default function AcceptedJobsScreen({ navigation, route }: Props) {
           <View
             style={[styles.buttonContainer, { paddingBottom: insets.bottom }]}
           >
-            <TouchableOpacity
-              style={[
-                styles.acceptButton,
-                acceptingNotification && styles.disabledButton,
-              ]}
+            <GradientButton
+              variant="success"
+              flex={1}
               disabled={acceptingNotification}
+              loading={acceptingNotification}
               onPress={handleAcceptNotification}
-            >
-              {acceptingNotification ? (
-                <ActivityIndicator color="#fff" size="small" />
-              ) : (
-                <>
-                  <CheckCircle size={16} color="#fff" />
-                  <Text style={styles.buttonText}>ACCEPT</Text>
-                </>
-              )}
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[
-                styles.declineButton,
-                acceptingNotification && styles.disabledButton,
-              ]}
-              onPress={handleDeclineNotification}
+              label="Accept"
+              icon={<CheckCircle size={16} color="#fff" />}
+            />
+            <GradientButton
+              variant="danger"
+              flex={1}
               disabled={acceptingNotification}
-            >
-              <XCircle size={16} color="#fff" />
-              <Text style={styles.buttonText}>DECLINE</Text>
-            </TouchableOpacity>
+              onPress={handleDeclineNotification}
+              label="Decline"
+              icon={<XCircle size={16} color="#fff" />}
+            />
           </View>
         </BottomSheetScrollView>
       </BottomSheet>

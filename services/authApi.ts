@@ -241,17 +241,7 @@ type ProfileUpdatePayload = {
     type?: string;
   };
 };
-// ==================== UPDATE USER PROFILE ====================
-// NOTE: every optional field below is appended whenever it's *present*
-// in the payload (`!== undefined`), not when it's *truthy*. The old
-// `if (payload.acn)` style check silently dropped the field from the
-// FormData whenever the value was an empty string "" — which is exactly
-// what happens when a contractor leaves ACN/ABN blank and saves. Since
-// the caller (ProfileSetupScreen) always sets these keys (even to ""),
-// switching to `!== undefined` means:
-//   - a value you typed is always sent
-//   - an intentionally-cleared field is sent as "" (so the backend can
-//     actually clear it, instead of silently keeping the old value)
+
 const updateUserProfile = async (
   userId: string | number,
   payload: ProfileUpdatePayload & { profile_image?: any },
